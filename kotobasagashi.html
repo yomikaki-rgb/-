@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>ことばさがし作成アプリ</title>
+<title>ことばの かくれんぼ クイズ（生成）</title>
 <style>
   @page{
     size: A4 landscape;
@@ -200,14 +200,29 @@
     font-weight:900;
   }
 
+  /* ▼▼▼ ここだけ修正：iPad印刷で崩れにくいように @media print を差し替え ▼▼▼ */
   @media print{
-    body{ background:#fff; }
-    .panel{ display:none; }
+    html, body{
+      background:#fff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .panel{ display:none !important; }
+
+    .sheetWrap,
+    .sheets{
+      display:block !important;
+    }
+
     .sheet{
-      border:none;
-      border-radius:0;
-      padding:0;
-      width:auto;
+      box-sizing:border-box;
+      width: 297mm;
+      min-height: 210mm;
+      margin: 0 auto;
+      padding: 12mm 12mm 10mm;
+      border: none !important;
+      border-radius: 0 !important;
       page-break-after: always;
       break-after: page;
     }
@@ -215,8 +230,12 @@
       page-break-after:auto;
       break-after: auto;
     }
-    .sheets{ gap:0; }
+
+    .hiragana{
+      white-space: nowrap;
+    }
   }
+  /* ▲▲▲ 修正ここまで ▲▲▲ */
 </style>
 </head>
 
@@ -240,6 +259,7 @@
 
     <label>隠すことば（10語以上OK：毎ページ10語をランダム抽出）</label>
     <textarea id="wordsInput" rows="6">きつね
+きつね
 さくら
 みかん
 すいか
@@ -466,5 +486,3 @@
 </script>
 </body>
 </html>
-
-
