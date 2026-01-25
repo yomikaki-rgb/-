@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>ことばの かくれんぼ クイズ（生成）</title>
+<style>
+  @page{
+    size: A4 landscape;
+    margin: 12.7mm;
+  }
+  body{
+    margin:0;
+    background:#f3f4f6;
+    color:#111;
+    font-family: "UD デジタル 教科書体 N-R","UD デジタル 教科書体",
+                 "BIZ UDゴシック","BIZ UDPゴシック","Noto Sans JP",
+                 "Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+  }
+
+  .app{
+    max-width: 1100px;
+    margin: 18px auto;
+    padding: 12px;
+  }
+  .panel{
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 10px 20px rgba(0,0,0,.06);
+    margin-bottom: 12px;
+  }
+  label{ font-weight: 800; display:block; margin: 8px 0 6px; }
+  textarea, input{
+    width:100%;
+    font-size:16px;
+    padding:10px 12px;
+    border-radius: 10px;
+    border:1px solid #d1d5db;
+    outline:none;
+    background:#fff;
+  }
+  .row{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  .btns{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top: 10px;
+  }
+  button{
+    appearance:none;
+    border:none;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-weight: 900;
+    font-size: 16px;
+    cursor:pointer;
+    background:#111827;
+    color:#fff;
+  }
+  button.secondary{
+    background:#fff;
+    color:#111827;
+    border:1px solid #111827;
+  }
+  .hint{
+    color:#374151;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 8px;
+  }
+
+  .toggleRow{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top: 10px;
+  }
+  .toggleRow input{
+    width:18px;
+    height:18px;
+  }
+
+  /* ★追加：モード切替ボタン */
+  .modeRow{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top: 10px;
+  }
+  .modeRow .modeLabel{
+    font-weight: 900;
+    margin:0;
+    display:inline-block;
+  }
+  .modeBtns{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  button.modeBtn{
+    background:#fff;
+    color:#111827;
+    border:1px solid #111827;
+    padding:10px 12px;
+    font-size:14px;
+    border-radius:999px;
+  }
+  button.modeBtn.active{
+    background:#111827;
+    color:#fff;
+  }
+
+  .sheetWrap{
+    display:flex;
+    justify-content:center;
+  }
+  .sheets{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+  .sheet{
+    width:1123px;
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:14px;
+    padding:18px 18px 10px;
+  }
+
+  .sheetHeader{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .titleBlock{
+    font-size:18px;
+    letter-spacing:.02em;
+  }
+  .titleBlock .spaced{
+    letter-spacing:.25em;
+  }
+  .dtBlock{
+    display:flex;
+    gap:50px;
+    font-size:16px;
+  }
+
+  .desc{
+    margin-top:8px;
+    font-size:16px;
+    line-height:1.7;
+  }
+  .words{
+    margin-top:10px;
+    font-size:16px;
+    line-height:1.7;
+  }
+
+  .lines{ margin-top:18px; }
+  .line{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:10px 0;
+  }
+  .circ{
+    width:38px;
+    height:38px;
+    border:3px solid #111;
+    border-radius:999px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:900;
+    font-size:18px;
+    flex:0 0 auto;
+  }
+  .hiragana{
+    font-size:34px;
+    letter-spacing:.05em;
+    line-height:1.2;
+    white-space:nowrap;
+  }
+
+  .target{ color:inherit; font-weight:inherit; }
+  body.redOn .target,
+  body.redOn .words span{
+    color:#d11;
+    font-weight:900;
+  }
+
+  @media print{
+    body{ background:#fff; }
+    .panel{ display:none; }
+    .sheet{
+      border:none;
+      border-radius:0;
+      padding:0;
+      width:auto;
+      page-break-after: always;
+      break-after: page;
+    }
+    .sheet:last-child{
+      page-break-after:auto;
+      break-after: auto;
+    }
+    .sheets{ gap:0; }
+  }
+</style>
+</head>
+
+<body>
+<div class="app">
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label>行数（通常10）</label>
+        <input id="lineCount" type="number" value="10">
+      </div>
+      <div>
+        <label>1行の文字数</label>
+        <input id="lineLen" type="number" value="26">
+      </div>
+      <div>
+        <label>ページ数</label>
+        <input value="10" disabled>
+      </div>
+    </div>
+
+    <label>隠すことば（10語以上OK：毎ページ10語をランダム抽出）</label>
+    <textarea id="wordsInput" rows="6">きつね
+すいか
+みかん
+すずめ
+ひつじ
+さらだ
+さかな
+きりん
+とまと
+ごりら
+うさぎ
+ねこ
+いぬ
+かえる
+ぱんだ</textarea>
+
+    <!-- ★追加：モード切替 -->
+    <div class="modeRow">
+      <span class="modeLabel">モード</span>
+      <div class="modeBtns">
+        <button class="modeBtn" id="modeConfirmBtn" type="button">確認モード（順番）</button>
+        <button class="modeBtn" id="modePracticeBtn" type="button">練習モード（ランダム）</button>
+        <button class="modeBtn" id="modeChallengeBtn" type="button">チャレンジモード（表示なし）</button>
+      </div>
+    </div>
+
+    <div class="toggleRow">
+      <input type="checkbox" id="redToggle">
+      <label for="redToggle">ターゲット語を赤字で表示</label>
+    </div>
+
+    <div class="btns">
+      <button id="genBtn">10ページ生成する</button>
+      <button class="secondary" id="shuffleBtn">もう一回（配置だけ変える）</button>
+      <button class="secondary" id="printBtn">印刷 / PDF</button>
+    </div>
+
+    <div class="hint">
+      ・入力は10語以上OK。<b>毎ページ10語をランダムに選び、さらに順番もランダム</b>にして10行へ入れます。<br>
+      ・各行の左右のひらがな（埋め込み位置）もページごとに変わります。
+    </div>
+  </div>
+
+  <div class="sheetWrap">
+    <div class="sheets" id="sheets"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const HIRA_POOL = ["あ","い","う","え","お","か","き","く","け","こ","さ","し","す","せ","そ",
+    "た","ち","つ","て","と","な","に","ぬ","ね","の","は","ひ","ふ","へ","ほ",
+    "ま","み","む","め","も","や","ゆ","よ","ら","り","る","れ","ろ","わ","を","ん",
+    "が","ぎ","ぐ","げ","ご","ざ","じ","ず","ぜ","ぞ","だ","ぢ","づ","で","ど",
+    "ば","び","ぶ","べ","ぼ","ぱ","ぴ","ぷ","ぺ","ぽ"
+  ];
+  const CIRC = ["1","2","3","4","5","6","7","8","9","10"];
+  const PAGE_COUNT = 10;
+
+  const $ = id => document.getElementById(id);
+
+  const rnd = n => Math.floor(Math.random()*n);
+  const sample = () => HIRA_POOL[rnd(HIRA_POOL.length)];
+
+  const normalizeWords = t =>
+    String(t ?? "").replace(/\r/g,"").split(/\n|・/).map(s=>s.trim()).filter(Boolean);
+
+  function shuffleArray(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      const tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+    return arr;
+  }
+
+  // ★追加：配列から k 個をランダム抽出（重複なし）
+  function sampleK(arr, k){
+    const copy = arr.slice();
+    shuffleArray(copy);
+    return copy.slice(0, k);
+  }
+
+  function makeLine(word, len){
+    if(word.length >= len) return {l:"", w:word, r:""};
+    const l = rnd(len - word.length + 1);
+    const r = len - word.length - l;
+    return {
+      l: Array.from({length:l}, sample).join(""),
+      w: word,
+      r: Array.from({length:r}, sample).join("")
+    };
+  }
+
+  // ★追加：モード管理
+  const MODE = {
+    CONFIRM: "confirm",   // 表示あり＋順番（入力順に整列）
+    PRACTICE: "practice", // 表示あり＋ランダム
+    CHALLENGE: "challenge"// 表示なし（リスト非表示、順番はランダム）
+  };
+
+  function setMode(m){
+    currentMode = m;
+    try{ localStorage.setItem("kakurenbo_mode", m); }catch(e){}
+    updateModeUI();
+    render();
+  }
+
+  function loadMode(){
+    try{
+      const m = localStorage.getItem("kakurenbo_mode");
+      if(m === MODE.CONFIRM || m === MODE.PRACTICE || m === MODE.CHALLENGE) return m;
+    }catch(e){}
+    return MODE.CONFIRM;
+  }
+
+  function updateModeUI(){
+    const m = currentMode;
+    $("modeConfirmBtn").classList.toggle("active", m === MODE.CONFIRM);
+    $("modePracticeBtn").classList.toggle("active", m === MODE.PRACTICE);
+    $("modeChallengeBtn").classList.toggle("active", m === MODE.CHALLENGE);
+  }
+
+  // ★追加：picked を「入力順」に並べる（順番モード用）
+  function sortByInputOrder(picked, base){
+    // 同じ語が複数ある場合でも破綻しないように、出現順に対応づけ
+    const buckets = new Map();
+    for(let i=0;i<base.length;i++){
+      const w = base[i];
+      if(!buckets.has(w)) buckets.set(w, []);
+      buckets.get(w).push(i);
+    }
+    const used = new Map();
+    const indexed = picked.map(w=>{
+      const list = buckets.get(w) || [Number.MAX_SAFE_INTEGER];
+      const u = used.get(w) || 0;
+      used.set(w, u+1);
+      const idx = list[u] ?? Number.MAX_SAFE_INTEGER;
+      return {w, idx};
+    });
+    indexed.sort((a,b)=>a.idx - b.idx);
+    return indexed.map(o=>o.w);
+  }
+
+  let currentMode = loadMode();
+
+  function render(){
+    document.body.classList.toggle("redOn", $("redToggle").checked);
+
+    const baseWords = normalizeWords($("wordsInput").value);
+    const lineCount = +$("lineCount").value || 10;
+    const lineLen = +$("lineLen").value || 26;
+
+    const sheets = $("sheets");
+    sheets.innerHTML = "";
+
+    for(let p=0;p<PAGE_COUNT;p++){
+      // ★毎ページ：10語だけランダム抽出（足りない場合はある分だけ）
+      const picked = sampleK(baseWords, Math.min(10, baseWords.length));
+
+      // ★モードに応じて「順番」と「表示」を切替
+      let words;
+      if(currentMode === MODE.CONFIRM){
+        // 入力順に整列（①〜⑩とターゲット語の順番を対応させる）
+        words = sortByInputOrder(picked.slice(), baseWords);
+      }else{
+        // ランダム（練習/チャレンジ）
+        words = shuffleArray(picked.slice());
+      }
+
+      const showWords = (currentMode !== MODE.CHALLENGE);
+
+      /* ★ここだけ修正：練習モードでは「表示リスト」と「①〜⑩」が対応しないようにする */
+      const listWords = (currentMode === MODE.PRACTICE) ? shuffleArray(words.slice()) : words;
+
+      const sheet = document.createElement("div");
+      sheet.className = "sheet";
+
+      sheet.innerHTML = `
+        <div class="sheetHeader">
+          <div class="titleBlock"><span class="spaced">ことばの　かくれんぼ　クイズ</span></div>
+          <div class="dtBlock"><span>日付：</span><span>タイム：</span></div>
+        </div>
+        <div class="desc">つぎの　ことばが　ひとつずつ　かくれています。○で　かこみましょう。</div>
+        ${showWords ? `<div class="words">${listWords.map(w=>`<span>${w}</span>`).join("・")}</div>` : ``}
+      `;
+
+      const lines = document.createElement("div");
+      lines.className = "lines";
+
+      for(let i=0;i<lineCount;i++){
+        const w = words[i] || "";
+        const parts = makeLine(w, lineLen);
+        lines.innerHTML += `
+          <div class="line">
+            <div class="circ">${CIRC[i] || (i+1)}</div>
+            <div class="hiragana">${parts.l}<span class="target">${parts.w}</span>${parts.r}</div>
+          </div>
+        `;
+      }
+
+      sheet.appendChild(lines);
+      sheets.appendChild(sheet);
+    }
+  }
+
+  $("genBtn").onclick = render;
+  $("shuffleBtn").onclick = render;
+  $("printBtn").onclick = () => window.print();
+
+  /* ★ここだけ修正：赤字ON/OFFで問題が変わらないようにする */
+  $("redToggle").onchange = () => {
+    document.body.classList.toggle("redOn", $("redToggle").checked);
+  };
+
+  // ★追加：モードボタン
+  $("modeConfirmBtn").onclick = () => setMode(MODE.CONFIRM);
+  $("modePracticeBtn").onclick = () => setMode(MODE.PRACTICE);
+  $("modeChallengeBtn").onclick = () => setMode(MODE.CHALLENGE);
+
+  updateModeUI();
+  render();
+})();
+</script>
+</body>
+</html>
