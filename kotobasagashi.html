@@ -200,29 +200,14 @@
     font-weight:900;
   }
 
-  /* ▼▼▼ ここだけ修正：iPad印刷で崩れにくいように @media print を差し替え ▼▼▼ */
   @media print{
-    html, body{
-      background:#fff !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-
-    .panel{ display:none !important; }
-
-    .sheetWrap,
-    .sheets{
-      display:block !important;
-    }
-
+    body{ background:#fff; }
+    .panel{ display:none; }
     .sheet{
-      box-sizing:border-box;
-      width: 297mm;
-      min-height: 210mm;
-      margin: 0 auto;
-      padding: 12mm 12mm 10mm;
-      border: none !important;
-      border-radius: 0 !important;
+      border:none;
+      border-radius:0;
+      padding:0;
+      width:auto;
       page-break-after: always;
       break-after: page;
     }
@@ -230,12 +215,8 @@
       page-break-after:auto;
       break-after: auto;
     }
-
-    .hiragana{
-      white-space: nowrap;
-    }
+    .sheets{ gap:0; }
   }
-  /* ▲▲▲ 修正ここまで ▲▲▲ */
 </style>
 </head>
 
@@ -273,7 +254,8 @@
 ねこ
 たまご
 かえる
-ぱんだ</textarea>
+ぱんだ
+</textarea>
 
     <!-- ★追加：モード切替 -->
     <div class="modeRow">
@@ -486,4 +468,3 @@
 </script>
 </body>
 </html>
-
