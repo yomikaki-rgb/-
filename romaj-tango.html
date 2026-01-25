@@ -1,0 +1,1229 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ローマ字入力練習</title>
+<style>
+  :root{
+    --bg1:#eef2ff; --bg2:#f3e8ff;
+    --card:#ffffffd9;
+    --ink:#111827; --sub:#4b5563;
+    --primary:#4f46e5; --primarySoft:#e0e7ff;
+    --ok:#16a34a; --ng:#dc2626;
+    --border:#d1d5db;
+    --shadow:0 10px 25px rgba(0,0,0,.08);
+    --radius:18px;
+
+    /* ごほうび側の色（貼ってくれたアプリと同系） */
+    --ok-weak:#ecfdf5; --ok-border:#34d399;
+    --accent:#f59e0b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0; min-height:100vh; padding:16px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","ヒラギノ角ゴ ProN","Noto Sans JP",system-ui,sans-serif;
+    color:var(--ink);
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+  }
+  .wrap{max-width:980px;margin:0 auto; display:grid; gap:14px;}
+  header{display:flex; gap:10px; align-items:flex-end; justify-content:space-between;}
+  h1{font-size:18px;margin:0}
+  .hint{font-size:12px;color:var(--sub)}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow);}
+  .pad{padding:14px}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .spacer{flex:1}
+  .btn{
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:14px;
+    padding:10px 12px;
+    font-weight:800;
+    cursor:pointer;
+    transition:.12s transform,.12s background;
+    user-select:none;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:var(--primary); color:#fff; border-color:transparent;}
+  .btn.ghost{background:transparent;}
+
+  .toggle{
+    display:grid; gap:10px;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+  }
+  @media (max-width:840px){ .toggle{grid-template-columns: repeat(3, minmax(0, 1fr));} }
+
+  .chip{
+    display:flex; justify-content:center; align-items:center;
+    padding:12px 10px; border-radius:14px;
+    border:1px solid var(--border); background:#fff;
+    font-weight:900; cursor:pointer; user-select:none;
+    text-align:center;
+  }
+  .chip.on{background:var(--primarySoft); border-color:rgba(79,70,229,.35);}
+
+  .word{font-size:36px; font-weight:900; text-align:center;}
+  .meta{
+    display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+    color:var(--sub); font-size:13px;
+    align-items:center;
+  }
+
+  .ansField{
+    min-width:min(520px, 92vw);
+    padding:12px 14px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    background:#fff;
+    font-size:22px;
+    font-weight:900;
+    letter-spacing:.04em;
+    text-align:center;
+    margin:0 auto;
+  }
+
+  .msg{
+    text-align:center; font-weight:900;
+    padding:10px 12px; border-radius:14px;
+    border:1px solid var(--border);
+    margin-top:10px;
+  }
+  .msg.ok{border-color:rgba(22,163,74,.35); background:rgba(22,163,74,.08); color:var(--ok)}
+  .msg.ng{border-color:rgba(220,38,38,.35); background:rgba(220,38,38,.08); color:var(--ng)}
+
+  .kbd{
+    display:grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap:10px;
+    padding:14px;
+  }
+  @media (max-width:840px){ .kbd{grid-template-columns: repeat(5, minmax(0, 1fr));} }
+  .key{
+    background:#fff; border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 10px;
+    font-size:20px; font-weight:900;
+    box-shadow:0 3px 10px rgba(0,0,0,.04);
+    cursor:pointer;
+    user-select:none;
+    text-align:center;
+  }
+  .key:active{transform:scale(.98)}
+
+  /* ★ 母音色分け ★ */
+  .c-k { color:#000000; }
+  .c-a { color:#ef4444; }
+  .c-i { color:#c68a15; }      /* I ：黄みの茶色 */
+  .c-u { color:#34d399; }      /* U ：明るいエメラルドグリーン */
+  .c-e { color:#60a5fa; }      /* E ：薄いブルー */
+  .c-o { color:#92400e; }
+
+  .mono { color:#000000; }     /* 色なし用 */
+
+  /* ====== 合計得点バッジ（貼ってくれたアプリと同系） ====== */
+  .bonus-display{
+    padding:4px 12px;
+    border-radius:999px;
+    background:linear-gradient(90deg,#fef3c7,#fffbeb);
+    border:2px solid #facc15;
+    font-size:13px;
+    font-weight:900;
+    color:#92400e;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    box-shadow:0 0 0 3px rgba(250,204,21,0.35);
+  }
+  .bonus-display span{ font-size:18px; }
+  .bonus-display::before{ content:"★"; font-size:14px; }
+  .bonus-pop{ animation:bonusPop 450ms ease-out; }
+  @keyframes bonusPop{
+    0%{ transform:scale(1); box-shadow:0 0 0 3px rgba(250,204,21,0.35); }
+    40%{ transform:scale(1.12); box-shadow:0 0 0 6px rgba(250,204,21,0.2); }
+    100%{ transform:scale(1); box-shadow:0 0 0 3px rgba(250,204,21,0.35); }
+  }
+
+  /* ====== ★ ごほうびオーバーレイ（slot/roulette/cards）★ ====== */
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,0.45);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:50;
+  }
+  .overlay.hidden{ display:none; }
+  .reward-card{
+    width:100%;
+    max-width:420px;
+    background:#f9fafb;
+    border-radius:20px;
+    box-shadow:0 20px 40px rgba(0,0,0,.35);
+    padding:18px 16px 14px;
+  }
+  .reward-inner{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    align-items:center;
+    justify-content:center;
+  }
+  .reward-title{
+    font-size:16px;
+    font-weight:700;
+    color:var(--ink);
+    text-align:center;
+  }
+  .reward-sub{
+    font-size:13px;
+    color:var(--sub);
+    text-align:center;
+    min-height:32px;
+  }
+  .reward-points{
+    font-size:16px;
+    text-align:center;
+    min-height:22px;
+  }
+  .reward-points strong{
+    font-size:20px;
+    color:#f59e0b;
+  }
+  .reward-buttons{
+    margin-top:6px;
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  /* スロット */
+  .slot-area{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin:6px 0;
+  }
+  .slot-box{
+    width:80px;
+    height:100px;
+    border-radius:14px;
+    background:#111827;
+    box-shadow:0 8px 16px rgba(0,0,0,.35) inset;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+    touch-action:manipulation;
+  }
+  .slot-num{
+    font-size:44px;
+    color:#f9fafb;
+    font-weight:700;
+    text-shadow:0 0 8px rgba(15,23,42,.8);
+    transition:transform .12s ease-out, opacity .12s ease-out;
+  }
+  .slot-box.spinning .slot-num{
+    opacity:.85;
+    transform:translateY(2px);
+  }
+  .slot-box.stopped{
+    box-shadow:0 0 0 rgba(0,0,0,0) inset;
+  }
+
+  /* ルーレット */
+  .roulette-circle{
+    width:140px; height:140px;
+    border-radius:50%;
+    border:6px solid var(--primary);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    position:relative;
+    background:#ffffff;
+    box-shadow:0 10px 20px rgba(15,23,42,.25);
+    margin-top:4px;
+    cursor:pointer;
+  }
+  .roulette-num{
+    font-size:52px;
+    font-weight:900;
+    color:var(--primary);
+  }
+
+  /* カード */
+  .card-row{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    margin:8px 0;
+  }
+  .draw-card{
+    width:70px;
+    height:100px;
+    border-radius:12px;
+    background:#111827;
+    color:#f9fafb;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:30px;
+    font-weight:800;
+    cursor:pointer;
+    position:relative;
+    box-shadow:0 8px 16px rgba(0,0,0,.35);
+  }
+  .draw-card.revealed{
+    background:#ffffff;
+    color:var(--primary);
+  }
+  .draw-card::after{
+    content:"?";
+    position:absolute;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:28px;
+    font-weight:800;
+    color:#f9fafb;
+  }
+  .draw-card.revealed::after{ content:""; }
+
+  /* ====== ★ くす玉オーバーレイ ★ ====== */
+  .kusudama-card{
+    width:100%;
+    max-width:420px;
+    background:#fff7ed;
+    border-radius:24px;
+    box-shadow:0 20px 40px rgba(0,0,0,.35);
+    padding:22px 18px 18px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .kusudama-title{
+    font-size:22px;
+    font-weight:900;
+    color:#92400e;
+    margin-bottom:8px;
+  }
+  .kusudama-sub{
+    font-size:16px;
+    color:#b45309;
+    margin-bottom:10px;
+  }
+  .kusudama-emoji{
+    font-size:32px;
+    margin-bottom:6px;
+  }
+  .kusudama-ribbon{
+    position:absolute;
+    top:-10px;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:40px;
+  }
+  .kusudama-confetti{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(248,113,113,0.9) 0, rgba(248,113,113,0) 40%),
+      radial-gradient(circle at 80% 30%, rgba(52,211,153,0.9) 0, rgba(52,211,153,0) 40%),
+      radial-gradient(circle at 30% 80%, rgba(59,130,246,0.9) 0, rgba(59,130,246,0) 40%);
+    background-size:160% 160%;
+    animation:confettiMove 1100ms ease-out forwards;
+    opacity:0.9;
+  }
+  @keyframes confettiMove{
+    0%{ background-position:50% -40%; opacity:0.9; }
+    100%{ background-position:50% 110%; opacity:0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div><h1>ローマ字入力練習</h1></div>
+    <div class="hint" id="statTop"></div>
+  </header>
+
+  <section class="card pad" id="screenSetup">
+    <div class="row" style="margin-bottom:10px">
+      <div style="font-weight:900">ボタンを1つ選んでスタート</div>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="modeToggle">出題：かな→ローマ字</button>
+      <button class="btn ghost" id="shuffleToggle">行内シャッフル：ON</button>
+      <button class="btn ghost" id="colorToggle">色あり：OFF</button>
+      <!-- ★追加：ローマ字を離すモード -->
+      <button class="btn ghost" id="spaceToggle">ローマ字をはなす：OFF</button>
+    </div>
+
+    <div class="toggle" id="rowToggles"></div>
+
+    <div class="row" style="margin-top:12px">
+      <div class="spacer"></div>
+      <button class="btn primary" id="startBtn" disabled>スタート</button>
+    </div>
+  </section>
+
+  <section class="card pad" id="screenPlay" style="display:none">
+    <div class="word" id="wordKana">—</div>
+    <div class="meta">
+      <div id="progress">0 / 0</div>
+      <div>｜</div>
+      <div id="score">正解 0</div>
+      <div>｜</div>
+      <div class="bonus-display">合計得点 <span id="bonusScore">0</span></div>
+      <div>｜</div>
+      <div id="rowNow">—</div>
+    </div>
+
+    <div class="ansField" id="ansField">（ここに入力されます）</div>
+
+    <div class="row" style="justify-content:center; margin-top:12px">
+      <button class="btn" id="backBtn">← 1つもどる</button>
+      <button class="btn" id="clearBtn">ぜんぶけす</button>
+      <button class="btn primary" id="checkBtn">できた！</button>
+      <button class="btn ghost" id="exitBtn">終了してトップにもどる</button>
+    </div>
+
+    <div id="msg" class="msg" style="display:none"></div>
+  </section>
+
+  <section class="card" id="kbdCard" style="display:none">
+    <div class="kbd" id="kbd"></div>
+  </section>
+
+</div>
+
+<!-- ★ ごほうびオーバーレイ（スロット・ルーレット・カード）★ -->
+<div id="rewardOverlay" class="overlay hidden">
+  <div class="reward-card">
+    <div class="reward-inner">
+      <div id="rewardTitle" class="reward-title"></div>
+      <div id="rewardSub" class="reward-sub"></div>
+
+      <!-- スロット -->
+      <div id="rewardSlot" style="display:none; width:100%;">
+        <div class="slot-area">
+          <div class="slot-box stopped" data-slot="0"><div class="slot-num">7</div></div>
+          <div class="slot-box stopped" data-slot="1"><div class="slot-num">7</div></div>
+          <div class="slot-box stopped" data-slot="2"><div class="slot-num">7</div></div>
+        </div>
+        <div class="reward-sub" id="slotHint"></div>
+      </div>
+
+      <!-- ルーレット -->
+      <div id="rewardRoulette" style="display:none;">
+        <div class="roulette-circle">
+          <div id="rouletteNum" class="roulette-num">?</div>
+        </div>
+      </div>
+
+      <!-- カード -->
+      <div id="rewardCards" style="display:none; width:100%;">
+        <div class="card-row">
+          <div class="draw-card" data-card="0"></div>
+          <div class="draw-card" data-card="1"></div>
+          <div class="draw-card" data-card="2"></div>
+        </div>
+      </div>
+
+      <div id="rewardPoints" class="reward-points"></div>
+
+      <div class="reward-buttons">
+        <button id="rewardActionBtn" class="btn primary">スタート</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ★ くす玉オーバーレイ ★ -->
+<div id="kusudamaOverlay" class="overlay hidden">
+  <div class="kusudama-card">
+    <div class="kusudama-confetti"></div>
+    <div class="kusudama-ribbon">🎊</div>
+    <div class="kusudama-emoji">🥳🎉</div>
+    <div id="kusudamaTitle" class="kusudama-title">おめでとう！</div>
+    <div class="kusudama-sub">くす玉がパーン！ たくさんがんばったね。</div>
+    <button id="kusudamaCloseBtn" class="btn primary" style="margin-top:10px;">つぎへ ▶</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ====== 指定語リスト（空白が混じる可能性があるので、filterで空要素だけ除去） ======
+  const ATa_WORDS_RAW = `
+あい　うえ　あお　あう　いえ　いえ　いう　おう　おおい　おおう
+かき　かう　かこ　きく　くき　ここ　かかく　きかく　あか　あき　いか　いけ　おか　かい　こい　あかいかき　あおいかい　こい　あい
+ささ　さす　しし　しそ　すす　すし　すそ　そし　　あさ　あし　あす　あせ　いし　いす　うし　あさい　いしい
+たつ　たて　ちち　つち　てつ　とち　あと　いた　いと　うた　おと　いたい　てあて　あおいいと　あついいた
+  `.trim();
+
+  const NaWa_WORDS_RAW = `
+なに　なな　ぬの　さんにん　にねん　ななにん　ななねん　あな　あに　あね　いね　うに　うの　おに　おの　おにのあな　いねのね
+はは　ひひ　ひふ　ほほ　はい　はえ　へい　ふえ
+まま　まめ　みみ　めも　もみ　もむ　もも　あまい　あみ　あむ　あめ　いま　いみ　いも　うま　うみ　うめ　あまいもも　あいまい
+ゆや　ゆい　いや　いよ　いやいや　あや　あゆ　よう　やおや　おや　ようい
+あら　あり　ある　うら　うる　うり　るり　いろ　おれ　おる　あられ　るりいろ　れい　いろり　りろん　あいいろ　いろいろ　るんるん
+  `.trim();
+
+  function splitWords(raw){
+    return raw
+      .replace(/\n/g, " ")
+      .split(/[ \t　]+/g)
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+
+  // ====== 行ごとの単語 ======
+  const WORDS_BY_ROW = {
+    "あ行": ["あい","うえ","あお","あう","いえ","いえ","いう","おう","おおい","おおう"],
+    "か行": ["かき","かう","かこ","きく","くき","ここ","かかく","きかく","あか","あき","いか","いけ","おか","かい","こい","あかいかき","あおいかい","こい","あい"],
+    "さ行": ["ささ","さす","しし","しそ","すす","すし","すそ","そし","あさ","あし","あす","あせ","いし","いす","うし","あさい","いしい"],
+    "た行": ["たつ","たて","ちち","つち","てつ","とち","あと","いた","いと","うた","おと","いたい","てあて","あおいいと","あついいた"],
+    "な行": ["なに","なな","ぬの","さんにん","にねん","ななにん","ななねん","あな","あに","あね","いね","うに","うの","おに","おの","おにのあな","いねのね"],
+    "は行": ["はは","ひひ","ひふ","ほほ","はい","はえ","へい","ふえ"],
+    "ま行": ["まま","まめ","みみ","めも","もみ","もむ","もも","あまい","あみ","あむ","あめ","いま","いみ","いも","うま","うみ","うめ","あまいもも","あいまい"],
+    "や行": ["ゆや","ゆい","いや","いよ","いやいや","あや","あゆ","よう","やおや","おや","ようい"],
+    "ら行": ["あら","あり","ある","うら","うる","うり","るり","いろ","おれ","おる","あられ","るりいろ","れい","いろり","りろん","あいいろ","いろいろ","るんるん"],
+
+    // ★追加ボタン
+    "あ～た行": splitWords(ATa_WORDS_RAW),
+    "な～わ行": splitWords(NaWa_WORDS_RAW),
+  };
+
+  // ====== かな→ローマ字（SI/TI/TU/HU/NN） ======
+  const KANA2ROMA = {
+    "あ":"A","い":"I","う":"U","え":"E","お":"O",
+    "か":"KA","き":"KI","く":"KU","け":"KE","こ":"KO",
+    "さ":"SA","し":"SI","す":"SU","せ":"SE","そ":"SO",
+    "た":"TA","ち":"TI","つ":"TU","て":"TE","と":"TO",
+    "な":"NA","に":"NI","ぬ":"NU","ね":"NE","の":"NO",
+    "は":"HA","ひ":"HI","ふ":"HU","へ":"HE","ほ":"HO",
+    "ま":"MA","み":"MI","む":"MU","め":"ME","も":"MO",
+    "や":"YA","ゆ":"YU","よ":"YO",
+    "ら":"RA","り":"RI","る":"RU","れ":"RE","ろ":"RO",
+    "わ":"WA","を":"WO",
+    "ん":"NN"
+  };
+  function kanaToRoma(kana){
+    let out = "";
+    for (const ch of kana) out += (KANA2ROMA[ch] ?? "");
+    return out;
+  }
+
+  // ====== ★追加：ローマ字を「TU / KU / E」のように分割 ======
+  function splitRomajiBlocks(romaji){
+    const s = (romaji || "").toUpperCase();
+    // 3文字拗音っぽいもの → それ以外は (子音? + 母音) / N
+    const m = s.match(/(KYO|KYA|KYU|SHO|SHA|SHU|CHO|CHA|CHU|RYO|RYA|RYU|NYO|NYA|NYU|MYO|MYA|MYU|GYO|GYA|GYU|HYO|HYA|HYU|BYO|BYA|BYU|PYO|PYA|PYU|[BCDFGHJKLMNPQRSTVWXYZ]?[AEIOU]|NN|N)/g);
+    return m ? m : [s];
+  }
+  function formatRomajiSpaced(romaji){
+    const blocks = splitRomajiBlocks(romaji);
+    return blocks.join(" ");
+  }
+
+  // ====== キーボード（ローマ字/ひらがな） ======
+  const KEY_ROWS_ROMA = [
+    ["WA","RA","YA","MA","HA","NA","TA","SA","KA","A"],
+    ["","RI","","MI","HI","NI","TI","SI","KI","I"],
+    ["WO","RU","YU","MU","HU","NU","TU","SU","KU","U"],
+    ["","RE","","ME","HE","NE","TE","SE","KE","E"],
+    ["NN","RO","YO","MO","HO","NO","TO","SO","KO","O"],
+  ];
+  const KEY_ROWS_KANA = [
+    ["わ","ら","や","ま","は","な","た","さ","か","あ"],
+    ["","り","","み","ひ","に","ち","し","き","い"],
+    ["を","る","ゆ","む","ふ","ぬ","つ","す","く","う"],
+    ["","れ","","め","へ","ね","て","せ","け","え"],
+    ["ん","ろ","よ","も","ほ","の","と","そ","こ","お"],
+  ];
+
+  // ====== 状態 ======
+  const rowNames = Object.keys(WORDS_BY_ROW);
+  let selectedRow = null;
+  let shuffleInRow = true;
+  let colorOn = false;
+
+  // ★出題モード
+  let quizMode = "k2r"; // "k2r" or "r2k"
+
+  // ★追加：ローマ字を離す（表示だけ）
+  let spaceOn = false;
+
+  let queue = [];
+  let idx = 0;
+  let correct = 0;
+  let inputTokens = [];
+
+  // ★提示時間：正解だけ1.2秒 / 不正解は3秒
+  const CORRECT_DELAY_MS = 1200;
+  const WRONG_DELAY_MS   = 3000;
+
+  // ★5回正解ごとにごほうび
+  const GIMMICK_EVERY = 5;
+
+  // ★連打・多重タイマー防止
+  let checkLocked = false;
+
+  // ====== ごほうび得点 ======
+  let bonusTotal = 0;
+  let kusudamaMaxLevelShown = 0;
+  let pendingAdvanceAfterReward = null;
+
+  // ====== DOM ======
+  const elSetup = document.getElementById("screenSetup");
+  const elPlay  = document.getElementById("screenPlay");
+  const elKbdCard = document.getElementById("kbdCard");
+
+  const elRowToggles = document.getElementById("rowToggles");
+  const elStartBtn = document.getElementById("startBtn");
+  const elModeToggle = document.getElementById("modeToggle");
+  const elShuffleToggle = document.getElementById("shuffleToggle");
+  const elColorToggle = document.getElementById("colorToggle");
+  const elSpaceToggle = document.getElementById("spaceToggle"); // ★追加
+
+  const elWord = document.getElementById("wordKana");
+  const elAns = document.getElementById("ansField");
+  const elMsg = document.getElementById("msg");
+  const elProgress = document.getElementById("progress");
+  const elScore = document.getElementById("score");
+  const elStatTop = document.getElementById("statTop");
+  const elRowNow = document.getElementById("rowNow");
+  const elBonusScore = document.getElementById("bonusScore");
+  const elBonusBadge = document.querySelector(".bonus-display");
+
+  const elBack = document.getElementById("backBtn");
+  const elClear = document.getElementById("clearBtn");
+  const elCheck = document.getElementById("checkBtn");
+  const elExit = document.getElementById("exitBtn");
+
+  const elKbd = document.getElementById("kbd");
+
+  // ====== ごほうびDOM ======
+  const rewardOverlay = document.getElementById("rewardOverlay");
+  const rewardTitle = document.getElementById("rewardTitle");
+  const rewardSub = document.getElementById("rewardSub");
+  const rewardPoints = document.getElementById("rewardPoints");
+  const rewardActionBtn = document.getElementById("rewardActionBtn");
+
+  const rewardSlot = document.getElementById("rewardSlot");
+  const rewardRoulette = document.getElementById("rewardRoulette");
+  const rewardCards = document.getElementById("rewardCards");
+
+  const slotBoxes = document.querySelectorAll(".slot-box");
+  const slotHint = document.getElementById("slotHint");
+
+  const rouletteNumEl = document.getElementById("rouletteNum");
+  const rouletteCircle = document.querySelector(".roulette-circle");
+
+  const drawCards = document.querySelectorAll(".draw-card");
+
+  // ====== くす玉DOM ======
+  const kusudamaOverlay = document.getElementById("kusudamaOverlay");
+  const kusudamaCloseBtn = document.getElementById("kusudamaCloseBtn");
+  const kusudamaTitleEl  = document.getElementById("kusudamaTitle");
+
+  // ====== util ======
+  function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]] = [arr[j],arr[i]];
+    }
+    return arr;
+  }
+  function setScreen(which){
+    elSetup.style.display = (which==="setup") ? "" : "none";
+    elPlay.style.display  = (which==="play")  ? "" : "none";
+    elKbdCard.style.display = (which==="play") ? "" : "none";
+  }
+  function showMsg(type, text){
+    elMsg.style.display = "";
+    elMsg.className = "msg " + (type === "ok" ? "ok" : "ng");
+    elMsg.textContent = text;
+  }
+  function hideMsg(){ elMsg.style.display = "none"; }
+
+  function renderTopStat(){
+    if(!selectedRow){
+      elStatTop.textContent = "ボタンを選択してください";
+      return;
+    }
+    elStatTop.textContent = `${selectedRow}：${WORDS_BY_ROW[selectedRow].length}語`;
+  }
+
+  // ====== 色表示（母音だけ色） ======
+  function vowelClass(ch){
+    if(ch==="A") return "c-a";
+    if(ch==="I") return "c-i";
+    if(ch==="U") return "c-u";
+    if(ch==="E") return "c-e";
+    if(ch==="O") return "c-o";
+    return "c-k";
+  }
+
+  // ローマ字トークン（入力用：かな→ローマ字のときだけ使用）
+  function renderRomaTokenHTML(token){
+    if(!colorOn) return `<span class="mono">${token}</span>`;
+    const parts = [];
+    for(const ch of token){
+      const cls = ("AEIOU".includes(ch)) ? vowelClass(ch) : "c-k";
+      parts.push(`<span class="${cls}">${ch}</span>`);
+    }
+    return parts.join("");
+  }
+
+  // ★出題ローマ字（ローマ字→かなのとき：母音だけ色、子音は黒）
+  function renderRomaWordHTML(word){
+    // まず「離す」表示を作る（色なしならテキストでOK）
+    const raw = spaceOn ? formatRomajiSpaced(word) : word;
+
+    if(!(quizMode==="r2k" && colorOn)) return raw; // 色なしor別モードはそのまま
+
+    // 色あり：スペースを保ちながら1文字ずつ色付け
+    const parts = [];
+    for(const ch of raw){
+      if(ch === " "){
+        parts.push("&nbsp;"); // 連続スペースが潰れないように
+        continue;
+      }
+      const cls = ("AEIOU".includes(ch)) ? vowelClass(ch) : "c-k";
+      parts.push(`<span class="${cls}">${ch}</span>`);
+    }
+    return parts.join("");
+  }
+
+  // ====== 入力欄表示 ======
+  function updateAnswerField(){
+    if(inputTokens.length === 0){
+      elAns.textContent = "（ここに入力されます）";
+      return;
+    }
+
+    const sep = spaceOn ? '<span class="mono">&nbsp;</span>' : '';
+
+    // ★ローマ字→かな のときは「色ありでも入力は全て黒」
+    if(quizMode === "r2k"){
+      elAns.innerHTML = inputTokens.map(t => `<span class="mono">${t}</span>`).join(sep);
+      return;
+    }
+
+    // かな→ローマ字（従来どおり。表示だけスペースを挟む）
+    elAns.innerHTML = inputTokens.map(renderRomaTokenHTML).join(sep);
+  }
+
+  function updateBonusUI(){
+    elBonusScore.textContent = String(bonusTotal);
+    elBonusBadge.classList.remove("bonus-pop");
+    void elBonusBadge.offsetWidth;
+    elBonusBadge.classList.add("bonus-pop");
+  }
+
+  // ====== Setup buttons ======
+  function renderRowToggles(){
+    elRowToggles.innerHTML = "";
+    rowNames.forEach(name => {
+      const chip = document.createElement("button");
+      chip.className = "chip" + (selectedRow === name ? " on" : "");
+      chip.textContent = name;
+      chip.addEventListener("click", () => {
+        selectedRow = (selectedRow === name) ? null : name;
+        elStartBtn.disabled = !selectedRow;
+        renderRowToggles();
+        renderTopStat();
+      });
+      elRowToggles.appendChild(chip);
+    });
+    renderTopStat();
+  }
+
+  // 出題モード切替
+  function renderModeLabel(){
+    elModeToggle.textContent = `出題：${quizMode === "k2r" ? "かな→ローマ字" : "ローマ字→かな"}`;
+  }
+  elModeToggle.addEventListener("click", () => {
+    quizMode = (quizMode === "k2r") ? "r2k" : "k2r";
+    renderModeLabel();
+    renderKeyboard();
+    inputTokens = [];
+    updateAnswerField();
+    hideMsg();
+    // ★プレイ中なら出題再描画（ローマ字表示が変わるため）
+    if(elPlay.style.display !== "none"){
+      renderQuestion();
+    }
+  });
+
+  elShuffleToggle.addEventListener("click", () => {
+    shuffleInRow = !shuffleInRow;
+    elShuffleToggle.textContent = `行内シャッフル：${shuffleInRow ? "ON" : "OFF"}`;
+  });
+
+  elColorToggle.addEventListener("click", () => {
+    colorOn = !colorOn;
+    elColorToggle.textContent = `色あり：${colorOn ? "ON" : "OFF"}`;
+    renderKeyboard();
+    updateAnswerField();
+
+    // ★プレイ中なら出題表示も更新（ローマ字→かなで色が反映される）
+    if(elPlay.style.display !== "none"){
+      renderQuestion();
+    }
+  });
+
+  // ★追加：ローマ字を離す ON/OFF
+  elSpaceToggle.addEventListener("click", () => {
+    spaceOn = !spaceOn;
+    elSpaceToggle.textContent = `ローマ字をはなす：${spaceOn ? "ON" : "OFF"}`;
+    updateAnswerField();
+    // ★プレイ中なら出題表示も更新（ローマ字→かなの提示が変わる）
+    if(elPlay.style.display !== "none"){
+      renderQuestion();
+    }
+  });
+
+  // ====== Keyboard ======
+  function renderKeyboard(){
+    elKbd.innerHTML = "";
+    const layout = (quizMode === "k2r") ? KEY_ROWS_ROMA : KEY_ROWS_KANA;
+
+    layout.flat().forEach(label => {
+      const key = document.createElement("button");
+      if(!label){
+        key.disabled = true;
+        key.style.visibility = "hidden";
+        key.className = "key";
+        key.textContent = "—";
+      }else{
+        key.className = "key";
+
+        // ★ローマ字→かな のとき：入力キーは色ありでも全部黒
+        if(quizMode === "r2k"){
+          key.innerHTML = `<span class="mono">${label}</span>`;
+        }else{
+          // かな→ローマ字（従来どおり）
+          key.innerHTML = renderRomaTokenHTML(label);
+        }
+
+        key.addEventListener("click", () => {
+          if(checkLocked) return;
+          inputTokens.push(label);
+          updateAnswerField();
+          hideMsg();
+        });
+      }
+      elKbd.appendChild(key);
+    });
+  }
+
+  // ====== Game ======
+  function buildQueueForSelectedRow(){
+    const list = WORDS_BY_ROW[selectedRow].map(kana => ({ row:selectedRow, kana }));
+    return shuffleInRow ? shuffle(list) : list;
+  }
+
+  function startGame(){
+    queue = buildQueueForSelectedRow();
+    idx = 0;
+    correct = 0;
+    bonusTotal = 0;
+    kusudamaMaxLevelShown = 0;
+    inputTokens = [];
+    hideMsg();
+    checkLocked = false;
+    rewardOverlay.classList.add("hidden");
+    kusudamaOverlay.classList.add("hidden");
+    setScreen("play");
+    elRowNow.textContent = selectedRow;
+    renderQuestion();
+    updateAnswerField();
+    elBonusScore.textContent = "0";
+  }
+
+  function renderQuestion(){
+    if(idx >= queue.length){
+      setScreen("setup");
+      return;
+    }
+    const q = queue[idx];
+
+    if(quizMode === "k2r"){
+      elWord.textContent = q.kana;
+    }else{
+      const rom = kanaToRoma(q.kana);
+      // ★ローマ字→かな：出題ローマ字（spaceOnなら TU KU E みたいに離す）
+      elWord.innerHTML = renderRomaWordHTML(rom);
+    }
+
+    elProgress.textContent = `${idx+1} / ${queue.length}`;
+    elScore.textContent = `正解 ${correct}`;
+    inputTokens = [];
+    updateAnswerField();
+    hideMsg();
+    checkLocked = false;
+  }
+
+  // ====== ごほうび仕掛け（貼ってくれたアプリの挙動を移植） ======
+  // --- スロット ---
+  let slotValues = [7,7,7];
+  let slotTimers = [null,null,null];
+  let slotSpinning = [false,false,false];
+  let slotGameRunning = false;
+  const MIN_NUM = 1, MAX_NUM = 7;
+
+  function slotNextValue(v){
+    let n = v + 1;
+    if (n > MAX_NUM) n = MIN_NUM;
+    return n;
+  }
+  function slotUpdateView(i){
+    const numEl = slotBoxes[i].querySelector(".slot-num");
+    numEl.textContent = slotValues[i];
+  }
+  function slotStartReel(i){
+    slotSpinning[i] = true;
+    slotBoxes[i].classList.remove("stopped");
+    slotBoxes[i].classList.add("spinning");
+    slotTimers[i] = setInterval(()=>{
+      slotValues[i] = slotNextValue(slotValues[i]);
+      slotUpdateView(i);
+    }, 360);
+  }
+  function slotStopReel(i){
+    if (!slotSpinning[i]) return;
+    slotSpinning[i] = false;
+    clearInterval(slotTimers[i]);
+    slotTimers[i] = null;
+    slotBoxes[i].classList.remove("spinning");
+    slotBoxes[i].classList.add("stopped");
+    if (!slotSpinning[0] && !slotSpinning[1] && !slotSpinning[2]) {
+      slotFinish();
+    }
+  }
+  function slotClearAll(){
+    for (let i=0;i<3;i++){
+      if (slotTimers[i]) clearInterval(slotTimers[i]);
+      slotTimers[i] = null;
+      slotSpinning[i] = false;
+    }
+  }
+  function slotStartGame(){
+    slotClearAll();
+    slotValues = [
+      Math.floor(Math.random()*(MAX_NUM - MIN_NUM + 1)) + MIN_NUM,
+      Math.floor(Math.random()*(MAX_NUM - MIN_NUM + 1)) + MIN_NUM,
+      Math.floor(Math.random()*(MAX_NUM - MIN_NUM + 1)) + MIN_NUM
+    ];
+    for (let i=0;i<3;i++){
+      slotUpdateView(i);
+      slotStartReel(i);
+    }
+    slotGameRunning = true;
+    slotHint.textContent = "止めたいところでそれぞれタップしてね。";
+    rewardActionBtn.disabled = true;
+  }
+  function slotFinish(){
+    slotGameRunning = false;
+    const [a,b,c] = slotValues;
+    const allEqual = (a===b && b===c);
+    let text = `出た数字：${slotValues.join(" ・ ")}`;
+    let points = 0;
+    if(allEqual){
+      points = a + b + c;
+      text += `　→　得点 <strong>${points}</strong> 点！`;
+    }else{
+      text += "　→　今回は得点なし";
+    }
+    rewardPoints.innerHTML = text;
+    slotHint.textContent = "";
+    rewardActionBtn.disabled = false;
+    rewardActionBtn.textContent = "つぎへ ▶";
+    rewardActionBtn.onclick = () => finishReward(points);
+  }
+
+  slotBoxes.forEach(el=>{
+    const i = Number(el.dataset.slot);
+    el.addEventListener("click", ()=>{
+      if(!slotGameRunning) return;
+      if(!slotSpinning[i]) return;
+      slotStopReel(i);
+    });
+  });
+
+  // --- ルーレット（タップで止まる） ---
+  let rouletteTimer = null;
+  let rouletteRunning = false;
+  let rouletteCurrent = 1;
+
+  function startRoulette(){
+    if(rouletteRunning) return;
+    rouletteRunning = true;
+    rewardPoints.textContent = "";
+    rewardActionBtn.disabled = false;
+    rewardActionBtn.textContent = "ストップ";
+
+    rouletteCurrent = Math.floor(Math.random()*10)+1;
+    rouletteNumEl.textContent = rouletteCurrent;
+
+    if(rouletteTimer) clearInterval(rouletteTimer);
+    rouletteTimer = setInterval(()=>{
+      rouletteCurrent++;
+      if(rouletteCurrent>10) rouletteCurrent = 1;
+      rouletteNumEl.textContent = rouletteCurrent;
+    },140);
+
+    const stop = ()=>{
+      if(!rouletteRunning) return;
+      rouletteRunning = false;
+      clearInterval(rouletteTimer);
+      rouletteTimer = null;
+      const final = rouletteCurrent;
+      rouletteNumEl.textContent = final;
+      const text = `出た数字：${final}　→　得点 <strong>${final}</strong> 点！`;
+      rewardPoints.innerHTML = text;
+      rewardActionBtn.textContent = "つぎへ ▶";
+      rewardActionBtn.onclick = () => finishReward(final);
+      rouletteCircle.removeEventListener("click", stop);
+    };
+
+    rewardActionBtn.onclick = stop;
+    rouletteCircle.addEventListener("click", stop);
+  }
+
+  // --- カード ---
+  let cardChosen = false;
+  function setupCards(){
+    cardChosen = false;
+    rewardPoints.textContent = "";
+    drawCards.forEach(c=>{
+      c.classList.remove("revealed");
+      c.textContent = "";
+    });
+    rewardActionBtn.disabled = true;
+    rewardActionBtn.textContent = "つぎへ ▶";
+    rewardActionBtn.onclick = ()=>{};
+  }
+
+  drawCards.forEach(c=>{
+    c.addEventListener("click", ()=>{
+      if(cardChosen) return;
+      cardChosen = true;
+      const val = Math.floor(Math.random()*10)+1;
+      c.classList.add("revealed");
+      c.textContent = val;
+      rewardPoints.innerHTML = `えらんだカード：${val}　→　得点 <strong>${val}</strong> 点！`;
+      rewardActionBtn.disabled = false;
+      rewardActionBtn.onclick = () => finishReward(val);
+    });
+  });
+
+  function startReward(onDoneAdvance){
+    pendingAdvanceAfterReward = onDoneAdvance;
+
+    rewardOverlay.classList.remove("hidden");
+    rewardPoints.textContent = "";
+    rewardTitle.textContent = "ごほうびタイム！";
+    rewardSub.textContent = "どれが出るかな？";
+
+    rewardActionBtn.disabled = false;
+    rewardActionBtn.textContent = "スタート";
+
+    rewardSlot.style.display = "none";
+    rewardRoulette.style.display = "none";
+    rewardCards.style.display = "none";
+
+    const types = ["slot","roulette","cards"];
+    const type = types[Math.floor(Math.random()*types.length)];
+
+    // リセット
+    rouletteRunning = false;
+    if(rouletteTimer) { clearInterval(rouletteTimer); rouletteTimer = null; }
+    rouletteNumEl.textContent = "?";
+    slotGameRunning = false;
+    slotClearAll();
+    slotHint.textContent = "";
+
+    if(type==="slot"){
+      rewardSlot.style.display = "";
+      slotValues = [7,7,7];
+      for(let i=0;i<3;i++){
+        slotBoxes[i].classList.remove("spinning");
+        slotBoxes[i].classList.add("stopped");
+        slotUpdateView(i);
+      }
+      rewardActionBtn.textContent = "スタート";
+      rewardActionBtn.onclick = () => slotStartGame();
+
+    }else if(type==="roulette"){
+      rewardRoulette.style.display = "";
+      rewardActionBtn.textContent = "スタート";
+      rewardActionBtn.onclick = () => startRoulette();
+
+    }else{
+      rewardCards.style.display = "";
+      setupCards();
+      rewardTitle.textContent = "カードを1まいえらんでね";
+      rewardSub.textContent = "";
+    }
+  }
+
+  // くす玉
+  kusudamaCloseBtn.addEventListener("click", ()=>{
+    kusudamaOverlay.classList.add("hidden");
+    if(typeof pendingAdvanceAfterReward === "function"){
+      const fn = pendingAdvanceAfterReward;
+      pendingAdvanceAfterReward = null;
+      fn();
+    }
+  });
+
+  function maybeShowKusudama(prevTotal, newTotal, after){
+    const prevLevel = Math.floor(prevTotal / 30);
+    const newLevel  = Math.floor(newTotal / 30);
+    if(newLevel > prevLevel && newLevel > 0 && newLevel > kusudamaMaxLevelShown){
+      kusudamaMaxLevelShown = newLevel;
+      const levelScore = newLevel * 30;
+      kusudamaTitleEl.textContent = levelScore + "点おめでとう！";
+      kusudamaOverlay.classList.remove("hidden");
+    }else{
+      after();
+    }
+  }
+
+  function finishReward(points){
+    const before = bonusTotal;
+    bonusTotal += points;
+    elBonusScore.textContent = String(bonusTotal);
+    updateBonusUI();
+
+    rewardOverlay.classList.add("hidden");
+
+    maybeShowKusudama(before, bonusTotal, ()=>{
+      if(typeof pendingAdvanceAfterReward === "function"){
+        const fn = pendingAdvanceAfterReward;
+        pendingAdvanceAfterReward = null;
+        fn();
+      }
+    });
+  }
+
+  // ====== 判定 ======
+  function getExpectedAnswer(q){
+    return (quizMode === "k2r") ? kanaToRoma(q.kana) : q.kana;
+  }
+
+  function checkAnswer(){
+    if(checkLocked) return;
+    checkLocked = true;
+
+    const q = queue[idx];
+    const answer = getExpectedAnswer(q);
+    const typed = inputTokens.join("");
+
+    if(typed === answer){
+      correct++;
+      showMsg("ok", "よくできました！");
+      elScore.textContent = `正解 ${correct}`;
+
+      if(correct > 0 && correct % GIMMICK_EVERY === 0){
+        setTimeout(() => {
+          startReward(() => {
+            idx++;
+            renderQuestion();
+          });
+        }, CORRECT_DELAY_MS);
+      }else{
+        setTimeout(() => {
+          idx++;
+          renderQuestion();
+        }, CORRECT_DELAY_MS);
+      }
+
+    }else{
+      inputTokens = [];
+      updateAnswerField();
+
+      // ★ローマ字正解の表示だけ「離す」対応（判定自体はスペースなし）
+      const showAns = (quizMode === "k2r" && spaceOn) ? formatRomajiSpaced(answer) : answer;
+
+      showMsg("ng", `おしい！ 正解：${showAns}`);
+
+      setTimeout(() => {
+        hideMsg();
+        checkLocked = false;
+      }, WRONG_DELAY_MS);
+    }
+  }
+
+  function backspaceOneToken(){
+    if(checkLocked) return;
+    inputTokens.pop();
+    updateAnswerField();
+  }
+
+  function exitToTop(){
+    idx = 0;
+    correct = 0;
+    bonusTotal = 0;
+    kusudamaMaxLevelShown = 0;
+    inputTokens = [];
+    queue = [];
+    hideMsg();
+    checkLocked = false;
+
+    rewardOverlay.classList.add("hidden");
+    kusudamaOverlay.classList.add("hidden");
+    pendingAdvanceAfterReward = null;
+
+    setScreen("setup");
+  }
+
+  // ====== Events ======
+  elStartBtn.addEventListener("click", () => {
+    if(!selectedRow){
+      alert("ボタンを1つ選んでください。");
+      return;
+    }
+    startGame();
+  });
+
+  elBack.addEventListener("click", () => { backspaceOneToken(); hideMsg(); });
+  elClear.addEventListener("click", () => {
+    if(checkLocked) return;
+    inputTokens = []; updateAnswerField(); hideMsg();
+  });
+  elCheck.addEventListener("click", () => { checkAnswer(); });
+  elExit.addEventListener("click", () => { exitToTop(); });
+
+  window.addEventListener("keydown", (e) => {
+    if(elPlay.style.display === "none") return;
+    if(e.key === "Enter"){ e.preventDefault(); checkAnswer(); }
+    if(e.key === "Backspace"){ e.preventDefault(); backspaceOneToken(); }
+    if(e.key === "Escape"){ e.preventDefault(); exitToTop(); }
+  });
+
+  // ====== init ======
+  renderRowToggles();
+  renderModeLabel();
+
+  // 初期ラベル
+  elStartBtn.disabled = true;
+  elShuffleToggle.textContent = "行内シャッフル：ON";
+  elColorToggle.textContent = "色あり：OFF";
+  elSpaceToggle.textContent = "ローマ字をはなす：OFF";
+
+  renderKeyboard();
+  setScreen("setup");
+})();
+</script>
+</body>
+</html>
