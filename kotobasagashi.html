@@ -150,10 +150,16 @@
   .titleBlock .spaced{
     letter-spacing:.25em;
   }
-  .dtBlock{
+    .dtBlock{
     display:flex;
     gap:50px;
     font-size:16px;
+  /* ★日付だけ位置調整 */
+  .dateField{
+    margin-right:60px;
+  }
+    /* ★右に寄りすぎを補正 */
+    margin-right:120px;
   }
 
   .desc{
@@ -423,7 +429,7 @@
       sheet.innerHTML = `
         <div class="sheetHeader">
           <div class="titleBlock"><span class="spaced">ことばの　かくれんぼ　クイズ</span></div>
-          <div class="dtBlock"><span>日付：</span><span>タイム：</span></div>
+          <div class="dtBlock"><span class="dateField">日付：</span><span>タイム：</span></div>
         </div>
         <div class="desc">つぎの　ことばが　ひとつずつ　かくれています。○で　かこみましょう。</div>
         ${showWords ? `<div class="words">${listWords.map(w=>`<span>${w}</span>`).join("・")}</div>` : ``}
