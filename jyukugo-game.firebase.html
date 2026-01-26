@@ -2639,7 +2639,7 @@ let showReadings = true;
 =============================== */
 
 /* ★ここをあなたのFirebase設定に置き換えてください（プロジェクトの設定＞SDK設定） */
-const FIREBASE_CONFIG = {
+window FIREBASE_CONFIG = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_AUTH_DOMAIN",
   projectId: "YOUR_PROJECT_ID",
@@ -3486,7 +3486,7 @@ renderSlots();
 renderDraw();
 renderMiss();
   <script>
-const FIREBASE_CONFIG = {
+window FIREBASE_CONFIG = {
   apiKey: "AIzaSyBVsQ_q3z2O2NY7g_xSuE1VgdX1G_2wrko",
   authDomain: "jyukugo-game.firebaseapp.com",
   databaseURL: "https://jyukugo-game-default-rtdb.firebaseio.com",
@@ -3497,7 +3497,18 @@ const FIREBASE_CONFIG = {
   measurementId: "G-PE74C52L2R"
 };
 </script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
+const firebaseConfig = window.FIREBASE_CONFIG;
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+window.firebaseApp = app;
+window.firebaseDB = db;
 </script>
+
 </body>
 </html>
