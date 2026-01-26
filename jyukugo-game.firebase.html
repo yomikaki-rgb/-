@@ -2639,16 +2639,30 @@ let showReadings = true;
 =============================== */
 
 /* ★ここをあなたのFirebase設定に置き換えてください（プロジェクトの設定＞SDK設定） */
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBVsQ_q3z2O2NY7g_xSuE1VgdX1G_2wrko",
-  authDomain: "jyukugo-game.firebaseapp.com",
-  databaseURL: "https://jyukugo-game-default-rtdb.firebaseio.com",
-  projectId: "jyukugo-game",
-  storageBucket: "jyukugo-game.firebasestorage.app",
-  messagingSenderId: "167510138076",
-  appId: "1:167510138076:web:15e219c4277be9c5192819",
-  measurementId: "G-PE74C52L2R"
-};
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBVsQ_q3z2O2NY7g_xSuE1VgdX1G_2wrko",
+    authDomain: "jyukugo-game.firebaseapp.com",
+    databaseURL: "https://jyukugo-game-default-rtdb.firebaseio.com",
+    projectId: "jyukugo-game",
+    storageBucket: "jyukugo-game.firebasestorage.app",
+    messagingSenderId: "167510138076",
+    appId: "1:167510138076:web:15e219c4277be9c5192819",
+    measurementId: "G-PE74C52L2R"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
 
 let onlineOn = false;
 let roomId = "";
