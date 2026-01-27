@@ -1,0 +1,1914 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>漢字テスト（作成・テスト・出力）</title>
+<style>
+  :root{
+    --bg:#f6f7fb;
+    --card:#ffffff;
+    --ink:#111827;
+    --sub:#6b7280;
+    --border:#e5e7eb;
+    --primary:#2563eb;
+    --primary2:#1d4ed8;
+    --danger:#dc2626;
+    --ok:#16a34a;
+    --shadow:0 10px 24px rgba(0,0,0,.08);
+    --radius:16px;
+    --gap:12px;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+  }
+  .wrap{ max-width:1100px; margin:0 auto; padding:16px; }
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; padding:14px 16px;
+    background:linear-gradient(180deg,#fff, #fff0);
+    position:sticky; top:0; z-index:10;
+    backdrop-filter: blur(8px);
+  }
+  .brand{ font-weight:800; letter-spacing:.02em; }
+  .meta{ font-size:12px; color:var(--sub); display:flex; gap:10px; align-items:center; }
+  .pill{ padding:6px 10px; background:#fff; border:1px solid var(--border); border-radius:999px; box-shadow:0 2px 10px rgba(0,0,0,.04); }
+
+  .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+  .tab{
+    border:1px solid var(--border);
+    background:#fff;
+    padding:10px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    font-weight:700;
+  }
+  .tab[aria-selected="true"]{
+    border-color:#c7d2fe;
+    background:#eef2ff;
+    color:#1e3a8a;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:14px;
+  }
+  .row{ display:flex; gap:var(--gap); flex-wrap:wrap; }
+  .col{ flex:1; min-width:260px; }
+  label{ display:block; font-size:12px; color:var(--sub); margin:0 0 6px; }
+  input[type="text"], input[type="password"], textarea, select{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px;
+    font-size:16px;
+    outline:none;
+    background:#fff;
+  }
+  textarea{ min-height:54px; resize:vertical; }
+  input:focus, textarea:focus, select:focus{ border-color:#a5b4fc; box-shadow:0 0 0 4px rgba(99,102,241,.15); }
+
+  .btn{
+    border:1px solid var(--border);
+    background:#fff;
+    padding:10px 12px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:800;
+    display:inline-flex;
+    gap:8px;
+    align-items:center;
+    justify-content:center;
+    user-select:none;
+  }
+  .btn.primary{
+    background:linear-gradient(180deg,var(--primary),var(--primary2));
+    border-color:#1d4ed8;
+    color:#fff;
+  }
+  .btn.danger{
+    background:#fff;
+    border-color:#fecaca;
+    color:#991b1b;
+  }
+  .btn:disabled{ opacity:.55; cursor:not-allowed; }
+  .hint{ font-size:12px; color:var(--sub); margin-top:8px; }
+  .warn{ font-size:12px; color:var(--danger); margin-top:6px; font-weight:700; }
+  .ok{ color:var(--ok); font-weight:800; }
+  .red{ color:var(--danger); font-weight:900; }
+
+  table{ width:100%; border-collapse:separate; border-spacing:0; }
+  th, td{ border-bottom:1px solid var(--border); padding:10px 8px; vertical-align:top; }
+  th{ font-size:12px; color:var(--sub); text-align:left; }
+  .actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .small{ font-size:12px; color:var(--sub); }
+  .center{ text-align:center; }
+
+  /* Lock screen */
+  .lockWrap{
+    max-width:560px;
+    margin:18px auto 0;
+  }
+
+  /* Test single view */
+  .qCard{
+    padding:18px;
+  }
+  .qNo{ font-size:12px; color:var(--sub); font-weight:700; }
+  .qText{ font-size:26px; line-height:1.35; margin:8px 0 14px; font-weight:900; }
+  .nav{
+    display:flex; justify-content:space-between; align-items:center;
+    gap:10px; margin-top:12px; flex-wrap:wrap;
+  }
+  .progress{ font-size:12px; color:var(--sub); font-weight:700; }
+  .modeBar{
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+  }
+  .modeLeft{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .radio{
+    display:inline-flex; gap:6px; align-items:center;
+    padding:8px 10px; border:1px solid var(--border); border-radius:999px; background:#fff;
+    cursor:pointer; user-select:none; font-weight:800;
+  }
+  .radio input{ accent-color: var(--primary); }
+  .guide{
+    font-size:12px; color:var(--sub);
+    padding:8px 10px; background:#fff; border:1px dashed #d1d5db; border-radius:12px;
+  }
+
+  /* Print overlay */
+  .overlay{
+    position:fixed; inset:0; background:rgba(17,24,39,.55);
+    display:none; align-items:flex-start; justify-content:center;
+    padding:18px; z-index:999;
+    overflow:auto;
+  }
+  .overlayInner{
+    width:min(980px, 100%);
+    background:#fff; border-radius:18px; border:1px solid rgba(255,255,255,.25);
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+    overflow:hidden;
+  }
+  .overlayHead{
+    padding:12px 14px; display:flex; gap:10px; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg,#fff,#f8fafc);
+  }
+  .overlayBody{ padding:16px; }
+  .printOnly{ display:none; }
+
+  @media print{
+    body{ background:#fff; }
+    header, .tabs, .noPrint, .overlayHead{ display:none !important; }
+    .overlay{ display:block !important; position:static; background:transparent; padding:0; }
+    .overlayInner{ box-shadow:none; border:none; border-radius:0; width:100%; }
+    .overlayBody{ padding:0; }
+    .printOnly{ display:block; }
+  }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="brand">漢字テスト</div>
+  <div class="tabs noPrint" role="tablist" aria-label="画面切替">
+    <button class="tab" id="tabCreate" role="tab" aria-selected="true">作成</button>
+    <button class="tab" id="tabTest" role="tab" aria-selected="false">テスト</button>
+    <button class="tab" id="tabExport" role="tab" aria-selected="false">出力</button>
+  </div>
+  <div class="meta">
+    <span class="pill" id="countPill">問題：0問</span>
+    <span class="pill">自動保存</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- CREATE -->
+  <section id="viewCreate" aria-label="作成">
+    <div id="createLock" class="lockWrap"></div>
+
+    <div id="createBody" style="display:none;">
+      <div class="card">
+        <!-- ★追加：問題セット選択＋新規セット（先生用） -->
+        <div class="row" style="align-items:flex-end; margin-bottom:10px;">
+          <div class="col" style="min-width:280px;">
+            <label>問題セット選択</label>
+            <select id="setSelectCreate"></select>
+          </div>
+          <div style="min-width:160px;">
+            <button class="btn" id="btnNewSet">新規セット</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col" style="min-width:320px;">
+            <label>問題文</label>
+            <textarea id="inQuestion" placeholder="例：軽食を取る。"></textarea>
+          </div>
+
+          <!-- ★仕様どおり：問題文 → 正解 → 赤字 -->
+          <div class="col">
+            <label>正解（ひらがな）</label>
+            <input id="inAnswer" type="text" inputmode="kana" placeholder="例：けいしょく" autocomplete="off" autocapitalize="off" />
+            <div id="createHiraWarn" class="warn" style="display:none;">ひらがなで入力してね</div>
+          </div>
+
+          <div class="col">
+            <label>赤字にする部分（任意）</label>
+            <input id="inRed" type="text" placeholder="例：軽食" />
+            <div class="hint">※問題文に含まれる文字列を入れると、その部分だけ赤字表示されます。</div>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn primary" id="btnAdd">＋ 追加</button>
+
+          <!-- ★追加：保存ボタン（実態は同じlocalStorage保存） -->
+          <button class="btn" id="btnSave">保存</button>
+
+          <button class="btn" id="btnClearAll" title="問題と回答をすべて消します（取り消し不可）">全消去</button>
+        </div>
+
+        <!-- ★追加：CSV読み込み（新セットに一括追加） -->
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn" id="btnImportCsv">CSV読み込み（新セット）</button>
+          <input id="csvFile" type="file" accept=".csv,text/csv" style="display:none;" />
+        </div>
+        <div class="hint">CSV形式：問題文,正解(ひらがな),赤字（赤字は空でもOK）</div>
+
+        <div class="hint">※作成内容は自動保存されます。</div>
+        <div id="saveOkMsg" class="hint" style="display:none;"><span class="ok">保存しました</span></div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <div style="font-weight:900;">問題一覧（編集・削除）</div>
+          <div class="small">※編集しても自動保存されます</div>
+        </div>
+        <div style="overflow:auto; margin-top:10px;">
+          <table id="qTable"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEST -->
+  <section id="viewTest" aria-label="テスト" style="display:none;">
+    <div class="card">
+      <!-- ★追加：問題セット選択（子ども用） -->
+      <div class="row" style="align-items:flex-end; margin-bottom:10px;">
+        <div class="col" style="min-width:280px;">
+          <label>問題セット選択</label>
+          <select id="setSelectTest"></select>
+        </div>
+      </div>
+
+      <div class="modeBar">
+        <div class="modeLeft">
+          <label class="radio"><input type="radio" name="mode" value="single" /> 一問一答</label>
+          <label class="radio"><input type="radio" name="mode" value="list" /> 一覧表示</label>
+        </div>
+        <div class="guide">こたえは <b>ひらがな</b> で入力してね（答え合わせはしないよ）</div>
+      </div>
+
+      <!-- ★追加：終わったボタン -->
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn" id="btnFinish">終わった</button>
+      </div>
+      <div id="finishMsg" class="hint" style="display:none; margin-top:8px;">
+        <span class="ok">先生を呼んでね（採点・出力は先生が行います）</span>
+      </div>
+    </div>
+
+    <div id="testEmpty" class="card" style="margin-top:14px; display:none;">
+      <div style="font-weight:900;">問題がありません</div>
+      <div class="hint">「作成」タブで問題を追加してください。</div>
+    </div>
+
+    <!-- single -->
+    <div id="singleWrap" style="margin-top:14px; display:none;">
+      <div class="card qCard">
+        <div class="qNo" id="singleNo">No. -</div>
+        <div class="qText" id="singleQ">—</div>
+
+        <label>こたえ（ひらがな）</label>
+        <input id="singleInput" type="text" inputmode="kana" autocomplete="off" autocapitalize="off" placeholder="ひらがなで入力" />
+        <div id="singleWarn" class="warn" style="display:none;">ひらがなで入力してね</div>
+
+        <div class="nav">
+          <button class="btn" id="btnPrev">← 前へ</button>
+          <div class="progress" id="singleProgress">0/0</div>
+          <button class="btn" id="btnNext">次へ →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- list -->
+    <div id="listWrap" style="margin-top:14px; display:none;">
+      <div class="card">
+        <div style="font-weight:900; margin-bottom:8px;">一覧</div>
+        <div style="overflow:auto;">
+          <table id="listTable"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPORT -->
+  <section id="viewExport" aria-label="出力" style="display:none;">
+    <div id="exportLock" class="lockWrap"></div>
+
+    <div id="exportBody" style="display:none;">
+      <div class="card">
+        <div style="font-weight:900; margin-bottom:6px;">先生用（採点・出力）</div>
+        <div class="hint">※ここで初めて正誤判定（〇×）を行います。テスト画面には答え合わせはありません。</div>
+
+        <!-- ★追加：セット選択＋履歴選択（先生用） -->
+        <div class="row" style="align-items:flex-end; margin-top:10px;">
+          <div class="col" style="min-width:280px;">
+            <label>問題セット選択</label>
+            <select id="setSelectExport"></select>
+          </div>
+          <div class="col" style="min-width:320px;">
+            <label>履歴選択</label>
+            <select id="attemptSelect"></select>
+          </div>
+        </div>
+
+        <div id="exportWarnings" style="margin-top:10px; display:none;">
+          <div class="warn">ひらがな以外の入力があります（判定不可になります）</div>
+          <div id="warnList" class="small" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn primary" id="btnCsv">採点してCSV出力</button>
+          <button class="btn" id="btnPrintPreview">印刷用プレビュー</button>
+        </div>
+
+        <div class="hint">CSVはExcelで開けます。PDFは「印刷」からPDF保存してください。</div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div style="font-weight:900;">採点結果プレビュー（先生のみ）</div>
+        <div class="hint">※ここに正解と〇×が表示されます。</div>
+        <div style="overflow:auto; margin-top:10px;">
+          <table id="resultTable"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- PRINT OVERLAY -->
+<div id="printOverlay" class="overlay" aria-hidden="true">
+  <div class="overlayInner">
+    <div class="overlayHead noPrint">
+      <div style="font-weight:900;">印刷用プレビュー</div>
+      <div class="actions">
+        <select id="printType">
+          <option value="submit">提出用（問題＋入力のみ）</option>
+          <option value="record">記録用（問題＋入力＋〇×＋正解）</option>
+        </select>
+        <button class="btn" id="btnDoPrint">印刷（PDF保存）</button>
+        <button class="btn" id="btnClosePrint">閉じる</button>
+      </div>
+    </div>
+    <div class="overlayBody" id="printArea">
+      <!-- generated -->
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ====== 固定パスワード（先生用） ====== */
+  const TEACHER_PASSWORD = "sensei";
+
+  /* ====== 旧v1 storage keys（移行用：残す） ====== */
+  const KQ = "kanjiTest_v1_questions";
+  const KA = "kanjiTest_v1_answers";
+  const KS = "kanjiTest_v1_settings";
+
+  /* ====== v2 storage keys ====== */
+  const KSETS = "kanjiTest_v2_sets";
+  const KSETTINGS = "kanjiTest_v2_settings";
+  const KQ_PREFIX = "kanjiTest_v2_questions_";   // + setId
+  const KA_PREFIX = "kanjiTest_v2_answers_";     // + setId（テスト中の一時入力）
+  const KATTEMPTS_INDEX = "kanjiTest_v2_attempts_index";
+  const KATTEMPT_PREFIX = "kanjiTest_v2_attempt_"; // + attemptId
+
+  /* ====== state（v2） ====== */
+  let sets = [];                // [{id,name,createdAt}]
+  let settings = {};            // { mode, currentSetId, singleIndexBySet: {setId: idx} }
+  let questions = [];           // current set questions
+  let answers = {};             // current set answers {qid: input}
+  let attemptsIndex = [];       // [{attemptId,timestamp,setId,mode,summary,seqNo}]
+  let currentAttemptId = "";    // export selected attemptId
+
+  /* ====== elements ====== */
+  const countPill = document.getElementById("countPill");
+
+  const tabCreate = document.getElementById("tabCreate");
+  const tabTest = document.getElementById("tabTest");
+  const tabExport = document.getElementById("tabExport");
+
+  const viewCreate = document.getElementById("viewCreate");
+  const viewTest = document.getElementById("viewTest");
+  const viewExport = document.getElementById("viewExport");
+
+  // locks
+  const createLock = document.getElementById("createLock");
+  const exportLock = document.getElementById("exportLock");
+  const createBody = document.getElementById("createBody");
+  const exportBody = document.getElementById("exportBody");
+
+  // set selects
+  const setSelectCreate = document.getElementById("setSelectCreate");
+  const setSelectTest = document.getElementById("setSelectTest");
+  const setSelectExport = document.getElementById("setSelectExport");
+  const btnNewSet = document.getElementById("btnNewSet");
+  const attemptSelect = document.getElementById("attemptSelect");
+
+  // create inputs
+  const inQuestion = document.getElementById("inQuestion");
+  const inRed = document.getElementById("inRed");
+  const inAnswer = document.getElementById("inAnswer");
+  const createHiraWarn = document.getElementById("createHiraWarn");
+  const btnAdd = document.getElementById("btnAdd");
+  const btnSave = document.getElementById("btnSave");
+  const saveOkMsg = document.getElementById("saveOkMsg");
+  const btnClearAll = document.getElementById("btnClearAll");
+  const qTable = document.getElementById("qTable");
+
+  // ★追加：CSV import
+  const btnImportCsv = document.getElementById("btnImportCsv");
+  const csvFile = document.getElementById("csvFile");
+
+  // test
+  const testEmpty = document.getElementById("testEmpty");
+  const singleWrap = document.getElementById("singleWrap");
+  const listWrap = document.getElementById("listWrap");
+  const singleNo = document.getElementById("singleNo");
+  const singleQ = document.getElementById("singleQ");
+  const singleInput = document.getElementById("singleInput");
+  const singleWarn = document.getElementById("singleWarn");
+  const btnPrev = document.getElementById("btnPrev");
+  const btnNext = document.getElementById("btnNext");
+  const singleProgress = document.getElementById("singleProgress");
+  const listTable = document.getElementById("listTable");
+  const btnFinish = document.getElementById("btnFinish");
+  const finishMsg = document.getElementById("finishMsg");
+
+  // export
+  const exportWarnings = document.getElementById("exportWarnings");
+  const warnList = document.getElementById("warnList");
+  const btnCsv = document.getElementById("btnCsv");
+  const btnPrintPreview = document.getElementById("btnPrintPreview");
+  const resultTable = document.getElementById("resultTable");
+
+  // print overlay
+  const printOverlay = document.getElementById("printOverlay");
+  const printArea = document.getElementById("printArea");
+  const printType = document.getElementById("printType");
+  const btnDoPrint = document.getElementById("btnDoPrint");
+  const btnClosePrint = document.getElementById("btnClosePrint");
+
+  /* ====== auth per session ====== */
+  const session = {
+    createUnlocked: sessionStorage.getItem("kanjiTest_createUnlocked") === "1",
+    exportUnlocked: sessionStorage.getItem("kanjiTest_exportUnlocked") === "1",
+  };
+/* ===============================
+   ★追加：セット名の編集（先生用：出力画面でも）
+   - セット選択をダブルクリックで名前変更
+=============================== */
+setSelectExport.addEventListener("dblclick", ()=>{
+  if(!session.exportUnlocked) return;
+
+  const sid = setSelectExport.value;
+  const sidx = sets.findIndex(s => s.id === sid);
+  if(sidx < 0) return;
+
+  const currentName = sets[sidx].name || "";
+  const next = prompt("セット名を変更します", currentName);
+  if(next === null) return;
+
+  const name = String(next).trim();
+  if(!name) return;
+
+  sets[sidx].name = name;
+  saveSets();
+
+  rebuildSetSelectOptions();
+  syncSetSelects();
+
+  if(session.createUnlocked && viewCreate.style.display !== "none") renderCreate();
+  if(viewTest.style.display !== "none") renderTest();
+  if(session.exportUnlocked && viewExport.style.display !== "none") renderExport();
+});
+
+  function setUnlocked(which, val){
+    if(which === "create"){
+      session.createUnlocked = !!val;
+      sessionStorage.setItem("kanjiTest_createUnlocked", val ? "1" : "0");
+      renderCreateLock();
+    }else if(which === "export"){
+      session.exportUnlocked = !!val;
+      sessionStorage.setItem("kanjiTest_exportUnlocked", val ? "1" : "0");
+      renderExportLock();
+    }
+  }
+
+  /* ====== helpers ====== */
+  function loadJSON(key, fallback){
+    try{
+      const raw = localStorage.getItem(key);
+      if(!raw) return fallback;
+      const v = JSON.parse(raw);
+      return (v === null || v === undefined) ? fallback : v;
+    }catch(e){ return fallback; }
+  }
+  function saveJSON(key, val){
+    localStorage.setItem(key, JSON.stringify(val));
+  }
+  function uid(prefix){
+    return (prefix || "q_") + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(2,6);
+  }
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+  }
+
+  // ひらがな判定（空はOK：未入力として扱う）
+  // 許可：ひらがな（ぁ-ゖ）と長音「ー」だけ
+  function isHiraganaOnly(s){
+    if(!s) return true;
+    return /^[ぁ-ゖー]+$/.test(s);
+  }
+  function hasNonHiragana(s){
+    if(!s) return false;
+    return !isHiraganaOnly(s);
+  }
+
+  // 赤字ハイライト（問題文に完全一致した部分だけ赤くする）
+  function renderQuestionWithRed(qText, red){
+    const t = String(qText ?? "");
+    const r = String(red ?? "").trim();
+    if(!r) return esc(t);
+
+    let out = "";
+    let pos = 0;
+    while(true){
+      const idx = t.indexOf(r, pos);
+      if(idx < 0){
+        out += esc(t.slice(pos));
+        break;
+      }
+      out += esc(t.slice(pos, idx));
+      out += `<span class="red">${esc(t.slice(idx, idx + r.length))}</span>`;
+      pos = idx + r.length;
+      if(pos >= t.length) break;
+    }
+    return out || esc(t);
+  }
+
+  /* ====== v2: load/save per set ====== */
+  function qKey(setId){ return KQ_PREFIX + setId; }
+  function aKey(setId){ return KA_PREFIX + setId; }
+
+  function loadQuestionsForSet(setId){
+    return loadJSON(qKey(setId), []);
+  }
+  function saveQuestionsForSet(setId, qs){
+    saveJSON(qKey(setId), qs);
+  }
+  function loadAnswersForSet(setId){
+    return loadJSON(aKey(setId), {});
+  }
+  function saveAnswersForSet(setId, an){
+    saveJSON(aKey(setId), an);
+  }
+
+  function saveSettings(){
+    saveJSON(KSETTINGS, settings);
+  }
+  function saveSets(){
+    saveJSON(KSETS, sets);
+  }
+  function saveAttemptsIndex(){
+    saveJSON(KATTEMPTS_INDEX, attemptsIndex);
+  }
+
+  function updateCount(){
+    countPill.textContent = `問題：${questions.length}問`;
+  }
+
+  function ensureSetId(){
+    if(!settings.currentSetId){
+      if(sets[0]) settings.currentSetId = sets[0].id;
+      saveSettings();
+    }
+  }
+
+  function getSingleIndex(){
+    const sid = settings.currentSetId;
+    if(!settings.singleIndexBySet) settings.singleIndexBySet = {};
+    const v = settings.singleIndexBySet[sid];
+    return (typeof v === "number" && isFinite(v)) ? v : 0;
+  }
+  function setSingleIndex(n){
+    const sid = settings.currentSetId;
+    if(!settings.singleIndexBySet) settings.singleIndexBySet = {};
+    settings.singleIndexBySet[sid] = n;
+    saveSettings();
+  }
+
+  function switchSet(setId, opts){
+    // opts: { clearAnswersOnTestSwitch: boolean }
+    settings.currentSetId = setId;
+    saveSettings();
+
+    // load questions/answers for this set
+    questions = loadQuestionsForSet(setId);
+    answers = loadAnswersForSet(setId);
+
+    // update selects UI
+    syncSetSelects();
+
+    updateCount();
+
+    // re-render current view content (locks respected)
+    if(viewCreate.style.display !== "none"){
+      if(session.createUnlocked) renderCreate();
+      else renderCreateLock();
+    }
+    if(viewTest.style.display !== "none"){
+      // ★仕様：テスト画面でセットを切り替えた瞬間に新規開始（解答クリア）
+      if(opts && opts.clearAnswersOnTestSwitch){
+        answers = {};
+        saveAnswersForSet(setId, answers);
+        // singleIndexはセットごとに維持。新規開始の最小実装として先頭に戻す
+        setSingleIndex(0);
+      }
+      renderTest();
+    }
+    if(viewExport.style.display !== "none"){
+      if(session.exportUnlocked) renderExport();
+      else renderExportLock();
+    }
+  }
+
+  function syncSetSelects(){
+    const sid = settings.currentSetId || "";
+    [setSelectCreate, setSelectTest, setSelectExport].forEach(sel=>{
+      if(!sel) return;
+      if(sel.value !== sid) sel.value = sid;
+    });
+  }
+
+  function rebuildSetSelectOptions(){
+    const opts = sets.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("");
+    [setSelectCreate, setSelectTest, setSelectExport].forEach(sel=>{
+      if(!sel) return;
+      sel.innerHTML = opts || "";
+    });
+    syncSetSelects();
+  }
+
+  /* ====== 旧v1 → v2 移行（可能なら） ====== */
+  function migrateV1toV2IfNeeded(){
+    const existingSets = loadJSON(KSETS, null);
+    if(existingSets && Array.isArray(existingSets) && existingSets.length){
+      return; // already v2
+    }
+
+    // create v2 baseline
+    const set1Id = uid("set_");
+    sets = [{ id: set1Id, name: "セット1", createdAt: Date.now() }];
+
+    // try migrate v1 questions/answers/settings
+    const oldQ = loadJSON(KQ, []);
+    const oldA = loadJSON(KA, {});
+    const oldS = loadJSON(KS, { mode: "single", singleIndex: 0 });
+
+    if(Array.isArray(oldQ) && oldQ.length){
+      saveQuestionsForSet(set1Id, oldQ);
+    }else{
+      saveQuestionsForSet(set1Id, []);
+    }
+
+    // v1 answers are "current test input" -> move into set1 answers
+    if(oldA && typeof oldA === "object"){
+      saveAnswersForSet(set1Id, oldA);
+    }else{
+      saveAnswersForSet(set1Id, {});
+    }
+
+    settings = {
+      mode: (oldS && oldS.mode) ? oldS.mode : "single",
+      currentSetId: set1Id,
+      singleIndexBySet: {}
+    };
+    // keep old singleIndex into set1
+    const si = (oldS && typeof oldS.singleIndex === "number") ? oldS.singleIndex : 0;
+    settings.singleIndexBySet[set1Id] = si;
+
+    attemptsIndex = loadJSON(KATTEMPTS_INDEX, []);
+    saveSets();
+    saveSettings();
+    saveAttemptsIndex();
+  }
+
+  function initV2(){
+    migrateV1toV2IfNeeded();
+
+    sets = loadJSON(KSETS, []);
+    settings = loadJSON(KSETTINGS, { mode: "single", currentSetId: "", singleIndexBySet: {} });
+    attemptsIndex = loadJSON(KATTEMPTS_INDEX, []);
+
+    // if no sets somehow, create Set1
+    if(!Array.isArray(sets) || sets.length === 0){
+      const set1Id = uid("set_");
+      sets = [{ id: set1Id, name: "セット1", createdAt: Date.now() }];
+      saveSets();
+      if(!settings || typeof settings !== "object") settings = {};
+      settings.mode = settings.mode || "single";
+      settings.currentSetId = set1Id;
+      settings.singleIndexBySet = settings.singleIndexBySet || {};
+      settings.singleIndexBySet[set1Id] = 0;
+      saveSettings();
+      saveQuestionsForSet(set1Id, []);
+      saveAnswersForSet(set1Id, {});
+    }
+
+    ensureSetId();
+    rebuildSetSelectOptions();
+
+    // load current set data
+    questions = loadQuestionsForSet(settings.currentSetId);
+    answers = loadAnswersForSet(settings.currentSetId);
+
+    updateCount();
+  }
+
+  /* ====== tabs ====== */
+  function selectTab(name){
+    tabCreate.setAttribute("aria-selected", name === "create" ? "true" : "false");
+    tabTest.setAttribute("aria-selected", name === "test" ? "true" : "false");
+    tabExport.setAttribute("aria-selected", name === "export" ? "true" : "false");
+
+    viewCreate.style.display = (name === "create") ? "" : "none";
+    viewTest.style.display = (name === "test") ? "" : "none";
+    viewExport.style.display = (name === "export") ? "" : "none";
+
+    if(name === "create"){
+      renderCreateLock();
+      if(session.createUnlocked) renderCreate();
+    }else if(name === "test"){
+      renderTest();
+    }else{
+      renderExportLock();
+      if(session.exportUnlocked) renderExport();
+    }
+  }
+  tabCreate.addEventListener("click", () => selectTab("create"));
+  tabTest.addEventListener("click", () => selectTab("test"));
+  tabExport.addEventListener("click", () => selectTab("export"));
+
+  /* ====== lock UIs ====== */
+  function renderLockBox(targetEl, title, which){
+    const unlocked = (which === "create") ? session.createUnlocked : session.exportUnlocked;
+    if(unlocked){
+      targetEl.innerHTML = "";
+      return;
+    }
+    targetEl.innerHTML = `
+      <div class="card">
+        <div style="font-weight:900; font-size:16px;">${esc(title)}</div>
+        <div class="hint">パスワードを入力してください。</div>
+        <div class="row" style="margin-top:10px; align-items:flex-end;">
+          <div class="col" style="min-width:240px;">
+            <label>パスワード</label>
+            <!-- ★placeholderは空（最初から"sensei"を見せない） -->
+            <input type="password" id="${which}Pw" placeholder="" />
+            <div class="warn" id="${which}PwErr" style="display:none;">パスワードが違います</div>
+          </div>
+          <div style="min-width:140px;">
+            <button class="btn primary" id="${which}Unlock">解除</button>
+          </div>
+        </div>
+      </div>
+    `;
+    const pw = document.getElementById(`${which}Pw`);
+    const err = document.getElementById(`${which}PwErr`);
+    const btn = document.getElementById(`${which}Unlock`);
+    const tryUnlock = () => {
+      const v = (pw.value || "").trim();
+      if(v === TEACHER_PASSWORD){
+        setUnlocked(which, true);
+      }else{
+        err.style.display = "";
+      }
+    };
+    btn.addEventListener("click", tryUnlock);
+    pw.addEventListener("keydown", (e)=>{ if(e.key === "Enter") tryUnlock(); });
+    pw.addEventListener("input", ()=>{ err.style.display = "none"; });
+  }
+
+  function renderCreateLock(){
+    renderLockBox(createLock, "先生用：問題作成", "create");
+    createBody.style.display = session.createUnlocked ? "" : "none";
+    if(session.createUnlocked) renderCreate();
+  }
+  function renderExportLock(){
+    renderLockBox(exportLock, "先生用：採点・出力", "export");
+    exportBody.style.display = session.exportUnlocked ? "" : "none";
+    if(session.exportUnlocked) renderExport();
+  }
+
+/* ====== set UI bindings ====== */
+setSelectCreate.addEventListener("change", ()=>{
+  const sid = setSelectCreate.value;
+  switchSet(sid);
+});
+
+setSelectTest.addEventListener("change", ()=>{
+  const sid = setSelectTest.value;
+  switchSet(sid, { clearAnswersOnTestSwitch: true });
+});
+
+setSelectExport.addEventListener("change", ()=>{
+  const sid = setSelectExport.value;
+
+  // セット切替
+  switchSet(sid);
+
+  // ★セットを変えたら履歴は「最新」に戻す
+  currentAttemptId = "";
+
+  if(session.exportUnlocked) renderExport();
+});
+
+  btnNewSet.addEventListener("click", ()=>{
+    // 自動で「セット1」「セット2」…を作成（名前入力不要）
+    const nextNo = nextSetNumber();
+    const newId = uid("set_");
+    const newSet = { id: newId, name: `セット${nextNo}`, createdAt: Date.now() };
+    sets.push(newSet);
+    saveSets();
+
+    // initialize storage for new set
+    saveQuestionsForSet(newId, []);
+    saveAnswersForSet(newId, {});
+    rebuildSetSelectOptions();
+
+    // switch to new set
+    switchSet(newId);
+    if(session.createUnlocked) renderCreate();
+  });
+/* ===============================
+   ★追加：セット名の編集（先生用：作成画面のみ）
+   - セット選択をダブルクリックで名前変更
+=============================== */
+setSelectCreate.addEventListener("dblclick", ()=>{
+  // 先生ロック中は触れない
+  if(!session.createUnlocked) return;
+
+  const sid = setSelectCreate.value;
+  const sidx = sets.findIndex(s => s.id === sid);
+  if(sidx < 0) return;
+
+  const currentName = sets[sidx].name || "";
+  const next = prompt("セット名を変更します", currentName);
+  if(next === null) return; // キャンセル
+
+  const name = String(next).trim();
+  if(!name) return; // 空白は無視
+
+  sets[sidx].name = name;
+  saveSets();
+
+  rebuildSetSelectOptions();
+  syncSetSelects();
+
+  // 画面反映
+  if(session.createUnlocked) renderCreate();
+  if(viewTest.style.display !== "none") renderTest();
+  if(session.exportUnlocked && viewExport.style.display !== "none") renderExport();
+});
+
+  function nextSetNumber(){
+    // existing names "セットN" から最大Nを拾って +1
+    let max = 0;
+    sets.forEach(s=>{
+      const m = String(s.name||"").match(/^セット(\d+)$/);
+      if(m){
+        const n = parseInt(m[1],10);
+        if(n > max) max = n;
+      }
+    });
+    return max + 1;
+  }
+
+  /* ====== CREATE ====== */
+  function saveAllCurrent(){
+    // 現在選択中セットだけ保存（問題/テスト入力/設定）
+    const sid = settings.currentSetId;
+    saveQuestionsForSet(sid, questions);
+    saveAnswersForSet(sid, answers);
+    saveSettings();
+    updateCount();
+  }
+
+  function renderCreate(){
+    // set selects (teacher)
+    rebuildSetSelectOptions();
+
+    // warn while typing answer
+    const v = (inAnswer.value || "").trim();
+    createHiraWarn.style.display = hasNonHiragana(v) ? "" : "none";
+
+    // table
+    qTable.innerHTML = buildCreateTableHTML();
+    bindCreateTableEvents();
+    updateCount();
+  }
+
+  function buildCreateTableHTML(){
+    if(questions.length === 0){
+      return `<tr><td class="small">まだ問題がありません。</td></tr>`;
+    }
+    let html = `
+      <thead>
+        <tr>
+          <th style="width:70px;">No</th>
+          <th>問題（赤字プレビュー）</th>
+          <th style="width:160px;">正解</th>
+          <th style="width:140px;">赤字</th>
+          <th style="width:220px;">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+    `;
+    questions.forEach((q, i) => {
+      const isEdit = !!q._editing;
+      if(!isEdit){
+        html += `
+          <tr data-id="${esc(q.id)}">
+            <td>${i+1}</td>
+            <td>${renderQuestionWithRed(q.question, q.red)}</td>
+            <td>${esc(q.answer)}</td>
+            <td>${esc(q.red || "")}</td>
+            <td>
+              <div class="actions">
+                <button class="btn" data-act="edit">編集</button>
+                <button class="btn danger" data-act="del">削除</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }else{
+        html += `
+          <tr data-id="${esc(q.id)}">
+            <td>${i+1}</td>
+            <td>
+              <textarea data-f="question" style="min-height:44px;">${esc(q.question)}</textarea>
+              <div class="small">プレビュー：${renderQuestionWithRed(q.question, q.red)}</div>
+            </td>
+            <td>
+              <input data-f="answer" type="text" inputmode="kana" autocomplete="off" value="${esc(q.answer)}" />
+              <div class="warn" data-w="hira" style="display:none;">ひらがなで入力してね</div>
+            </td>
+            <td>
+              <input data-f="red" type="text" value="${esc(q.red || "")}" />
+            </td>
+            <td>
+              <div class="actions">
+                <button class="btn primary" data-act="save">保存</button>
+                <button class="btn" data-act="cancel">キャンセル</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+    });
+    html += `</tbody>`;
+    return html;
+  }
+
+  function bindCreateTableEvents(){
+    const rows = qTable.querySelectorAll("tr[data-id]");
+    rows.forEach(row => {
+      const id = row.getAttribute("data-id");
+      row.querySelectorAll("button[data-act]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const act = btn.getAttribute("data-act");
+          const idx = questions.findIndex(x => x.id === id);
+          if(idx < 0) return;
+
+          if(act === "edit"){
+            questions.forEach(x => x._editing = false);
+            questions[idx]._editing = true;
+            saveAllCurrent();
+            renderCreate();
+          }
+
+          if(act === "cancel"){
+            questions[idx]._editing = false;
+            saveAllCurrent();
+            renderCreate();
+          }
+
+          if(act === "del"){
+            const qid = questions[idx].id;
+            questions.splice(idx, 1);
+            delete answers[qid];
+
+            // singleIndex adjust (set-specific)
+            const si = getSingleIndex();
+            if(si >= questions.length) setSingleIndex(Math.max(0, questions.length-1));
+
+            saveAllCurrent();
+            renderCreate();
+            renderTest();
+            if(session.exportUnlocked) renderExport();
+          }
+
+          if(act === "save"){
+            const qEl = row.querySelector('[data-f="question"]');
+            const aEl = row.querySelector('[data-f="answer"]');
+            const rEl = row.querySelector('[data-f="red"]');
+            const newQ = (qEl.value || "").trim();
+            const newA = (aEl.value || "").trim();
+            const newR = (rEl.value || "").trim();
+            const hiraWarn = row.querySelector('[data-w="hira"]');
+
+            if(!newQ || !newA){
+              alert("問題文と正解（ひらがな）は必須です。");
+              return;
+            }
+            if(hasNonHiragana(newA)){
+              hiraWarn.style.display = "";
+              return;
+            }else{
+              hiraWarn.style.display = "none";
+            }
+
+            questions[idx].question = newQ;
+            questions[idx].answer = newA;
+            questions[idx].red = newR;
+            questions[idx]._editing = false;
+
+            saveAllCurrent();
+            renderCreate();
+            renderTest();
+            if(session.exportUnlocked) renderExport();
+          }
+        });
+      });
+
+      // live hira warn on edit rows
+      const aEl = row.querySelector('[data-f="answer"]');
+      const wEl = row.querySelector('[data-w="hira"]');
+      if(aEl && wEl){
+        aEl.addEventListener("input", ()=>{
+          const v = (aEl.value || "").trim();
+          wEl.style.display = hasNonHiragana(v) ? "" : "none";
+        });
+      }
+
+      // preview update on question/red edit
+      const qEl = row.querySelector('[data-f="question"]');
+      const rEl = row.querySelector('[data-f="red"]');
+      if(qEl || rEl){
+        const updatePreview = () => {
+          const idx = questions.findIndex(x => x.id === id);
+          if(idx < 0) return;
+          const tmpQ = qEl ? qEl.value : questions[idx].question;
+          const tmpR = rEl ? rEl.value : questions[idx].red;
+          const p = row.querySelector(".small");
+          if(p) p.innerHTML = `プレビュー：${renderQuestionWithRed(tmpQ, tmpR)}`;
+        };
+        if(qEl) qEl.addEventListener("input", updatePreview);
+        if(rEl) rEl.addEventListener("input", updatePreview);
+      }
+    });
+  }
+
+  inAnswer.addEventListener("input", () => {
+    const v = (inAnswer.value || "").trim();
+    createHiraWarn.style.display = hasNonHiragana(v) ? "" : "none";
+  });
+
+  btnAdd.addEventListener("click", ()=>{
+    const qText = (inQuestion.value || "").trim();
+    const ans = (inAnswer.value || "").trim();
+    const red = (inRed.value || "").trim();
+
+    if(!qText || !ans){
+      alert("問題文と正解（ひらがな）は必須です。");
+      return;
+    }
+    if(hasNonHiragana(ans)){
+      createHiraWarn.style.display = "";
+      return;
+    }
+
+    const q = { id: uid("q_"), question: qText, red, answer: ans };
+    questions.push(q);
+
+    // clear
+    inQuestion.value = "";
+    inAnswer.value = "";
+    inRed.value = "";
+    createHiraWarn.style.display = "none";
+
+    saveAllCurrent();
+    renderCreate();
+    renderTest();
+    if(session.exportUnlocked) renderExport();
+  });
+
+  // ★保存ボタン（実態はsaveAllと同じ）
+  btnSave.addEventListener("click", ()=>{
+    saveAllCurrent();
+    saveOkMsg.style.display = "";
+    setTimeout(()=>{ saveOkMsg.style.display = "none"; }, 1200);
+  });
+
+  btnClearAll.addEventListener("click", ()=>{
+    if(!confirm("問題と回答をすべて消去します。よろしいですか？（取り消し不可）")) return;
+
+    // ★仕様：全消去は「選択中セット」だけ
+    questions = [];
+    answers = {};
+    setSingleIndex(0);
+
+    saveAllCurrent();
+    renderCreate();
+    renderTest();
+    if(session.exportUnlocked) renderExport();
+  });
+
+  /* ===============================
+     ★追加：CSV読み込み → 新しい問題セットに一括登録
+     形式：問題文,正解(ひらがな),赤字
+  =============================== */
+  if(btnImportCsv && csvFile){
+    // ボタン → file選択を開く
+    btnImportCsv.addEventListener("click", ()=>{
+      if(!session.createUnlocked) return; // 先生ロック中は不可
+      csvFile.value = "";
+      csvFile.click();
+    });
+
+    // fileが選ばれたら読み込む
+    csvFile.addEventListener("change", async ()=>{
+      if(!csvFile.files || !csvFile.files[0]) return;
+
+      const file = csvFile.files[0];
+
+      try{
+        const text = await readFileAsText(file);
+
+        // CSVを行→列へ（簡易CSVパーサ：ダブルクォート対応）
+        const rows = parseCSV(text);
+
+        // 空行を除去しつつ、(問題文,正解,赤字) を取り出す
+        const items = [];
+        for(const cols of rows){
+          if(!cols) continue;
+
+          // 先頭3列のみ使用（多い分は無視）
+          const q = (cols[0] ?? "").trim();
+          const a = (cols[1] ?? "").trim();
+          const r = (cols[2] ?? "").trim();
+
+          // 完全空行は無視
+          if(!q && !a && !r) continue;
+
+          // 必須欠けはスキップ
+          if(!q || !a) continue;
+
+          // ひらがなチェック（既存関数を利用）
+          if(hasNonHiragana(a)) continue;
+
+          items.push({ question:q, answer:a, red:r });
+        }
+
+        if(items.length === 0){
+          alert("取り込める行がありませんでした。\n（問題文/正解が空、正解がひらがな以外、など）");
+          return;
+        }
+
+        // ★新しいセットを作って、そこへ入れる
+        const nextNo = nextSetNumber();
+        const newId = uid("set_");
+        const newSet = { id: newId, name: `セット${nextNo}`, createdAt: Date.now() };
+        sets.push(newSet);
+        saveSets();
+
+        // initialize storage for new set
+        saveQuestionsForSet(newId, []);
+        saveAnswersForSet(newId, {});
+        rebuildSetSelectOptions();
+
+        // 新セットへ切替
+        switchSet(newId);
+
+        // 新セットのquestionsにCSV内容を入れる
+        questions = items.map(it => ({
+          id: uid("q_"),
+          question: it.question,
+          answer: it.answer,
+          red: it.red
+        }));
+
+        // テスト入力は空で開始
+        answers = {};
+        setSingleIndex(0);
+
+        // 保存＆更新
+        saveAllCurrent();
+        renderCreate();
+        renderTest();
+        if(session.exportUnlocked) renderExport();
+
+        alert(`CSVから ${items.length}問を読み込み、${newSet.name} を作成しました。`);
+
+      }catch(e){
+        console.error(e);
+        alert("CSVの読み込みに失敗しました。文字コードや形式を確認してください。");
+      }
+    });
+  }
+
+  function readFileAsText(file){
+    return new Promise((resolve, reject)=>{
+      const fr = new FileReader();
+      fr.onload = ()=> resolve(String(fr.result ?? ""));
+      fr.onerror = ()=> reject(fr.error || new Error("File read error"));
+      fr.readAsText(file);
+    });
+  }
+
+  // 簡易CSVパーサ（改行/カンマ/ダブルクォート対応）
+  function parseCSV(text){
+    const s = String(text ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+    const out = [];
+    let row = [];
+    let cur = "";
+    let inQuotes = false;
+
+    for(let i=0; i<s.length; i++){
+      const ch = s[i];
+
+      if(inQuotes){
+        if(ch === '"'){
+          // "" → " を表す
+          const next = s[i+1];
+          if(next === '"'){
+            cur += '"';
+            i++;
+          }else{
+            inQuotes = false;
+          }
+        }else{
+          cur += ch;
+        }
+        continue;
+      }
+
+      if(ch === '"'){
+        inQuotes = true;
+        continue;
+      }
+
+      if(ch === ","){
+        row.push(cur);
+        cur = "";
+        continue;
+      }
+
+      if(ch === "\n"){
+        row.push(cur);
+        cur = "";
+        out.push(row);
+        row = [];
+        continue;
+      }
+
+      cur += ch;
+    }
+
+    // last
+    row.push(cur);
+    out.push(row);
+
+    return out;
+  }
+
+  /* ====== TEST ====== */
+  // mode radio bind
+  document.querySelectorAll('input[name="mode"]').forEach(r=>{
+    r.addEventListener("change", ()=>{
+      settings.mode = r.value;
+      saveSettings();
+      renderTest();
+    });
+  });
+
+  function renderTest(){
+    rebuildSetSelectOptions();
+    updateCount();
+
+    // set mode radio
+    document.querySelectorAll('input[name="mode"]').forEach(r=>{
+      r.checked = (r.value === (settings.mode || "single"));
+    });
+
+    // 「終わった」案内はタブ移動で消える想定なので、ここでは初期非表示に戻す
+    finishMsg.style.display = "none";
+
+    if(questions.length === 0){
+      testEmpty.style.display = "";
+      singleWrap.style.display = "none";
+      listWrap.style.display = "none";
+      return;
+    }else{
+      testEmpty.style.display = "none";
+    }
+
+    if(settings.mode === "list"){
+      singleWrap.style.display = "none";
+      listWrap.style.display = "";
+      renderListMode();
+    }else{
+      listWrap.style.display = "none";
+      singleWrap.style.display = "";
+      renderSingleMode();
+    }
+  }
+
+  function renderSingleMode(){
+    let si = getSingleIndex();
+    if(si < 0) si = 0;
+    if(si >= questions.length) si = questions.length - 1;
+    setSingleIndex(si);
+
+    const q = questions[si];
+    singleNo.textContent = `No. ${si + 1}`;
+    singleQ.innerHTML = renderQuestionWithRed(q.question, q.red);
+
+    const v = answers[q.id] ?? "";
+    singleInput.value = v;
+
+    const trimmed = (v || "").trim();
+    singleWarn.style.display = hasNonHiragana(trimmed) ? "" : "none";
+
+    singleProgress.textContent = `${si + 1}/${questions.length}`;
+
+    btnPrev.disabled = (si === 0);
+    btnNext.disabled = (si === questions.length - 1);
+  }
+
+  singleInput.addEventListener("input", ()=>{
+    if(questions.length === 0) return;
+    const si = getSingleIndex();
+    const q = questions[si];
+    const v = singleInput.value ?? "";
+    answers[q.id] = v;
+    saveAnswersForSet(settings.currentSetId, answers);
+
+    const trimmed = (v || "").trim();
+    singleWarn.style.display = hasNonHiragana(trimmed) ? "" : "none";
+  });
+
+  btnPrev.addEventListener("click", ()=>{
+    let si = getSingleIndex();
+    if(si > 0){
+      si--;
+      setSingleIndex(si);
+      renderSingleMode();
+    }
+  });
+  btnNext.addEventListener("click", ()=>{
+    let si = getSingleIndex();
+    if(si < questions.length - 1){
+      si++;
+      setSingleIndex(si);
+      renderSingleMode();
+    }
+  });
+
+  function renderListMode(){
+    let html = `
+      <thead>
+        <tr>
+          <th style="width:70px;">No</th>
+          <th>問題</th>
+          <th style="width:260px;">こたえ（ひらがな）</th>
+        </tr>
+      </thead>
+      <tbody>
+    `;
+    questions.forEach((q, i)=>{
+      const v = answers[q.id] ?? "";
+      const warn = hasNonHiragana((v||"").trim());
+      html += `
+        <tr data-id="${esc(q.id)}">
+          <td>${i+1}</td>
+          <td>${renderQuestionWithRed(q.question, q.red)}</td>
+          <td>
+            <input type="text" inputmode="kana" autocomplete="off" autocapitalize="off"
+              data-a="1" value="${esc(v)}" placeholder="ひらがなで入力" />
+            <div class="warn" data-w="1" style="display:${warn ? "" : "none"};">ひらがなで入力してね</div>
+          </td>
+        </tr>
+      `;
+    });
+    html += `</tbody>`;
+    listTable.innerHTML = html;
+
+    listTable.querySelectorAll('tr[data-id]').forEach(row=>{
+      const id = row.getAttribute("data-id");
+      const input = row.querySelector('input[data-a="1"]');
+      const w = row.querySelector('div[data-w="1"]');
+      input.addEventListener("input", ()=>{
+        const v = input.value ?? "";
+        answers[id] = v;
+        saveAnswersForSet(settings.currentSetId, answers);
+        w.style.display = hasNonHiragana((v||"").trim()) ? "" : "none";
+      });
+    });
+  }
+
+ // ★「終わった」：履歴保存 → 先生用画面へ → 必ずロックをかけ直す
+btnFinish.addEventListener("click", ()=>{
+  saveAttemptFromCurrentTest();
+  finishMsg.style.display = "";
+
+  // 出力ロックを強制ON
+  setUnlocked("export", false);
+
+  // 先生用（出力）タブへ移動
+  selectTab("export");
+});
+
+  function saveAttemptFromCurrentTest(){
+    const sid = settings.currentSetId;
+    const mode = settings.mode || "single";
+    const attemptId = uid("a_");
+    const now = new Date();
+    const timestamp = now.toISOString();
+
+    // snapshot
+    const answersSnapshot = Object.assign({}, answers);
+
+    // compute summary (〇/×/未入力/判定不可)
+    const rows = gradeAllFor(sid, attemptId, answersSnapshot);
+    const summary = summarizeRows(rows);
+
+    // seqNo within set (表示用：テスト1,2,...)
+    const seqNo = nextAttemptSeqNoForSet(sid);
+
+    const attempt = {
+      attemptId,
+      timestamp,
+      setId: sid,
+      mode,
+      answersSnapshot,
+      summary,
+      seqNo
+    };
+
+    // store attempt body
+    saveJSON(KATTEMPT_PREFIX + attemptId, attempt);
+
+    // store index (newest first)
+    attemptsIndex = loadJSON(KATTEMPTS_INDEX, []);
+    attemptsIndex.unshift({
+      attemptId,
+      timestamp,
+      setId: sid,
+      mode,
+      summary,
+      seqNo
+    });
+    saveAttemptsIndex();
+
+    // export should default to this attempt for this set
+    currentAttemptId = attemptId;
+  }
+
+  function nextAttemptSeqNoForSet(setId){
+    const idx = loadJSON(KATTEMPTS_INDEX, []);
+    let max = 0;
+    idx.forEach(a=>{
+      if(a && a.setId === setId){
+        const n = (typeof a.seqNo === "number") ? a.seqNo : 0;
+        if(n > max) max = n;
+      }
+    });
+    return max + 1;
+  }
+
+  function summarizeRows(rows){
+    let blank = 0, invalid = 0, ok = 0, ng = 0;
+    rows.forEach(r=>{
+      if(r.status === "未入力") blank++;
+      else if(r.status === "判定不可") invalid++;
+      else if(r.status === "〇") ok++;
+      else if(r.status === "×") ng++;
+    });
+    return { blank, invalid, ok, ng, total: rows.length };
+  }
+
+  /* ====== EXPORT / GRADING ====== */
+  function gradeAllFor(setId, attemptId, answersSnapshot){
+    const qs = loadQuestionsForSet(setId);
+    const snap = answersSnapshot || {};
+    return qs.map((q, i)=>{
+      const raw = (snap[q.id] ?? "");
+      const inp = String(raw).trim();
+      let status = ""; // 〇/×/判定不可/未入力
+      let memo = "";
+
+      if(!inp){
+        status = "未入力";
+      }else if(hasNonHiragana(inp)){
+        status = "判定不可";
+        memo = "ひらがなで入力してね";
+      }else{
+        status = (inp === String(q.answer ?? "").trim()) ? "〇" : "×";
+      }
+      return {
+        no: i+1,
+        id: q.id,
+        question: q.question ?? "",
+        red: q.red ?? "",
+        answer: q.answer ?? "",
+        input: inp,
+        status,
+        memo
+      };
+    });
+  }
+
+  function getAttemptById(attemptId){
+    if(!attemptId) return null;
+    return loadJSON(KATTEMPT_PREFIX + attemptId, null);
+  }
+
+  function buildAttemptOptionsForSet(setId){
+    // newest first
+    attemptsIndex = loadJSON(KATTEMPTS_INDEX, []);
+    const list = attemptsIndex.filter(a => a && a.setId === setId);
+
+    if(list.length === 0){
+      return { html:`<option value="">（履歴がありません）</option>`, firstId:"" };
+    }
+
+    const html = list.map(a=>{
+      const d = formatDateTimeJP(a.timestamp);
+      const label = `${d}（テスト${a.seqNo || ""}）`;
+      return `<option value="${esc(a.attemptId)}">${esc(label)}</option>`;
+    }).join("");
+
+    const firstId = list[0].attemptId;
+    return { html, firstId };
+  }
+
+  function formatDateTimeJP(iso){
+    try{
+      const d = new Date(iso);
+      const pad = n => String(n).padStart(2,"0");
+      return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }catch(e){
+      return String(iso||"");
+    }
+  }
+
+attemptSelect.addEventListener("change", ()=>{
+  currentAttemptId = attemptSelect.value || "";
+  if(session.exportUnlocked) renderExportPreviewOnly();
+});
+
+  function renderExport(){
+    rebuildSetSelectOptions();
+    updateCount();
+
+    const sid = settings.currentSetId;
+
+// ★作り直す前に「いま選ばれている（はずの）履歴」を退避
+const prevSelected = currentAttemptId || (attemptSelect.value || "");
+
+// attempt select options
+const { html, firstId } = buildAttemptOptionsForSet(sid);
+attemptSelect.innerHTML = html;
+
+// ★最新を基本にする：このセットの履歴リストを使う
+const list = attemptsIndex.filter(a => a && a.setId === sid);
+const latestId = (list.length ? list[0].attemptId : "") || "";
+
+// 退避した選択がこのセット内に存在するならそれを優先
+const prevExists = list.some(a => a.attemptId === prevSelected);
+
+currentAttemptId = prevExists ? prevSelected : (latestId || firstId || "");
+
+if(attemptSelect.value !== (currentAttemptId || "")){
+  attemptSelect.value = currentAttemptId || "";
+}
+
+    // if no attempt, show empty result
+    if(!currentAttemptId){
+      exportWarnings.style.display = "none";
+      warnList.innerHTML = "";
+      resultTable.innerHTML = `<tr><td class="small">履歴がありません。テスト画面で「終わった」を押すと履歴が保存されます。</td></tr>`;
+      return;
+    }
+
+    const attempt = getAttemptById(currentAttemptId);
+    if(!attempt || attempt.setId !== sid){
+      exportWarnings.style.display = "none";
+      warnList.innerHTML = "";
+      resultTable.innerHTML = `<tr><td class="small">履歴が見つかりません。</td></tr>`;
+      return;
+    }
+
+    const rows = gradeAllFor(sid, currentAttemptId, attempt.answersSnapshot);
+
+    // warnings list
+    const warns = rows.filter(r => r.status === "判定不可");
+    if(warns.length){
+      exportWarnings.style.display = "";
+      warnList.innerHTML = warns.map(r => `No.${r.no}：入力「${esc(r.input)}」 → <b>ひらがなで入力してね</b>`).join("<br>");
+    }else{
+      exportWarnings.style.display = "none";
+      warnList.innerHTML = "";
+    }
+// ★得点表示を追加
+const sum = summarizeRows(rows);
+const scoreHtml = `
+  <div style="font-weight:900; margin-bottom:8px;">
+    得点：${sum.ok} / ${sum.total} 点
+    <span class="small">
+      （〇：${sum.ok}　×：${sum.ng}　未入力：${sum.blank}　判定不可：${sum.invalid}）
+    </span>
+  </div>
+`;
+resultTable.innerHTML = scoreHtml + buildResultTableHTML(rows);
+
+    // result table (teacher-only)
+    resultTable.innerHTML = buildResultTableHTML(rows);
+  }
+  function renderExportPreviewOnly(){
+    const sid = settings.currentSetId;
+
+    if(!currentAttemptId){
+      exportWarnings.style.display = "none";
+      warnList.innerHTML = "";
+      resultTable.innerHTML = `<tr><td class="small">履歴がありません。テスト画面で「終わった」を押すと履歴が保存されます。</td></tr>`;
+      return;
+    }
+
+    const attempt = getAttemptById(currentAttemptId);
+    if(!attempt || attempt.setId !== sid){
+      exportWarnings.style.display = "none";
+      warnList.innerHTML = "";
+      resultTable.innerHTML = `<tr><td class="small">履歴が見つかりません。</td></tr>`;
+      return;
+    }
+
+    const rows = gradeAllFor(sid, currentAttemptId, attempt.answersSnapshot);
+
+    const warns = rows.filter(r => r.status === "判定不可");
+    if(warns.length){
+      exportWarnings.style.display = "";
+      warnList.innerHTML = warns.map(r => `No.${r.no}：入力「${esc(r.input)}」 → <b>ひらがなで入力してね</b>`).join("<br>");
+    }else{
+      exportWarnings.style.display = "none";
+      warnList.innerHTML = "";
+    }
+
+    resultTable.innerHTML = buildResultTableHTML(rows);
+  }
+
+  function buildResultTableHTML(rows){
+    if(rows.length === 0){
+      return `<tr><td class="small">問題がありません。</td></tr>`;
+    }
+    let html = `
+      <thead>
+        <tr>
+          <th style="width:70px;">No</th>
+          <th>問題</th>
+          <th style="width:160px;">正解</th>
+          <th style="width:200px;">入力</th>
+          <th style="width:120px;">判定</th>
+          <th>メモ</th>
+        </tr>
+      </thead>
+      <tbody>
+    `;
+    rows.forEach(r=>{
+      const badge =
+        (r.status === "〇") ? `<span class="ok">〇</span>` :
+        (r.status === "×") ? `<span class="warn">×</span>` :
+        (r.status === "判定不可") ? `<span class="warn">判定不可</span>` :
+        `<span class="small">未入力</span>`;
+      html += `
+        <tr>
+          <td>${r.no}</td>
+          <td>${renderQuestionWithRed(r.question, r.red)}</td>
+          <td>${esc(r.answer)}</td>
+          <td>${esc(r.input)}</td>
+          <td>${badge}</td>
+          <td>${esc(r.memo || "")}</td>
+        </tr>
+      `;
+    });
+    html += `</tbody>`;
+    return html;
+  }
+
+  btnCsv.addEventListener("click", ()=>{
+    const sid = settings.currentSetId;
+
+    if(!currentAttemptId){
+      alert("履歴がありません。テスト画面で「終わった」を押してください。");
+      return;
+    }
+    const attempt = getAttemptById(currentAttemptId);
+    if(!attempt || attempt.setId !== sid){
+      alert("履歴が見つかりません。");
+      return;
+    }
+
+    const rows = gradeAllFor(sid, currentAttemptId, attempt.answersSnapshot);
+
+    // CSV (with BOM for Excel)
+    const headers = ["No","問題文","赤字部分","正解(ひらがな)","入力","判定","メモ"];
+    const lines = [headers.join(",")];
+
+    rows.forEach(r=>{
+      const cols = [
+        r.no,
+        r.question,
+        r.red,
+        r.answer,
+        r.input,
+        r.status,
+        r.memo
+      ].map(csvEscape);
+      lines.push(cols.join(","));
+    });
+
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + lines.join("\r\n")], { type:"text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `kanji_test_${stamp()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+
+    // refresh teacher preview
+    renderExport();
+  });
+
+  function csvEscape(v){
+    const s = String(v ?? "");
+    const needs = /[",\r\n]/.test(s);
+    const escaped = s.replaceAll('"','""');
+    return needs ? `"${escaped}"` : escaped;
+  }
+  function stamp(){
+    const d = new Date();
+    const pad = n => String(n).padStart(2,"0");
+    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+  }
+
+  btnPrintPreview.addEventListener("click", ()=>{
+    openPrintOverlay();
+  });
+
+  function openPrintOverlay(){
+    buildPrintArea(printType.value || "submit");
+    printOverlay.style.display = "flex";
+    printOverlay.setAttribute("aria-hidden","false");
+  }
+  function closePrintOverlay(){
+    printOverlay.style.display = "none";
+    printOverlay.setAttribute("aria-hidden","true");
+  }
+  btnClosePrint.addEventListener("click", closePrintOverlay);
+  printOverlay.addEventListener("click", (e)=>{
+    if(e.target === printOverlay) closePrintOverlay();
+  });
+
+  printType.addEventListener("change", ()=>{
+    buildPrintArea(printType.value || "submit");
+  });
+
+  btnDoPrint.addEventListener("click", ()=>{
+    window.print();
+  });
+
+  function buildPrintArea(type){
+    const sid = settings.currentSetId;
+
+    if(!currentAttemptId){
+      printArea.innerHTML = `<div class="small">履歴がありません。テスト画面で「終わった」を押すと履歴が保存されます。</div>`;
+      return;
+    }
+    const attempt = getAttemptById(currentAttemptId);
+    if(!attempt || attempt.setId !== sid){
+      printArea.innerHTML = `<div class="small">履歴が見つかりません。</div>`;
+      return;
+    }
+
+    const rows = gradeAllFor(sid, currentAttemptId, attempt.answersSnapshot);
+
+    const title = (type === "record") ? "漢字テスト（記録用）" : "漢字テスト（提出用）";
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+
+    let html = `
+      <div class="printOnly" style="padding:14px 0 10px; border-bottom:1px solid #e5e7eb; margin-bottom:10px;">
+        <div style="font-weight:900; font-size:18px;">${esc(title)}</div>
+        <div style="color:#6b7280; font-size:12px;">${esc(dateStr)}</div>
+      </div>
+      <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">
+        ${type === "record" ? "※先生用（正解・判定を含む）" : "※提出用（正解・判定は含みません）"}
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:60px;">No</th>
+            <th>問題</th>
+            <th style="width:220px;">入力</th>
+            ${type === "record" ? `<th style="width:130px;">判定</th><th style="width:160px;">正解</th>` : ``}
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    rows.forEach(r=>{
+      const badge =
+        (r.status === "〇") ? "〇" :
+        (r.status === "×") ? "×" :
+        (r.status === "判定不可") ? "判定不可" :
+        "未入力";
+      html += `
+        <tr>
+          <td>${r.no}</td>
+          <td>${renderQuestionWithRed(r.question, r.red)}</td>
+          <td>${esc(r.input)}</td>
+          ${type === "record" ? `<td>${esc(badge)}</td><td>${esc(r.answer)}</td>` : ``}
+        </tr>
+      `;
+    });
+    html += `</tbody></table>`;
+    printArea.innerHTML = html;
+  }
+
+  /* ====== export view refresh on open ====== */
+  function maybeRerenderExportOnFocus(){
+    if(viewExport.style.display !== "none" && session.exportUnlocked){
+      renderExport();
+    }
+  }
+  window.addEventListener("focus", maybeRerenderExportOnFocus);
+
+  /* ====== initial render ====== */
+  function init(){
+    initV2();
+
+    // default mode
+    if(!settings.mode) settings.mode = "single";
+    saveSettings();
+
+    // initial locks
+    renderCreateLock();
+    renderExportLock();
+
+    // start on create
+    selectTab("create");
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
