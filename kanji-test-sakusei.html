@@ -428,34 +428,6 @@
   const setSelectExport = document.getElementById("setSelectExport");
   const btnNewSet = document.getElementById("btnNewSet");
   const attemptSelect = document.getElementById("attemptSelect");
-/* ===============================
-   ★追加：セット名の編集（先生用：出力画面でも）
-   - セット選択をダブルクリックで名前変更
-=============================== */
-setSelectExport.addEventListener("dblclick", ()=>{
-  if(!session.exportUnlocked) return;
-
-  const sid = setSelectExport.value;
-  const sidx = sets.findIndex(s => s.id === sid);
-  if(sidx < 0) return;
-
-  const currentName = sets[sidx].name || "";
-  const next = prompt("セット名を変更します", currentName);
-  if(next === null) return;
-
-  const name = String(next).trim();
-  if(!name) return;
-
-  sets[sidx].name = name;
-  saveSets();
-
-  rebuildSetSelectOptions();
-  syncSetSelects();
-
-  if(session.createUnlocked && viewCreate.style.display !== "none") renderCreate();
-  if(viewTest.style.display !== "none") renderTest();
-  if(session.exportUnlocked && viewExport.style.display !== "none") renderExport();
-});
 
   // create inputs
   const inQuestion = document.getElementById("inQuestion");
@@ -502,6 +474,34 @@ setSelectExport.addEventListener("dblclick", ()=>{
     createUnlocked: sessionStorage.getItem("kanjiTest_createUnlocked") === "1",
     exportUnlocked: sessionStorage.getItem("kanjiTest_exportUnlocked") === "1",
   };
+/* ===============================
+   ★追加：セット名の編集（先生用：出力画面でも）
+   - セット選択をダブルクリックで名前変更
+=============================== */
+setSelectExport.addEventListener("dblclick", ()=>{
+  if(!session.exportUnlocked) return;
+
+  const sid = setSelectExport.value;
+  const sidx = sets.findIndex(s => s.id === sid);
+  if(sidx < 0) return;
+
+  const currentName = sets[sidx].name || "";
+  const next = prompt("セット名を変更します", currentName);
+  if(next === null) return;
+
+  const name = String(next).trim();
+  if(!name) return;
+
+  sets[sidx].name = name;
+  saveSets();
+
+  rebuildSetSelectOptions();
+  syncSetSelects();
+
+  if(session.createUnlocked && viewCreate.style.display !== "none") renderCreate();
+  if(viewTest.style.display !== "none") renderTest();
+  if(session.exportUnlocked && viewExport.style.display !== "none") renderExport();
+});
 
   function setUnlocked(which, val){
     if(which === "create"){
@@ -823,21 +823,28 @@ setSelectExport.addEventListener("dblclick", ()=>{
     if(session.exportUnlocked) renderExport();
   }
 
-  /* ====== set UI bindings ====== */
-  setSelectCreate.addEventListener("change", ()=>{
-    const sid = setSelectCreate.value;
-    switchSet(sid);
-  });
-  setSelectExport.addEventListener("change", ()=>{
-    const sid = setSelectExport.value;
-    switchSet(sid);
-    // exportはセット変更時、履歴を作り直す
-    if(session.exportUnlocked) renderExport();
-  });
-  setSelectTest.addEventListener("change", ()=>{
-    const sid = setSelectTest.value;
-    switchSet(sid, { clearAnswersOnTestSwitch: true });
-  });
+/* ====== set UI bindings ====== */
+setSelectCreate.addEventListener("change", ()=>{
+  const sid = setSelectCreate.value;
+  switchSet(sid);
+});
+
+setSelectTest.addEventListener("change", ()=>{
+  const sid = setSelectTest.value;
+  switchSet(sid, { clearAnswersOnTestSwitch: true });
+});
+
+setSelectExport.addEventListener("change", ()=>{
+  const sid = setSelectExport.value;
+
+  // セット切替
+  switchSet(sid);
+
+  // ★セットを変えたら履歴は「最新」に戻す
+  currentAttemptId = "";
+
+  if(session.exportUnlocked) renderExport();
+});
 
   btnNewSet.addEventListener("click", ()=>{
     // 自動で「セット1」「セット2」…を作成（名前入力不要）
@@ -1275,13 +1282,17 @@ setSelectCreate.addEventListener("dblclick", ()=>{
     });
   }
 
-  // ★「終わった」：この回の解答を履歴として保存 → 案内 → 出力画面へ（ロックは維持）
-  btnFinish.addEventListener("click", ()=>{
-    saveAttemptFromCurrentTest();
-    finishMsg.style.display = "";
-    // すぐ出力へ移動（中身はパスワードがないと見えない）
-    selectTab("export");
-  });
+ // ★「終わった」：履歴保存 → 先生用画面へ → 必ずロックをかけ直す
+btnFinish.addEventListener("click", ()=>{
+  saveAttemptFromCurrentTest();
+  finishMsg.style.display = "";
+
+  // 出力ロックを強制ON
+  setUnlocked("export", false);
+
+  // 先生用（出力）タブへ移動
+  selectTab("export");
+});
 
   function saveAttemptFromCurrentTest(){
     const sid = settings.currentSetId;
@@ -1417,10 +1428,10 @@ setSelectCreate.addEventListener("dblclick", ()=>{
     }
   }
 
-  attemptSelect.addEventListener("change", ()=>{
-    currentAttemptId = attemptSelect.value || "";
-    if(session.exportUnlocked) renderExport();
-  });
+attemptSelect.addEventListener("change", ()=>{
+  currentAttemptId = attemptSelect.value || "";
+  if(session.exportUnlocked) renderExportPreviewOnly();
+});
 
   function renderExport(){
     rebuildSetSelectOptions();
@@ -1428,18 +1439,27 @@ setSelectCreate.addEventListener("dblclick", ()=>{
 
     const sid = settings.currentSetId;
 
-    // attempt select options
-    const { html, firstId } = buildAttemptOptionsForSet(sid);
-    attemptSelect.innerHTML = html;
+// ★作り直す前に「いま選ばれている（はずの）履歴」を退避
+const prevSelected = currentAttemptId || (attemptSelect.value || "");
 
-    // choose currentAttemptId if valid, else first
-    const exists = attemptsIndex.some(a => a && a.attemptId === currentAttemptId && a.setId === sid);
-    if(!exists){
-      currentAttemptId = firstId;
-    }
-    if(attemptSelect.value !== (currentAttemptId || "")){
-      attemptSelect.value = currentAttemptId || "";
-    }
+// attempt select options
+const { html, firstId } = buildAttemptOptionsForSet(sid);
+attemptSelect.innerHTML = html;
+
+// ★最新を基本にする：このセットの履歴リストを使う
+const list = attemptsIndex.filter(a => a && a.setId === sid);
+const latestId = (list.length ? list[0].attemptId : "") || "";
+
+// 退避した選択がこのセット内に存在するならそれを優先
+const prevExists = list.some(a => a.attemptId === prevSelected);
+
+currentAttemptId = prevExists ? prevSelected : (latestId || firstId || "");
+
+if(attemptSelect.value !== (currentAttemptId || "")){
+  attemptSelect.value = currentAttemptId || "";
+}
+
+
 
     // if no attempt, show empty result
     if(!currentAttemptId){
@@ -1470,6 +1490,37 @@ setSelectCreate.addEventListener("dblclick", ()=>{
     }
 
     // result table (teacher-only)
+    resultTable.innerHTML = buildResultTableHTML(rows);
+  }
+  function renderExportPreviewOnly(){
+    const sid = settings.currentSetId;
+
+    if(!currentAttemptId){
+      exportWarnings.style.display = "none";
+      warnList.innerHTML = "";
+      resultTable.innerHTML = `<tr><td class="small">履歴がありません。テスト画面で「終わった」を押すと履歴が保存されます。</td></tr>`;
+      return;
+    }
+
+    const attempt = getAttemptById(currentAttemptId);
+    if(!attempt || attempt.setId !== sid){
+      exportWarnings.style.display = "none";
+      warnList.innerHTML = "";
+      resultTable.innerHTML = `<tr><td class="small">履歴が見つかりません。</td></tr>`;
+      return;
+    }
+
+    const rows = gradeAllFor(sid, currentAttemptId, attempt.answersSnapshot);
+
+    const warns = rows.filter(r => r.status === "判定不可");
+    if(warns.length){
+      exportWarnings.style.display = "";
+      warnList.innerHTML = warns.map(r => `No.${r.no}：入力「${esc(r.input)}」 → <b>ひらがなで入力してね</b>`).join("<br>");
+    }else{
+      exportWarnings.style.display = "none";
+      warnList.innerHTML = "";
+    }
+
     resultTable.innerHTML = buildResultTableHTML(rows);
   }
 
