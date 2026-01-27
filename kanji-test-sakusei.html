@@ -171,6 +171,7 @@
     .overlayInner{ box-shadow:none; border:none; border-radius:0; width:100%; }
     .overlayBody{ padding:0; }
     .printOnly{ display:block; }
+#viewExport .card:last-of-type{ display:none !important; }
   }
 </style>
 </head>
@@ -1714,7 +1715,7 @@ if(attemptSelect.value !== (currentAttemptId || "")){
       exportWarnings.style.display = "none";
       warnList.innerHTML = "";
     }
-// ★得点表示を追加
+// ★得点表示（正答数）を追加して、表の前に出す
 const sum = summarizeRows(rows);
 const scoreHtml = `
   <div style="font-weight:900; margin-bottom:8px;">
@@ -1725,9 +1726,6 @@ const scoreHtml = `
   </div>
 `;
 resultTable.innerHTML = scoreHtml + buildResultTableHTML(rows);
-
-    // result table (teacher-only)
-    resultTable.innerHTML = buildResultTableHTML(rows);
   }
   function renderExportPreviewOnly(){
     const sid = settings.currentSetId;
@@ -1758,7 +1756,18 @@ resultTable.innerHTML = scoreHtml + buildResultTableHTML(rows);
       warnList.innerHTML = "";
     }
 
-    resultTable.innerHTML = buildResultTableHTML(rows);
+    // ★得点表示（正答数）を追加して、表の前に出す
+const sum = summarizeRows(rows);
+const scoreHtml = `
+  <div style="font-weight:900; margin-bottom:8px;">
+    得点：${sum.ok} / ${sum.total} 点
+    <span class="small">
+      （〇：${sum.ok}　×：${sum.ng}　未入力：${sum.blank}　判定不可：${sum.invalid}）
+    </span>
+  </div>
+`;
+resultTable.innerHTML = scoreHtml + buildResultTableHTML(rows);
+
   }
 
   function buildResultTableHTML(rows){
@@ -1896,21 +1905,34 @@ resultTable.innerHTML = scoreHtml + buildResultTableHTML(rows);
       return;
     }
 
-    const rows = gradeAllFor(sid, currentAttemptId, attempt.answersSnapshot);
+     const rows = gradeAllFor(sid, currentAttemptId, attempt.answersSnapshot);
 
     const title = (type === "record") ? "漢字テスト（記録用）" : "漢字テスト（提出用）";
     const today = new Date();
     const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
 
+    // ★印刷用：得点（正答数）を計算（記録用のみ表示）
+    const sum = summarizeRows(rows);
+    const scoreLine = (type === "record")
+      ? `<div style="font-weight:900; font-size:12px; margin-top:6px;">
+           得点：${sum.ok} / ${sum.total} 点
+           <span style="font-weight:700; color:#6b7280;">
+             （〇：${sum.ok}　×：${sum.ng}　未入力：${sum.blank}　判定不可：${sum.invalid}）
+           </span>
+         </div>`
+      : ``;
+
     let html = `
       <div class="printOnly" style="padding:14px 0 10px; border-bottom:1px solid #e5e7eb; margin-bottom:10px;">
         <div style="font-weight:900; font-size:18px;">${esc(title)}</div>
         <div style="color:#6b7280; font-size:12px;">${esc(dateStr)}</div>
+        ${scoreLine}
       </div>
       <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">
         ${type === "record" ? "※先生用（正解・判定を含む）" : "※提出用（正解・判定は含みません）"}
       </div>
       <table>
+
         <thead>
           <tr>
             <th style="width:60px;">No</th>
@@ -1969,4 +1991,3 @@ resultTable.innerHTML = scoreHtml + buildResultTableHTML(rows);
 </script>
 </body>
 </html>
-
