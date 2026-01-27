@@ -428,6 +428,34 @@
   const setSelectExport = document.getElementById("setSelectExport");
   const btnNewSet = document.getElementById("btnNewSet");
   const attemptSelect = document.getElementById("attemptSelect");
+/* ===============================
+   ★追加：セット名の編集（先生用：出力画面でも）
+   - セット選択をダブルクリックで名前変更
+=============================== */
+setSelectExport.addEventListener("dblclick", ()=>{
+  if(!session.exportUnlocked) return;
+
+  const sid = setSelectExport.value;
+  const sidx = sets.findIndex(s => s.id === sid);
+  if(sidx < 0) return;
+
+  const currentName = sets[sidx].name || "";
+  const next = prompt("セット名を変更します", currentName);
+  if(next === null) return;
+
+  const name = String(next).trim();
+  if(!name) return;
+
+  sets[sidx].name = name;
+  saveSets();
+
+  rebuildSetSelectOptions();
+  syncSetSelects();
+
+  if(session.createUnlocked && viewCreate.style.display !== "none") renderCreate();
+  if(viewTest.style.display !== "none") renderTest();
+  if(session.exportUnlocked && viewExport.style.display !== "none") renderExport();
+});
 
   // create inputs
   const inQuestion = document.getElementById("inQuestion");
@@ -828,6 +856,36 @@
     switchSet(newId);
     if(session.createUnlocked) renderCreate();
   });
+/* ===============================
+   ★追加：セット名の編集（先生用：作成画面のみ）
+   - セット選択をダブルクリックで名前変更
+=============================== */
+setSelectCreate.addEventListener("dblclick", ()=>{
+  // 先生ロック中は触れない
+  if(!session.createUnlocked) return;
+
+  const sid = setSelectCreate.value;
+  const sidx = sets.findIndex(s => s.id === sid);
+  if(sidx < 0) return;
+
+  const currentName = sets[sidx].name || "";
+  const next = prompt("セット名を変更します", currentName);
+  if(next === null) return; // キャンセル
+
+  const name = String(next).trim();
+  if(!name) return; // 空白は無視
+
+  sets[sidx].name = name;
+  saveSets();
+
+  rebuildSetSelectOptions();
+  syncSetSelects();
+
+  // 画面反映
+  if(session.createUnlocked) renderCreate();
+  if(viewTest.style.display !== "none") renderTest();
+  if(session.exportUnlocked && viewExport.style.display !== "none") renderExport();
+});
 
   function nextSetNumber(){
     // existing names "セットN" から最大Nを拾って +1
