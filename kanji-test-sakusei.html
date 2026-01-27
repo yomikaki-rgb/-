@@ -234,6 +234,14 @@
 
           <button class="btn" id="btnClearAll" title="問題と回答をすべて消します（取り消し不可）">全消去</button>
         </div>
+
+        <!-- ★追加：CSV読み込み（新セットに一括追加） -->
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn" id="btnImportCsv">CSV読み込み（新セット）</button>
+          <input id="csvFile" type="file" accept=".csv,text/csv" style="display:none;" />
+        </div>
+        <div class="hint">CSV形式：問題文,正解(ひらがな),赤字（赤字は空でもOK）</div>
+
         <div class="hint">※作成内容は自動保存されます。</div>
         <div id="saveOkMsg" class="hint" style="display:none;"><span class="ok">保存しました</span></div>
       </div>
@@ -439,6 +447,10 @@
   const saveOkMsg = document.getElementById("saveOkMsg");
   const btnClearAll = document.getElementById("btnClearAll");
   const qTable = document.getElementById("qTable");
+
+  // ★追加：CSV import
+  const btnImportCsv = document.getElementById("btnImportCsv");
+  const csvFile = document.getElementById("csvFile");
 
   // test
   const testEmpty = document.getElementById("testEmpty");
@@ -1147,6 +1159,165 @@ setSelectCreate.addEventListener("dblclick", ()=>{
     if(session.exportUnlocked) renderExport();
   });
 
+  /* ===============================
+     ★追加：CSV読み込み → 新しい問題セットに一括登録
+     形式：問題文,正解(ひらがな),赤字
+  =============================== */
+  if(btnImportCsv && csvFile){
+    // ボタン → file選択を開く
+    btnImportCsv.addEventListener("click", ()=>{
+      if(!session.createUnlocked) return; // 先生ロック中は不可
+      csvFile.value = "";
+      csvFile.click();
+    });
+
+    // fileが選ばれたら読み込む
+    csvFile.addEventListener("change", async ()=>{
+      if(!csvFile.files || !csvFile.files[0]) return;
+
+      const file = csvFile.files[0];
+
+      try{
+        const text = await readFileAsText(file);
+
+        // CSVを行→列へ（簡易CSVパーサ：ダブルクォート対応）
+        const rows = parseCSV(text);
+
+        // 空行を除去しつつ、(問題文,正解,赤字) を取り出す
+        const items = [];
+        for(const cols of rows){
+          if(!cols) continue;
+
+          // 先頭3列のみ使用（多い分は無視）
+          const q = (cols[0] ?? "").trim();
+          const a = (cols[1] ?? "").trim();
+          const r = (cols[2] ?? "").trim();
+
+          // 完全空行は無視
+          if(!q && !a && !r) continue;
+
+          // 必須欠けはスキップ
+          if(!q || !a) continue;
+
+          // ひらがなチェック（既存関数を利用）
+          if(hasNonHiragana(a)) continue;
+
+          items.push({ question:q, answer:a, red:r });
+        }
+
+        if(items.length === 0){
+          alert("取り込める行がありませんでした。\n（問題文/正解が空、正解がひらがな以外、など）");
+          return;
+        }
+
+        // ★新しいセットを作って、そこへ入れる
+        const nextNo = nextSetNumber();
+        const newId = uid("set_");
+        const newSet = { id: newId, name: `セット${nextNo}`, createdAt: Date.now() };
+        sets.push(newSet);
+        saveSets();
+
+        // initialize storage for new set
+        saveQuestionsForSet(newId, []);
+        saveAnswersForSet(newId, {});
+        rebuildSetSelectOptions();
+
+        // 新セットへ切替
+        switchSet(newId);
+
+        // 新セットのquestionsにCSV内容を入れる
+        questions = items.map(it => ({
+          id: uid("q_"),
+          question: it.question,
+          answer: it.answer,
+          red: it.red
+        }));
+
+        // テスト入力は空で開始
+        answers = {};
+        setSingleIndex(0);
+
+        // 保存＆更新
+        saveAllCurrent();
+        renderCreate();
+        renderTest();
+        if(session.exportUnlocked) renderExport();
+
+        alert(`CSVから ${items.length}問を読み込み、${newSet.name} を作成しました。`);
+
+      }catch(e){
+        console.error(e);
+        alert("CSVの読み込みに失敗しました。文字コードや形式を確認してください。");
+      }
+    });
+  }
+
+  function readFileAsText(file){
+    return new Promise((resolve, reject)=>{
+      const fr = new FileReader();
+      fr.onload = ()=> resolve(String(fr.result ?? ""));
+      fr.onerror = ()=> reject(fr.error || new Error("File read error"));
+      fr.readAsText(file);
+    });
+  }
+
+  // 簡易CSVパーサ（改行/カンマ/ダブルクォート対応）
+  function parseCSV(text){
+    const s = String(text ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+    const out = [];
+    let row = [];
+    let cur = "";
+    let inQuotes = false;
+
+    for(let i=0; i<s.length; i++){
+      const ch = s[i];
+
+      if(inQuotes){
+        if(ch === '"'){
+          // "" → " を表す
+          const next = s[i+1];
+          if(next === '"'){
+            cur += '"';
+            i++;
+          }else{
+            inQuotes = false;
+          }
+        }else{
+          cur += ch;
+        }
+        continue;
+      }
+
+      if(ch === '"'){
+        inQuotes = true;
+        continue;
+      }
+
+      if(ch === ","){
+        row.push(cur);
+        cur = "";
+        continue;
+      }
+
+      if(ch === "\n"){
+        row.push(cur);
+        cur = "";
+        out.push(row);
+        row = [];
+        continue;
+      }
+
+      cur += ch;
+    }
+
+    // last
+    row.push(cur);
+    out.push(row);
+
+    return out;
+  }
+
   /* ====== TEST ====== */
   // mode radio bind
   document.querySelectorAll('input[name="mode"]').forEach(r=>{
@@ -1459,8 +1630,6 @@ if(attemptSelect.value !== (currentAttemptId || "")){
   attemptSelect.value = currentAttemptId || "";
 }
 
-
-
     // if no attempt, show empty result
     if(!currentAttemptId){
       exportWarnings.style.display = "none";
@@ -1488,6 +1657,17 @@ if(attemptSelect.value !== (currentAttemptId || "")){
       exportWarnings.style.display = "none";
       warnList.innerHTML = "";
     }
+// ★得点表示を追加
+const sum = summarizeRows(rows);
+const scoreHtml = `
+  <div style="font-weight:900; margin-bottom:8px;">
+    得点：${sum.ok} / ${sum.total} 点
+    <span class="small">
+      （〇：${sum.ok}　×：${sum.ng}　未入力：${sum.blank}　判定不可：${sum.invalid}）
+    </span>
+  </div>
+`;
+resultTable.innerHTML = scoreHtml + buildResultTableHTML(rows);
 
     // result table (teacher-only)
     resultTable.innerHTML = buildResultTableHTML(rows);
@@ -1732,3 +1912,4 @@ if(attemptSelect.value !== (currentAttemptId || "")){
 </script>
 </body>
 </html>
+
