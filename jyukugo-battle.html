@@ -1,0 +1,1704 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>熟語づくりカードゲーム（オンライン）</title>
+<style>
+  :root{
+    --bg1:#eef2ff; --bg2:#f3e8ff;
+    --card:#ffffffd9;
+    --ink:#111827; --sub:#4b5563;
+    --primary:#4f46e5; --primarySoft:#e0e7ff;
+    --ok:#16a34a; --ng:#dc2626;
+    --border:#d1d5db;
+    --shadow:0 10px 25px rgba(0,0,0,.08);
+    --radius:18px;
+    --sameTileSize: 110px;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{
+    margin:0; min-height:100vh; padding:16px;
+    display:flex; justify-content:center; align-items:center;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+    color:var(--ink);
+  }
+  .app{
+    width:min(1080px,100%);
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    position:relative;
+  }
+  header{
+    padding:16px 18px;
+    border-bottom:1px solid var(--border);
+    display:flex; gap:12px; align-items:center; justify-content:space-between;
+    background:linear-gradient(180deg,#ffffffcc,#ffffff99);
+  }
+  header h1{ margin:0; font-size:18px; letter-spacing:.02em; }
+  .pill{
+    font-size:12px; color:var(--sub);
+    background:var(--primarySoft);
+    border:1px solid #c7d2fe;
+    padding:6px 10px;
+    border-radius:999px;
+    display:inline-flex; gap:8px; align-items:center;
+    white-space:nowrap;
+  }
+  .wrap{ padding:16px 18px 18px; display:grid; gap:14px; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1.75fr .25fr;
+    gap:14px;
+  }
+  @media (max-width:980px){
+    .grid{ grid-template-columns:1fr; }
+  }
+
+  .card{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:14px;
+  }
+  .card h2{
+    margin:0 0 10px 0;
+    font-size:14px;
+    color:var(--sub);
+    font-weight:700;
+    letter-spacing:.02em;
+  }
+
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .row > *{ flex:0 0 auto; }
+
+  button{
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--ink);
+    border-radius:14px;
+    padding:10px 12px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 6px 16px rgba(0,0,0,.06);
+  }
+  button.primary{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+  button.warn{
+    background:#fff7ed;
+    border-color:#fed7aa;
+  }
+  button:disabled{ opacity:.5; cursor:not-allowed; box-shadow:none; }
+  select, input{
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px 12px;
+    font-weight:700;
+    background:#fff;
+    color:var(--ink);
+  }
+  input{ width:110px; }
+
+  .sectionTitle{
+    margin:14px 0 8px 0;
+    font-size:15px;
+    font-weight:900;
+    color:var(--ink);
+  }
+
+  .tiles{
+    display:grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap:10px;
+  }
+  @media (max-width:520px){ .tiles{ grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .tile{
+    user-select:none;
+    border:1px solid var(--border);
+    border-radius:18px;
+    background:#fff;
+    padding:18px 0px;
+    text-align:center;
+    font-size:44px;
+    font-weight:900;
+    line-height:1;
+    box-shadow:0 10px 22px rgba(0,0,0,.07);
+    cursor:pointer;
+    overflow:hidden;
+  }
+
+  .msg{
+    margin-top:10px;
+    padding:12px 14px;
+    border-radius:16px;
+    font-weight:900;
+    font-size:16px;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--sub);
+  }
+  .msg.ok{ border-color:#bbf7d0; background:#ecfdf5; color:#166534; }
+  .msg.ng{ border-color:#fecaca; background:#fff1f2; color:#991b1b; }
+
+  .scoreboard{
+    display:flex;
+    gap:8px;
+    flex-wrap:nowrap;
+    align-items:stretch;
+  }
+  .pRow{
+    flex:1 1 0;
+    min-width:0;
+    display:flex; gap:8px; align-items:flex-start; justify-content:space-between;
+    padding:6px 10px;
+    border:1px solid var(--border);
+    border-radius:14px; background:#fff;
+  }
+  .pRow .left{
+    display:flex; gap:8px; align-items:center; font-weight:900;
+    min-width:0;
+  }
+  .pRow .left span:last-child{
+    font-size:12px;
+    white-space:nowrap;
+  }
+  .pRow .pts{
+    font-weight:900; color:var(--ink);
+    display:flex; gap:8px; align-items:center;
+    white-space:nowrap;
+    font-size:12px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+  .pRow .ptVal{ color:var(--ng); }
+  .statusTag{
+    display:block;
+    margin-top:2px;
+    font-size:11px;
+    font-weight:900;
+    padding:4px 8px;
+    border-radius:999px;
+    border:1px solid #fecaca;
+    background:#fff1f2;
+    color:#991b1b;
+    white-space:nowrap;
+    flex: 1 0 100%;
+    text-align:right;
+  }
+  .statusTag.miss{
+    border-color:#fed7aa;
+    background:#fff7ed;
+    color:#9a3412;
+  }
+
+  .dot{ width:10px; height:10px; border-radius:999px; background:#cbd5e1; }
+  .pRow.active{
+    border-color:#a5b4fc;
+    background:#eef2ff;
+    animation:activePulse 980ms ease-in-out infinite;
+  }
+  .pRow.active .dot{
+    background:#4f46e5;
+    animation:dotPulse 980ms ease-in-out infinite;
+  }
+  @keyframes activePulse{
+    0%{ box-shadow:0 0 0 rgba(79,70,229,.0); transform:translateY(0); }
+    50%{ box-shadow:0 0 0 6px rgba(79,70,229,.14); transform:translateY(-1px); }
+    100%{ box-shadow:0 0 0 rgba(79,70,229,.0); transform:translateY(0); }
+  }
+  @keyframes dotPulse{
+    0%{ transform:scale(1); opacity:.75; }
+    50%{ transform:scale(1.25); opacity:1; }
+    100%{ transform:scale(1); opacity:.75; }
+  }
+
+  details{ border:1px solid var(--border); border-radius:14px; overflow:hidden; background:#fff; }
+  summary{
+    cursor:pointer; padding:10px 12px; font-weight:900; color:var(--sub);
+    list-style:none;
+  }
+  summary::-webkit-details-marker{ display:none; }
+  .list{ padding:0 12px 12px; display:flex; gap:8px; flex-wrap:wrap; }
+  .tag{
+    font-size:14px;
+    font-weight:900;
+    color:var(--ink);
+    background:#f1f5e9;
+    border:1px solid #e2e8f0;
+    padding:8px 12px;
+    border-radius:999px;
+  }
+  .muted{ color:var(--sub); }
+
+  /* 右側設定：改行しない */
+  #rightSide .settingRow{ flex-wrap:nowrap; align-items:center; }
+  #rightSide .settingRow label{ white-space:nowrap; flex:0 0 auto; }
+  #rightSide .settingRow select,
+  #rightSide .settingRow input{
+    white-space:nowrap; flex:1 1 auto; min-width:0;
+  }
+
+  .drawPickGrid{
+    display:grid;
+    grid-template-columns: minmax(240px, 0.70fr) minmax(0, 1.30fr);
+    gap:4px;
+    align-items:start;
+    margin-top:6px;
+  }
+  .drawPickCol{ min-width:0; }
+  .drawPickCol .sectionTitle{ margin-top:0; }
+
+  .pickPanel{
+    display:flex; gap:12px; align-items:center;
+    flex-wrap:nowrap;
+    overflow:visible;
+    background:#fff; border:1px solid var(--border);
+    border-radius:18px; padding:14px;
+    box-shadow:0 10px 22px rgba(0,0,0,.07);
+    min-width:0;
+  }
+
+  .slotWrap{ display:flex; gap:8px; align-items:center; min-width:0; }
+  .slotLabel{ font-size:14px; color:var(--sub); font-weight:900; }
+
+  .slot{
+    width:var(--sameTileSize); height:var(--sameTileSize);
+    border-radius:18px;
+    border:1px solid var(--border);
+    background:#f8fafc;
+    display:grid; place-items:center;
+    font-size:44px; font-weight:900;
+    cursor:pointer;
+    user-select:none;
+    overflow:hidden;
+    flex:0 0 auto;
+  }
+  .slot.filled{ background:#fff; }
+
+  .eq{ font-weight:900; color:var(--sub); font-size:20px; flex:0 0 auto; }
+
+  .wordBox{
+    min-width:120px;
+    padding:14px 16px;
+    border-radius:18px;
+    border:1px solid var(--border);
+    background:#fff;
+    font-weight:900;
+    font-size:28px;
+    text-align:center;
+    flex:1 1 auto;
+    white-space:nowrap;
+  }
+
+  .chip{
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:900;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    box-shadow:0 6px 16px rgba(0,0,0,.06);
+  }
+  .chip .mini{
+    width:var(--sameTileSize); height:var(--sameTileSize);
+    display:grid; place-items:center;
+    border-radius:18px;
+    border:1px solid var(--border);
+    font-size:44px;
+    font-weight:900;
+    background:#f8fafc;
+    line-height:1;
+    overflow:hidden;
+  }
+  .chip:disabled{ opacity:.5; cursor:not-allowed; box-shadow:none; }
+
+  .ansSpeakWrap{
+    margin-top:10px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .ansSpeakBtn{
+    display:none;
+    align-items:center;
+    gap:8px;
+    font-weight:900;
+    border-color:#c7d2fe;
+    background:#eef2ff;
+  }
+  .ansInfo{
+    display:none;
+    width:100%;
+    padding:12px 14px;
+    border-radius:16px;
+    border:1px solid #c7d2fe;
+    background:#eef2ff;
+    font-weight:900;
+    color:#111827;
+    line-height:1.6;
+  }
+  .ansInfo .sub{ color:var(--sub); font-weight:900; }
+
+  ruby rt{ font-size:10px; color:var(--sub); font-weight:900; }
+
+  .settings{ display:grid; gap:10px; margin-bottom:10px; }
+  .settingRow{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .settingRow label{ font-weight:900; }
+
+  /* ★オンライン接続カード */
+  .onlineCard{
+    border:1px dashed #c7d2fe;
+    background:#eef2ff;
+    border-radius:16px;
+    padding:12px;
+    display:grid;
+    gap:8px;
+  }
+  .onlineRow{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .onlineRow input{ width:160px; }
+  .tiny{ font-size:12px; color:var(--sub); font-weight:900; }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+  /* ★読み上げボタン群（右側） */
+  .ttsRow{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .ttsRow button{ font-size:12px; padding:10px 12px; }
+
+  /* ★漢字タイル内レイアウト（読み表示ON） */
+  .kWrap{ display:grid; gap:4px; align-items:center; justify-items:center; }
+  .kOn,.kKun{ font-size:11px; font-weight:900; color:var(--sub); line-height:1.1; }
+  .kCore{ font-size:44px; font-weight:900; line-height:1; }
+
+  /* ★くす玉 */
+  .kusudamaOverlay{
+    position:absolute; inset:0;
+    display:none;
+    place-items:center;
+    background:rgba(15,23,42,.38);
+    z-index:9999;
+  }
+  .kusudamaBox{
+    width:min(520px,92%);
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+    padding:18px 16px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .kusudama{
+    width:220px; height:120px;
+    margin:8px auto 10px;
+    position:relative;
+  }
+  .ball{
+    position:absolute; top:0; width:110px; height:110px;
+    border-radius:999px;
+    border:2px solid #c7d2fe;
+    background:linear-gradient(180deg,#eef2ff,#ffffff);
+  }
+  .ball.left{ left:0; transform-origin:right center; }
+  .ball.right{ right:0; transform-origin:left center; }
+  .kusudama.burst .ball.left{ animation:openL 450ms ease-out forwards; }
+  .kusudama.burst .ball.right{ animation:openR 450ms ease-out forwards; }
+  @keyframes openL{ to{ transform:rotate(-28deg) translateX(-10px); opacity:.96; } }
+  @keyframes openR{ to{ transform:rotate(28deg) translateX(10px); opacity:.96; } }
+
+  .banner{
+    font-weight:1000;
+    font-size:20px;
+    padding:10px 12px;
+    border-radius:16px;
+    border:1px solid #c7d2fe;
+    background:#eef2ff;
+    display:inline-block;
+  }
+  .streamers{
+    position:absolute; inset:0;
+    pointer-events:none;
+  }
+  .streamer{
+    position:absolute; top:-10px; left:50%;
+    width:10px; height:140px;
+    background:linear-gradient(180deg,#a5b4fc,#ffffff00);
+    border-radius:999px;
+    transform:translateX(-50%) rotate(var(--r)) translateX(var(--x));
+    animation:fall 1200ms ease-out forwards;
+    opacity:.9;
+  }
+  @keyframes fall{
+    to{ transform:translateX(-50%) rotate(var(--r)) translateX(var(--x)) translateY(260px); opacity:0; }
+  }
+</style>
+</head>
+
+<body>
+<div class="app" id="app">
+  <header>
+    <h1>熟語づくりカードゲーム（オンライン）</h1>
+    <div class="pill" id="topPill">未接続</div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+
+      <div class="card" id="leftPlay">
+        <div class="scoreboard" id="scoreboard"></div>
+        <div class="msg ok" id="winMsg" style="display:none;"></div>
+
+        <div class="row" style="margin-bottom:12px; margin-top:12px;">
+          <button class="primary" id="drawBtn">１まい引く</button>
+          <button id="checkBtn">できた！</button>
+          <button id="endBtn"><ruby>番<rt>ばん</rt></ruby>を<ruby>終<rt>お</rt></ruby>える</button>
+          <button class="warn" id="skipNextBtn" style="display:none;">つぎへ</button>
+          <button id="addFieldBtn" class="warn" style="display:none;">
+            <ruby>場札<rt>ばふだ</rt></ruby>を<ruby>追加<rt>ついか</rt></ruby>する
+          </button>
+        </div>
+
+        <div class="sectionTitle"><ruby>場札<rt>ばふだ</rt></ruby></div>
+        <div class="tiles" id="field"></div>
+
+        <div class="drawPickGrid">
+          <div class="drawPickCol">
+            <div class="sectionTitle"><ruby>引<rt>ひ</rt></ruby>いた<ruby>札<rt>ふだ</rt></ruby>（タップで①②へ）</div>
+            <div class="row" style="gap:10px; margin-bottom:10px;">
+              <button class="chip" id="drawChip" type="button" disabled>
+                <span class="muted"><ruby>引札<rt>ひきふだ</rt></ruby></span>
+                <span class="mini" id="drawMini">—</span>
+                <span class="muted">→①②</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="drawPickCol">
+            <div class="sectionTitle"><ruby>順番<rt>じゅんばん</rt></ruby>を<ruby>決<rt>き</rt></ruby>めて<ruby>作<rt>つく</rt></ruby>る</div>
+            <div class="pickPanel">
+              <div class="slotWrap">
+                <div class="slotLabel">①</div>
+                <div class="slot" id="slot1" title="タップで消す">—</div>
+              </div>
+              <div class="eq">→</div>
+              <div class="slotWrap">
+                <div class="slotLabel">②</div>
+                <div class="slot" id="slot2" title="タップで消す">—</div>
+              </div>
+              <div class="eq">=</div>
+              <div class="wordBox" id="wordBox">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg" id="msg">右の「ルーム作成 / 参加」でオンライン接続してね。</div>
+
+        <div class="ansSpeakWrap" id="ansSpeakWrap">
+          <button class="ansSpeakBtn" id="ansSpeakBtn" type="button" aria-label="正答の読みと意味をよみあげ">
+            🔊 よみ・いみ・れいぶん
+          </button>
+          <div class="ansInfo" id="ansInfo" aria-live="polite"></div>
+        </div>
+
+        <details style="margin-top:12px;" open>
+          <summary><ruby>できた</ruby>じゅく<ruby>語<rt>ご</rt></ruby>（<ruby>同<rt>おな</rt></ruby>じ<ruby>熟語<rt>じゅくご</rt></ruby>は1<ruby>回<rt>かい</rt></ruby>まで）</summary>
+          <div class="list" id="madeList"></div>
+        </details>
+      </div>
+
+      <div class="card" id="rightSide">
+
+        <!-- ★オンライン接続 -->
+        <div class="onlineCard">
+          <div class="onlineRow">
+            <button class="primary" id="createRoomBtn" type="button">ルーム作成</button>
+            <input id="roomIdInput" class="mono" placeholder="ルームID" />
+            <button id="joinRoomBtn" type="button">参加</button>
+          </div>
+          <div class="tiny">
+            あなたのID：<span id="myIdText" class="mono">---</span><br>
+            ルーム：<span id="roomText" class="mono">未接続</span> ／ 座席：<span id="seatText" class="mono">---</span>
+          </div>
+          <div class="tiny" id="onlineHint">
+            ※ ルール：<b>自分の番の人だけ</b>操作できます（相手は画面が同期されるだけ）。
+          </div>
+        </div>
+
+        <div class="settings" style="margin-top:10px;">
+          <div class="settingRow">
+            <label class="muted">出題</label>
+            <select id="gradeSelect" title="出題する漢字">
+              <option value="g1">1年の漢字</option>
+              <option value="g2">2年の漢字</option>
+              <option value="g12">1，2年の漢字</option>
+              <option value="g3">3年の漢字</option>
+              <option value="g123">1・2・3年の漢字</option>
+            </select>
+          </div>
+
+          <div class="settingRow">
+            <label class="muted">読み表示</label>
+            <select id="readingToggle" title="音読み・訓読みの表示">
+              <option value="on" selected>ある</option>
+              <option value="off">なし</option>
+            </select>
+          </div>
+
+          <div class="settingRow">
+            <label class="muted">勝利ポイント</label>
+            <input id="targetPoints" type="number" min="1" step="1" value="5"/>
+          </div>
+
+          <div class="settingRow">
+            <label class="muted">ミスで休み</label>
+            <select id="missLimit" title="この回数「その言葉はありません」で1回休み">
+              <option value="2">2回</option>
+              <option value="3" selected>3回</option>
+              <option value="4">4回</option>
+              <option value="5">5回</option>
+              <option value="6">6回</option>
+              <option value="7">7回</option>
+              <option value="8">8回</option>
+            </select>
+          </div>
+
+          <div class="settingRow" style="flex-direction:column; align-items:flex-start;">
+            <button class="primary" id="startBtn">スタート</button>
+            <button id="resetBtn">リセット</button>
+          </div>
+        </div>
+
+        <details id="rules" style="margin-top:12px;">
+          <summary><ruby>遊び方<rt>あそびかた</rt></ruby></summary>
+          <div id="ruleText" style="padding:10px 12px 12px; color:var(--sub); font-weight:800; line-height:1.75;">
+            <div>・オンライン：同じルームIDに入った2人で対戦します。</div>
+            <div>・自分の番の人だけ操作できます（相手は同期表示）。</div>
+            <div>・スタートはルーム内でどちらかが押せます（設定は押した人のものが反映）。</div>
+
+            <!-- ★読み上げボタン（不足してたので追加） -->
+            <div class="ttsRow">
+              <button id="speakBtn" type="button">🔊 遊び方をよむ</button>
+              <button id="stopSpeakBtn" type="button">⏹ とめる</button>
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ★くす玉（不足してたので追加） -->
+  <div class="kusudamaOverlay" id="kusudamaOverlay" aria-hidden="true">
+    <div class="kusudamaBox">
+      <div class="banner" id="kusudamaBanner">勝ち！</div>
+      <div class="kusudama" id="kusudama">
+        <div class="ball left"></div>
+        <div class="ball right"></div>
+      </div>
+      <div class="streamers" id="streamers"></div>
+      <div style="font-weight:900; color:var(--sub); font-size:12px;">（自動で閉じます）</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* ===============================
+   Firebase（v9 modular / CDN）
+=============================== */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import {
+  getDatabase, ref, set, get, onValue,
+  runTransaction, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+/* ★あなたのFirebase設定（そのまま反映） */
+const firebaseConfig = {
+  apiKey: "AIzaSyDGyfFnmlFjJNyj8gyHcNje0SowgtTjDyU",
+  authDomain: "jyukugo-battle.firebaseapp.com",
+  databaseURL: "https://jyukugo-battle-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "jyukugo-battle",
+  storageBucket: "jyukugo-battle.firebasestorage.app",
+  messagingSenderId: "15379559721",
+  appId: "1:15379559721:web:9776dfdf39b4a38a047338"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+/* ===============================
+   DOM
+=============================== */
+const el = (id)=>document.getElementById(id);
+const topPill = el("topPill");
+const msgEl = el("msg");
+
+const createRoomBtn = el("createRoomBtn");
+const joinRoomBtn = el("joinRoomBtn");
+const roomIdInput = el("roomIdInput");
+const myIdText = el("myIdText");
+const roomText = el("roomText");
+const seatText = el("seatText");
+
+const drawBtn = el("drawBtn");
+const checkBtn = el("checkBtn");
+const endBtn = el("endBtn");
+const skipNextBtn = el("skipNextBtn");
+const addFieldBtn = el("addFieldBtn");
+
+const gradeSelect = el("gradeSelect");
+const readingToggle = el("readingToggle");
+const targetPointsInp = el("targetPoints");
+const missLimitSel = el("missLimit");
+const startBtn = el("startBtn");
+const resetBtn = el("resetBtn");
+
+const fieldEl = el("field");
+const scoreboardEl = el("scoreboard");
+const madeListEl = el("madeList");
+const winMsgEl = el("winMsg");
+
+const drawChip = el("drawChip");
+const drawMini = el("drawMini");
+const slot1El = el("slot1");
+const slot2El = el("slot2");
+const wordBox = el("wordBox");
+
+const ansSpeakBtn = el("ansSpeakBtn");
+const ansInfo = el("ansInfo");
+
+const speakBtn = el("speakBtn");
+const stopSpeakBtn = el("stopSpeakBtn");
+
+const kusudamaOverlay = el("kusudamaOverlay");
+const kusudama = el("kusudama");
+const streamers = el("streamers");
+const kusudamaBanner = el("kusudamaBanner");
+
+function setMsg(text, kind=""){
+  msgEl.classList.remove("ok","ng");
+  if(kind) msgEl.classList.add(kind);
+  msgEl.textContent = text;
+}
+function setTop(text){ topPill.textContent = text; }
+
+/* ===============================
+   オンライン：クライアントID（Authなし）
+=============================== */
+function getOrMakeClientId(){
+  const k="jyukugo_clientId_v1";
+  let v = localStorage.getItem(k);
+  if(!v){
+    v = "c_" + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+    localStorage.setItem(k, v);
+  }
+  return v;
+}
+const myId = getOrMakeClientId();
+myIdText.textContent = myId;
+
+/* ===============================
+   ルーム状態
+=============================== */
+let roomId = null;
+let seatIndex = -1;     // 0 or 1
+let unsub = null;
+
+function roomRef(id){ return ref(db, `rooms/${id}`); }
+function stateRef(id){ return ref(db, `rooms/${id}/state`); }
+
+/* ★初期State */
+function makeInitialState(){
+  return {
+    ver: 1,
+    createdAt: serverTimestamp(),
+    settings: {
+      gradeKey: gradeSelect.value,
+      showReadings: (readingToggle.value === "on"),
+      targetPoints: Math.max(1, Number(targetPointsInp.value)||5),
+      missLimit: Number(missLimitSel.value)||3
+    },
+    players: [
+      { seat:0, clientId:null, points:0, skipNext:false },
+      { seat:1, clientId:null, points:0, skipNext:false }
+    ],
+    started: false,
+    current: 0,
+    deck: [],
+    field: [],
+    drewThisTurn: false,
+    drawnKanji: null,
+    missThisTurn: 0,
+    slot1: null,
+    slot2: null,
+    made: [],
+    holdAdvance: false,
+    lastMsg: "ルームに参加しました。スタートを押すと開始します。"
+  };
+}
+
+/* ===============================
+   ルーム作成 / 参加
+=============================== */
+function makeRoomId(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s="";
+  for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+async function createRoom(){
+  const id = makeRoomId();
+  const st = makeInitialState();
+  st.players[0].clientId = myId;
+
+  await set(roomRef(id), {
+    createdAt: serverTimestamp(),
+    state: st
+  });
+
+  await connectRoom(id);
+}
+
+async function joinRoom(id){
+  const snap = await get(roomRef(id));
+  if(!snap.exists()){
+    setMsg("そのルームIDは見つかりませんでした。","ng");
+    return;
+  }
+  await connectRoom(id);
+}
+
+async function connectRoom(id){
+  roomId = id;
+  roomText.textContent = id;
+  setTop("接続中…");
+
+  const stRef = stateRef(id);
+  const result = await runTransaction(stRef, (cur)=>{
+    if(!cur) return cur;
+
+    const alreadySeat = (cur.players||[]).findIndex(p=>p && p.clientId === myId);
+    if(alreadySeat >= 0) return cur;
+
+    const players = cur.players || [];
+    const empty = players.findIndex(p=>p && !p.clientId);
+    if(empty < 0) return cur;
+
+    players[empty] = { ...(players[empty]||{}), seat: empty, clientId: myId, points: players[empty]?.points||0, skipNext: !!players[empty]?.skipNext };
+    cur.players = players;
+    cur.lastMsg = "相手の参加を待っています…";
+    return cur;
+  });
+
+  const val = result.snapshot.val();
+  if(!val){
+    setMsg("接続に失敗しました。","ng");
+    setTop("未接続");
+    return;
+  }
+
+  const idx = (val.players||[]).findIndex(p=>p && p.clientId === myId);
+  if(idx < 0){
+    setMsg("満員です（2人まで）。別のルームを作ってください。","ng");
+    setTop("満員");
+    seatIndex = -1;
+    seatText.textContent = "---";
+    return;
+  }
+
+  seatIndex = idx;
+  seatText.textContent = String(seatIndex+1);
+  setTop("接続OK");
+
+  if(unsub) unsub();
+  unsub = onValue(stRef, (snap2)=>{
+    const st = snap2.val();
+    if(!st) return;
+    applyRemoteState(st);
+  });
+
+  setMsg("接続しました。相手にも同じルームIDを伝えて参加してもらってね。","ok");
+}
+
+/* ===============================
+   共通
+=============================== */
+let remoteState = null;
+
+function isMyTurn(st){
+  const cur = st?.current ?? 0;
+  const p = (st.players||[])[cur];
+  return !!(p && p.clientId === myId);
+}
+function bothJoined(st){
+  const ps = st.players||[];
+  return ps.length>=2 && ps[0]?.clientId && ps[1]?.clientId;
+}
+function canActNow(st){
+  return !!(roomId && st && st.started && bothJoined(st) && isMyTurn(st) && !st.holdAdvance);
+}
+
+/* ===============================
+   データ
+=============================== */
+const KANJI_READINGS = {
+  "音": { on:"オン", kun:"おと・ね" },
+  "下": { on:"カ・ゲ", kun:"した・しも・さ（げる）・くだ（る）・お（りる）" },
+  "火": { on:"カ", kun:"ひ" },
+  "学": { on:"ガク", kun:"まな（ぶ）" },
+  "気": { on:"キ・ケ", kun:"" },
+  "金": { on:"キン・コン", kun:"かね・かな" },
+  "空": { on:"クウ", kun:"そら・あ（く）・から" },
+  "月": { on:"ゲツ・ガツ", kun:"つき" },
+  "見": { on:"ケン", kun:"み（る）" },
+  "口": { on:"コウ・ク", kun:"くち" },
+  "山": { on:"サン", kun:"やま" },
+  "車": { on:"シャ", kun:"くるま" },
+  "手": { on:"シュ", kun:"て" },
+  "出": { on:"シュツ", kun:"で（る）・だ（す）" },
+  "小": { on:"ショウ", kun:"ちい（さい）・こ・お" },
+  "上": { on:"ジョウ", kun:"うえ・うわ・かみ・あ（げる）・のぼ（る）" },
+  "人": { on:"ジン・ニン", kun:"ひと" },
+  "水": { on:"スイ", kun:"みず" },
+  "生": { on:"セイ・ショウ", kun:"い（きる）・う（む）・は（える）・なま" },
+  "先": { on:"セン", kun:"さき" },
+  "足": { on:"ソク", kun:"あし・た（す）" },
+  "大": { on:"ダイ・タイ", kun:"おお（きい）" },
+  "中": { on:"チュウ・ジュウ", kun:"なか" },
+  "天": { on:"テン", kun:"あま" },
+  "日": { on:"ニチ・ジツ", kun:"ひ・か" },
+  "入": { on:"ニュウ", kun:"い（れる）・はい（る）" },
+  "年": { on:"ネン", kun:"とし" },
+  "文": { on:"ブン・モン", kun:"ふみ" },
+  "本": { on:"ホン", kun:"もと" },
+  "名": { on:"メイ・ミョウ", kun:"な" },
+  "目": { on:"モク", kun:"め" },
+  "力": { on:"リョク・リキ", kun:"ちから" }
+};
+
+const KANJI_BY_GRADE = {
+  g1: ["音","下","火","学","気","金","空","月","見","口","山","車","手","出","小","上","人","水","生","先","足","大","中","天","日","入","年","文","本","名","目","力"],
+  g2: ["家","会","海","外","元","言","原","後","行","国","作","書","場","食","心","新","数","前","体","地","長","直","通","当","頭","道","内","風","分","方","門","夜","野","用","来"],
+  g3: ["悪","意","運","化","開","感","期","業","局","事","実","所","身","進","全","代","着","定","転","動","配","発","筆","品","部","物","平","命","面","洋","流","路","和"]
+};
+KANJI_BY_GRADE.g12 = [...KANJI_BY_GRADE.g1, ...KANJI_BY_GRADE.g2];
+KANJI_BY_GRADE.g123 = [...KANJI_BY_GRADE.g1, ...KANJI_BY_GRADE.g2, ...KANJI_BY_GRADE.g3];
+
+/* ===== 熟語DB ===== */
+const JUKUGO_TSV = `
+音感	おんかん	音の高い・低いなどのちがいを聞き分ける力	音感がよい人は音のちがいにすぐ気づきます
+音頭	おんど	みんなで歌ったりおどったりするときの歌や調子	先生が音頭をとってみんなで手をたたきました
+足音	あしおと	人や動物が歩いたときに出る音	ろう下で足音がしてだれか来たと分かりました
+心音	しんおん	心ぞうが動くときに出る音	病院で心音を聞いてもらいました
+全音	ぜんおん	音と音の間が「半音2つ分」あいていること（音の間の広さ）	ピアノでドからレは全音です。
+長音	ちょうおん	声や音を長くのばして出す音	お父さんの「とう」は長音です
+発音	はつおん	言葉の音を声に出すこと	英語の発音をれんしゅうします
+本音	ほんね	心の中で本当に思っていること	本音を言うと、宿題はやりたくないです。
+物音	ものおと	物が動いたり当たったりして出る音	夜に物音がして目がさめました
+和音	わおん	いくつかの音を同時に鳴らした音	ピアノで和音をひくときれいにひびきます
+下部	かぶ	全体の中で下のほうの部分	黒板の下部に今日の宿題を書きました
+下流	かりゅう	川の流れで下のほう（海に近いほう）	川の下流には広い川原があります
+下山	げざん	山から下りること	暗くなる前に下山しました
+下車	げしゃ	次のえきで電車やバスからおりること	次の駅で下車してください
+`.trim();
+
+function buildJukugoDB(tsv){
+  const db = Object.create(null);
+  const lines = String(tsv||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  for(const line of lines){
+    const parts = line.split("\t");
+    if(parts.length < 2) continue;
+    const k = (parts[0]||"").trim();
+    const y = (parts[1]||"").trim();
+    const imi = (parts[2]||"").trim();
+    const rei = (parts[3]||"").trim();
+    if(!k) continue;
+    if(!db[k]) db[k] = { yomi:y, imi:imi, reibun:rei };
+  }
+  return db;
+}
+const JUKUGO_DB = buildJukugoDB(JUKUGO_TSV);
+const ANSWER_SET = new Set(Object.keys(JUKUGO_DB));
+
+/* ===== ユーティリティ ===== */
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, (c)=>( {
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c] ));
+}
+function formatReadingLines(s){
+  const t = String(s || "").trim();
+  if(!t) return "";
+  const parts = t.split("・").map(x=>x.trim()).filter(Boolean);
+  if(parts.length <= 1) return escapeHtml(t);
+  return parts.map(escapeHtml).join("・<br>");
+}
+function kanjiHtml(k, showReadings){
+  if(!showReadings) return escapeHtml(k);
+  const r = KANJI_READINGS[k] || { on:"", kun:"" };
+  const on = r.on ? formatReadingLines(r.on) : "";
+  const kun = r.kun ? formatReadingLines(r.kun) : "";
+  return (
+    `<div class="kWrap">` +
+      `<div class="kOn">${on}</div>` +
+      `<div class="kCore">${escapeHtml(k)}</div>` +
+      `<div class="kKun">${kun}</div>` +
+    `</div>`
+  );
+}
+async function txUpdate(updater){
+  if(!roomId) return;
+  const stRef = stateRef(roomId);
+  return runTransaction(stRef, (cur)=>{
+    if(!cur) return cur;
+    return updater(cur) || cur;
+  });
+}
+function firstEmptySlot(st){
+  if(!st.slot1) return 1;
+  if(!st.slot2) return 2;
+  return 0;
+}
+function buildDeckForGrade(gradeKey){
+  const pool = KANJI_BY_GRADE[gradeKey] || KANJI_BY_GRADE.g1;
+  return shuffle([...pool]);
+}
+
+/* ===============================
+   UI描画
+=============================== */
+function renderScoreboardFromState(st){
+  scoreboardEl.innerHTML = "";
+  const ps = st.players || [];
+  for(let i=0;i<2;i++){
+    const p = ps[i] || { points:0, skipNext:false, clientId:null };
+    const row = document.createElement("div");
+    row.className = "pRow" + ((st.started && (st.current===i)) ? " active":"");
+
+    const left = document.createElement("div");
+    left.className = "left";
+    const dot = document.createElement("span"); dot.className="dot";
+    const name = document.createElement("span");
+    name.textContent = `プレイヤー${i+1}`;
+    left.appendChild(dot);
+    left.appendChild(name);
+
+    const pts = document.createElement("div");
+    pts.className="pts";
+    const pt = document.createElement("span");
+    pt.className="ptVal";
+    pt.textContent = `${p.points||0} pt`;
+    pts.appendChild(pt);
+
+    if(!p.clientId){
+      const stg = document.createElement("span");
+      stg.className="statusTag miss";
+      stg.textContent = "未参加";
+      pts.appendChild(stg);
+    }else if(p.clientId===myId){
+      const stg = document.createElement("span");
+      stg.className="statusTag miss";
+      stg.textContent = "あなた";
+      pts.appendChild(stg);
+    }
+    if(!!p.skipNext){
+      const stg2 = document.createElement("span");
+      stg2.className="statusTag";
+      stg2.textContent = "次休み";
+      pts.appendChild(stg2);
+    }
+
+    row.appendChild(left);
+    row.appendChild(pts);
+    scoreboardEl.appendChild(row);
+  }
+}
+
+function renderBoardFromState(st){
+  const showReadings = !!st.settings?.showReadings;
+
+  fieldEl.innerHTML = "";
+  (st.field||[]).forEach((k, idx)=>{
+    const d = document.createElement("div");
+    d.className = "tile";
+    d.dataset.idx = String(idx);
+    d.innerHTML = kanjiHtml(k, showReadings);
+    d.onclick = ()=> onPickFieldOnline(idx);
+    fieldEl.appendChild(d);
+  });
+
+  if(st.drawnKanji){
+    drawMini.innerHTML = kanjiHtml(st.drawnKanji, showReadings);
+    drawChip.disabled = !canActNow(st);
+  }else{
+    drawMini.textContent = "—";
+    drawChip.disabled = true;
+  }
+
+  if(st.slot1){ slot1El.innerHTML = kanjiHtml(st.slot1.value, showReadings); }
+  else{ slot1El.textContent = "—"; }
+  if(st.slot2){ slot2El.innerHTML = kanjiHtml(st.slot2.value, showReadings); }
+  else{ slot2El.textContent = "—"; }
+
+  slot1El.classList.toggle("filled", !!st.slot1);
+  slot2El.classList.toggle("filled", !!st.slot2);
+  wordBox.textContent = (st.slot1 && st.slot2) ? (st.slot1.value + st.slot2.value) : "—";
+
+  madeListEl.innerHTML = "";
+  (st.made||[]).forEach(w=>{
+    const s = document.createElement("span");
+    s.className = "tag";
+    s.textContent = w;
+    madeListEl.appendChild(s);
+  });
+}
+
+/* ===============================
+   applyRemoteState
+=============================== */
+function applyRemoteState(st){
+  remoteState = st;
+
+  if(!roomId){
+    setTop("未接続");
+  }else if(!bothJoined(st)){
+    setTop("待機中");
+  }else if(st.started){
+    setTop(`プレイヤー${(st.current??0)+1}の番（オンライン）`);
+  }else{
+    setTop("準備中（オンライン）");
+  }
+
+  if(st.lastMsg) setMsg(st.lastMsg);
+
+  renderScoreboardFromState(st);
+  renderBoardFromState(st);
+
+  const canAct = canActNow(st);
+  drawBtn.disabled = !canAct || !!st.drewThisTurn;
+  checkBtn.disabled = !canAct || !st.drewThisTurn;
+  endBtn.disabled = !canAct;
+
+  if(st.holdAdvance){
+    skipNextBtn.style.display = "inline-flex";
+    skipNextBtn.disabled = !isMyTurn(st);
+    drawBtn.disabled = true;
+    checkBtn.disabled = true;
+    endBtn.disabled = true;
+  }else{
+    skipNextBtn.style.display = "none";
+    skipNextBtn.disabled = true;
+  }
+
+  if(st.started && (st.field||[]).length <= 3){
+    addFieldBtn.style.display = "inline-flex";
+    addFieldBtn.disabled = !canAct;
+  }else{
+    addFieldBtn.style.display = "none";
+    addFieldBtn.disabled = true;
+  }
+
+  if(typeof st.winner === "number"){
+    winMsgEl.style.display = "block";
+    winMsgEl.textContent = `プレイヤー${st.winner+1}の勝ち！`;
+  }else{
+    winMsgEl.style.display = "none";
+  }
+}
+
+/* ===============================
+   盤面クリック（同期）
+=============================== */
+async function onPickFieldOnline(idx){
+  const st = remoteState;
+  if(!st) return;
+  if(!canActNow(st)){
+    if(st.started && bothJoined(st) && !isMyTurn(st)) setMsg("相手の番です（あなたは操作できません）。","ng");
+    return;
+  }
+  if(!st.drewThisTurn){
+    setMsg("先に「１まい引く」を押してね。","ng");
+    return;
+  }
+
+  await txUpdate((cur)=>{
+    if(!cur.started || !bothJoined(cur) || !isMyTurn(cur) || cur.holdAdvance) return cur;
+    if(!cur.drewThisTurn) return cur;
+
+    const f = cur.field || [];
+    if(idx<0 || idx>=f.length) return cur;
+
+    const already =
+      (cur.slot1?.src==="field" && cur.slot1.index===idx) ||
+      (cur.slot2?.src==="field" && cur.slot2.index===idx);
+    if(already) return cur;
+
+    const n = firstEmptySlot(cur);
+    if(n===0) return cur;
+
+    const obj = { src:"field", value: f[idx], index: idx };
+    if(n===1) cur.slot1 = obj;
+    if(n===2) cur.slot2 = obj;
+
+    cur.lastMsg = "①②をうめて、熟語を作ってね。";
+    return cur;
+  });
+}
+
+drawChip.onclick = async ()=>{
+  const st = remoteState;
+  if(!st) return;
+  if(!canActNow(st)) return;
+  if(!st.drewThisTurn){
+    setMsg("先に「１まい引く」を押してね。","ng");
+    return;
+  }
+  if(!st.drawnKanji) return;
+
+  await txUpdate((cur)=>{
+    if(!cur.started || !bothJoined(cur) || !isMyTurn(cur) || cur.holdAdvance) return cur;
+    if(!cur.drewThisTurn || !cur.drawnKanji) return cur;
+
+    const already = (cur.slot1?.src==="draw") || (cur.slot2?.src==="draw");
+    if(already) return cur;
+
+    const n = firstEmptySlot(cur);
+    if(n===0) return cur;
+
+    const obj = { src:"draw", value: cur.drawnKanji };
+    if(n===1) cur.slot1 = obj;
+    if(n===2) cur.slot2 = obj;
+    cur.lastMsg = "①②をうめて、熟語を作ってね。";
+    return cur;
+  });
+};
+
+slot1El.onclick = async ()=>{
+  await txUpdate((cur)=>{
+    if(!cur || !cur.started) return cur;
+    if(!bothJoined(cur) || !isMyTurn(cur) || cur.holdAdvance) return cur;
+    cur.slot1 = null;
+    cur.lastMsg = "①を消しました。";
+    return cur;
+  });
+};
+slot2El.onclick = async ()=>{
+  await txUpdate((cur)=>{
+    if(!cur || !cur.started) return cur;
+    if(!bothJoined(cur) || !isMyTurn(cur) || cur.holdAdvance) return cur;
+    cur.slot2 = null;
+    cur.lastMsg = "②を消しました。";
+    return cur;
+  });
+};
+
+/* ===============================
+   ターン進行
+=============================== */
+function nextPlayerInState(cur){
+  cur.holdAdvance = false;
+  cur.current = ((cur.current ?? 0) + 1) % 2;
+  cur.drewThisTurn = false;
+  cur.drawnKanji = null;
+  cur.missThisTurn = 0;
+  cur.slot1 = null;
+  cur.slot2 = null;
+
+  const p = cur.players?.[cur.current];
+  if(p?.skipNext){
+    cur.lastMsg = `プレイヤー${cur.current+1}は休みです。「つぎへ」で進めます。`;
+  }else{
+    cur.lastMsg = `プレイヤー${cur.current+1}の番です。「１まい引く」から始めます。`;
+  }
+  return cur;
+}
+function consumeUsedTilesInState(cur){
+  const usedIdx = [];
+  if(cur.slot1?.src==="field") usedIdx.push(cur.slot1.index);
+  if(cur.slot2?.src==="field") usedIdx.push(cur.slot2.index);
+
+  usedIdx.sort((a,b)=>b-a).forEach(i=>{
+    if(typeof i==="number" && i>=0 && i<(cur.field||[]).length){
+      cur.field.splice(i,1);
+    }
+  });
+
+  if(cur.slot1?.src==="draw" || cur.slot2?.src==="draw"){
+    cur.drawnKanji = null;
+  }
+  cur.slot1 = null;
+  cur.slot2 = null;
+  return cur;
+}
+function checkWinInState(cur){
+  const target = Math.max(1, Number(cur.settings?.targetPoints)||5);
+  const winner = (cur.players||[]).findIndex(p => (p.points||0) >= target);
+  if(winner >= 0){
+    cur.winner = winner;
+    cur.started = false;
+    cur.holdAdvance = false;
+    cur.lastMsg = `プレイヤー${winner+1}の勝ち！`;
+    return true;
+  }
+  return false;
+}
+
+/* ===============================
+   ボタン操作
+=============================== */
+startBtn.onclick = async ()=>{
+  if(!roomId){ setMsg("先にルーム作成/参加をしてください。","ng"); return; }
+  if(!remoteState){ setMsg("接続状態を待っています…","ng"); return; }
+
+  await txUpdate((cur)=>{
+    if(!bothJoined(cur)){
+      cur.lastMsg = "相手の参加を待っています…";
+      return cur;
+    }
+    cur.settings = {
+      gradeKey: gradeSelect.value,
+      showReadings: (readingToggle.value === "on"),
+      targetPoints: Math.max(1, Number(targetPointsInp.value)||5),
+      missLimit: Number(missLimitSel.value)||3
+    };
+    if(cur.started){
+      cur.lastMsg = "すでに開始しています。";
+      return cur;
+    }
+    delete cur.winner;
+
+    cur.players = (cur.players||[]).slice(0,2).map((p,i)=>({
+      seat:i,
+      clientId: p?.clientId || null,
+      points: 0,
+      skipNext: false
+    }));
+
+    const deck = buildDeckForGrade(cur.settings.gradeKey);
+    cur.deck = deck;
+    cur.field = cur.deck.splice(0,6);
+    cur.started = true;
+    cur.current = 0;
+
+    cur.drewThisTurn = false;
+    cur.drawnKanji = null;
+    cur.missThisTurn = 0;
+    cur.slot1 = null;
+    cur.slot2 = null;
+    cur.made = [];
+    cur.holdAdvance = false;
+
+    cur.lastMsg = "プレイヤー1の番です。「１まい引く」から始めます。";
+    return cur;
+  });
+};
+
+resetBtn.onclick = async ()=>{
+  if(!roomId){ setMsg("先にルーム作成/参加をしてください。","ng"); return; }
+
+  await txUpdate((cur)=>{
+    delete cur.winner;
+    cur.started = false;
+    cur.deck = [];
+    cur.field = [];
+    cur.drewThisTurn = false;
+    cur.drawnKanji = null;
+    cur.missThisTurn = 0;
+    cur.slot1 = null;
+    cur.slot2 = null;
+    cur.made = [];
+    cur.holdAdvance = false;
+    cur.current = 0;
+
+    cur.players = (cur.players||[]).slice(0,2).map((p,i)=>({
+      seat:i,
+      clientId: p?.clientId || null,
+      points: 0,
+      skipNext: false
+    }));
+
+    cur.lastMsg = "リセットしました。スタートを押すと開始します。";
+    return cur;
+  });
+};
+
+drawBtn.onclick = async ()=>{
+  const st = remoteState;
+  if(!st) return;
+  if(!canActNow(st)){
+    if(st.started && bothJoined(st) && !isMyTurn(st)) setMsg("相手の番です（あなたは操作できません）。","ng");
+    return;
+  }
+  if(st.drewThisTurn) return;
+
+  await txUpdate((cur)=>{
+    if(!cur.started || !bothJoined(cur) || !isMyTurn(cur) || cur.holdAdvance) return cur;
+    if(cur.drewThisTurn) return cur;
+    if((cur.deck||[]).length === 0){
+      cur.lastMsg = "山札がなくなりました。もう引けません（リセットしてね）。";
+      return cur;
+    }
+    cur.drawnKanji = cur.deck.pop();
+    cur.drewThisTurn = true;
+    cur.lastMsg = "引いた札を①②に入れて、熟語を作ってね。";
+    return cur;
+  });
+};
+
+checkBtn.onclick = async ()=>{
+  const st = remoteState;
+  if(!st) return;
+  if(!canActNow(st)){
+    if(st.started && bothJoined(st) && !isMyTurn(st)) setMsg("相手の番です（あなたは操作できません）。","ng");
+    return;
+  }
+  if(!st.drewThisTurn){
+    setMsg("先に「１まい引く」を押してね。","ng");
+    return;
+  }
+
+  await txUpdate((cur)=>{
+    if(!cur.started || !bothJoined(cur) || !isMyTurn(cur) || cur.holdAdvance) return cur;
+    if(!cur.drewThisTurn) return cur;
+    if(!cur.slot1 || !cur.slot2){
+      cur.lastMsg = "①②をうめてから「できた！」を押してね。";
+      return cur;
+    }
+
+    const word = cur.slot1.value + cur.slot2.value;
+    const missLimit = Number(cur.settings?.missLimit)||3;
+
+    if(!ANSWER_SET.has(word)){
+      cur.missThisTurn = (cur.missThisTurn||0) + 1;
+
+      if(cur.missThisTurn >= missLimit){
+        const p = cur.players[cur.current];
+        if(p) p.skipNext = true;
+
+        if(cur.drawnKanji){ cur.field.push(cur.drawnKanji); }
+        cur.drawnKanji = null;
+        cur.slot1 = null;
+        cur.slot2 = null;
+
+        cur.holdAdvance = true;
+        cur.lastMsg = "その言葉はありません。ミスがたまったので、次の自分の番は休みです。「つぎへ」で進めます。";
+        return cur;
+      }
+
+      cur.lastMsg = "その言葉はありません。";
+      return cur;
+    }
+
+    const madeArr = cur.made || [];
+    if(madeArr.includes(word)){
+      cur.lastMsg = "その熟語は、もうできています（同じ熟語は1回まで）。";
+      return cur;
+    }
+
+    madeArr.push(word);
+    cur.made = madeArr;
+
+    const p = cur.players[cur.current];
+    if(p) p.points = (p.points||0) + 1;
+
+    consumeUsedTilesInState(cur);
+
+    cur.lastMsg = "正答！ 1ポイント！ つづけて作れます。";
+
+    checkWinInState(cur);
+    return cur;
+  });
+};
+
+endBtn.onclick = async ()=>{
+  const st = remoteState;
+  if(!st) return;
+  if(!canActNow(st)){
+    if(st.started && bothJoined(st) && !isMyTurn(st)) setMsg("相手の番です（あなたは操作できません）。","ng");
+    return;
+  }
+
+  await txUpdate((cur)=>{
+    if(!cur.started || !bothJoined(cur) || !isMyTurn(cur) || cur.holdAdvance) return cur;
+
+    if(cur.drawnKanji){
+      cur.field.push(cur.drawnKanji);
+      cur.drawnKanji = null;
+    }
+    cur.slot1 = null;
+    cur.slot2 = null;
+
+    nextPlayerInState(cur);
+    return cur;
+  });
+};
+
+skipNextBtn.onclick = async ()=>{
+  const st = remoteState;
+  if(!st || !roomId || !bothJoined(st) || !isMyTurn(st)) return;
+
+  await txUpdate((cur)=>{
+    if(!cur.started || !bothJoined(cur) || !isMyTurn(cur)) return cur;
+
+    if(cur.holdAdvance){
+      nextPlayerInState(cur);
+      return cur;
+    }
+
+    const p = cur.players?.[cur.current];
+    if(p?.skipNext){
+      p.skipNext = false;
+      nextPlayerInState(cur);
+      return cur;
+    }
+
+    cur.lastMsg = "いまは「つぎへ」は使えません。";
+    return cur;
+  });
+};
+
+addFieldBtn.onclick = async ()=>{
+  const st = remoteState;
+  if(!st || !canActNow(st)) return;
+
+  await txUpdate((cur)=>{
+    if(!cur.started || !bothJoined(cur) || !isMyTurn(cur) || cur.holdAdvance) return cur;
+    if((cur.deck||[]).length === 0){
+      cur.lastMsg = "山札がなくなりました。場札を追加できません。";
+      return cur;
+    }
+    const n = Math.min(3, cur.deck.length);
+    for(let i=0;i<n;i++) cur.field.push(cur.deck.pop());
+    cur.lastMsg = `場札を追加しました（${n}枚）。`;
+    return cur;
+  });
+};
+
+/* ===============================
+   読み表示トグル（表示だけ）
+=============================== */
+readingToggle.onchange = ()=>{
+  if(!remoteState) return;
+  const tmp = JSON.parse(JSON.stringify(remoteState));
+  tmp.settings = tmp.settings || {};
+  tmp.settings.showReadings = (readingToggle.value === "on");
+  renderBoardFromState(tmp);
+};
+
+/* ===============================
+   クリック：ルーム作成/参加
+=============================== */
+createRoomBtn.addEventListener("click", async ()=>{
+  try{
+    setMsg("ルーム作成中…");
+    await createRoom();
+    setMsg("ルームを作成しました。相手にルームIDを伝えて参加してもらってね。","ok");
+  }catch(e){
+    console.error(e);
+    setMsg("ルーム作成に失敗しました（Firebase設定/ルールを確認）。","ng");
+  }
+});
+joinRoomBtn.addEventListener("click", async ()=>{
+  const id = (roomIdInput.value||"").trim().toUpperCase();
+  if(!id){ setMsg("ルームIDを入れてね。","ng"); return; }
+  try{
+    setMsg("参加中…");
+    await joinRoom(id);
+  }catch(e){
+    console.error(e);
+    setMsg("参加に失敗しました（Firebase設定/ルールを確認）。","ng");
+  }
+});
+
+/* ===============================
+   TTS（遊び方 / 正答のよみ・いみ・れいぶん）
+=============================== */
+const HAS_SPEECH = ("speechSynthesis" in window) && ("SpeechSynthesisUtterance" in window);
+const TTS_DICT = [
+  // 追加したければここへ 例：["消防車","しょうぼうしゃ"]
+];
+function safeCancelSpeech(){
+  if(!HAS_SPEECH) return;
+  try{ window.speechSynthesis.cancel(); }catch(_){}
+}
+function ttsNormalize(text){
+  let out = String(text ?? "");
+  for(const [k, v] of TTS_DICT){ out = out.split(k).join(v); }
+  return out;
+}
+let cachedVoices = [];
+function refreshVoices(){
+  if(!HAS_SPEECH) return;
+  try{ cachedVoices = window.speechSynthesis.getVoices() || []; }catch(_){ cachedVoices = []; }
+}
+refreshVoices();
+if(HAS_SPEECH){
+  window.speechSynthesis.onvoiceschanged = refreshVoices;
+}
+function pickJaVoice(){
+  if(!HAS_SPEECH) return null;
+  const voices = cachedVoices.length ? cachedVoices : (window.speechSynthesis.getVoices?.() || []);
+  return voices.find(v => /ja|JP/i.test(v.lang)) || voices[0] || null;
+}
+function speakText(text, onEnd){
+  if(!HAS_SPEECH){ onEnd && onEnd(); return null; }
+  try{
+    safeCancelSpeech();
+    const u = new SpeechSynthesisUtterance(ttsNormalize(text));
+    const v = pickJaVoice();
+    if(v) u.voice = v;
+    u.lang = "ja-JP";
+    u.rate = 1.0;
+    u.pitch = 1.0;
+    u.onend = ()=>{ onEnd && onEnd(); };
+    u.onerror = ()=>{ onEnd && onEnd(); };
+    window.speechSynthesis.speak(u);
+    return u;
+  }catch(e){
+    onEnd && onEnd();
+    return null;
+  }
+}
+
+if(!HAS_SPEECH){
+  speakBtn.onclick = ()=> setMsg("この環境では音声読み上げが使えません。","ng");
+  stopSpeakBtn.onclick = ()=> setMsg("この環境では音声読み上げが使えません。","ng");
+  ansSpeakBtn.onclick = ()=> setMsg("この環境では音声読み上げが使えません。","ng");
+}else{
+  speakBtn.onclick = ()=>{
+    const text = [
+      "最初に ばふだ が6枚出ます。",
+      "自分の ばん では、必ず やまふだ から1枚引きます。1回だけ。",
+      "１、２のわくに、ばふだ どうし、または ひきふだ と ばふだ を、タップしていれます。",
+      "できたら、できた！ をタップします。正答なら1ポイント。",
+      "作れなかったときは、引いた ふだ は ばふだ に並び、ばふだ がどんどん増えます。",
+      "ばふだ が3枚以下になったら、ばふだ を追加する のボタンで、ふだ を追加できます。",
+      "ばん を終えるとき、手元に残った ひきふだ も ばふだ へ追加されます。",
+      "目標ポイントに達した人が勝ち。設定で変更できます。",
+      "1ターンで、その言葉はありません、が設定回数出たら、次の自分の ばん は1回休みです。つぎへ、で進みます。"
+    ].join(" ");
+    speakText(text);
+  };
+  stopSpeakBtn.onclick = ()=> safeCancelSpeech();
+}
+
+/* 正答の「よみ・いみ・れいぶん」 */
+let lastCorrectWord = null;
+ansSpeakBtn.onclick = ()=>{
+  if(!lastCorrectWord) return;
+  const info = JUKUGO_DB[lastCorrectWord];
+  if(!info) return;
+
+  ansInfo.innerHTML =
+    `<div>【${escapeHtml(lastCorrectWord)}】</div>` +
+    `<div class="sub">よみ：${escapeHtml(info.yomi || "")}</div>` +
+    `<div class="sub">いみ：${escapeHtml(info.imi || "")}</div>` +
+    `<div class="sub">れいぶん：${escapeHtml(info.reibun || "")}</div>`;
+  ansInfo.style.display = "block";
+
+  const yomi = info.yomi || "";
+  const reibunRaw = info.reibun || "";
+  const reibunSpeak = (reibunRaw && lastCorrectWord && yomi)
+    ? (reibunRaw.split(lastCorrectWord).join(yomi))
+    : reibunRaw;
+
+  const speakStr = `よみ、${yomi}。いみ、${info.imi || ""}。れいぶん、${reibunSpeak}`;
+  speakText(speakStr, ()=>{
+    ansInfo.style.display = "none";
+    ansInfo.innerHTML = "";
+  });
+};
+
+/* ===============================
+   くす玉
+=============================== */
+let lastWinnerShown = null;
+function burstKusudama(winnerIndex){
+  kusudamaOverlay.style.display = "grid";
+  kusudamaOverlay.setAttribute("aria-hidden","false");
+  kusudama.classList.remove("burst");
+  streamers.innerHTML = "";
+  kusudamaBanner.textContent = `プレイヤー${winnerIndex+1}の勝ち！`;
+
+  requestAnimationFrame(()=>{
+    kusudama.classList.add("burst");
+    for(let i=0;i<18;i++){
+      const s = document.createElement("div");
+      s.className = "streamer";
+      const r = (Math.random()*120 - 60).toFixed(1) + "deg";
+      const x = (Math.random()*340 - 170).toFixed(1) + "px";
+      s.style.setProperty("--r", r);
+      s.style.setProperty("--x", x);
+      streamers.appendChild(s);
+    }
+    setTimeout(()=>{
+      kusudamaOverlay.style.display = "none";
+      kusudamaOverlay.setAttribute("aria-hidden","true");
+    }, 1400);
+  });
+}
+
+/* applyRemoteState に「後処理」を追加 */
+const _applyRemoteState_base = applyRemoteState;
+applyRemoteState = function(st){
+  _applyRemoteState_base(st);
+
+  const madeArr = st?.made || [];
+  const newest = madeArr.length ? madeArr[madeArr.length - 1] : null;
+  if(newest && newest !== lastCorrectWord){
+    lastCorrectWord = newest;
+    ansSpeakBtn.style.display = "inline-flex";
+    ansInfo.style.display = "none";
+    ansInfo.innerHTML = "";
+  }
+  if(!newest){
+    lastCorrectWord = null;
+    ansSpeakBtn.style.display = "none";
+    ansInfo.style.display = "none";
+    ansInfo.innerHTML = "";
+  }
+
+  if(typeof st?.winner === "number"){
+    if(lastWinnerShown !== st.winner){
+      lastWinnerShown = st.winner;
+      burstKusudama(st.winner);
+      safeCancelSpeech();
+    }
+  }else{
+    lastWinnerShown = null;
+  }
+
+  if(st?.started && bothJoined(st)){
+    const cur = st.current ?? 0;
+    const p = (st.players||[])[cur];
+    if(p?.skipNext && isMyTurn(st)){
+      setMsg(`プレイヤー${cur+1}は休みです。「つぎへ」で進めます。`);
+    }
+  }
+};
+
+/* 初期：正答読み上げUIは隠す */
+ansSpeakBtn.style.display = "none";
+ansInfo.style.display = "none";
+</script>
+</body>
+</html>
