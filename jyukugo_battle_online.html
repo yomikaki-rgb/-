@@ -879,13 +879,17 @@ async function pushStateToFirebase(state){
   const rev = Date.now();
   ONLINE.lastRev = rev;
 
+  // ★stateにもrevを埋めて、受信側で「新しいか」を確実に判定できるようにする
+  const payload = Object.assign({}, state, { _rev: rev });
+
+  // ★meta と state を 1回の update で同時に更新（順序ズレ/取りこぼし対策）
   await update(roomRef(), {
     meta: {
       rev,
       updatedAt: serverTimestamp()
-    }
+    },
+    state: payload
   });
-  await set(stateRef(), state);
 }
 
 async function syncNow(){
@@ -893,6 +897,72 @@ async function syncNow(){
   if(ONLINE.suppress) return;
   await pushStateToFirebase(exportState());
 }
+/* ===============================
+   ★オンライン受信：state購読
+   - 相手の操作を即反映
+   - _rev で新旧判定してループ/巻き戻りを防止
+=============================== */
+let __didInitialPull = false;
+
+// 初回：今あるstateを1回だけ取得して反映（部屋に既に人がいた場合に追いつく）
+(async ()=>{
+  if(!ONLINE.enabled) return;
+  try{
+    const snap = await get(stateRef());
+    const s = snap.val();
+    if(s && typeof s === "object"){
+      const rev = Number(s._rev)||0;
+      if(rev > (ONLINE.lastRev||0)){
+        ONLINE.lastRev = rev;
+        applyStateFromFirebase(s);
+      }
+    }
+  }catch(e){
+    // 失敗しても購読で追いつくのでOK
+  }finally{
+    __didInitialPull = true;
+  }
+})();
+
+// 継続購読：誰かがstateを書き換えたら反映
+onValue(stateRef(), (snap)=>{
+  const s = snap.val();
+  if(!s || typeof s !== "object") return;
+
+  const rev = Number(s._rev)||0;
+
+  // ★自分が最後に送ったrev以下なら無視（エコー/重複反映を防ぐ）
+  if(rev <= (ONLINE.lastRev||0)) return;
+
+  ONLINE.lastRev = rev;
+  applyStateFromFirebase(s);
+});
+/* ===============================
+   ★自動同期（保険）
+   - クリック処理に syncNow() の呼び忘れがあっても反映漏れしない
+=============================== */
+let __lastSig = "";
+
+setInterval(()=>{
+  if(!ONLINE.enabled) return;
+  if(ONLINE.suppress) return;
+
+  // 操作できない側（相手の番）は送らない
+  if(!canOperateNow()) return;
+
+  try{
+    const st = exportState();
+    const sig = JSON.stringify(st);
+
+    if(sig !== __lastSig){
+      __lastSig = sig;
+      // exportState() をそのまま送る（pushState側で _rev 付与）
+      pushStateToFirebase(st);
+    }
+  }catch(e){
+    // ここで落ちてもゲームは止めない
+  }
+}, 350);
 
 /* ===============================
    元のゲームコード（ここから）
