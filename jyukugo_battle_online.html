@@ -812,7 +812,34 @@ function canOperateNow(){
   return (ONLINE.myIndex === _current);
 }
 
+// ★ゲーム変数がまだ未定義の段階で exportState() が走ると
+// ReferenceError → module全体が落ちてスタートが無反応になるためガード
+function __gameVarsReady(){
+  return (
+    typeof started !== "undefined" &&
+    typeof deck !== "undefined" &&
+    typeof field !== "undefined" &&
+    typeof players !== "undefined" &&
+    typeof current !== "undefined" &&
+    typeof targetPoints !== "undefined" &&
+    typeof missLimit !== "undefined" &&
+    typeof drewThisTurn !== "undefined" &&
+    typeof drawnKanji !== "undefined" &&
+    typeof missThisTurn !== "undefined" &&
+    typeof slot1 !== "undefined" &&
+    typeof slot2 !== "undefined" &&
+    typeof made !== "undefined" &&
+    typeof lastCorrectWord !== "undefined" &&
+    typeof holdAdvance !== "undefined" &&
+    typeof showReadings !== "undefined" &&
+    typeof kusudamaEvent !== "undefined"
+  );
+}
+
 function exportState(){
+  // ★準備できてない間は何もしない
+  if(!__gameVarsReady()) return null;
+
   return {
     // ゲーム状態
     started,
@@ -846,6 +873,7 @@ function exportState(){
     readingToggleValue: readingToggle.value
   };
 }
+
 
 function applyStateFromFirebase(s){
   if(!s || typeof s !== "object") return;
