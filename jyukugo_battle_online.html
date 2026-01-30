@@ -795,7 +795,7 @@ function canOperateNow(){
   // 「1回休み」などで holdAdvance になったとき、
   // current の整合がズレると詰むので、holdAdvance 中は同期送信を許可する
   // （UI側で“つぎへ以外”は無効化して暴発を防ぐ前提）
-  if(holdAdvance) return true;
+   if(holdAdvance) return (ONLINE.myIndex === current);
 
   // 通常は current の人だけ操作可
   return (ONLINE.myIndex === current);
@@ -823,6 +823,9 @@ function exportState(){
     lastCorrectWord,
     holdAdvance,
     showReadings,
+
+    // ★くす玉イベント（勝敗演出を相手にも発火させる）
+    kusudamaEvent, // { winner, rev } or null
 
     // UI入力状態（右側）
     gradeSelectValue: gradeSelect.value,
@@ -856,6 +859,15 @@ function applyStateFromFirebase(s){
     lastCorrectWord = (s.lastCorrectWord ?? null);
     holdAdvance = !!s.holdAdvance;
     showReadings = (s.showReadings ?? true);
+    // ★くす玉イベント（相手側で受信したら演出）
+    if(s.kusudamaEvent && typeof s.kusudamaEvent === "object"){
+      const wr = Number(s.kusudamaEvent.winner);
+      const rr = Number(s.kusudamaEvent.rev) || 0;
+      if(rr > (lastKusudamaRev || 0) && Number.isFinite(wr) && wr >= 0){
+        lastKusudamaRev = rr;
+        burstKusudama(wr);
+      }
+    }
 
     // 右側入力（見た目の一貫性）
     if(typeof s.gradeSelectValue === "string") gradeSelect.value = s.gradeSelectValue;
@@ -2887,6 +2899,8 @@ let speakingRuleUtterance = null;
 let holdAdvance = false;
 
 let showReadings = true;
+let kusudamaEvent = null;     // ★{ winner:number, rev:number }
+let lastKusudamaRev = 0;      // ★受信済み判定
 
 function shuffle(a){
   for(let i=a.length-1;i>0;i--){
@@ -3066,10 +3080,13 @@ function updateTurnUI(){
     skipNextBtn.style.display = "inline-flex";
   }else{
     skipNextBtn.style.display = "none";
+
+    // ★1枚引くまでは、番を終えられない
     drawBtn.disabled = drewThisTurn;
     checkBtn.disabled = !drewThisTurn;
-    endBtn.disabled = false;
+    endBtn.disabled = !drewThisTurn;   // ←ここが変更点
   }
+}
 
   if(field.length <= 3 && started){
     addFieldBtn.style.display = "inline-flex";
@@ -3278,20 +3295,6 @@ function nextPlayer(){
   if(p.skipNext) setMsg(`プレイヤー${current+1}は休みです。「つぎへ」で進めます。`);
   else setMsg(`プレイヤー${current+1}の番です。「１まい引く」から始めます。`);
 }
-function checkWin(){
-  const winner = players.findIndex(p => p.points >= targetPoints);
-  if(winner >= 0){
-    winMsgEl.style.display = "block";
-    winMsgEl.textContent = `プレイヤー${winner+1}の勝ち！`;
-    drawBtn.disabled = true;
-    checkBtn.disabled = true;
-    endBtn.disabled = true;
-    skipNextBtn.style.display = "none";
-    addFieldBtn.style.display = "none";
-    burstKusudama(winner);
-    started = false;
-    setTopPill("終了");
-    return true;
   }
   return false;
 }
@@ -3426,9 +3429,16 @@ endBtn.addEventListener("click", async ()=>{
 
   if(ONLINE.enabled && !canOperateNow()) return;
 
+  // ★1枚引く前に「番を終える」はできない
+  if(!drewThisTurn){
+    setMsg("先に「１まい引く」を押してね。","ng");
+    return;
+  }
+
   endTurn(false);
   await syncNow();
 });
+
 
 skipNextBtn.addEventListener("click", async ()=>{
   if(!started) return;
