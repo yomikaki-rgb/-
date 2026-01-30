@@ -3435,34 +3435,32 @@ skipNextBtn.addEventListener("click", async ()=>{
 
   if(ONLINE.enabled && !canOperateNow()) return;
 
+  // ★「次へ」処理を共通化：進めた“後”に syncNow を走らせる
+  const advanceAndSyncLater = ()=>{
+    setTimeout(()=>{
+      nextPlayer();
+      // ★ nextPlayer() 後の状態を同期する（重要）
+      (async ()=>{ try{ await syncNow(); }catch(e){} })();
+    }, 250);
+  };
+
   if(holdAdvance){
     holdAdvance = false;
     setMsg("「つぎへ」を押しました。次の人へ進みます。");
-
-    // ★先にターンを進める
-    nextPlayer();
-
-    // ★進めた状態を同期
-    await syncNow();
+    advanceAndSyncLater();
     return;
   }
 
   const p = players[current];
-  if(!p.skipNext){
-    try{ await syncNow(); }catch(e){}
-    return;
-  }
+  if(!p.skipNext) return;
 
   p.skipNext = false;
   renderScoreboard();
   setMsg(`プレイヤー${current+1}の休みが終わりました。次の人へ進みます。`);
 
-  // ★先にターンを進める
-  nextPlayer();
-
-  // ★進めた状態を同期
-  await syncNow();
+  advanceAndSyncLater();
 });
+
 
 
 addFieldBtn.addEventListener("click", async ()=>{
