@@ -787,10 +787,17 @@ function metaRef(){ return ref(db, `rooms/${ONLINE.roomId}/meta`); }
 =============================== */
 function canOperateNow(){
   if(!ONLINE.enabled) return true;
-  if(!started) return (ONLINE.myIndex === 0); // 未開始はプレイヤー1だけが開始/リセット
 
-  // ★1回休み/進行待ち(holdAdvance)の時でも、「つぎへ」で進める人（current）は操作できるようにする
-  // （他の操作ボタンは updateTurnUI 側で個別に無効化される想定）
+  // 未開始はプレイヤー1だけ
+  if(!started) return (ONLINE.myIndex === 0);
+
+  // ★ここが重要：
+  // 「1回休み」などで holdAdvance になったとき、
+  // current の整合がズレると詰むので、holdAdvance 中は同期送信を許可する
+  // （UI側で“つぎへ以外”は無効化して暴発を防ぐ前提）
+  if(holdAdvance) return true;
+
+  // 通常は current の人だけ操作可
   return (ONLINE.myIndex === current);
 }
 
@@ -3437,7 +3444,10 @@ skipNextBtn.addEventListener("click", async ()=>{
   }
 
   const p = players[current];
-  if(!p.skipNext) return;
+  if(!p.skipNext){
+  try{ await syncNow(); }catch(e){ console.warn("syncNow failed on next (skipNext false):", e); }
+  return;
+}
   p.skipNext = false;
   renderScoreboard();
   setMsg(`プレイヤー${current+1}の休みが終わりました。次の人へ進みます。`);
