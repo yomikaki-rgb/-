@@ -529,6 +529,20 @@
 </style>
 </head>
 <body>
+  <!-- ★部屋URL自動生成 -->
+<div id="roomMaker" style="margin:8px 0; padding:8px; border:1px solid #ccc; border-radius:6px;">
+  <div style="font-weight:bold;">オンライン対戦リンク作成</div>
+  <input id="roomInput" placeholder="部屋番号（例: class1）" style="width:160px;">
+  <button id="makeRoomUrlBtn">URL作成</button>
+  <div style="margin-top:6px; font-size:12px;">
+    プレイヤー1用：<br>
+    <input id="urlP1" style="width:100%;">
+  </div>
+  <div style="margin-top:6px; font-size:12px;">
+    プレイヤー2用：<br>
+    <input id="urlP2" style="width:100%;">
+  </div>
+</div>
 <div class="app" id="app">
   <header>
     <h1>熟語づくりカードゲーム</h1>
@@ -701,6 +715,25 @@
 </div>
 
 <script type="module">
+  // ★部屋URL自動生成
+const roomInput = document.getElementById("roomInput");
+const makeRoomUrlBtn = document.getElementById("makeRoomUrlBtn");
+const urlP1 = document.getElementById("urlP1");
+const urlP2 = document.getElementById("urlP2");
+
+if(makeRoomUrlBtn){
+  makeRoomUrlBtn.addEventListener("click", ()=>{
+    const room = roomInput.value.trim();
+    if(!room){
+      alert("部屋番号を入力してください");
+      return;
+    }
+
+    const base = location.origin + location.pathname;
+    urlP1.value = `${base}?room=${room}&p=0`;
+    urlP2.value = `${base}?room=${room}&p=1`;
+  });
+}
 /* ===============================
    Firebase (ES Modules)
    - あなたの firebaseConfig を使用
