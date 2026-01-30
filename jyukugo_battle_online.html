@@ -719,28 +719,38 @@
   </div>
 </div>
 
-<script type="module">
-  // ★部屋URL自動生成
-const roomInput = document.getElementById("roomInput");
-const makeRoomUrlBtn = document.getElementById("makeRoomUrlBtn");
-const urlP1 = document.getElementById("urlP1");
-const urlP2 = document.getElementById("urlP2");
+<!-- ★URL作成は module から分離：ここは必ず動く保険 -->
+<script>
+(() => {
+  const roomInput = document.getElementById("roomInput");
+  const makeRoomUrlBtn = document.getElementById("makeRoomUrlBtn");
+  const urlP1 = document.getElementById("urlP1");
+  const urlP2 = document.getElementById("urlP2");
 
-if(makeRoomUrlBtn){
-  makeRoomUrlBtn.addEventListener("click", ()=>{
-    const room = roomInput.value.trim();
+  if(!makeRoomUrlBtn) return;
+
+  makeRoomUrlBtn.addEventListener("click", () => {
+    const room = (roomInput?.value || "").trim();
     if(!room){
       alert("部屋番号を入力してください");
       return;
     }
 
+    // 末尾の / が二重になったりしないよう安全に作る
     const base = location.origin + location.pathname;
-    urlP1.value = `${base}?room=${room}&p=0`;
-    urlP2.value = `${base}?room=${room}&p=1`;
+    urlP1.value = `${base}?room=${encodeURIComponent(room)}&p=0`;
+    urlP2.value = `${base}?room=${encodeURIComponent(room)}&p=1`;
   });
-}
+})();
+</script>
+
+<script type="module">
 /* ===============================
    Firebase (ES Modules)
+   - あなたの firebaseConfig を使用
+   - Realtime Database で「部屋(state)」を同期
+=============================== */
+
    - あなたの firebaseConfig を使用
    - Realtime Database で「部屋(state)」を同期
 =============================== */
