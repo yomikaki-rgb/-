@@ -788,7 +788,10 @@ function metaRef(){ return ref(db, `rooms/${ONLINE.roomId}/meta`); }
 function canOperateNow(){
   if(!ONLINE.enabled) return true;
   if(!started) return (ONLINE.myIndex === 0); // 未開始はプレイヤー1だけが開始/リセット
-  return (ONLINE.myIndex === current) && !holdAdvance;
+
+  // ★1回休み/進行待ち(holdAdvance)の時でも、「つぎへ」で進める人（current）は操作できるようにする
+  // （他の操作ボタンは updateTurnUI 側で個別に無効化される想定）
+  return (ONLINE.myIndex === current);
 }
 
 function exportState(){
