@@ -529,20 +529,6 @@
 </style>
 </head>
 <body>
-  <!-- ★部屋URL自動生成 -->
-<div id="roomMaker" style="margin:8px 0; padding:8px; border:1px solid #ccc; border-radius:6px;">
-  <div style="font-weight:bold;">オンライン対戦リンク作成</div>
-  <input id="roomInput" placeholder="部屋番号（例: class1）" style="width:160px;">
-  <button id="makeRoomUrlBtn">URL作成</button>
-  <div style="margin-top:6px; font-size:12px;">
-    プレイヤー1用：<br>
-    <input id="urlP1" style="width:100%;">
-  </div>
-  <div style="margin-top:6px; font-size:12px;">
-    プレイヤー2用：<br>
-    <input id="urlP2" style="width:100%;">
-  </div>
-</div>
 <div class="app" id="app">
   <header>
     <h1>熟語づくりカードゲーム</h1>
@@ -622,6 +608,25 @@
       </div>
 
       <div class="card" id="rightSide">
+        <!-- ★URA(=URL)作成：オンライン対戦リンク作成（右側に縦積み） -->
+        <div id="roomMaker" class="card" style="padding:12px; margin-bottom:12px;">
+          <h2 style="margin:0 0 8px 0;">オンライン対戦リンク作成</h2>
+
+          <div class="row" style="gap:8px;">
+            <input id="roomInput" placeholder="部屋番号（例: class1）" style="width:160px;">
+            <button id="makeRoomUrlBtn" type="button">URL作成</button>
+          </div>
+
+          <div style="margin-top:8px; font-size:12px; font-weight:900; color:var(--sub);">
+            プレイヤー1用：
+            <input id="urlP1" style="width:100%; margin-top:4px;">
+          </div>
+
+          <div style="margin-top:8px; font-size:12px; font-weight:900; color:var(--sub);">
+            プレイヤー2用：
+            <input id="urlP2" style="width:100%; margin-top:4px;">
+          </div>
+        </div>
 
         <div class="settings">
           <div class="settingRow">
