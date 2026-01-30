@@ -796,17 +796,20 @@ function metaRef(){ return ref(db, `rooms/${ONLINE.roomId}/meta`); }
 function canOperateNow(){
   if(!ONLINE.enabled) return true;
 
-  // 未開始はプレイヤー1だけ
-  if(!started) return (ONLINE.myIndex === 0);
+  // ★ゲーム変数がまだ宣言されていない段階で参照すると module が落ちるのでガード
+  // typeof は未宣言でも ReferenceError になりません
+  const _started = (typeof started !== "undefined") ? started : false;
+  const _holdAdvance = (typeof holdAdvance !== "undefined") ? holdAdvance : false;
+  const _current = (typeof current !== "undefined") ? current : 0;
 
-  // ★ここが重要：
-  // 「1回休み」などで holdAdvance になったとき、
-  // current の整合がズレると詰むので、holdAdvance 中は同期送信を許可する
-  // （UI側で“つぎへ以外”は無効化して暴発を防ぐ前提）
-   if(holdAdvance) return (ONLINE.myIndex === current);
+  // 未開始はプレイヤー1だけ
+  if(!_started) return (ONLINE.myIndex === 0);
+
+  // holdAdvance 中は current の人だけ（ただし変数未準備でも落ちない）
+  if(_holdAdvance) return (ONLINE.myIndex === _current);
 
   // 通常は current の人だけ操作可
-  return (ONLINE.myIndex === current);
+  return (ONLINE.myIndex === _current);
 }
 
 function exportState(){
@@ -847,6 +850,19 @@ function exportState(){
 function applyStateFromFirebase(s){
   if(!s || typeof s !== "object") return;
 
+  // ★重要：元のゲーム側の let/const がまだ実行されてないと、
+  // ここで started = ... の代入が ReferenceError になって module が死ぬ。
+  // なので「ゲーム変数が準備できるまで」受信反映をスキップする。
+  if(
+    typeof started === "undefined" ||
+    typeof deck === "undefined" ||
+    typeof field === "undefined" ||
+    typeof players === "undefined" ||
+    typeof current === "undefined"
+  ){
+    return;
+  }
+
   ONLINE.suppress = true;
   try{
     started = !!s.started;
@@ -867,6 +883,7 @@ function applyStateFromFirebase(s){
     lastCorrectWord = (s.lastCorrectWord ?? null);
     holdAdvance = !!s.holdAdvance;
     showReadings = (s.showReadings ?? true);
+
     // ★くす玉イベント（相手側で受信したら演出）
     if(s.kusudamaEvent && typeof s.kusudamaEvent === "object"){
       const wr = Number(s.kusudamaEvent.winner);
@@ -876,6 +893,31 @@ function applyStateFromFirebase(s){
         burstKusudama(wr);
       }
     }
+
+    // 右側入力（見た目の一貫性）
+    if(typeof gradeSelect !== "undefined" && typeof s.gradeSelectValue === "string") gradeSelect.value = s.gradeSelectValue;
+    if(typeof playerCountSel !== "undefined" && typeof s.playerCountValue === "string") playerCountSel.value = s.playerCountValue;
+    if(typeof targetPointsInp !== "undefined" && s.targetPointsValue != null) targetPointsInp.value = String(s.targetPointsValue);
+    if(typeof missLimitSel !== "undefined" && s.missLimitValue != null) missLimitSel.value = String(s.missLimitValue);
+    if(typeof readingToggle !== "undefined" && typeof s.readingToggleValue === "string") readingToggle.value = s.readingToggleValue;
+
+    // 描画
+    winMsgEl.style.display = "none";
+    renderField();
+    renderSlots();
+    renderDraw();
+    renderMade();
+    renderMiss();
+    renderScoreboard();
+
+    if(!started){
+      setTopPill(`準備中（オンライン：room=${ONLINE.roomId} / p=${ONLINE.myIndex+1}）`);
+    }
+    updateTurnUI();
+  }finally{
+    ONLINE.suppress = false;
+  }
+}
 
     // 右側入力（見た目の一貫性）
     if(typeof s.gradeSelectValue === "string") gradeSelect.value = s.gradeSelectValue;
@@ -977,10 +1019,10 @@ setInterval(()=>{
   if(!ONLINE.enabled) return;
   if(ONLINE.suppress) return;
 
-  // 操作できない側（相手の番）は送らない
-  if(!canOperateNow()) return;
-
   try{
+    // 操作できない側（相手の番）は送らない
+    if(!canOperateNow()) return;
+
     const st = exportState();
     const sig = JSON.stringify(st);
 
