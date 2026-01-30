@@ -949,9 +949,13 @@ async function syncNow(){
    - 相手の操作を即反映
    - _rev で新旧判定してループ/巻き戻りを防止
 =============================== */
-  // ★くす玉イベントの受信済みrev（未宣言だとReferenceErrorでmoduleが落ちる）
 
+// ★くす玉イベントの受信済みrev（未宣言だとReferenceErrorでmoduleが落ちる）
+let lastKusudamaRev = 0;
+
+// ★初回のpull判定
 let __didInitialPull = false;
+
 
 // 初回：今あるstateを1回だけ取得して反映（部屋に既に人がいた場合に追いつく）
 (async ()=>{
