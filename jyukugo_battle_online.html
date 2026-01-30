@@ -776,8 +776,9 @@ const db = getDatabase(app);
 =============================== */
 const qs = new URLSearchParams(location.search);
 const ONLINE = {
-  enabled: true,
-  roomId: (qs.get("room") || "demo").trim() || "demo",
+  // ★room パラメータがある時だけオンラインを有効化（通常起動はオフライン）
+  enabled: !!(qs.get("room") && String(qs.get("room")).trim()),
+  roomId: (qs.get("room") || "").trim() || "demo",
   myIndex: Math.max(0, Math.min(3, Number(qs.get("p") || "0") || 0)),
   suppress: false,
   lastRev: 0
