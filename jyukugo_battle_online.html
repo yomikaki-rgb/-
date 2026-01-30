@@ -950,7 +950,6 @@ async function syncNow(){
    - _rev で新旧判定してループ/巻き戻りを防止
 =============================== */
   // ★くす玉イベントの受信済みrev（未宣言だとReferenceErrorでmoduleが落ちる）
-let lastKusudamaRev = 0;
 
 let __didInitialPull = false;
 
