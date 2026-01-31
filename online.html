@@ -837,13 +837,6 @@ if(ONLINE.enabled){
   });
 }
 
-</script>
-
-<!-- ★ローカル本体ロジック（この下に続く） -->
-<script type="module">
-<!-- ============================
-Part 2 / 3
-============================ -->
 /* ====== ここから：元のローカル版ロジック（ほぼそのまま） ====== */
 
 const HAS_SPEECH = ("speechSynthesis" in window) && ("SpeechSynthesisUtterance" in window);
@@ -1474,9 +1467,6 @@ async function syncNow(){
 }
 
 /* ===== 次（Part3）で：ターン進行/ボタン処理/スタート/リセットをオンライン対応 ===== */
-<!-- ============================
-Part 3 / 3（最後）
-============================ -->
 
 function resetTurnState(){
   drewThisTurn = false;
@@ -1818,65 +1808,5 @@ readingToggle.addEventListener("change", ()=>{
 
 showReadings = (readingToggle.value === "on");
 
-/* ★オンライン：受信したstateを反映 */
-function applyRemoteState(state){
-  if(!state) return;
-
-  started = !!state.started;
-  deck = Array.isArray(state.deck) ? state.deck : [];
-  field = Array.isArray(state.field) ? state.field : [];
-  players = Array.isArray(state.players) ? state.players : [];
-  current = Number.isFinite(state.current) ? state.current : 0;
-  targetPoints = Number.isFinite(state.targetPoints) ? state.targetPoints : (Number(targetPointsInp.value)||5);
-  missLimit = Number.isFinite(state.missLimit) ? state.missLimit : (Number(missLimitSel.value)||3);
-
-  drewThisTurn = !!state.drewThisTurn;
-  drawnKanji = state.drawnKanji ?? null;
-  missThisTurn = Number.isFinite(state.missThisTurn) ? state.missThisTurn : 0;
-
-  slot1 = state.slot1 ?? null;
-  slot2 = state.slot2 ?? null;
-
-  made = new Set(Array.isArray(state.made) ? state.made : []);
-  holdAdvance = !!state.holdAdvance;
-
-  showReadings = (state.showReadings ?? (readingToggle.value === "on")) ? true : false;
-  readingToggle.value = showReadings ? "on" : "off";
-
-  // 勝利表示
-  if(state.winMsgVisible){
-    winMsgEl.style.display = "block";
-    winMsgEl.textContent = state.winMsgText || "";
-  }else{
-    winMsgEl.style.display = "none";
-    winMsgEl.textContent = "";
-  }
-
-  renderField();
-  renderSlots();
-  renderDraw();
-  renderMade();
-  renderMiss();
-  renderScoreboard();
-  updateTurnUI();
-}
-
-/* ★オンライン：state受信を結線（Part1のstartOnlineListenerを使用） */
-if(ONLINE?.enabled){
-  // 受信ハンドラ登録
-  startOnlineListener((incoming)=>{
-    // 自分の送信直後の反射（同じrev）は無視（Part1で lastRev 管理済み）
-    applyRemoteState(incoming);
-  });
-
-  // ページ表示直後も、ピル表示など整える
-  updateTurnUI();
-}else{
-  updateTurnUI();
-  renderSlots();
-  renderDraw();
-  renderMiss();
-}
-</script>
 </body>
 </html>
