@@ -678,6 +678,8 @@ line-height:1;
 <button class="primary" id="startBtn">スタート</button>
 <button id="resetBtn">リセット</button>
 </div>
+<!-- （重複していたオンライン対戦リンク作成UIは削除：上に1つあるため） -->
+
 </div>
 
 <details id="rules" style="margin-top:12px;">
@@ -1050,10 +1052,59 @@ const ansInfo = el("ansInfo");
 const addFieldBtn = el("addFieldBtn");
 const readingToggle = el("readingToggle");
 
+// ★オンライン対戦リンク作成 UI（HTML側にidがある場合だけ有効）
+const roomInput = el("roomInput");
+const makeRoomUrlBtn = el("makeRoomUrlBtn");
+const urlP1 = el("urlP1");
+const urlP2 = el("urlP2");
+
+/* =========================
+   ★オンライン対戦リンク作成
+========================= */
+function buildRoomUrl(room, me){
+  const base = location.origin + location.pathname; // /-/ でも同じHTMLを指す
+  return `${base}?room=${encodeURIComponent(room)}&me=${encodeURIComponent(String(me))}`;
+}
+
+function setupRoomMaker(){
+  // HTMLがまだ入ってない/ID違いでも落ちないようにガード
+  if(!roomInput || !makeRoomUrlBtn || !urlP1 || !urlP2) return;
+
+  makeRoomUrlBtn.addEventListener("click", ()=>{
+    const room = (roomInput.value || "").trim();
+    if(!room){
+      alert("部屋番号を入れてください（例：class1）");
+      roomInput.focus();
+      return;
+    }
+    urlP1.value = buildRoomUrl(room, 1);
+    urlP2.value = buildRoomUrl(room, 2);
+
+    // 作ったらコピーしやすいように選択
+    urlP1.focus(); urlP1.select();
+  });
+
+  roomInput.addEventListener("keydown", (e)=>{
+    if(e.key === "Enter"){
+      e.preventDefault();
+      makeRoomUrlBtn.click();
+    }
+  });
+
+  urlP1.addEventListener("click", ()=> urlP1.select());
+  urlP2.addEventListener("click", ()=> urlP2.select());
+}
+
+// ★1回だけ初期化
+setupRoomMaker();
+/* =========================
+   ★オンライン対戦リンク作成 ここまで
+========================= */
+
 if(!HAS_SPEECH){
-speakBtn.addEventListener("click", ()=> setMsg("この環境では音声読み上げが使えません。", "ng"));
-stopSpeakBtn.addEventListener("click", ()=> setMsg("この環境では音声読み上げが使えません。", "ng"));
-ansSpeakBtn.addEventListener("click", ()=> setMsg("この環境では音声読み上げが使えません。", "ng"));
+  speakBtn.addEventListener("click", ()=> setMsg("この環境では音声読み上げが使えません。", "ng"));
+  stopSpeakBtn.addEventListener("click", ()=> setMsg("この環境では音声読み上げが使えません。", "ng"));
+  ansSpeakBtn.addEventListener("click", ()=> setMsg("この環境では音声読み上げが使えません。", "ng"));
 }
 
 let started = false;
@@ -1829,5 +1880,6 @@ showReadings = (readingToggle.value === "on");
   
 </body>
 </html>
+
 
 
