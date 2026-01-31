@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>語いクイズ</title>
+  <style>
+    :root {
+      --bg1:#eef2ff;
+      --bg2:#f3e8ff;
+      --card:#ffffffcc;
+      --ink:#111827;
+      --ink-sub:#4b5563;
+      --primary:#4f46e5;
+      --primary-soft:#e0e7ff;
+      --correct:#16a34a;
+      --wrong:#dc2626;
+      --border:#d1d5db;
+    }
+    * {
+      box-sizing:border-box;
+      -webkit-tap-highlight-color:transparent;
+    }
+    body {
+      margin:0;
+      min-height:100vh;
+      padding:16px;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
+        "Hiragino Kaku Gothic ProN","ヒラギノ角ゴ ProN","Yu Gothic","メイリオ",sans-serif;
+      background:linear-gradient(135deg,var(--bg1),var(--bg2));
+      display:flex;
+      justify-content:center;
+      align-items:center;
+    }
+    .app {
+      width:100%;
+      max-width:700px;
+      background:var(--card);
+      border-radius:18px;
+      padding:20px 18px 18px;
+      box-shadow:0 20px 40px rgba(15,23,42,0.25);
+    }
+    .app-title {
+      font-size:1.4rem;
+      font-weight:700;
+      text-align:center;
+      margin-bottom:8px;
+      color:var(--ink);
+    }
+    .status-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:0.9rem;
+      color:var(--ink-sub);
+      margin-bottom:10px;
+    }
+    .badge {
+      padding:2px 8px;
+      border-radius:999px;
+      background:var(--primary-soft);
+      color:var(--primary);
+      font-size:0.8rem;
+      font-weight:600;
+    }
+    .progress-bar {
+      width:100%;
+      height:8px;
+      background:#e5e7eb;
+      border-radius:999px;
+      overflow:hidden;
+      margin-bottom:16px;
+    }
+    .progress-fill {
+      height:100%;
+      width:0%;
+      background:var(--primary);
+      transition:width 0.25s ease-out;
+    }
+    .card {
+      background:white;
+      border-radius:16px;
+      border:1px solid var(--border);
+      padding:16px;
+    }
+    .question-text {
+      font-size:1.15rem;
+      line-height:1.6;
+      margin-bottom:14px;
+      color:var(--ink);
+    }
+    .hint {
+      font-size:0.85rem;
+      color:var(--ink-sub);
+      margin-bottom:10px;
+    }
+    .choices {
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-bottom:10px;
+    }
+    .choice-btn {
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:8px 14px;
+      font-size:1rem;
+      text-align:left;
+      background:#f9fafb;
+      cursor:pointer;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      transition:transform 0.05s ease, box-shadow 0.05s ease, background 0.15s;
+    }
+    .choice-btn span.label {
+      flex:1;
+    }
+    .choice-btn span.mark {
+      font-size:0.8rem;
+      opacity:0.7;
+    }
+    .choice-btn:active {
+      transform:scale(0.98);
+      box-shadow:0 2px 4px rgba(15,23,42,0.12);
+    }
+    .choice-btn.disabled {
+      cursor:default;
+      opacity:0.85;
+    }
+    .choice-btn.correct {
+      border-color:var(--correct);
+      background:#ecfdf3;
+      color:var(--correct);
+      font-weight:600;
+    }
+    .choice-btn.wrong {
+      border-color:var(--wrong);
+      background:#fef2f2;
+      color:var(--wrong);
+      font-weight:600;
+    }
+    .feedback {
+      min-height:1.6em;
+      font-size:0.95rem;
+      margin-top:4px;
+    }
+    .feedback.correct {
+      color:var(--correct);
+    }
+    .feedback.wrong {
+      color:var(--wrong);
+    }
+    .nav-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:12px;
+      gap:8px;
+    }
+    .score-text {
+      font-size:0.9rem;
+      color:var(--ink-sub);
+    }
+    .next-btn {
+      border:none;
+      border-radius:999px;
+      background:var(--primary);
+      color:white;
+      font-size:0.95rem;
+      font-weight:600;
+      padding:8px 18px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      box-shadow:0 6px 14px rgba(79,70,229,0.35);
+      transition:transform 0.05s ease, box-shadow 0.05s ease, opacity 0.15s;
+      white-space:nowrap;
+    }
+    .next-btn:active {
+      transform:translateY(1px);
+      box-shadow:0 3px 8px rgba(79,70,229,0.4);
+    }
+    .next-btn.disabled {
+      opacity:0.4;
+      cursor:default;
+      box-shadow:none;
+      transform:none;
+    }
+
+    .roulette {
+      margin-top:14px;
+      text-align:center;
+    }
+    .roulette-label {
+      font-size:0.9rem;
+      color:var(--ink-sub);
+      margin-bottom:4px;
+    }
+    .roulette-wheel {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:72px;
+      height:72px;
+      border-radius:999px;
+      border:2px solid var(--primary);
+      font-size:1.4rem;
+      font-weight:700;
+      background:#ffffff;
+      box-shadow:0 6px 14px rgba(79,70,229,0.25);
+      cursor:pointer;
+    }
+    .roulette-wheel.disabled {
+      opacity:0.4;
+      cursor:default;
+    }
+
+    .result {
+      text-align:center;
+      margin-top:8px;
+      font-size:1rem;
+    }
+    .restart-btn {
+      margin-top:10px;
+      border-radius:999px;
+      border:1px solid var(--primary);
+      background:white;
+      color:var(--primary);
+      font-weight:600;
+      font-size:0.95rem;
+      padding:8px 16px;
+      cursor:pointer;
+    }
+
+    @media (max-width:480px) {
+      .app {
+        padding:16px 12px 14px;
+      }
+      .question-text {
+        font-size:1.05rem;
+      }
+      .choice-btn {
+        padding:8px 10px;
+        font-size:0.95rem;
+      }
+      .roulette-wheel {
+        width:64px;
+        height:64px;
+        font-size:1.2rem;
+      }
+    }
+
+    /* =========================================================
+       ★オンラインUI（iPadで邪魔にならないよう “折りたたみ”）
+       - デフォルトは右下の小ボタン
+       - ひらくとパネルが出る（既存レイアウトには触らない）
+       ========================================================= */
+    .online-fab{
+      position:fixed;
+      right:12px;
+      bottom:12px;
+      z-index:9999;
+      border:none;
+      border-radius:999px;
+      background:var(--primary);
+      color:#fff;
+      font-weight:700;
+      padding:10px 14px;
+      box-shadow:0 10px 24px rgba(15,23,42,0.25);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:13px;
+    }
+    .online-fab .dot{
+      width:10px; height:10px; border-radius:999px;
+      background:#9ca3af;
+      box-shadow:0 0 0 3px rgba(255,255,255,.75);
+    }
+    .online-fab .dot.ok{ background:var(--correct); }
+    .online-fab .dot.ng{ background:var(--wrong); }
+
+    .online-overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,0.25);
+      z-index:9998;
+      display:none;
+    }
+    .online-overlay.open{ display:block; }
+
+    .online-panel{
+      position:fixed;
+      right:12px;
+      bottom:62px;
+      width:300px;
+      max-width:calc(100vw - 24px);
+      background:#ffffffee;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px;
+      box-shadow:0 10px 24px rgba(15,23,42,0.18);
+      color:var(--ink);
+      font-size:12px;
+      z-index:9999;
+      display:none;
+    }
+    .online-panel.open{ display:block; }
+    .online-panel .row{ display:flex; gap:6px; align-items:center; margin:6px 0; }
+    .online-panel input{
+      width:100%;
+      padding:6px 8px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      font-size:12px;
+    }
+    .online-panel button{
+      padding:6px 10px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#f8fafc;
+      cursor:pointer;
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .online-panel button.primary{
+      background:var(--primary);
+      border-color:var(--primary);
+      color:#fff;
+    }
+    .online-panel button:disabled{ opacity:.45; cursor:default; }
+    .online-panel .label{ font-weight:700; }
+    .online-panel .small{ font-size:11px; color:var(--ink-sub); }
+    .online-panel .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:2px 8px; border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+    }
+    .online-panel .close-btn{
+      margin-left:auto;
+      border:none;
+      background:transparent;
+      font-size:16px;
+      line-height:1;
+      padding:6px 8px;
+      cursor:pointer;
+      color:var(--ink-sub);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="app-title">
+      <ruby>語<rt>ご</rt></ruby>いクイズ
+    </div>
+
+    <div class="status-row">
+      <div>もんだい <span id="qNumber">1</span> / <span id="qTotal">0</span></div>
+      <div class="badge" id="modeBadge">しょう４むき</div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="card">
+      <div class="question-text" id="questionText"></div>
+      <div class="hint" id="questionHint"></div>
+
+      <div class="choices" id="choicesContainer"></div>
+
+      <div class="feedback" id="feedback"></div>
+
+      <div class="nav-row">
+        <div class="score-text" id="scoreText">せいかい：0 もん</div>
+        <button class="next-btn disabled" id="nextBtn" type="button">
+          こたえを えらんでね
+        </button>
+      </div>
+    </div>
+
+    <div class="roulette">
+      <div class="roulette-label">せいかいしたら ルーレット！</div>
+      <div class="roulette-wheel disabled" id="rouletteWheel">？</div>
+    </div>
+
+    <div class="result" id="resultArea"></div>
+  </div>
+
+  <!-- ★オンラインUI（折りたたみ） -->
+  <div class="online-overlay" id="onlineOverlay"></div>
+
+  <button class="online-fab" id="onlineFab" type="button" aria-label="オンライン設定をひらく">
+    <span class="dot" id="connDot"></span>
+    <span id="connText">オフライン</span>
+  </button>
+
+  <div class="online-panel" id="onlinePanel" aria-label="オンライン対戦">
+    <div class="row" style="justify-content:space-between;">
+      <div class="label">オンライン対戦</div>
+      <button class="close-btn" id="onlineCloseBtn" type="button" aria-label="閉じる">✕</button>
+    </div>
+
+    <div class="small" id="roleText">ローカル対戦（オンライン未接続）</div>
+
+    <div class="row">
+      <input id="roomInput" placeholder="部屋番号（例: class1）" />
+      <button id="makeRoomUrlBtn" class="primary" type="button">URL作成</button>
+    </div>
+
+    <div class="small">プレイヤー1用：</div>
+    <div class="row">
+      <input id="urlP1" readonly />
+    </div>
+    <div class="small">プレイヤー2用：</div>
+    <div class="row">
+      <input id="urlP2" readonly />
+    </div>
+
+    <div class="row" style="margin-top:8px;">
+      <button id="startBtn" class="primary" type="button">スタート</button>
+      <button id="resetBtn" type="button">リセット</button>
+    </div>
+    <div class="small" id="turnHint"></div>
+  </div>
+
+  <script type="module">
+    /*****************************************************************
+     * 【Firebase設定】（指定どおりそのまま）
+     *****************************************************************/
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyBtKWi2tXanWuDf_Du5C9tr5ZwOAfNBRIs",
+      authDomain: "goi-battle-g3.firebaseapp.com",
+      projectId: "goi-battle-g3",
+      storageBucket: "goi-battle-g3.firebasestorage.app",
+      messagingSenderId: "1052102588017",
+      appId: "1:1052102588017:web:e8a09649466f4504f08dd0",
+      measurementId: "G-Y7TQVZ2R2V"
+    };
+
+    /*****************************************************************
+     * ★オンライン同期：Firestore
+     * - databaseURL が設定に無いので、追加設定なしで使える Firestore を使用
+     * - 同期が動かない原因の多くは「Firestore未作成/ルール拒否」か
+     *   「P2が入室時に初期化で上書き」なので、P1だけが初期作成するよう修正
+     *****************************************************************/
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getFirestore, doc, setDoc, onSnapshot, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const appFb = initializeApp(firebaseConfig);
+    const db = getFirestore(appFb);
+
+    /*****************************************************************
+     * もんだいデータ（元のまま）
+     *****************************************************************/
+    const questions = [
+      {
+        type: "kanji2",
+        text: "「<ruby>作<rt>つく</rt></ruby>る」を<ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で<ruby>言<rt>い</rt></ruby>うと？",
+        hint: "<ruby>作<rt>さく</rt></ruby><ruby>品<rt>ひん</rt></ruby>をつくる ときなどにつかう <ruby>言<rt>こと</rt></ruby>ば。",
+        choices: [
+          "<ruby>制<rt>せい</rt></ruby><ruby>作<rt>さく</rt></ruby>",
+          "<ruby>読<rt>どく</rt></ruby><ruby>書<rt>しょ</rt></ruby>",
+          "<ruby>運<rt>うん</rt></ruby><ruby>動<rt>どう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "なにかをつくることを <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で「<ruby>制<rt>せい</rt></ruby><ruby>作<rt>さく</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "「おひるごはん」を<ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で<ruby>言<rt>い</rt></ruby>うと？",
+        hint: "<ruby>朝<rt>ちょう</rt></ruby><ruby>食<rt>しょく</rt></ruby>・<ruby>夕<rt>ゆう</rt></ruby><ruby>食<rt>しょく</rt></ruby>とならぶ <ruby>言<rt>こと</rt></ruby>ば。",
+        choices: [
+          "<ruby>朝<rt>ちょう</rt></ruby><ruby>食<rt>しょく</rt></ruby>",
+          "<ruby>昼<rt>ちゅう</rt></ruby><ruby>食<rt>しょく</rt></ruby>",
+          "<ruby>夕<rt>ゆう</rt></ruby><ruby>食<rt>しょく</rt></ruby>"
+        ],
+        correctIndex: 1,
+        explanation: "おひるごはんは <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で「<ruby>昼<rt>ちゅう</rt></ruby><ruby>食<rt>しょく</rt></ruby>」と<ruby>書<rt>か</rt></ruby>きます。"
+      },
+      {
+        type: "kanji2",
+        text: "「ふえる」を<ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で<ruby>言<rt>い</rt></ruby>うと？",
+        hint: "<ruby>数<rt>かず</rt></ruby>や<ruby>量<rt>りょう</rt></ruby>がおおくなること。",
+        choices: [
+          "<ruby>増<rt>ぞう</rt></ruby><ruby>加<rt>か</rt></ruby>",
+          "<ruby>飲<rt>いん</rt></ruby><ruby>食<rt>しょく</rt></ruby>",
+          "<ruby>拡<rt>かく</rt></ruby><ruby>大<rt>だい</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "<ruby>数<rt>かず</rt></ruby>や<ruby>量<rt>りょう</rt></ruby>がふえることを「<ruby>増<rt>ぞう</rt></ruby><ruby>加<rt>か</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "「くわしくしらべること」を<ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で<ruby>言<rt>い</rt></ruby>うと？",
+        hint: "<ruby>新<rt>しん</rt></ruby><ruby>聞<rt>ぶん</rt></ruby>やアンケートでよくつかう <ruby>言<rt>こと</rt></ruby>ば。",
+        choices: [
+          "<ruby>調<rt>ちょう</rt></ruby><ruby>査<rt>さ</rt></ruby>",
+          "<ruby>計<rt>けい</rt></ruby><ruby>画<rt>かく</rt></ruby>",
+          "<ruby>発<rt>はつ</rt></ruby><ruby>明<rt>めい</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "くわしくしらべることを「<ruby>調<rt>ちょう</rt></ruby><ruby>査<rt>さ</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "「みせでうるためのしなもの」を<ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で<ruby>言<rt>い</rt></ruby>うと？",
+        hint: "<ruby>店<rt>みせ</rt></ruby>の〜ならび、というときの <ruby>言<rt>こと</rt></ruby>ば。",
+        choices: [
+          "<ruby>商<rt>しょう</rt></ruby><ruby>品<rt>ひん</rt></ruby>",
+          "<ruby>作<rt>さく</rt></ruby><ruby>家<rt>か</rt></ruby>",
+          "<ruby>資<rt>し</rt></ruby><ruby>料<rt>りょう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "みせでうるためのしなものを「<ruby>商<rt>しょう</rt></ruby><ruby>品<rt>ひん</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+
+      {
+        type: "syn",
+        text: "「おおきい」とだいたいおなじ <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>の <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "とても〜な <ruby>家<rt>いえ</rt></ruby>、〜なビル。",
+        choices: [
+          "<ruby>巨<rt>きょ</rt></ruby><ruby>大<rt>だい</rt></ruby>",
+          "細い",
+          "低い"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>巨<rt>きょ</rt></ruby><ruby>大<rt>だい</rt></ruby>」は「とてもおおきい」という <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>です。"
+      },
+      {
+        type: "syn",
+        text: "「げんき」とだいたいおなじ <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>の <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "よくうごきまわる人。",
+        choices: [
+          "<ruby>活<rt>かっ</rt></ruby><ruby>発<rt>ぱつ</rt></ruby>",
+          "ねむい",
+          "静か"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>活<rt>かっ</rt></ruby><ruby>発<rt>ぱつ</rt></ruby>」は、げんきでよくうごくようすをあらわします。"
+      },
+      {
+        type: "ant",
+        text: "「むずかしい」のはんたいの <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "テストが〜、もんだいが〜。",
+        choices: [
+          "やさしい",
+          "<ruby>新<rt>あたら</rt></ruby>しい",
+          "<ruby>強<rt>つよ</rt></ruby>い"
+        ],
+        correctIndex: 0,
+        explanation: "「むずかしい」のはんたいは「やさしい（かんたん）」です。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>始<rt>はじ</rt></ruby>まる」のはんたいの <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "テストが〜、えいがが〜。",
+        choices: [
+          "<ruby>終<rt>お</rt></ruby>わる",
+          "<ruby>進<rt>すす</rt></ruby>む",
+          "<ruby>増<rt>ふ</rt></ruby>える"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>始<rt>はじ</rt></ruby>まる」のはんたいは「<ruby>終<rt>お</rt></ruby>わる」です。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>安<rt>あん</rt></ruby><ruby>全<rt>ぜん</rt></ruby>」のはんたいの <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>の <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "あぶないようすをあらわす <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>。",
+        choices: [
+          "<ruby>危<rt>き</rt></ruby><ruby>険<rt>けん</rt></ruby>",
+          "<ruby>便<rt>べん</rt></ruby><ruby>利<rt>り</rt></ruby>",
+          "<ruby>自<rt>じ</rt></ruby><ruby>由<rt>ゆう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>安<rt>あん</rt></ruby><ruby>全<rt>ぜん</rt></ruby>」のはんたいは「あぶない」という <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>の「<ruby>危<rt>き</rt></ruby><ruby>険<rt>けん</rt></ruby>」です。"
+      },
+      {
+        type: "ant",
+        text: "「へらす」のはんたいの <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "<ruby>数<rt>かず</rt></ruby>や<ruby>量<rt>りょう</rt></ruby>をどうする？",
+        choices: [
+          "<ruby>増<rt>ふ</rt></ruby>やす",
+          "<ruby>並<rt>なら</rt></ruby>べる",
+          "<ruby>止<rt>と</rt></ruby>める"
+        ],
+        correctIndex: 0,
+        explanation: "「へらす」のはんたいは「<ruby>増<rt>ふ</rt></ruby>やす」です。"
+      },
+
+      {
+        type: "kanji2",
+        text: "「<ruby>心<rt>こころ</rt></ruby>にきめること」を<ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で<ruby>言<rt>い</rt></ruby>うと？",
+        hint: "なにかをやるとつよくきめること。",
+        choices: [
+          "<ruby>決<rt>けっ</rt></ruby><ruby>心<rt>しん</rt></ruby>",
+          "<ruby>勉<rt>べん</rt></ruby><ruby>強<rt>きょう</rt></ruby>",
+          "<ruby>発<rt>はっ</rt></ruby><ruby>表<rt>ぴょう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "なにかをやると<ruby>心<rt>こころ</rt></ruby>にきめることを「<ruby>決<rt>けっ</rt></ruby><ruby>心<rt>しん</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "「これからの<ruby>計<rt>けい</rt></ruby><ruby>画<rt>かく</rt></ruby>」をあらわす <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>は？",
+        hint: "あしたの〜、<ruby>夏<rt>なつ</rt></ruby><ruby>休<rt>やす</rt></ruby>みの〜。",
+        choices: [
+          "<ruby>予<rt>よ</rt></ruby><ruby>定<rt>てい</rt></ruby>",
+          "<ruby>返<rt>へん</rt></ruby><ruby>事<rt>じ</rt></ruby>",
+          "<ruby>感<rt>かん</rt></ruby><ruby>想<rt>そう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "これからの<ruby>計<rt>けい</rt></ruby><ruby>画<rt>かく</rt></ruby>を「<ruby>予<rt>よ</rt></ruby><ruby>定<rt>てい</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "「人に<ruby>伝<rt>つた</rt></ruby>えるために<ruby>書<rt>か</rt></ruby>いた<ruby>文<rt>ぶん</rt></ruby>」をあらわす <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>は？",
+        hint: "<ruby>学<rt>がっ</rt></ruby><ruby>校<rt>こう</rt></ruby>のおたよりなど。",
+        choices: [
+          "<ruby>文<rt>ぶん</rt></ruby><ruby>書<rt>しょ</rt></ruby>",
+          "<ruby>校<rt>こう</rt></ruby><ruby>庭<rt>てい</rt></ruby>",
+          "<ruby>図<rt>と</rt></ruby><ruby>画<rt>が</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "人に<ruby>伝<rt>つた</rt></ruby>えるための<ruby>文<rt>ぶん</rt></ruby>をあつめたものを「<ruby>文<rt>ぶん</rt></ruby><ruby>書<rt>しょ</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "みんなのまえで<ruby>話<rt>はな</rt></ruby>すことを <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で<ruby>言<rt>い</rt></ruby>うと？",
+        hint: "<ruby>学<rt>がっ</rt></ruby><ruby>校<rt>こう</rt></ruby>で<ruby>本<rt>ほん</rt></ruby>の〜をする。",
+        choices: [
+          "<ruby>発<rt>はっ</rt></ruby><ruby>表<rt>ぴょう</rt></ruby>",
+          "<ruby>記<rt>き</rt></ruby><ruby>録<rt>ろく</rt></ruby>",
+          "<ruby>見<rt>けん</rt></ruby><ruby>学<rt>がく</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "みんなのまえで<ruby>意<rt>い</rt></ruby><ruby>見<rt>けん</rt></ruby>や<ruby>結<rt>けつ</rt></ruby><ruby>果<rt>か</rt></ruby>を<ruby>話<rt>はな</rt></ruby>すことを「<ruby>発<rt>はっ</rt></ruby><ruby>表<rt>ぴょう</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>新<rt>あたら</rt></ruby>しいことを<ruby>見<rt>み</rt></ruby>つけることをあらわす <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>は？",
+        hint: "<ruby>星<rt>ほし</rt></ruby>の〜、しんぶんの〜。",
+        choices: [
+          "<ruby>発<rt>はっ</rt></ruby><ruby>見<rt>けん</rt></ruby>",
+          "<ruby>読<rt>どく</rt></ruby><ruby>書<rt>しょ</rt></ruby>",
+          "<ruby>練<rt>れん</rt></ruby><ruby>習<rt>しゅう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "<ruby>新<rt>あたら</rt></ruby>しいことをみつけることを「<ruby>発<rt>はっ</rt></ruby><ruby>見<rt>けん</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "まったく<ruby>新<rt>あたら</rt></ruby>しいものやほうほうをつくりだすことは？",
+        hint: "<ruby>電<rt>でん</rt></ruby><ruby>気<rt>き</rt></ruby>の〜、<ruby>機<rt>き</rt></ruby><ruby>械<rt>かい</rt></ruby>の〜。",
+        choices: [
+          "<ruby>発<rt>はつ</rt></ruby><ruby>明<rt>めい</rt></ruby>",
+          "<ruby>返<rt>へん</rt></ruby><ruby>事<rt>じ</rt></ruby>",
+          "<ruby>集<rt>しゅう</rt></ruby><ruby>合<rt>ごう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "あたらしいものをつくりだすことを「<ruby>発<rt>はつ</rt></ruby><ruby>明<rt>めい</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "みんながひとつの<ruby>場<rt>ば</rt></ruby><ruby>所<rt>しょ</rt></ruby>にあつまることは？",
+        hint: "<ruby>校<rt>こう</rt></ruby><ruby>門<rt>もん</rt></ruby>に〜する。",
+        choices: [
+          "<ruby>集<rt>しゅう</rt></ruby><ruby>合<rt>ごう</rt></ruby>",
+          "<ruby>見<rt>けん</rt></ruby><ruby>学<rt>がく</rt></ruby>",
+          "<ruby>感<rt>かん</rt></ruby><ruby>想<rt>そう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "みんながあつまることを「<ruby>集<rt>しゅう</rt></ruby><ruby>合<rt>ごう</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>家<rt>いえ</rt></ruby>などを<ruby>出<rt>で</rt></ruby>て どこかへ<ruby>行<rt>い</rt></ruby>くために でかけることは？",
+        hint: "<ruby>旅<rt>りょ</rt></ruby><ruby>行<rt>こう</rt></ruby>に〜する。",
+        choices: [
+          "<ruby>出<rt>しゅっ</rt></ruby><ruby>発<rt>ぱつ</rt></ruby>",
+          "<ruby>帰<rt>き</rt></ruby><ruby>宅<rt>たく</rt></ruby>",
+          "<ruby>出<rt>しゅつ</rt></ruby><ruby>場<rt>じょう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "どこかへむかって<ruby>出<rt>で</rt></ruby>ていくことを「<ruby>出<rt>しゅっ</rt></ruby><ruby>発<rt>ぱつ</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>目<rt>もく</rt></ruby><ruby>的<rt>てき</rt></ruby>の<ruby>場<rt>ば</rt></ruby><ruby>所<rt>しょ</rt></ruby>に つくことをあらわす <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>は？",
+        hint: "<ruby>駅<rt>えき</rt></ruby>に〜する、<ruby>空<rt>くう</rt></ruby><ruby>港<rt>こう</rt></ruby>に〜する。",
+        choices: [
+          "<ruby>到<rt>とう</rt></ruby><ruby>着<rt>ちゃく</rt></ruby>",
+          "<ruby>出<rt>しゅつ</rt></ruby><ruby>場<rt>じょう</rt></ruby>",
+          "<ruby>見<rt>けん</rt></ruby><ruby>学<rt>がく</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "<ruby>目<rt>もく</rt></ruby><ruby>的<rt>てき</rt></ruby><ruby>地<rt>ち</rt></ruby>に つくことを「<ruby>到<rt>とう</rt></ruby><ruby>着<rt>ちゃく</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>試<rt>し</rt></ruby><ruby>合<rt>あい</rt></ruby>や<ruby>発<rt>はっ</rt></ruby><ruby>表<rt>ぴょう</rt></ruby>に でることは？",
+        hint: "<ruby>大<rt>たい</rt></ruby><ruby>会<rt>かい</rt></ruby>に〜する。",
+        choices: [
+          "<ruby>出<rt>しゅつ</rt></ruby><ruby>場<rt>じょう</rt></ruby>",
+          "<ruby>返<rt>へん</rt></ruby><ruby>事<rt>じ</rt></ruby>",
+          "<ruby>読<rt>どく</rt></ruby><ruby>書<rt>しょ</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "<ruby>試<rt>し</rt></ruby><ruby>合<rt>あい</rt></ruby>や<ruby>発<rt>はっ</rt></ruby><ruby>表<rt>ぴょう</rt></ruby>にでることを「<ruby>出<rt>しゅつ</rt></ruby><ruby>場<rt>じょう</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>学<rt>がっ</rt></ruby><ruby>校<rt>こう</rt></ruby>の<ruby>外<rt>そと</rt></ruby>へ<ruby>行<rt>い</rt></ruby>って べんきょうすることは？",
+        hint: "<ruby>工<rt>こう</rt></ruby><ruby>場<rt>じょう</rt></ruby>や<ruby>市<rt>し</rt></ruby><ruby>役<rt>やく</rt></ruby><ruby>所<rt>しょ</rt></ruby>に〜に<ruby>行<rt>い</rt></ruby>く。",
+        choices: [
+          "<ruby>見<rt>けん</rt></ruby><ruby>学<rt>がく</rt></ruby>",
+          "<ruby>読<rt>どく</rt></ruby><ruby>書<rt>しょ</rt></ruby>",
+          "<ruby>練<rt>れん</rt></ruby><ruby>習<rt>しゅう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "<ruby>学<rt>がっ</rt></ruby><ruby>校<rt>こう</rt></ruby>の<ruby>外<rt>そと</rt></ruby>で<ruby>見<rt>み</rt></ruby>たりきいたりしてべんきょうすることを「<ruby>見<rt>けん</rt></ruby><ruby>学<rt>がく</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "つたえられたことに こたえることをあらわす <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>は？",
+        hint: "メールの〜をする。",
+        choices: [
+          "<ruby>返<rt>へん</rt></ruby><ruby>事<rt>じ</rt></ruby>",
+          "<ruby>記<rt>き</rt></ruby><ruby>録<rt>ろく</rt></ruby>",
+          "<ruby>注<rt>ちゅう</rt></ruby><ruby>意<rt>い</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "人からの<ruby>問<rt>と</rt></ruby>いやお<ruby>知<rt>し</rt></ruby>らせにこたえることを「<ruby>返<rt>へん</rt></ruby><ruby>事<rt>じ</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>本<rt>ほん</rt></ruby>や<ruby>文<rt>ぶん</rt></ruby>をよんだときの きもちや<ruby>考<rt>かんが</rt></ruby>えを<ruby>書<rt>か</rt></ruby>いたものを あらわす <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>は？",
+        hint: "<ruby>読<rt>どく</rt></ruby><ruby>書<rt>しょ</rt></ruby>〜<ruby>文<rt>ぶん</rt></ruby>。",
+        choices: [
+          "<ruby>感<rt>かん</rt></ruby><ruby>想<rt>そう</rt></ruby>",
+          "<ruby>計<rt>けい</rt></ruby><ruby>画<rt>かく</rt></ruby>",
+          "<ruby>記<rt>き</rt></ruby><ruby>録<rt>ろく</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "<ruby>本<rt>ほん</rt></ruby>などをよんで<ruby>感<rt>かん</rt></ruby>じたことを<ruby>書<rt>か</rt></ruby>くものを「<ruby>感<rt>かん</rt></ruby><ruby>想<rt>そう</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>事<rt>じ</rt></ruby><ruby>実<rt>じつ</rt></ruby>をわすれないように かきとめておくことは？",
+        hint: "<ruby>日<rt>に</rt></ruby><ruby>記<rt>っき</rt></ruby>をつけることもこれです。",
+        choices: [
+          "<ruby>記<rt>き</rt></ruby><ruby>録<rt>ろく</rt></ruby>",
+          "<ruby>予<rt>よ</rt></ruby><ruby>定<rt>てい</rt></ruby>",
+          "<ruby>返<rt>へん</rt></ruby><ruby>事<rt>じ</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "あとで<ruby>見<rt>み</rt></ruby>られるように かきのこすことを「<ruby>記<rt>き</rt></ruby><ruby>録<rt>ろく</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+
+      {
+        type: "syn",
+        text: "「やかましい」とだいたいおなじ <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>の <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "こえやおとがとてもおおきい。",
+        choices: [
+          "うるさい",
+          "細い",
+          "暗い"
+        ],
+        correctIndex: 0,
+        explanation: "「やかましい」は「うるさい」とだいたいおなじ <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>です。"
+      },
+      {
+        type: "syn",
+        text: "「きちんと」とだいたいおなじ <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>の <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "<ruby>部<rt>へ</rt></ruby><ruby>屋<rt>や</rt></ruby>を〜かたづける。",
+        choices: [
+          "<ruby>整<rt>せい</rt></ruby><ruby>理<rt>り</rt></ruby>して",
+          "<ruby>急<rt>いそ</rt></ruby>いで",
+          "<ruby>静<rt>しず</rt></ruby>かに"
+        ],
+        correctIndex: 0,
+        explanation: "「きちんと」は「よくととのえて」といった <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>で、「<ruby>整<rt>せい</rt></ruby><ruby>理<rt>り</rt></ruby>して」と近いです。"
+      },
+      {
+        type: "syn",
+        text: "「<ruby>速<rt>はや</rt></ruby>く」とだいたいおなじ <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>の <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "〜<ruby>走<rt>はし</rt></ruby>る。",
+        choices: [
+          "<ruby>急<rt>いそ</rt></ruby>いで",
+          "<ruby>静<rt>しず</rt></ruby>かに",
+          "<ruby>弱<rt>よわ</rt></ruby>く"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>速<rt>はや</rt></ruby>く」は「<ruby>急<rt>いそ</rt></ruby>いで」と近い <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>です。"
+      },
+      {
+        type: "syn",
+        text: "「<ruby>友<rt>とも</rt></ruby><ruby>達<rt>だち</rt></ruby>と なかよく すること」を <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で<ruby>言<rt>い</rt></ruby>うと？",
+        hint: "クラスの〜を大切にする。",
+        choices: [
+          "<ruby>友<rt>ゆう</rt></ruby><ruby>好<rt>こう</rt></ruby>",
+          "<ruby>安<rt>あん</rt></ruby><ruby>全<rt>ぜん</rt></ruby>",
+          "<ruby>予<rt>よ</rt></ruby><ruby>定<rt>てい</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "<ruby>友<rt>とも</rt></ruby><ruby>達<rt>だち</rt></ruby>とのよい<ruby>関<rt>かん</rt></ruby><ruby>係<rt>けい</rt></ruby>を「<ruby>友<rt>ゆう</rt></ruby><ruby>好<rt>こう</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "syn",
+        text: "「<ruby>大<rt>たい</rt></ruby><ruby>切<rt>せつ</rt></ruby>にする」とだいたいおなじ <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>の <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "ルールを〜する。",
+        choices: [
+          "<ruby>守<rt>まも</rt></ruby>る",
+          "こわす",
+          "<ruby>忘<rt>わす</rt></ruby>れる"
+        ],
+        correctIndex: 0,
+        explanation: "ルールを「<ruby>守<rt>まも</rt></ruby>る」ことは、ルールを<ruby>大<rt>たい</rt></ruby><ruby>切<rt>せつ</rt></ruby>にすることです。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>高<rt>たか</rt></ruby>い」のはんたいの <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "<ruby>山<rt>やま</rt></ruby>が〜、ビルが〜の はんたい。",
+        choices: [
+          "<ruby>低<rt>ひく</rt></ruby>い",
+          "<ruby>新<rt>あたら</rt></ruby>しい",
+          "<ruby>広<rt>ひろ</rt></ruby>い"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>高<rt>たか</rt></ruby>い」のはんたいは「<ruby>低<rt>ひく</rt></ruby>い」です。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>明<rt>あか</rt></ruby>るい」のはんたいの <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "<ruby>部<rt>へ</rt></ruby><ruby>屋<rt>や</rt></ruby>が〜、<ruby>表<rt>ひょう</rt></ruby><ruby>情<rt>じょう</rt></ruby>が〜の はんたい。",
+        choices: [
+          "<ruby>暗<rt>くら</rt></ruby>い",
+          "細い",
+          "<ruby>速<rt>はや</rt></ruby>い"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>明<rt>あか</rt></ruby>るい」のはんたいは「<ruby>暗<rt>くら</rt></ruby>い」です。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>強<rt>つよ</rt></ruby>い」のはんたいの <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "からだが〜、こころが〜 の はんたい。",
+        choices: [
+          "<ruby>弱<rt>よわ</rt></ruby>い",
+          "<ruby>広<rt>ひろ</rt></ruby>い",
+          "<ruby>高<rt>たか</rt></ruby>い"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>強<rt>つよ</rt></ruby>い」のはんたいは「<ruby>弱<rt>よわ</rt></ruby>い」です。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>速<rt>はや</rt></ruby>い」のはんたいの <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "〜<ruby>走<rt>はし</rt></ruby>る の はんたい。",
+        choices: [
+          "<ruby>遅<rt>おそ</rt></ruby>い",
+          "<ruby>重<rt>おも</rt></ruby>い",
+          "<ruby>高<rt>たか</rt></ruby>い"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>速<rt>はや</rt></ruby>い」のはんたいは「<ruby>遅<rt>おそ</rt></ruby>い」です。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>多<rt>おお</rt></ruby>い」のはんたいの <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "人が〜、<ruby>数<rt>かず</rt></ruby>が〜 の はんたい。",
+        choices: [
+          "<ruby>少<rt>すく</rt></ruby>ない",
+          "<ruby>広<rt>ひろ</rt></ruby>い",
+          "<ruby>強<rt>つよ</rt></ruby>い"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>多<rt>おお</rt></ruby>い」のはんたいは「<ruby>少<rt>すく</rt></ruby>ない」です。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>入<rt>はい</rt></ruby>る」のはんたいの <ruby>言<rt>こと</rt></ruby>ばはどれ？",
+        hint: "<ruby>部<rt>へ</rt></ruby><ruby>屋<rt>や</rt></ruby>に〜 の はんたい。",
+        choices: [
+          "<ruby>出<rt>で</rt></ruby>る",
+          "<ruby>広<rt>ひろ</rt></ruby>げる",
+          "<ruby>高<rt>たか</rt></ruby>める"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>入<rt>はい</rt></ruby>る」のはんたいは「<ruby>出<rt>で</rt></ruby>る」です。"
+      },
+
+      {
+        type: "kanji2",
+        text: "きまりごとやルールを まもらせるためにだす <ruby>言<rt>こと</rt></ruby>ば をあらわす <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>は？",
+        hint: "<ruby>先<rt>せん</rt></ruby><ruby>生<rt>せい</rt></ruby>の〜、<ruby>校<rt>こう</rt></ruby><ruby>長<rt>ちょう</rt></ruby>先生の〜。",
+        choices: [
+          "<ruby>注<rt>ちゅう</rt></ruby><ruby>意<rt>い</rt></ruby>",
+          "<ruby>返<rt>へん</rt></ruby><ruby>事<rt>じ</rt></ruby>",
+          "<ruby>見<rt>けん</rt></ruby><ruby>学<rt>がく</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "きをつけるように<ruby>言<rt>い</rt></ruby>うことを「<ruby>注<rt>ちゅう</rt></ruby><ruby>意<rt>い</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>人<rt>ひと</rt></ruby>やものの よいところを ほめることをあらわす <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>は？",
+        hint: "〜の<ruby>言<rt>こと</rt></ruby><ruby>葉<rt>ば</rt></ruby>。",
+        choices: [
+          "<ruby>賞<rt>しょう</rt></ruby><ruby>賛<rt>さん</rt></ruby>",
+          "<ruby>注<rt>ちゅう</rt></ruby><ruby>意<rt>い</rt></ruby>",
+          "<ruby>返<rt>へん</rt></ruby><ruby>事<rt>じ</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "よいところをほめることを「<ruby>賞<rt>しょう</rt></ruby><ruby>賛<rt>さん</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>問<rt>もん</rt></ruby><ruby>題<rt>だい</rt></ruby>のこたえや せいかいを <ruby>書<rt>か</rt></ruby>いたものをあらわす <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>は？",
+        hint: "<ruby>テスト</ruby>の〜ようし。",
+        choices: [
+          "<ruby>解<rt>かい</rt></ruby><ruby>答<rt>とう</rt></ruby>",
+          "<ruby>感<rt>かん</rt></ruby><ruby>想<rt>そう</rt></ruby>",
+          "<ruby>記<rt>き</rt></ruby><ruby>録<rt>ろく</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "<ruby>問<rt>もん</rt></ruby><ruby>題<rt>だい</rt></ruby>のこたえを「<ruby>解<rt>かい</rt></ruby><ruby>答<rt>とう</rt></ruby>」と<ruby>言<rt>い</rt></ruby>ます。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>心<rt>こころ</rt></ruby>や からだが つかれているようすをあらわす <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>は？",
+        hint: "<ruby>学<rt>がっ</rt></ruby><ruby>校<rt>こう</rt></ruby>で〜がたまる。",
+        choices: [
+          "<ruby>疲<rt>ひ</rt></ruby><ruby>労<rt>ろう</rt></ruby>",
+          "<ruby>友<rt>ゆう</rt></ruby><ruby>好<rt>こう</rt></ruby>",
+          "<ruby>注<rt>ちゅう</rt></ruby><ruby>意<rt>い</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "とてもつかれていることを「<ruby>疲<rt>ひ</rt></ruby><ruby>労<rt>ろう</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+
+      {
+        type: "syn",
+        text: "「<ruby>静<rt>しず</rt></ruby>か」とだいたいおなじ <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>は？",
+        hint: "こえやおとがすくないようす。",
+        choices: [
+          "おだやか",
+          "<ruby>速<rt>はや</rt></ruby>い",
+          "<ruby>強<rt>つよ</rt></ruby>い"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>静<rt>しず</rt></ruby>か」は「おだやか」と近い <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>です。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>近<rt>ちか</rt></ruby>い」の はんたいは？",
+        hint: "<ruby>家<rt>いえ</rt></ruby>から〜、<ruby>駅<rt>えき</rt></ruby>から〜 の はんたい。",
+        choices: [
+          "<ruby>遠<rt>とお</rt></ruby>い",
+          "<ruby>広<rt>ひろ</rt></ruby>い",
+          "<ruby>強<rt>つよ</rt></ruby>い"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>近<rt>ちか</rt></ruby>い」の はんたいは「<ruby>遠<rt>とお</rt></ruby>い」です。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>広<rt>ひろ</rt></ruby>い」の はんたいは？",
+        hint: "<ruby>部<rt>へ</rt></ruby><ruby>屋<rt>や</rt></ruby>が〜 の はんたい。",
+        choices: [
+          "<ruby>狭<rt>せま</rt></ruby>い",
+          "<ruby>明<rt>あか</rt></ruby>るい",
+          "<ruby>低<rt>ひく</rt></ruby>い"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>広<rt>ひろ</rt></ruby>い」の はんたいは「<ruby>狭<rt>せま</rt></ruby>い」です。"
+      },
+      {
+        type: "syn",
+        text: "「<ruby>楽<rt>たの</rt></ruby>しい」とだいたいおなじ <ruby>言<rt>こと</rt></ruby>ばは？",
+        hint: "〜きぶん、〜じかん。",
+        choices: [
+          "<ruby>愉<rt>ゆ</rt></ruby><ruby>快<rt>かい</rt></ruby>",
+          "<ruby>危<rt>あぶ</rt></ruby>ない",
+          "<ruby>重<rt>おも</rt></ruby>い"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>楽<rt>たの</rt></ruby>しい」とにた <ruby>意<rt>い</rt></ruby><ruby>味<rt>み</rt></ruby>の <ruby>言<rt>こと</rt></ruby>ばに「<ruby>愉<rt>ゆ</rt></ruby><ruby>快<rt>かい</rt></ruby>」があります。"
+      },
+      {
+        type: "kanji2",
+        text: "ひとつのことに <ruby>心<rt>こころ</rt></ruby>を <ruby>向<rt>む</rt></ruby>けてすることをあらわす <ruby>熟語<rt>じゅくご</rt></ruby>は？",
+        hint: "〜してべんきょうする。",
+        choices: [
+          "<ruby>集<rt>しゅう</rt></ruby><ruby>中<rt>ちゅう</rt></ruby>",
+          "<ruby>見<rt>けん</rt></ruby><ruby>学<rt>がく</rt></ruby>",
+          "<ruby>疲<rt>ひ</rt></ruby><ruby>労<rt>ろう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "ひとつのことに<ruby>心<rt>こころ</rt></ruby>をむけることを「<ruby>集<rt>しゅう</rt></ruby><ruby>中<rt>ちゅう</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>国<rt>くに</rt></ruby>、とくに よそのくにを あらわす <ruby>熟語<rt>じゅくご</rt></ruby>は？",
+        hint: "<ruby>世<rt>せ</rt></ruby><ruby>界<rt>かい</rt></ruby>のいろいろな〜。",
+        choices: [
+          "<ruby>外<rt>がい</rt></ruby><ruby>国<rt>こく</rt></ruby>",
+          "<ruby>家<rt>か</rt></ruby><ruby>族<rt>ぞく</rt></ruby>",
+          "<ruby>友<rt>とも</rt></ruby><ruby>達<rt>だち</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "よそのくにを「<ruby>外<rt>がい</rt></ruby><ruby>国<rt>こく</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "ものごとを よく<ruby>考<rt>かんが</rt></ruby>えずに すぐにやってしまうようすをあらわす <ruby>熟語<rt>じゅくご</rt></ruby>は？",
+        hint: "〜な行動。",
+        choices: [
+          "<ruby>軽<rt>けい</rt></ruby><ruby>率<rt>そつ</rt></ruby>",
+          "<ruby>安<rt>あん</rt></ruby><ruby>全<rt>ぜん</rt></ruby>",
+          "<ruby>友<rt>ゆう</rt></ruby><ruby>好<rt>こう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "よく<ruby>考<rt>かんが</rt></ruby>えずにするようすを「<ruby>軽<rt>けい</rt></ruby><ruby>率<rt>そつ</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>上<rt>うえ</rt></ruby>」の はんたいは？",
+        hint: "<ruby>机<rt>つくえ</rt></ruby>の〜、たなの〜 の はんたい。",
+        choices: [
+          "<ruby>下<rt>した</rt></ruby>",
+          "<ruby>前<rt>まえ</rt></ruby>",
+          "<ruby>後<rt>うし</rt></ruby>ろ"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>上<rt>うえ</rt></ruby>」の はんたいは「<ruby>下<rt>した</rt></ruby>」です。"
+      },
+      {
+        type: "ant",
+        text: "「<ruby>前<rt>まえ</rt></ruby>」の はんたいは？",
+        hint: "ならんだときの はんたい。",
+        choices: [
+          "<ruby>後<rt>うし</rt></ruby>ろ",
+          "<ruby>上<rt>うえ</rt></ruby>",
+          "<ruby>下<rt>した</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "「<ruby>前<rt>まえ</rt></ruby>」の はんたいは「<ruby>後<rt>うし</rt></ruby>ろ」です。"
+      },
+      {
+        type: "syn",
+        text: "「<ruby>多<rt>おお</rt></ruby>くの人」の <ruby>言<rt>こと</rt></ruby>いかえで てきとうなものは？",
+        hint: "〜の人びと。",
+        choices: [
+          "<ruby>大<rt>おお</rt></ruby><ruby>勢<rt>ぜい</rt></ruby>",
+          "<ruby>少<rt>しょう</rt></ruby><ruby>人数<rt>にんずう</rt></ruby>",
+          "<ruby>一<rt>ひと</rt></ruby><ruby>人<rt>り</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "たくさんの人を「<ruby>大<rt>おお</rt></ruby><ruby>勢<rt>ぜい</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "<ruby>大<rt>おお</rt></ruby>きな<ruby>声<rt>こえ</rt></ruby>で どなりつけることをあらわす <ruby>熟語<rt>じゅくご</rt></ruby>は？",
+        hint: "〜されてこまる。",
+        choices: [
+          "<ruby>怒<rt>ど</rt></ruby><ruby>鳴<rt>な</rt></ruby>",
+          "<ruby>笑<rt>わら</rt></ruby>う",
+          "<ruby>泣<rt>な</rt></ruby>く"
+        ],
+        correctIndex: 0,
+        explanation: "おおきな<ruby>声<rt>こえ</rt></ruby>でどなることを「<ruby>怒<rt>ど</rt></ruby><ruby>鳴<rt>な</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      }
+    ];
+
+    // --- クイズの状態 ---
+    let currentIndex = 0;
+    let score = 0;
+    let answeredCurrent = false;
+
+    // シャッフル後の出題順（questions の index の配列）
+    let quizOrder = [];
+    // 現在の選択肢の並び（0,1,2 の並び）
+    let currentChoiceOrder = [0,1,2];
+    // 現在の正解ボタンの index（A/B/C の並びに対応）
+    let currentCorrectIndex = 0;
+    // どれを押したか（同期用）
+    let selectedButtonIndex = -1;
+
+    const qTextEl = document.getElementById("questionText");
+    const qHintEl = document.getElementById("questionHint");
+    const choicesEl = document.getElementById("choicesContainer");
+    const feedbackEl = document.getElementById("feedback");
+    const qNumberEl = document.getElementById("qNumber");
+    const qTotalEl = document.getElementById("qTotal");
+    const progressFillEl = document.getElementById("progressFill");
+    const scoreTextEl = document.getElementById("scoreText");
+    const nextBtn = document.getElementById("nextBtn");
+    const resultArea = document.getElementById("resultArea");
+    const rouletteWheelEl = document.getElementById("rouletteWheel");
+    const modeBadgeEl = document.getElementById("modeBadge");
+
+    // 右側UI
+    const onlineOverlay = document.getElementById("onlineOverlay");
+    const onlineFab = document.getElementById("onlineFab");
+    const onlinePanel = document.getElementById("onlinePanel");
+    const onlineCloseBtn = document.getElementById("onlineCloseBtn");
+
+    const roomInput = document.getElementById("roomInput");
+    const makeRoomUrlBtn = document.getElementById("makeRoomUrlBtn");
+    const urlP1 = document.getElementById("urlP1");
+    const urlP2 = document.getElementById("urlP2");
+    const startBtn = document.getElementById("startBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const connDot = document.getElementById("connDot");
+    const connText = document.getElementById("connText");
+    const roleText = document.getElementById("roleText");
+    const turnHint = document.getElementById("turnHint");
+
+    // ルーレット状態
+    let rouletteInterval = null;
+    let rouletteCurrent = 1;
+    let rouletteSpinning = false;
+    let rouletteEnabled = false;
+    let rouletteStartedAt = 0;
+
+    // ターン（1 or 2）
+    let turn = 1;
+
+    /*****************************************************************
+     * ONLINE制御
+     *****************************************************************/
+    const ONLINE = {
+      enabled: false,
+      roomId: "",
+      role: 0,           // 1 or 2
+      suppress: false,
+      lastRev: 0,
+      unsub: null,
+      hasRemoteState: false
+    };
+
+    function parseOnlineParams(){
+      const url = new URL(location.href);
+      const room = url.searchParams.get("room") || "";
+      const p = parseInt(url.searchParams.get("p") || "0", 10);
+      if(room && (p === 1 || p === 2)){
+        ONLINE.enabled = true;
+        ONLINE.roomId = room.trim();
+        ONLINE.role = p;
+      } else {
+        ONLINE.enabled = false;
+        ONLINE.roomId = "";
+        ONLINE.role = 0;
+      }
+    }
+
+    function roomDocRef(){
+      return doc(db, "rooms", ONLINE.roomId);
+    }
+
+    function setConn(ok){
+      connDot.classList.remove("ok","ng");
+      connDot.classList.add(ok ? "ok":"ng");
+      connText.textContent = ok ? "オンライン" : "オフライン";
+    }
+
+    function canOperateNow(){
+      if(!ONLINE.enabled) return true;
+      return ONLINE.role === turn;
+    }
+
+    function canStartOrReset(){
+      if(!ONLINE.enabled) return true;
+      return ONLINE.role === 1;
+    }
+
+    function updateRightPanelTexts(){
+      if(!ONLINE.enabled){
+        roleText.textContent = "ローカル対戦（オンライン未接続）";
+        modeBadgeEl.textContent = "しょう４むき";
+        turnHint.textContent = "";
+        startBtn.disabled = false;
+        resetBtn.disabled = false;
+        return;
+      }
+      modeBadgeEl.textContent = `オンライン P${ONLINE.role}`;
+      roleText.textContent = `部屋：${ONLINE.roomId} / あなた：P${ONLINE.role}`;
+      const youTurn = (ONLINE.role === turn);
+      turnHint.textContent = youTurn ? "あなたの ばんです（操作できます）" : "あいての ばんです（操作できません）";
+      startBtn.disabled = !canStartOrReset();
+      resetBtn.disabled = !canStartOrReset();
+    }
+
+    async function pushStateToCloud(){
+      if(!ONLINE.enabled) return;
+      if(ONLINE.suppress) return;
+
+      const rev = Date.now();
+      ONLINE.lastRev = rev;
+
+      const payload = {
+        meta: { rev, updatedAt: serverTimestamp() },
+        state: exportState()
+      };
+
+      try{
+        await setDoc(roomDocRef(), payload, { merge: true });
+        setConn(true);
+      }catch(e){
+        console.warn("pushStateToCloud failed", e);
+        setConn(false);
+      }
+    }
+
+    function listenCloud(){
+      if(!ONLINE.enabled) return;
+      if(ONLINE.unsub) ONLINE.unsub();
+
+      setConn(false);
+      ONLINE.hasRemoteState = false;
+
+      ONLINE.unsub = onSnapshot(roomDocRef(), (snap)=>{
+        if(!snap.exists()){
+          setConn(false);
+          return;
+        }
+        const data = snap.data() || {};
+        const meta = data.meta || {};
+        const rev = typeof meta.rev === "number" ? meta.rev : 0;
+        const remote = data.state || null;
+        if(!remote) return;
+
+        ONLINE.hasRemoteState = true;
+
+        if(rev <= ONLINE.lastRev) return;
+        ONLINE.lastRev = rev;
+
+        ONLINE.suppress = true;
+        try{
+          importState(remote);
+        } finally {
+          ONLINE.suppress = false;
+        }
+        setConn(true);
+      }, (err)=>{
+        console.warn("onSnapshot error", err);
+        setConn(false);
+      });
+    }
+
+    /*****************************************************************
+     * UI（パネル開閉：iPadで邪魔にならない）
+     *****************************************************************/
+    function openPanel(){
+      onlineOverlay.classList.add("open");
+      onlinePanel.classList.add("open");
+    }
+    function closePanel(){
+      onlineOverlay.classList.remove("open");
+      onlinePanel.classList.remove("open");
+    }
+    onlineFab.addEventListener("click", ()=>{
+      if(onlinePanel.classList.contains("open")) closePanel();
+      else openPanel();
+    });
+    onlineCloseBtn.addEventListener("click", closePanel);
+    onlineOverlay.addEventListener("click", closePanel);
+
+    // 配列シャッフル（フィッシャー–イェーツ）
+    function shuffle(array) {
+      const arr = array.slice();
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function clearRouletteTimer(){
+      if (rouletteInterval) {
+        clearInterval(rouletteInterval);
+        rouletteInterval = null;
+      }
+    }
+
+    function resetRoulette() {
+      if (!rouletteWheelEl) return;
+      clearRouletteTimer();
+      rouletteSpinning = false;
+      rouletteEnabled = false;
+      rouletteCurrent = 1;
+      rouletteStartedAt = 0;
+      rouletteWheelEl.textContent = "？";
+      rouletteWheelEl.classList.add("disabled");
+    }
+
+    function enableRouletteAfterCorrect() {
+      if (!rouletteWheelEl) return;
+      rouletteEnabled = true;
+      rouletteWheelEl.classList.remove("disabled");
+      rouletteWheelEl.textContent = "▶";
+    }
+
+    function rouletteValueFromTime(startMs, nowMs){
+      const dt = Math.max(0, nowMs - startMs);
+      const step = Math.floor(dt / 80);
+      return (step % 10) + 1;
+    }
+
+    function startRoulette() {
+      if (!rouletteWheelEl) return;
+      clearRouletteTimer();
+      rouletteSpinning = true;
+      rouletteStartedAt = Date.now();
+      rouletteCurrent = 1;
+      rouletteWheelEl.textContent = rouletteCurrent;
+      rouletteInterval = setInterval(() => {
+        rouletteCurrent = rouletteValueFromTime(rouletteStartedAt, Date.now());
+        rouletteWheelEl.textContent = rouletteCurrent;
+      }, 80);
+    }
+
+    function stopRoulette() {
+      if (!rouletteWheelEl) return;
+      clearRouletteTimer();
+      rouletteSpinning = false;
+      rouletteCurrent = rouletteValueFromTime(rouletteStartedAt, Date.now());
+      rouletteWheelEl.textContent = rouletteCurrent;
+      rouletteEnabled = false;
+      rouletteWheelEl.classList.add("disabled");
+    }
+
+    if (rouletteWheelEl) {
+      rouletteWheelEl.addEventListener("click", async () => {
+        if (!rouletteEnabled) return;
+        if (!canOperateNow()) return;
+
+        if (!rouletteSpinning) startRoulette();
+        else stopRoulette();
+
+        await pushStateToCloud();
+      });
+    }
+
+    function updateProgress() {
+      const total = quizOrder.length || questions.length;
+      const percent = (currentIndex / total) * 100;
+      progressFillEl.style.width = percent + "%";
+    }
+
+    function computeCorrectIndexForOrder(qIdx, order){
+      const q = questions[qIdx];
+      let correctBtnIdx = 0;
+      order.forEach((choiceIdx, buttonIdx) => {
+        if (choiceIdx === q.correctIndex) correctBtnIdx = buttonIdx;
+      });
+      return correctBtnIdx;
+    }
+
+    function renderQuestion() {
+      const qIdx = quizOrder[currentIndex];
+      const q = questions[qIdx];
+
+      qNumberEl.textContent = (currentIndex + 1).toString();
+      qTotalEl.textContent = quizOrder.length.toString();
+      updateProgress();
+
+      qTextEl.innerHTML = q.text;
+      qHintEl.innerHTML = q.hint || "";
+      feedbackEl.innerHTML = "";
+      feedbackEl.className = "feedback";
+      resultArea.innerHTML = "";
+
+      resetRoulette();
+
+      choicesEl.innerHTML = "";
+      currentCorrectIndex = computeCorrectIndexForOrder(qIdx, currentChoiceOrder);
+
+      currentChoiceOrder.forEach((choiceIdx, buttonIdx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "choice-btn";
+
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "label";
+        labelSpan.innerHTML = q.choices[choiceIdx];
+
+        const markSpan = document.createElement("span");
+        markSpan.className = "mark";
+        markSpan.textContent = String.fromCharCode(65 + buttonIdx); // A,B,C
+
+        btn.appendChild(labelSpan);
+        btn.appendChild(markSpan);
+
+        btn.addEventListener("click", async () => handleChoice(buttonIdx));
+        choicesEl.appendChild(btn);
+      });
+
+      nextBtn.textContent =
+        currentIndex === quizOrder.length - 1
+          ? "さいごの けっか を みる"
+          : "えらんだら つぎへ ➜";
+      nextBtn.classList.add("disabled");
+      answeredCurrent = false;
+      selectedButtonIndex = -1;
+
+      updateInteractivityByTurn();
+    }
+
+    function applyAnsweredStyles(){
+      const qIdx = quizOrder[currentIndex];
+      const q = questions[qIdx];
+      const buttons = Array.from(choicesEl.getElementsByClassName("choice-btn"));
+
+      buttons.forEach(btn => btn.classList.add("disabled"));
+      if(selectedButtonIndex >= 0 && buttons[selectedButtonIndex]){
+        if(selectedButtonIndex === currentCorrectIndex){
+          buttons[selectedButtonIndex].classList.add("correct");
+          feedbackEl.innerHTML = "⭕ <ruby>正<rt>せい</rt></ruby><ruby>解<rt>かい</rt></ruby>！　" + (q.explanation || "");
+          feedbackEl.className = "feedback correct";
+          enableRouletteAfterCorrect();
+        }else{
+          buttons[selectedButtonIndex].classList.add("wrong");
+          const correctBtn = buttons[currentCorrectIndex];
+          if (correctBtn) correctBtn.classList.add("correct");
+          feedbackEl.innerHTML = "❌ ざんねん。　" + (q.explanation || "");
+          feedbackEl.className = "feedback wrong";
+          resetRoulette();
+        }
+        nextBtn.classList.remove("disabled");
+      }
+    }
+
+    function updateInteractivityByTurn(){
+      const buttons = Array.from(choicesEl.getElementsByClassName("choice-btn"));
+      const lock = ONLINE.enabled && !canOperateNow();
+
+      if(answeredCurrent){
+        applyAnsweredStyles();
+      } else {
+        if(lock) buttons.forEach(btn => btn.classList.add("disabled"));
+        else buttons.forEach(btn => btn.classList.remove("disabled"));
+      }
+
+      if(lock) nextBtn.classList.add("disabled");
+      updateRightPanelTexts();
+    }
+
+    async function handleChoice(buttonIndex) {
+      if (answeredCurrent) return;
+      if (!canOperateNow()) return;
+
+      answeredCurrent = true;
+      selectedButtonIndex = buttonIndex;
+
+      const qIdx = quizOrder[currentIndex];
+      const q = questions[qIdx];
+      const buttons = Array.from(choicesEl.getElementsByClassName("choice-btn"));
+
+      buttons.forEach(btn => btn.classList.add("disabled"));
+
+      if (buttonIndex === currentCorrectIndex) {
+        score++;
+        scoreTextEl.textContent = `せいかい：${score} もん`;
+        feedbackEl.innerHTML =
+          "⭕ <ruby>正<rt>せい</rt></ruby><ruby>解<rt>かい</rt></ruby>！　" + (q.explanation || "");
+        feedbackEl.className = "feedback correct";
+        buttons[buttonIndex].classList.add("correct");
+        enableRouletteAfterCorrect();
+      } else {
+        feedbackEl.innerHTML =
+          "❌ ざんねん。　" + (q.explanation || "");
+        feedbackEl.className = "feedback wrong";
+        buttons[buttonIndex].classList.add("wrong");
+        const correctBtn = buttons[currentCorrectIndex];
+        if (correctBtn) correctBtn.classList.add("correct");
+        resetRoulette();
+      }
+
+      nextBtn.classList.remove("disabled");
+
+      if(ONLINE.enabled){
+        // ターン制：解答したら相手の番
+        turn = (turn === 1) ? 2 : 1;
+      }
+
+      updateInteractivityByTurn();
+      await pushStateToCloud();
+    }
+
+    nextBtn.addEventListener("click", async () => {
+      if (nextBtn.classList.contains("disabled")) return;
+      if (!canOperateNow()) return;
+
+      if (currentIndex < quizOrder.length - 1) {
+        currentIndex++;
+        currentChoiceOrder = shuffle([0, 1, 2]);
+        answeredCurrent = false;
+        selectedButtonIndex = -1;
+        renderQuestion();
+      } else {
+        showResult();
+      }
+
+      await pushStateToCloud();
+    });
+
+    function showResult() {
+      const total = quizOrder.length;
+      const percent = Math.round((score / total) * 100);
+      let message = "";
+
+      if (percent === 100) {
+        message =
+          "💮 すばらしい！ ぜんぶ <ruby>正<rt>せい</rt></ruby><ruby>解<rt>かい</rt></ruby>です。ごいりょく ばっちり！";
+      } else if (percent >= 70) {
+        message =
+          "✨ よくできました！ あとすこしで まんてんです。";
+      } else if (percent >= 50) {
+        message =
+          "◯ がんばりました。 もういちど チャレンジしてみよう。";
+      } else {
+        message =
+          "📘 これから どんどん <ruby>語<rt>ご</rt></ruby>いを ふやしていこう。";
+      }
+
+      resultArea.innerHTML =
+        `けっか：${score} / ${total} もん <br>${message}`;
+
+      const restart = document.createElement("button");
+      restart.type = "button";
+      restart.textContent = "もういちど チャレンジ";
+      restart.className = "restart-btn";
+      restart.addEventListener("click", async () => {
+        if(!canStartOrReset()) return; // P1のみ
+        await restartQuiz(true);
+      });
+      resultArea.appendChild(restart);
+
+      updateInteractivityByTurn();
+    }
+
+    function buildNewGameState(){
+      const orderIdx = shuffle([...Array(questions.length).keys()]);
+      return {
+        currentIndex: 0,
+        score: 0,
+        answeredCurrent: false,
+        selectedButtonIndex: -1,
+        quizOrder: orderIdx,
+        currentChoiceOrder: shuffle([0,1,2]),
+        currentCorrectIndex: 0,
+        turn: 1,
+        rouletteCurrent: 1,
+        rouletteEnabled: false,
+        rouletteSpinning: false,
+        rouletteStartedAt: 0
+      };
+    }
+
+    function exportState(){
+      return {
+        currentIndex,
+        score,
+        answeredCurrent,
+        selectedButtonIndex,
+        quizOrder,
+        currentChoiceOrder,
+        turn,
+        rouletteCurrent,
+        rouletteEnabled,
+        rouletteSpinning,
+        rouletteStartedAt
+      };
+    }
+
+    function importState(s){
+      if(!s || typeof s !== "object") return;
+
+      currentIndex = Number(s.currentIndex ?? currentIndex);
+      score = Number(s.score ?? score);
+      answeredCurrent = !!s.answeredCurrent;
+      selectedButtonIndex = Number(s.selectedButtonIndex ?? -1);
+
+      quizOrder = Array.isArray(s.quizOrder) ? s.quizOrder.slice() : quizOrder;
+      currentChoiceOrder = Array.isArray(s.currentChoiceOrder) ? s.currentChoiceOrder.slice() : currentChoiceOrder;
+
+      turn = Number(s.turn ?? turn);
+      rouletteCurrent = Number(s.rouletteCurrent ?? rouletteCurrent);
+      rouletteEnabled = !!s.rouletteEnabled;
+      rouletteSpinning = !!s.rouletteSpinning;
+      rouletteStartedAt = Number(s.rouletteStartedAt ?? rouletteStartedAt);
+
+      scoreTextEl.textContent = `せいかい：${score} もん`;
+
+      renderQuestion();
+
+      if(answeredCurrent){
+        applyAnsweredStyles();
+      }
+      updateInteractivityByTurn();
+    }
+
+    async function restartQuiz(fromUserAction) {
+      score = 0;
+      scoreTextEl.textContent = "せいかい：0 もん";
+
+      const ns = buildNewGameState();
+      quizOrder = ns.quizOrder;
+      currentIndex = 0;
+      currentChoiceOrder = ns.currentChoiceOrder;
+      turn = 1;
+
+      qTotalEl.textContent = quizOrder.length.toString();
+      updateProgress();
+      renderQuestion();
+      resetRoulette();
+
+      if(ONLINE.enabled && fromUserAction){
+        await pushStateToCloud();
+      }
+    }
+
+    /*****************************************************************
+     * 右側UI（部屋URL作成）
+     *****************************************************************/
+    function makeRoomUrls(roomId){
+      const base = location.origin + location.pathname;
+      const p1url = `${base}?room=${encodeURIComponent(roomId)}&p=1`;
+      const p2url = `${base}?room=${encodeURIComponent(roomId)}&p=2`;
+      urlP1.value = p1url;
+      urlP2.value = p2url;
+    }
+
+    makeRoomUrlBtn.addEventListener("click", ()=>{
+      const roomId = (roomInput.value || "").trim();
+      if(!roomId) return;
+      makeRoomUrls(roomId);
+      openPanel();
+    });
+
+    urlP1.addEventListener("click", ()=> urlP1.select());
+    urlP2.addEventListener("click", ()=> urlP2.select());
+
+    startBtn.addEventListener("click", async ()=>{
+      if(!canStartOrReset()) return; // P1のみ
+      await restartQuiz(true);
+    });
+
+    resetBtn.addEventListener("click", async ()=>{
+      if(!canStartOrReset()) return; // P1のみ
+      await restartQuiz(true);
+    });
+
+    /*****************************************************************
+     * 初期化
+     *****************************************************************/
+    async function initOffline(){
+      setConn(false);
+      connText.textContent = "オフライン";
+      await restartQuiz(false);
+      updateRightPanelTexts();
+    }
+
+    async function initOnline(){
+      listenCloud();
+      updateRightPanelTexts();
+
+      // ★重要：P2が来たときに「ローカル初期状態で上書き」しない
+      // - P1：部屋にstateが無ければ作成して push
+      // - P2：まず待つ（remote state が来たらそれを採用）
+      if(ONLINE.role === 1){
+        // P1は必ず初期 state を書く（部屋が未作成でも作成される）
+        await restartQuiz(true);
+      } else {
+        // P2はスナップショットを待つ。来ない場合はオフライン表示に近い形で “待機”
+        // 見た目だけは動かしておく（操作はロックされる）
+        await restartQuiz(false);
+        updateInteractivityByTurn();
+      }
+    }
+
+    // 起動
+    parseOnlineParams();
+    if(ONLINE.enabled){
+      setConn(false);
+      updateRightPanelTexts();
+      await initOnline();
+    } else {
+      await initOffline();
+    }
+  </script>
+
+  <!-- チェックリスト（ユーザー要望）：
+    ・P1でスタートできるか
+    ・P2でスタートできないか
+    ・P1操作がP2に反映されるか
+    ・P2操作がP1に反映されるか
+  -->
+</body>
+</html>
