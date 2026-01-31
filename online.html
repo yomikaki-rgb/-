@@ -606,6 +606,26 @@ line-height:1;
 </div>
 
 <div class="card" id="rightSide">
+<!-- ★オンライン対戦リンク作成 -->
+<div id="roomMaker" style="margin:8px 0; padding:10px; border:1px solid #ccc; border-radius:12px; background:#fff;">
+  <div style="font-weight:900; margin-bottom:6px;">オンライン対戦リンク作成</div>
+
+  <div style="display:flex; gap:6px; align-items:center;">
+    <span>部屋番号</span>
+    <input id="roomInput" placeholder="例: class1" style="width:120px;">
+    <button id="makeRoomUrlBtn" type="button">URL作成</button>
+  </div>
+
+  <div style="margin-top:8px; font-size:12px;">
+    <div>プレイヤー1用</div>
+    <input id="urlP1" readonly style="width:100%;">
+    <button id="copyP1" type="button">コピー</button>
+
+    <div style="margin-top:6px;">プレイヤー2用</div>
+    <input id="urlP2" readonly style="width:100%;">
+    <button id="copyP2" type="button">コピー</button>
+  </div>
+</div>
 
 <div class="settings">
 <div class="settingRow">
@@ -1809,4 +1829,5 @@ showReadings = (readingToggle.value === "on");
   
 </body>
 </html>
+
 
