@@ -659,6 +659,48 @@
             <button id="resetBtn">リセット</button>
           </div>
         </div>
+<!-- ★オンライン対戦リンク作成（ここから追加） -->
+<div id="roomMaker" class="card" style="margin-top:12px;">
+  <h2>オンライン対戦リンク作成</h2>
+
+  <div class="settingRow">
+    <label class="muted">部屋番号</label>
+    <input id="roomInput" placeholder="例: class1" style="width:180px;" />
+    <button id="makeRoomUrlBtn" type="button">URL作成</button>
+  </div>
+
+  <div style="margin-top:8px; display:grid; gap:8px;">
+    <div style="font-size:12px; color:var(--sub); font-weight:900;">プレイヤー1用：</div>
+    <div class="row" style="gap:8px; flex-wrap:nowrap;">
+      <input id="urlP1" readonly style="width:100%;" />
+      <button id="copyP1" type="button">コピー</button>
+    </div>
+
+    <div style="font-size:12px; color:var(--sub); font-weight:900;">プレイヤー2用：</div>
+    <div class="row" style="gap:8px; flex-wrap:nowrap;">
+      <input id="urlP2" readonly style="width:100%;" />
+      <button id="copyP2" type="button">コピー</button>
+    </div>
+
+    <div style="font-size:12px; color:var(--sub); font-weight:900;">（任意）プレイヤー3用：</div>
+    <div class="row" style="gap:8px; flex-wrap:nowrap;">
+      <input id="urlP3" readonly style="width:100%;" />
+      <button id="copyP3" type="button">コピー</button>
+    </div>
+
+    <div style="font-size:12px; color:var(--sub); font-weight:900;">（任意）プレイヤー4用：</div>
+    <div class="row" style="gap:8px; flex-wrap:nowrap;">
+      <input id="urlP4" readonly style="width:100%;" />
+      <button id="copyP4" type="button">コピー</button>
+    </div>
+
+    <div style="font-size:12px; color:var(--sub); line-height:1.5;">
+      ※このURLをそれぞれの端末で開くと、同じ部屋で対戦できます。<br>
+      ※スタート/リセットはプレイヤー1（me=1）の端末だけ押せます。
+    </div>
+  </div>
+</div>
+<!-- ★オンライン対戦リンク作成（ここまで追加） -->
 
         <details id="rules" style="margin-top:12px;">
           <summary><ruby>遊び方<rt>あそびかた</rt></ruby></summary>
@@ -1804,9 +1846,75 @@ readingToggle.addEventListener("change", ()=>{
 });
 
 showReadings = (readingToggle.value === "on");
+  /* =========================
+  ★オンライン対戦リンク作成：URL生成＆コピー
+========================= */
+const roomInput = document.getElementById("roomInput");
+const makeRoomUrlBtn = document.getElementById("makeRoomUrlBtn");
+const urlP1 = document.getElementById("urlP1");
+const urlP2 = document.getElementById("urlP2");
+const urlP3 = document.getElementById("urlP3");
+const urlP4 = document.getElementById("urlP4");
+const copyP1 = document.getElementById("copyP1");
+const copyP2 = document.getElementById("copyP2");
+const copyP3 = document.getElementById("copyP3");
+const copyP4 = document.getElementById("copyP4");
+
+function buildRoomUrl(roomId, me){
+  const base = location.origin + location.pathname; // このHTML自身
+  const q = new URLSearchParams();
+  q.set("room", roomId);
+  q.set("me", String(me));
+  return `${base}?${q.toString()}`;
+}
+
+async function copyText(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    setMsg("コピーしました。相手に送ってね。", "ok");
+  }catch(e){
+    // クリップボードが使えない環境用フォールバック
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+    setMsg("コピーしました。相手に送ってね。", "ok");
+  }
+}
+
+function fillUrls(){
+  const roomId = (roomInput?.value || "").trim();
+  if(!roomId){
+    setMsg("部屋番号を入れてから URL作成 を押してね。", "ng");
+    return;
+  }
+  urlP1.value = buildRoomUrl(roomId, 1);
+  urlP2.value = buildRoomUrl(roomId, 2);
+  urlP3.value = buildRoomUrl(roomId, 3);
+  urlP4.value = buildRoomUrl(roomId, 4);
+  setMsg("URLを作りました。コピーして相手に送ってね。", "ok");
+}
+
+if(makeRoomUrlBtn){
+  makeRoomUrlBtn.addEventListener("click", fillUrls);
+}
+if(copyP1) copyP1.addEventListener("click", ()=> urlP1.value && copyText(urlP1.value));
+if(copyP2) copyP2.addEventListener("click", ()=> urlP2.value && copyText(urlP2.value));
+if(copyP3) copyP3.addEventListener("click", ()=> urlP3.value && copyText(urlP3.value));
+if(copyP4) copyP4.addEventListener("click", ()=> urlP4.value && copyText(urlP4.value));
+
+/* ★いま開いているURLに room が付いていたら、入力欄にも反映（任意） */
+if(roomInput && ONLINE?.enabled){
+  roomInput.value = ONLINE.roomId || "";
+  fillUrls();
+}
+
 </script>
   
 </body>
 </html>
+
 
 
