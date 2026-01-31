@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>語いクイズ</title>
+<style>
+  :root {
+    --bg1:#eef2ff;
+    --bg2:#f3e8ff;
+    --card:#ffffffcc;
+    --ink:#111827;
+    --ink-sub:#4b5563;
+    --primary:#4f46e5;
+    --primary-soft:#e0e7ff;
+    --correct:#16a34a;
+    --wrong:#dc2626;
+    --border:#d1d5db;
+  }
+  * {
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+  }
+  body {
+    margin:0;
+    min-height:100vh;
+    padding:16px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
+      "Hiragino Kaku Gothic ProN","ヒラギノ角ゴ ProN","Yu Gothic","メイリオ",sans-serif;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+  .app {
+    width:100%;
+    max-width:700px;
+    background:var(--card);
+    border-radius:18px;
+    padding:20px 18px 18px;
+    box-shadow:0 20px 40px rgba(15,23,42,0.25);
+  }
+  .app-title {
+    font-size:1.4rem;
+    font-weight:700;
+    text-align:center;
+    margin-bottom:8px;
+    color:var(--ink);
+  }
+  .status-row {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:0.9rem;
+    color:var(--ink-sub);
+    margin-bottom:10px;
+  }
+  .badge {
+    padding:2px 8px;
+    border-radius:999px;
+    background:var(--primary-soft);
+    color:var(--primary);
+    font-size:0.8rem;
+    font-weight:600;
+  }
+  .progress-bar {
+    width:100%;
+    height:8px;
+    background:#e5e7eb;
+    border-radius:999px;
+    overflow:hidden;
+    margin-bottom:16px;
+  }
+  .progress-fill {
+    height:100%;
+    width:0%;
+    background:var(--primary);
+    transition:width 0.25s ease-out;
+  }
+  .card {
+    background:white;
+    border-radius:16px;
+    border:1px solid var(--border);
+    padding:16px;
+  }
+  .question-text {
+    font-size:1.15rem;
+    line-height:1.6;
+    margin-bottom:14px;
+    color:var(--ink);
+  }
+  .hint {
+    font-size:0.85rem;
+    color:var(--ink-sub);
+    margin-bottom:10px;
+  }
+  .choices {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .choice-btn {
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:8px 14px;
+    font-size:1rem;
+    text-align:left;
+    background:#f9fafb;
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    transition:transform 0.05s ease, box-shadow 0.05s ease, background 0.15s;
+  }
+  .choice-btn span.label {
+    flex:1;
+  }
+  .choice-btn span.mark {
+    font-size:0.8rem;
+    opacity:0.7;
+  }
+  .choice-btn:active {
+    transform:scale(0.98);
+    box-shadow:0 2px 4px rgba(15,23,42,0.12);
+  }
+  .choice-btn.disabled {
+    cursor:default;
+    opacity:0.85;
+  }
+  .choice-btn.correct {
+    border-color:var(--correct);
+    background:#ecfdf3;
+    color:var(--correct);
+    font-weight:600;
+  }
+  .choice-btn.wrong {
+    border-color:var(--wrong);
+    background:#fef2f2;
+    color:var(--wrong);
+    font-weight:600;
+  }
+  .feedback {
+    min-height:1.6em;
+    font-size:0.95rem;
+    margin-top:4px;
+  }
+  .feedback.correct {
+    color:var(--correct);
+  }
+  .feedback.wrong {
+    color:var(--wrong);
+  }
+  .nav-row {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:12px;
+    gap:8px;
+  }
+  .score-text {
+    font-size:0.9rem;
+    color:var(--ink-sub);
+  }
+  .next-btn {
+    border:none;
+    border-radius:999px;
+    background:var(--primary);
+    color:white;
+    font-size:0.95rem;
+    font-weight:600;
+    padding:8px 18px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    box-shadow:0 6px 14px rgba(79,70,229,0.35);
+    transition:transform 0.05s ease, box-shadow 0.05s ease, opacity 0.15s;
+    white-space:nowrap;
+  }
+  .next-btn:active {
+    transform:translateY(1px);
+    box-shadow:0 3px 8px rgba(79,70,229,0.4);
+  }
+  .next-btn.disabled {
+    opacity:0.4;
+    cursor:default;
+    box-shadow:none;
+    transform:none;
+  }
+
+  .roulette {
+    margin-top:14px;
+    text-align:center;
+  }
+  .roulette-label {
+    font-size:0.9rem;
+    color:var(--ink-sub);
+    margin-bottom:4px;
+  }
+  .roulette-wheel {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:72px;
+    height:72px;
+    border-radius:999px;
+    border:2px solid var(--primary);
+    font-size:1.4rem;
+    font-weight:700;
+    background:#ffffff;
+    box-shadow:0 6px 14px rgba(79,70,229,0.25);
+    cursor:pointer;
+  }
+  .roulette-wheel.disabled {
+    opacity:0.4;
+    cursor:default;
+  }
+
+  .result {
+    text-align:center;
+    margin-top:8px;
+    font-size:1rem;
+  }
+  .restart-btn {
+    margin-top:10px;
+    border-radius:999px;
+    border:1px solid var(--primary);
+    background:white;
+    color:var(--primary);
+    font-weight:600;
+    font-size:0.95rem;
+    padding:8px 16px;
+    cursor:pointer;
+  }
+
+  /* =========================
+     ★オンライン用 右サイドUI（既存UIを崩さないため fixed で追加）
+     ========================= */
+  .online-panel{
+    position:fixed;
+    right:12px;
+    top:12px;
+    width:270px;
+    max-width:calc(100vw - 24px);
+    background:#ffffffee;
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:10px;
+    box-shadow:0 10px 24px rgba(15,23,42,0.18);
+    color:var(--ink);
+    font-size:12px;
+    z-index:9999;
+  }
+  .online-panel .row{ display:flex; gap:6px; align-items:center; margin:6px 0; }
+  .online-panel input{
+    width:100%;
+    padding:6px 8px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-size:12px;
+  }
+  .online-panel button{
+    padding:6px 10px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:#f8fafc;
+    cursor:pointer;
+    font-size:12px;
+    white-space:nowrap;
+  }
+  .online-panel button.primary{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+  .online-panel button:disabled{ opacity:.45; cursor:default; }
+  .online-panel .label{ font-weight:700; }
+  .online-panel .small{ font-size:11px; color:var(--ink-sub); }
+  .online-panel .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:2px 8px; border-radius:999px;
+    border:1px solid var(--border);
+    background:#fff;
+  }
+  .online-panel .dot{
+    width:8px; height:8px; border-radius:99px;
+    background:#9ca3af;
+  }
+  .online-panel .dot.ok{ background:var(--correct); }
+  .online-panel .dot.ng{ background:var(--wrong); }
+
+  @media (max-width:480px) {
+    .app {
+      padding:16px 12px 14px;
+    }
+    .question-text {
+      font-size:1.05rem;
+    }
+    .choice-btn {
+      padding:8px 10px;
+      font-size:0.95rem;
+    }
+    .roulette-wheel {
+      width:64px;
+      height:64px;
+      font-size:1.2rem;
+    }
+    .online-panel{
+      right:8px;
+      left:8px;
+      width:auto;
+      top:auto;
+      bottom:8px;
+    }
+  }
+
+@media (pointer: coarse){
+  /* iPad等：入力欄が邪魔にならないよう、固定表示をやめて通常フローへ */
+  #onlinePanel{
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin-top: 10px;
+  }
+}
+
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="app-title">
+      <ruby>語<rt>ご</rt></ruby>いクイズ
+    </div>
+
+    <div class="status-row">
+      <div>もんだい <span id="qNumber">1</span> / <span id="qTotal">0</span></div>
+      <div class="badge" id="modeBadge">しょう４むき</div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="card">
+      <div class="question-text" id="questionText"></div>
+      <div class="hint" id="questionHint"></div>
+
+      <div class="choices" id="choicesContainer"></div>
+
+      <div class="feedback" id="feedback"></div>
+
+      <div class="nav-row">
+        <div class="score-text" id="scoreText">せいかい：0 もん</div>
+        <button class="next-btn disabled" id="nextBtn" type="button">
+          こたえを えらんでね
+        </button>
+      </div>
+    </div>
+
+    <div class="roulette">
+      <div class="roulette-label">せいかいしたら ルーレット！</div>
+      <div class="roulette-wheel disabled" id="rouletteWheel">？</div>
+    </div>
+
+    <div class="result" id="resultArea"></div>
+  </div>
+
+  <!-- ★右側UI（必須仕様 5） -->
+  <div class="online-panel" id="onlinePanel" aria-label="オンライン対戦">
+    <div class="row" style="justify-content:space-between;">
+      <div class="label">オンライン対戦</div>
+      <div class="pill" title="接続状態">
+        <span class="dot" id="connDot"></span>
+        <span id="connText" class="small">オフライン</span>
+      </div>
+    </div>
+    <div class="small" id="roleText">ローカル対戦（オンライン未接続）</div>
+
+    <div class="row">
+      <input id="roomInput" placeholder="部屋番号（例: class1）" />
+      <button id="makeRoomUrlBtn" class="primary" type="button">URL作成</button>
+    </div>
+
+    <div class="small">プレイヤー1用：</div>
+    <div class="row">
+      <input id="urlP1" readonly />
+    </div>
+    <div class="small">プレイヤー2用：</div>
+    <div class="row">
+      <input id="urlP2" readonly />
+    </div>
+
+    <div class="row" style="margin-top:8px;">
+      <button id="startBtn" class="primary" type="button">スタート</button>
+      <button id="resetBtn" type="button">リセット</button>
+    </div>
+    <div class="small" id="turnHint"></div>
+  </div>
+
+  <script type="module">
+    /*****************************************************************
+     * Firebase設定（ユーザー指定をそのまま埋め込み）
+     *****************************************************************/
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyBtKWi2tXanWuDf_Du5C9tr5ZwOAfNBRIs",
+      authDomain: "goi-battle-g3.firebaseapp.com",
+      projectId: "goi-battle-g3",
+      storageBucket: "goi-battle-g3.firebasestorage.app",
+      messagingSenderId: "1052102588017",
+      appId: "1:1052102588017:web:e8a09649466f4504f08dd0",
+      measurementId: "G-Y7TQVZ2R2V"
+    };
+
+    /*****************************************************************
+     * ★オンライン同期（Firestore）
+     * - databaseURL が指定されていないため、設定不要で使える Firestore を採用
+     * - ルール：rev（数値）が新しい方を採用
+     *****************************************************************/
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getFirestore, doc, setDoc, onSnapshot, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const appFb = initializeApp(firebaseConfig);
+    const db = getFirestore(appFb);
+
+    /*****************************************************************
+     * 既存：もんだいデータ（ここは元のまま）
+     *****************************************************************/
+    const questions = [
+      {
+        type: "kanji2",
+        text: "「<ruby>作<rt>つく</rt></ruby>る」を<ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で<ruby>言<rt>い</rt></ruby>うと？",
+        hint: "<ruby>作<rt>さく</rt></ruby><ruby>品<rt>ひん</rt></ruby>をつくる ときなどにつかう <ruby>言<rt>こと</rt></ruby>ば。",
+        choices: [
+          "<ruby>制<rt>せい</rt></ruby><ruby>作<rt>さく</rt></ruby>",
+          "<ruby>読<rt>どく</rt></ruby><ruby>書<rt>しょ</rt></ruby>",
+          "<ruby>運<rt>うん</rt></ruby><ruby>動<rt>どう</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "なにかをつくることを <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で「<ruby>制<rt>せい</rt></ruby><ruby>作<rt>さく</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      },
+      {
+        type: "kanji2",
+        text: "「おひるごはん」を<ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で<ruby>言<rt>い</rt></ruby>うと？",
+        hint: "<ruby>朝<rt>ちょう</rt></ruby><ruby>食<rt>しょく</rt></ruby>・<ruby>夕<rt>ゆう</rt></ruby><ruby>食<rt>しょく</rt></ruby>とならぶ <ruby>言<rt>こと</rt></ruby>ば。",
+        choices: [
+          "<ruby>朝<rt>ちょう</rt></ruby><ruby>食<rt>しょく</rt></ruby>",
+          "<ruby>昼<rt>ちゅう</rt></ruby><ruby>食<rt>しょく</rt></ruby>",
+          "<ruby>夕<rt>ゆう</rt></ruby><ruby>食<rt>しょく</rt></ruby>"
+        ],
+        correctIndex: 1,
+        explanation: "おひるごはんは <ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で「<ruby>昼<rt>ちゅう</rt></ruby><ruby>食<rt>しょく</rt></ruby>」と<ruby>書<rt>か</rt></ruby>きます。"
+      },
+      {
+        type: "kanji2",
+        text: "「ふえる」を<ruby>漢<rt>かん</rt></ruby><ruby>字<rt>じ</rt></ruby>２<ruby>字<rt>じ</rt></ruby>で<ruby>言<rt>い</rt></ruby>うと？",
+        hint: "<ruby>数<rt>かず</rt></ruby>や<ruby>量<rt>りょう</rt></ruby>がおおくなること。",
+        choices: [
+          "<ruby>増<rt>ぞう</rt></ruby><ruby>加<rt>か</rt></ruby>",
+          "<ruby>飲<rt>いん</rt></ruby><ruby>食<rt>しょく</rt></ruby>",
+          "<ruby>拡<rt>かく</rt></ruby><ruby>大<rt>だい</rt></ruby>"
+        ],
+        correctIndex: 0,
+        explanation: "<ruby>数<rt>かず</rt></ruby>や<ruby>量<rt>りょう</rt></ruby>がふえることを「<ruby>増<rt>ぞう</rt></ruby><ruby>加<rt>か</rt></ruby>」と<ruby>言<rt>い</rt></ruby>います。"
+      }
+      /* 省略：ここから下はユーザーが貼ってくれた questions をそのまま続けてください */
+    ];
+
+    /*****************************************************************
+     * DOM参照（既存IDのまま）
+     *****************************************************************/
+    const qTextEl = document.getElementById("questionText");
+    const qHintEl = document.getElementById("questionHint");
+    const choicesEl = document.getElementById("choicesContainer");
+    const feedbackEl = document.getElementById("feedback");
+    const qNumberEl = document.getElementById("qNumber");
+    const qTotalEl = document.getElementById("qTotal");
+    const progressFillEl = document.getElementById("progressFill");
+    const scoreTextEl = document.getElementById("scoreText");
+    const nextBtn = document.getElementById("nextBtn");
+    const resultArea = document.getElementById("resultArea");
+    const rouletteWheelEl = document.getElementById("rouletteWheel");
+    const modeBadgeEl = document.getElementById("modeBadge");
+
+    // 右側UI
+    const roomInput = document.getElementById("roomInput");
+    const makeRoomUrlBtn = document.getElementById("makeRoomUrlBtn");
+    const urlP1 = document.getElementById("urlP1");
+    const urlP2 = document.getElementById("urlP2");
+    const startBtn = document.getElementById("startBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const connDot = document.getElementById("connDot");
+    const connText = document.getElementById("connText");
+    const roleText = document.getElementById("roleText");
+    const turnHint = document.getElementById("turnHint");
+
+    /*****************************************************************
+     * 状態（ローカル/オンライン共通）
+     *****************************************************************/
+    let currentIndex = 0;
+    let score = 0;
+    let answeredCurrent = false;
+
+    let quizOrder = [];
+    let currentChoiceOrder = [0,1,2];
+    let currentCorrectIndex = 0;
+    let selectedButtonIndex = -1;
+
+    let rouletteInterval = null;
+    let rouletteCurrent = 1;
+    let rouletteSpinning = false;
+    let rouletteEnabled = false;
+    let rouletteStartedAt = 0;
+
+    let turn = 1;
+
+    /*****************************************************************
+     * ONLINE制御
+     *****************************************************************/
+    const ONLINE = {
+      enabled: false,
+      roomId: "",
+      role: 0,
+      suppress: false,
+      lastRev: 0,
+      unsub: null
+    };
+
+    function parseOnlineParams(){
+      const url = new URL(location.href);
+      const room = url.searchParams.get("room") || "";
+      const p = parseInt(url.searchParams.get("p") || "0", 10);
+      if(room && (p === 1 || p === 2)){
+        ONLINE.enabled = true;
+        ONLINE.roomId = room.trim();
+        ONLINE.role = p;
+      } else {
+        ONLINE.enabled = false;
+        ONLINE.roomId = "";
+        ONLINE.role = 0;
+      }
+    }
+
+    function roomDocRef(){
+      return doc(db, "rooms", ONLINE.roomId);
+    }
+
+    function setConn(ok){
+      connDot.classList.remove("ok","ng");
+      connDot.classList.add(ok ? "ok":"ng");
+      connText.textContent = ok ? "オンライン" : "オフライン";
+    }
+
+    function canOperateNow(){
+      if(!ONLINE.enabled) return true;
+      return ONLINE.role === turn;
+    }
+
+    function canStartOrReset(){
+      if(!ONLINE.enabled) return true;
+      return ONLINE.role === 1;
+    }
+
+    function updateRightPanelTexts(){
+      if(!ONLINE.enabled){
+        roleText.textContent = "ローカル対戦（オンライン未接続）";
+        modeBadgeEl.textContent = "しょう４むき";
+        turnHint.textContent = "";
+        startBtn.disabled = false;
+        resetBtn.disabled = false;
+        return;
+      }
+      modeBadgeEl.textContent = `オンライン P${ONLINE.role}`;
+      roleText.textContent = `部屋：${ONLINE.roomId} / あなた：P${ONLINE.role}`;
+      const youTurn = (ONLINE.role === turn);
+      turnHint.textContent = youTurn ? "あなたの ばんです（操作できます）" : "あいての ばんです（操作できません）";
+      startBtn.disabled = !canStartOrReset();
+      resetBtn.disabled = !canStartOrReset();
+    }
+
+    async function pushStateToCloud(){
+      if(!ONLINE.enabled) return;
+      if(ONLINE.suppress) return;
+      const rev = Date.now();
+      ONLINE.lastRev = rev;
+      const payload = {
+        meta: { rev, updatedAt: serverTimestamp() },
+        state: exportState()
+      };
+      try{
+        await setDoc(roomDocRef(), payload, { merge: true });
+        setConn(true);
+      }catch(e){
+        console.warn("pushStateToCloud failed", e);
+        setConn(false);
+      }
+    }
+
+    function listenCloud(){
+      if(!ONLINE.enabled) return;
+      if(ONLINE.unsub) ONLINE.unsub();
+      setConn(false);
+      ONLINE.unsub = onSnapshot(roomDocRef(), (snap)=>{
+        if(!snap.exists()){
+          setConn(false);
+          return;
+        }
+        const data = snap.data() || {};
+        const meta = data.meta || {};
+        const rev = typeof meta.rev === "number" ? meta.rev : 0;
+        const remote = data.state || null;
+        if(!remote) return;
+        if(rev <= ONLINE.lastRev) return;
+
+        ONLINE.lastRev = rev;
+        ONLINE.suppress = true;
+        try{
+          importState(remote);
+        } finally {
+          ONLINE.suppress = false;
+        }
+        setConn(true);
+      }, (err)=>{
+        console.warn("onSnapshot error", err);
+        setConn(false);
+      });
+    }
+
+    /*****************************************************************
+     * 配列シャッフル（フィッシャー–イェーツ）
+     *****************************************************************/
+    function shuffle(array) {
+      const arr = array.slice();
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    /*****************************************************************
+     * ルーレット（同期対応）
+     *****************************************************************/
+    function clearRouletteTimer(){
+      if (rouletteInterval) {
+        clearInterval(rouletteInterval);
+        rouletteInterval = null;
+      }
+    }
+    function resetRoulette() {
+      clearRouletteTimer();
+      rouletteSpinning = false;
+      rouletteEnabled = false;
+      rouletteCurrent = 1;
+      rouletteStartedAt = 0;
+      rouletteWheelEl.textContent = "？";
+      rouletteWheelEl.classList.add("disabled");
+    }
+    function enableRouletteAfterCorrect() {
+      rouletteEnabled = true;
+      rouletteWheelEl.classList.remove("disabled");
+      rouletteWheelEl.textContent = "▶";
+    }
+    function rouletteValueFromTime(startMs, nowMs){
+      const dt = Math.max(0, nowMs - startMs);
+      const step = Math.floor(dt / 80);
+      const v = (step % 10) + 1;
+      return v;
+    }
+    function startRoulette(){
+      clearRouletteTimer();
+      rouletteSpinning = true;
+      rouletteStartedAt = Date.now();
+      rouletteCurrent = 1;
+      rouletteWheelEl.textContent = rouletteCurrent;
+      rouletteInterval = setInterval(()=>{
+        rouletteCurrent = rouletteValueFromTime(rouletteStartedAt, Date.now());
+        rouletteWheelEl.textContent = rouletteCurrent;
+      }, 80);
+    }
+    function stopRoulette(){
+      clearRouletteTimer();
+      rouletteSpinning = false;
+      rouletteCurrent = rouletteValueFromTime(rouletteStartedAt, Date.now());
+      rouletteWheelEl.textContent = rouletteCurrent;
+      rouletteEnabled = false;
+      rouletteWheelEl.classList.add("disabled");
+    }
+
+    rouletteWheelEl.addEventListener("click", async () => {
+      if (!rouletteEnabled) return;
+      if (!canOperateNow()) return;
+      if (!rouletteSpinning) startRoulette();
+      else stopRoulette();
+      await pushStateToCloud();
+    });
+
+    /*****************************************************************
+     * 進捗・描画
+     *****************************************************************/
+    function updateProgress() {
+      const total = quizOrder.length || questions.length;
+      const percent = (currentIndex / total) * 100;
+      progressFillEl.style.width = percent + "%";
+    }
+    function computeCorrectIndexForOrder(qIdx, order){
+      const q = questions[qIdx];
+      let correctBtnIdx = 0;
+      order.forEach((choiceIdx, buttonIdx)=>{
+        if(choiceIdx === q.correctIndex) correctBtnIdx = buttonIdx;
+      });
+      return correctBtnIdx;
+    }
+    function renderQuestion(){
+  // 状態（currentIndex / currentChoiceOrder / answeredCurrent / selectedButtonIndex / currentCorrectIndex / rouletteState）を元に画面だけ描画する
+  const q = questions[quizOrder[currentIndex]];
+  if(!q){ return; }
+
+  // 問題文
+  questionTextEl.textContent = q.question;
+
+  // 選択肢（表示順）
+  const order = (Array.isArray(currentChoiceOrder) && currentChoiceOrder.length === q.choices.length)
+    ? currentChoiceOrder
+    : [...Array(q.choices.length).keys()];
+
+  // 選択肢ボタンを作成
+  choicesArea.innerHTML = "";
+  order.forEach((origIdx, btnIdx)=>{
+    const btn = document.createElement("button");
+    btn.className = "choiceBtn";
+    btn.textContent = q.choices[origIdx];
+
+    btn.addEventListener("click", ()=>{
+      if(!started) return;
+      if(answeredCurrent) return;
+      if(ONLINE.enabled && !canOperateNow()) return;
+
+      // 選択
+      selectedButtonIndex = btnIdx;
+
+      // 正解判定（表示順に対する index を保持）
+      const correctOrigIdx = q.correctIndex;
+      const correctBtnIdx = order.indexOf(correctOrigIdx);
+      currentCorrectIndex = correctBtnIdx;
+
+      answeredCurrent = true;
+
+      // UI反映
+      applyAnswerUI();
+
+      // 正解ならルーレットON
+      if(selectedButtonIndex === currentCorrectIndex){
+        rouletteState.enabled = true;
+        rouletteState.spinning = false;
+        rouletteState.current = 1;
+        rouletteState.startedAt = 0;
+        rouletteWheelEl.textContent = "▶";
+        rouletteWheelEl.classList.remove("rouletteDisabled");
+      }else{
+        rouletteState.enabled = false;
+        rouletteWheelEl.classList.add("rouletteDisabled");
+      }
+
+      // 同期
+      if(ONLINE.enabled) pushStateToFirebase(exportState());
+    });
+
+    choicesArea.appendChild(btn);
+  });
+
+  // 既に回答済みの状態なら、その状態をUIに反映
+  applyAnswerUI();
+
+  // ルーレットUI反映
+  applyRouletteUI();
+
+  // ターン表示
+  updateTurnIndicator();
+}
+
+function escapeHtml(s){
+  return String(s||"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll("\"","&quot;")
+    .replaceAll("'","&#39;");
+}
+
+function applyAnswerUI(){
+  const q = questions[quizOrder[currentIndex]];
+  if(!q) return;
+
+  // ボタン状態
+  const btns = Array.from(choicesArea.querySelectorAll(".choiceBtn"));
+  btns.forEach((b, i)=>{
+    b.classList.remove("selected","correct","wrong");
+    // 操作可否
+    if(answeredCurrent){
+      b.disabled = true;
+      b.classList.add("disabledBtn");
+    }else{
+      b.disabled = false;
+      b.classList.remove("disabledBtn");
+    }
+    if(i === selectedButtonIndex) b.classList.add("selected");
+    if(answeredCurrent){
+      if(i === currentCorrectIndex) b.classList.add("correct");
+      if(i === selectedButtonIndex && selectedButtonIndex !== currentCorrectIndex) b.classList.add("wrong");
+    }
+  });
+
+  // フィードバック
+  if(answeredCurrent){
+    const isOK = (selectedButtonIndex === currentCorrectIndex);
+    feedbackArea.innerHTML = isOK
+      ? `<div class="fbOk">◎ 正解！</div><div class="fbSmall">${escapeHtml(q.explanation||"")}</div>`
+      : `<div class="fbNg">× ちがう…</div><div class="fbSmall">${escapeHtml(q.explanation||"")}</div>`;
+    nextBtn.classList.remove("disabled");
+  }else{
+    feedbackArea.innerHTML = "";
+    nextBtn.classList.add("disabled");
+  }
+
+  // 進行表示
+  const progress = `${currentIndex+1} / ${quizOrder.length}`;
+  progressEl.textContent = progress;
+}
+
+function applyRouletteUI(){
+  // ルーレットの見た目だけ同期状態に合わせる
+  if(rouletteState.spinning){
+    rouletteWheelEl.classList.remove("rouletteDisabled");
+    // すでに startedAt があれば、時間から算出して表示を更新
+    if(rouletteState.startedAt){
+      rouletteState.current = rouletteValueFromTime(rouletteState.startedAt, Date.now());
+    }
+    rouletteWheelEl.textContent = String(rouletteState.current || 1);
+
+    // 回り続け表示（ローカルでも更新）
+    startRouletteRenderLoop();
+    return;
+  }
+
+  stopRouletteRenderLoop();
+
+  if(rouletteState.enabled){
+    rouletteWheelEl.textContent = "▶";
+    rouletteWheelEl.classList.remove("rouletteDisabled");
+  }else{
+    rouletteWheelEl.classList.add("rouletteDisabled");
+    // 結果があるなら表示
+    if(rouletteState.current){
+      rouletteWheelEl.textContent = String(rouletteState.current);
+    }else{
+      rouletteWheelEl.textContent = "？";
+    }
+  }
+}
+
+let rouletteRenderTimer = null;
+function startRouletteRenderLoop(){
+  if(rouletteRenderTimer) return;
+  rouletteRenderTimer = setInterval(()=>{
+    if(!rouletteState.spinning){ stopRouletteRenderLoop(); return; }
+    if(rouletteState.startedAt){
+      rouletteState.current = rouletteValueFromTime(rouletteState.startedAt, Date.now());
+      rouletteWheelEl.textContent = String(rouletteState.current || 1);
+    }
+  }, 80);
+}
+function stopRouletteRenderLoop(){
+  if(rouletteRenderTimer){
+    clearInterval(rouletteRenderTimer);
+    rouletteRenderTimer = null;
+  }
+}
+
+    function updateInteractivityByTurn(){
+      const buttons = Array.from(choicesEl.getElementsByClassName("choice-btn"));
+      const allow = canOperateNow();
+      const lock = ONLINE.enabled && !allow;
+
+      if(answeredCurrent){
+        buttons.forEach(btn => btn.classList.add("disabled"));
+      } else {
+        if(lock) buttons.forEach(btn => btn.classList.add("disabled"));
+        else buttons.forEach(btn => btn.classList.remove("disabled"));
+      }
+
+      if(lock) nextBtn.classList.add("disabled");
+      updateRightPanelTexts();
+    }
+
+    async function handleChoice(buttonIndex) {
+      if (answeredCurrent) return;
+      if (!canOperateNow()) return;
+
+      const qIdx = quizOrder[currentIndex];
+      const q = questions[qIdx];
+      const buttons = Array.from(choicesEl.getElementsByClassName("choice-btn"));
+      answeredCurrent = true;
+      selectedButtonIndex = buttonIndex;
+
+      buttons.forEach(btn => btn.classList.add("disabled"));
+
+      if (buttonIndex === currentCorrectIndex) {
+        score++;
+        scoreTextEl.textContent = `せいかい：${score} もん`;
+        feedbackEl.innerHTML = "⭕ <ruby>正<rt>せい</rt></ruby><ruby>解<rt>かい</rt></ruby>！　" + (q.explanation || "");
+        feedbackEl.className = "feedback correct";
+        buttons[buttonIndex].classList.add("correct");
+        enableRouletteAfterCorrect();
+      } else {
+        feedbackEl.innerHTML = "❌ ざんねん。　" + (q.explanation || "");
+        feedbackEl.className = "feedback wrong";
+        buttons[buttonIndex].classList.add("wrong");
+        const correctBtn = buttons[currentCorrectIndex];
+        if (correctBtn) correctBtn.classList.add("correct");
+        resetRoulette();
+      }
+
+      nextBtn.classList.remove("disabled");
+      updateInteractivityByTurn();
+      await pushStateToCloud();
+    }
+
+    nextBtn.addEventListener("click", async ()=>{
+  if(!started) return;
+  if(!answeredCurrent) return;
+
+  if(ONLINE.enabled && !canOperateNow()) return;
+
+  // 次へ進む前に状態をリセット
+  answeredCurrent = false;
+  selectedButtonIndex = -1;
+  currentCorrectIndex = -1;
+  resetRoulette();
+  feedbackArea.innerHTML = "";
+  nextBtn.classList.add("disabled");
+
+  if(currentIndex < quizOrder.length-1){
+    currentIndex++;
+    // 次の問題の選択肢順を作る（choices数に合わせる）
+    const q = questions[quizOrder[currentIndex]];
+    currentChoiceOrder = shuffle([...Array(q.choices.length).keys()]);
+    renderQuestion();
+  }else{
+    showResult();
+  }
+
+  if(ONLINE.enabled){
+    // ターン交代
+    turn = (turn === 1) ? 2 : 1;
+    updateTurnIndicator();
+    await pushStateToFirebase(exportState());
+  }
+});
+
+    function showResult() {
+      const total = quizOrder.length;
+      const percent = Math.round((score / total) * 100);
+      let message = "";
+
+      if (percent === 100) message = "💮 すばらしい！ ぜんぶ <ruby>正<rt>せい</rt></ruby><ruby>解<rt>かい</rt></ruby>です。ごいりょく ばっちり！";
+      else if (percent >= 70) message = "✨ よくできました！ あとすこしで まんてんです。";
+      else if (percent >= 50) message = "◯ がんばりました。 もういちど チャレンジしてみよう。";
+      else message = "📘 これから どんどん <ruby>語<rt>ご</rt></ruby>いを ふやしていこう。";
+
+      resultArea.innerHTML = `けっか：${score} / ${total} もん <br>${message}`;
+
+      const restart = document.createElement("button");
+      restart.type = "button";
+      restart.textContent = "もういちど チャレンジ";
+      restart.className = "restart-btn";
+      restart.addEventListener("click", async () => {
+        if(ONLINE.enabled && ONLINE.role !== 1) return;
+        await doResetFromP1();
+      });
+      resultArea.appendChild(restart);
+
+      updateInteractivityByTurn();
+    }
+
+    function buildNewGameState(){
+      const orderIdx = shuffle([...Array(questions.length).keys()]);
+      return {
+        currentIndex: 0,
+        score: 0,
+        answeredCurrent: false,
+        selectedButtonIndex: -1,
+        quizOrder: orderIdx,
+        currentChoiceOrder: shuffle([...Array(questions[orderIdx[0]].choices.length).keys()]),
+        turn: 1,
+        rouletteCurrent: 1,
+        rouletteEnabled: false,
+        rouletteSpinning: false,
+        rouletteStartedAt: 0
+      };
+    }
+
+    async function doResetFromP1(){
+      const ns = buildNewGameState();
+      importState(ns);
+      await pushStateToCloud();
+    }
+
+    function exportState(){
+      return {
+        currentIndex,
+        score,
+        answeredCurrent,
+        selectedButtonIndex,
+        quizOrder,
+        currentChoiceOrder: currentChoiceOrder.slice(),
+        turn,
+        rouletteCurrent,
+        rouletteEnabled,
+        rouletteSpinning,
+        rouletteStartedAt
+      };
+    }
+
+    function importState(s){
+      if(!s || typeof s !== "object") return;
+
+      currentIndex = Number(s.currentIndex ?? currentIndex);
+      score = Number(s.score ?? score);
+      answeredCurrent = !!s.answeredCurrent;
+      selectedButtonIndex = Number(s.selectedButtonIndex ?? -1);
+
+      quizOrder = Array.isArray(s.quizOrder) ? s.quizOrder.slice() : quizOrder;
+      currentChoiceOrder = Array.isArray(s.currentChoiceOrder) ? s.currentChoiceOrder.slice() : currentChoiceOrder;
+
+      turn = Number(s.turn ?? turn);
+      rouletteCurrent = Number(s.rouletteCurrent ?? rouletteCurrent);
+      rouletteEnabled = !!s.rouletteEnabled;
+      rouletteSpinning = !!s.rouletteSpinning;
+      rouletteStartedAt = Number(s.rouletteStartedAt ?? rouletteStartedAt);
+
+      scoreTextEl.textContent = `せいかい：${score} もん`;
+
+      renderQuestion();
+      updateInteractivityByTurn();
+    }
+
+    /*****************************************************************
+     * 右側UI（部屋URL作成）
+     *****************************************************************/
+    function makeRoomUrls(roomId){
+      const base = location.origin + location.pathname;
+      const p1url = `${base}?room=${encodeURIComponent(roomId)}&p=1`;
+      const p2url = `${base}?room=${encodeURIComponent(roomId)}&p=2`;
+      urlP1.value = p1url;
+      urlP2.value = p2url;
+      urlP1.select();
+    }
+
+    makeRoomUrlBtn.addEventListener("click", ()=>{
+      const roomId = (roomInput.value || "").trim();
+      if(!roomId) return;
+      makeRoomUrls(roomId);
+    });
+
+    urlP1.addEventListener("click", ()=> urlP1.select());
+    urlP2.addEventListener("click", ()=> urlP2.select());
+
+    startBtn.addEventListener("click", async ()=>{
+      if(!canStartOrReset()) return;
+      await doResetFromP1();
+    });
+
+    resetBtn.addEventListener("click", async ()=>{
+      if(!canStartOrReset()) return;
+      await doResetFromP1();
+    });
+
+    function initOffline(){
+      const ns = buildNewGameState();
+      importState(ns);
+      setConn(false);
+      connText.textContent = "オフライン";
+      updateRightPanelTexts();
+    }
+
+    async function initOnline(){
+      listenCloud();
+      updateRightPanelTexts();
+      setTimeout(()=>{
+        if(ONLINE.enabled){
+          const ns = buildNewGameState();
+          importState(ns);
+          updateRightPanelTexts();
+        }
+      }, 10);
+    }
+
+    parseOnlineParams();
+    if(ONLINE.enabled){
+      setConn(false);
+      updateRightPanelTexts();
+      await initOnline();
+    } else {
+      initOffline();
+    }
+  </script>
+</body>
+</html>
