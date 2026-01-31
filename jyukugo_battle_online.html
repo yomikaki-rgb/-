@@ -621,6 +621,38 @@
         </div>
 
         <div class="settings">
+          <!-- ★オンライン対戦リンク作成（ここから追加） -->
+<div id="roomMaker" style="margin:8px 0; padding:10px; border:1px solid var(--border); border-radius:14px; background:#fff;">
+  <div style="font-weight:900; margin-bottom:8px;">オンライン対戦リンク作成</div>
+
+  <div class="settingRow" style="gap:8px;">
+    <label class="muted">部屋</label>
+    <input id="roomInput" placeholder="例: class1" style="width:140px;">
+    <button id="makeRoomUrlBtn" type="button">URL作成</button>
+  </div>
+
+  <div style="margin-top:8px; font-size:12px; color:var(--sub); font-weight:800;">
+    プレイヤー1用：
+    <div class="row" style="gap:6px; margin-top:4px;">
+      <input id="urlP1" style="width:100%;" readonly>
+      <button id="copyP1" type="button">コピー</button>
+    </div>
+
+    <div style="height:6px;"></div>
+
+    プレイヤー2用：
+    <div class="row" style="gap:6px; margin-top:4px;">
+      <input id="urlP2" style="width:100%;" readonly>
+      <button id="copyP2" type="button">コピー</button>
+    </div>
+  </div>
+
+  <div style="margin-top:8px; font-size:12px; color:var(--sub); font-weight:800;">
+    ※ 3人/4人で遊ぶ場合：URLの最後を <b>&me=3</b> / <b>&me=4</b> に変えます
+  </div>
+</div>
+<!-- ★オンライン対戦リンク作成（ここまで追加） -->
+
           <div class="settingRow">
             <label class="muted">出題</label>
             <select id="gradeSelect" title="出題する漢字">
@@ -805,6 +837,67 @@
 
   const gradeSelect = document.getElementById("gradeSelect");
   const readingToggle = document.getElementById("readingToggle");
+  /* =========================
+  ★オンライン対戦リンク作成：URL生成＆コピー
+  - 要素取得の直後に置く（関数の中に入れない）
+========================= */
+const roomInput = document.getElementById("roomInput");
+const makeRoomUrlBtn = document.getElementById("makeRoomUrlBtn");
+const urlP1 = document.getElementById("urlP1");
+const urlP2 = document.getElementById("urlP2");
+const copyP1 = document.getElementById("copyP1");
+const copyP2 = document.getElementById("copyP2");
+
+function buildRoomUrl(roomId, me){
+  const base = location.origin + location.pathname;
+  return `${base}?room=${encodeURIComponent(roomId)}&me=${me}`;
+}
+
+function copyText(v){
+  if(!v) return;
+  if(navigator.clipboard?.writeText){
+    navigator.clipboard.writeText(v)
+      .then(()=> setMsg("コピーしました。","ok"))
+      .catch(()=> fallbackCopy(v));
+  }else{
+    fallbackCopy(v);
+  }
+}
+
+function fallbackCopy(v){
+  const tmp = document.createElement("textarea");
+  tmp.value = v;
+  tmp.style.position = "fixed";
+  tmp.style.left = "-9999px";
+  document.body.appendChild(tmp);
+  tmp.select();
+  try{
+    document.execCommand("copy");
+    setMsg("コピーしました。","ok");
+  }catch(e){
+    setMsg("コピーに失敗しました。","ng");
+  }
+  document.body.removeChild(tmp);
+}
+
+if(makeRoomUrlBtn){
+  makeRoomUrlBtn.addEventListener("click", ()=>{
+    const id = (roomInput?.value || "").trim();
+    if(!id){
+      setMsg("部屋番号を入れてください（例: class1）。","ng");
+      return;
+    }
+    const u1 = buildRoomUrl(id, 1);
+    const u2 = buildRoomUrl(id, 2);
+    if(urlP1) urlP1.value = u1;
+    if(urlP2) urlP2.value = u2;
+    setMsg("URLを作成しました。コピーして相手に送ってください。","ok");
+  });
+}
+
+if(copyP1) copyP1.addEventListener("click", ()=> copyText(urlP1?.value || ""));
+if(copyP2) copyP2.addEventListener("click", ()=> copyText(urlP2?.value || ""));
+
   const playerCountSel = document.getElementById("playerCount");
   const targetPointsInput = document.getElementById("targetPoints");
   const missLimitSel = document.getElementById("missLimit");
