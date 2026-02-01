@@ -474,8 +474,8 @@
     const show = showSel.value; // 'on' or 'off'
 
     if(show === "off"){
-      // show number only (no grade)
-      displayText.textContent = current.no || "";
+      // show sequential number only (1,2,3...) regardless of CSV no
+      displayText.textContent = String(idx + 1);
       return;
     }
     // show card text based on mode
