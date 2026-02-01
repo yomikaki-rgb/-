@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>語いクイズ</title>
+  <style>
+    :root {
+      --bg1:#eef2ff;
+      --bg2:#f3e8ff;
+      --card:#ffffffcc;
+      --ink:#111827;
+      --ink-sub:#4b5563;
+      --primary:#4f46e5;
+      --primary-soft:#e0e7ff;
+      --correct:#16a34a;
+      --wrong:#dc2626;
+      --border:#d1d5db;
+    }
+    * {
+      box-sizing:border-box;
+      -webkit-tap-highlight-color:transparent;
+    }
+    body {
+      margin:0;
+      min-height:100vh;
+      padding:16px;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
+        "Hiragino Kaku Gothic ProN","ヒラギノ角ゴ ProN","Yu Gothic","メイリオ",sans-serif;
+      background:linear-gradient(135deg,var(--bg1),var(--bg2));
+      display:flex;
+      justify-content:center;
+      align-items:center;
+    }
+    .app {
+      width:100%;
+      max-width:700px;
+      background:var(--card);
+      border-radius:18px;
+      padding:20px 18px 18px;
+      box-shadow:0 20px 40px rgba(15,23,42,0.25);
+    }
+    .app-title {
+      font-size:1.4rem;
+      font-weight:700;
+      text-align:center;
+      margin-bottom:8px;
+      color:var(--ink);
+    }
+    
+    .app-title-row{
+      display:grid;
+      grid-template-columns:1fr auto 1fr;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    .app-title-row .app-title{
+      grid-column:2;
+      margin-bottom:0;
+    }
+    .app-title-row .header-badges{
+      grid-column:3;
+      justify-self:end;
+      margin:0;
+    }
+.status-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:0.9rem;
+      color:var(--ink-sub);
+      margin-bottom:10px;
+    }
+    .progress-bar {
+      width:100%;
+      height:8px;
+      background:#e5e7eb;
+      border-radius:999px;
+      overflow:hidden;
+      margin-bottom:16px;
+    }
+    .progress-fill {
+      height:100%;
+      width:0%;
+      background:var(--primary);
+      transition:width 0.25s ease-out;
+    }
+    .card {
+      background:white;
+      border-radius:16px;
+      border:1px solid var(--border);
+      padding:16px;
+    }
+    .question-text {
+      font-size:1.15rem;
+      line-height:1.6;
+      margin-bottom:14px;
+      color:var(--ink);
+    }
+    .hint {
+      font-size:0.85rem;
+      color:var(--ink-sub);
+      margin-bottom:10px;
+    }
+    .choices {
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-bottom:10px;
+    }
+    .choice-btn {
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:8px 14px;
+      font-size:1rem;
+      text-align:left;
+      background:#f9fafb;
+      cursor:pointer;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      transition:transform 0.05s ease, box-shadow 0.05s ease, background 0.15s;
+    }
+    .choice-btn span.label { flex:1; }
+    .choice-btn span.mark {
+      font-size:0.8rem;
+      opacity:0.7;
+    }
+    .choice-btn:active {
+      transform:scale(0.98);
+      box-shadow:0 2px 4px rgba(15,23,42,0.12);
+    }
+    .choice-btn.disabled {
+      cursor:default;
+      opacity:0.85;
+    }
+    .choice-btn.correct {
+      border-color:var(--correct);
+      background:#ecfdf3;
+      color:var(--correct);
+      font-weight:600;
+    }
+    .choice-btn.wrong {
+      border-color:var(--wrong);
+      background:#fef2f2;
+      color:var(--wrong);
+      font-weight:600;
+    }
+    .feedback {
+      min-height:1.6em;
+      font-size:0.95rem;
+      margin-top:4px;
+    }
+    .feedback.correct { color:var(--correct); }
+    .feedback.wrong { color:var(--wrong); }
+
+    .nav-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:12px;
+      gap:8px;
+    }
+    .score-text {
+      font-size:0.9rem;
+      color:var(--ink-sub);
+    }
+    .next-btn {
+      border:none;
+      border-radius:999px;
+      background:var(--primary);
+      color:white;
+      font-size:0.95rem;
+      font-weight:600;
+      padding:8px 18px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      box-shadow:0 6px 14px rgba(79,70,229,0.35);
+      transition:transform 0.05s ease, box-shadow 0.05s ease, opacity 0.15s;
+      white-space:nowrap;
+    }
+    .next-btn:active {
+      transform:translateY(1px);
+      box-shadow:0 3px 8px rgba(79,70,229,0.4);
+    }
+    .next-btn.disabled {
+      opacity:0.4;
+      cursor:default;
+      box-shadow:none;
+      transform:none;
+    }
+
+    .roulette {
+      margin-top:14px;
+      text-align:center;
+    }
+    .roulette-label {
+      font-size:0.9rem;
+      color:var(--ink-sub);
+      margin-bottom:4px;
+    }
+    .roulette-wheel {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:72px;
+      height:72px;
+      border-radius:999px;
+      border:2px solid var(--primary);
+      font-size:1.4rem;
+      font-weight:700;
+      background:#ffffff;
+      box-shadow:0 6px 14px rgba(79,70,229,0.25);
+      cursor:pointer;
+    }
+    .roulette-wheel.disabled {
+      opacity:0.4;
+      cursor:default;
+    }
+
+    .card-container {
+      margin-top:8px;
+      display:none;
+      justify-content:center;
+      gap:10px;
+    }
+    .card-option {
+      width:60px;
+      height:80px;
+      border-radius:10px;
+      border:2px solid var(--primary);
+      background:linear-gradient(135deg,#e5e7eb,#d1d5db);
+      box-shadow:0 4px 8px rgba(15,23,42,0.15);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:1.3rem;
+      font-weight:700;
+      cursor:pointer;
+      transition:transform 0.1s ease, box-shadow 0.1s ease, background 0.15s, border-color 0.15s;
+    }
+    .card-option:active {
+      transform:translateY(1px);
+      box-shadow:0 2px 4px rgba(15,23,42,0.2);
+    }
+    .card-option.disabled {
+      opacity:0.6;
+      cursor:default;
+      box-shadow:none;
+    }
+    .card-option.selected {
+      background:#ffffff;
+      border-color:var(--correct);
+    }
+
+    .result {
+      text-align:center;
+      margin-top:8px;
+      font-size:1rem;
+    }
+    .restart-btn {
+      margin-top:10px;
+      border-radius:999px;
+      border:1px solid var(--primary);
+      background:white;
+      color:var(--primary);
+      font-weight:600;
+      font-size:0.95rem;
+      padding:8px 16px;
+      cursor:pointer;
+    }
+
+    ruby rt {
+      font-size:0.6em;
+    }
+
+    @media (max-width:480px) {
+      .app { padding:16px 12px 14px; }
+      .question-text { font-size:1.05rem; }
+      .choice-btn { padding:8px 10px; font-size:0.95rem; }
+      .roulette-wheel { width:64px; height:64px; font-size:1.2rem; }
+      .card-option {
+        width:52px;
+        height:72px;
+        font-size:1.1rem;
+      }
+    }
+  
+    /* --- Online panel (added) --- */
+    .shell{
+      width:100%;
+      max-width:980px;
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      justify-content:center;
+    }
+    .online-panel{
+      width:260px;
+      background:var(--card);
+      border-radius:18px;
+      padding:14px 12px;
+      box-shadow:0 20px 40px rgba(15,23,42,0.18);
+      border:1px solid rgba(209,213,219,0.9);
+    }
+    .online-panel h3{
+      margin:0 0 8px;
+      font-size:0.95rem;
+      color:var(--ink);
+      text-align:left;
+    }
+    .online-panel .row{
+      display:flex;
+      gap:6px;
+      margin-bottom:8px;
+      align-items:center;
+    }
+    .online-panel input[type="text"]{
+      width:100%;
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      font-size:0.9rem;
+      background:#fff;
+    }
+    .online-panel button{
+      border:none;
+      border-radius:10px;
+      background:var(--primary);
+      color:#fff;
+      font-weight:700;
+      padding:8px 10px;
+      cursor:pointer;
+      white-space:nowrap;
+      box-shadow:0 6px 14px rgba(79,70,229,0.25);
+    }
+    .online-panel button:active{ transform:translateY(1px); }
+    .online-panel .label{
+      font-size:0.8rem;
+      color:var(--ink-sub);
+      margin:6px 0 4px;
+    }
+    .online-panel .small{
+      font-size:0.78rem;
+      color:var(--ink-sub);
+      line-height:1.35;
+      margin-top:8px;
+    }
+    @media (max-width:820px){
+      body{ align-items:flex-start; }
+      .shell{ flex-direction:column; align-items:center; }
+      .online-panel{ width:100%; max-width:700px; }
+    }
+
+  
+    /* --- online: active player blink (added) --- */
+    .player-badges{ display:flex; gap:8px; margin:6px 0 4px; }
+    .pbadge{
+      flex:1;
+      text-align:center;
+      padding:8px 10px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#fff;
+      font-weight:700;
+      user-select:none;
+    }
+    .pbadge.active{
+      background:var(--primary-soft);
+      border-color:var(--primary);
+    }
+    .pbadge.blink{
+      animation: blinkPulse 1s infinite;
+    }
+    @keyframes blinkPulse{
+      0%,100%{ opacity:1; }
+      50%{ opacity:0.25; }
+    }
+
+</style>
+</head>
+<body>
+  <div class="shell">
+  <div class="app">
+    <div class="app-title-row">
+      <div class="app-title">語いクイズ</div>
+      <div class="player-badges header-badges" aria-label="プレイヤー表示">
+      <div id="badgeP1" class="pbadge">P1</div>
+      <div id="badgeP2" class="pbadge">P2</div>
+    </div>
+    </div>
+
+    <div class="status-row">
+      <div>もんだい <span id="qNumber">1</span> / <span id="qTotal">0</span></div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <select id="gradeSelect" style="padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:#fff; font-size:0.9rem;">
+          <option value="G3①">G3①</option>
+          <option value="G3②">G3②</option>
+          <option value="G4①">G4①</option>
+          <option value="G4②">G4②</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="card">
+      <div class="question-text" id="questionText"></div>
+      <div class="hint" id="questionHint"></div>
+
+      <div class="choices" id="choicesContainer"></div>
+
+      <div class="feedback" id="feedback"></div>
+
+      <div class="nav-row">
+        <div class="score-text" id="scoreText">せいかい：0 もん</div>
+        <button class="next-btn disabled" id="nextBtn" type="button">
+          こたえを えらんでね
+        </button>
+      </div>
+    </div>
+
+    <div class="roulette">
+      <div class="roulette-label">せいかいしたら しかけが でるよ</div>
+      <div class="roulette-wheel disabled" id="rouletteWheel">？</div>
+      <div class="card-container" id="cardContainer"></div>
+    </div>
+
+    <div class="result" id="resultArea"></div>
+  </div>
+
+  <aside class="online-panel" aria-label="オンライン設定">
+    <h3>オンライン対戦</h3>
+    
+    <!-- ★表示はしないが、内部状態用（JS参照） -->
+    <div class="small" id="mePlayer" style="display:none;">-</div>
+    <div class="small" id="turnPlayer" style="display:none;">-</div>
+
+    <div class="label">部屋番号</div>
+    <div class="row">
+      <input id="roomInput" type="text" placeholder="部屋番号（例: class1）" />
+      <button id="makeRoomUrlBtn" type="button">URL作成</button>
+    </div>
+    <div class="label">P1用URL</div>
+    <input id="urlP1" type="text" readonly />
+    <div class="label">P2用URL</div>
+    <input id="urlP2" type="text" readonly />
+
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button id="startBtn" type="button" style="flex:1;">スタート</button>
+      <button id="resetBtn" type="button" style="flex:1; background:#6b7280; box-shadow:0 6px 14px rgba(107,114,128,0.25);">リセット</button>
+    </div>
+    <div class="small" id="onlineStatus">オフライン</div>
+</aside>
+</div>
+
+  <script type="module">
+// 📚 ルビ入り語いクイズ（①〜㊺）※見出し語は問題文の冒頭に出さない
+// ============================
+// ★G3/G4クイズ（CSV由来）
+// - 列A: 学年（G3 / G4）相当 → このCSVは id から推定
+// - 列B: 問題文
+// - 列C,D,E: 選択肢
+// - 列F: 正答（1〜3 を想定）
+// ============================
+const QUIZ_DATA = [{"set":"G3①","text":"<ruby>詩<rt>し</rt></ruby>を <ruby>作<rt>つく</rt></ruby>る <ruby>人<rt>ひと</rt></ruby>を なんという？","choices":["<ruby>歌手<rt>かしゅ</rt></ruby>","<ruby>詩人<rt>しじん</rt></ruby>","<ruby>画家<rt>がか</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"じょうずに なるために、<ruby>何度<rt>なんど</rt></ruby>も くりかえして やる ことを なんという？","choices":["<ruby>練習<rt>れんしゅう</rt></ruby>","<ruby>見学<rt>けんがく</rt></ruby>","<ruby>点検<rt>てんけん</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"ものを <ruby>買<rt>か</rt></ruby>ったり <ruby>売<rt>う</rt></ruby>ったり して、もうけを える ことを なんという？","choices":["<ruby>商売<rt>しょうばい</rt></ruby>","<ruby>作業<rt>さぎょう</rt></ruby>","<ruby>貯金<rt>ちょきん</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>けもの<rt></rt></ruby>などの <ruby>生<rt>い</rt></ruby>きものを なんという？","choices":["<ruby>植物<rt>しょくぶつ</rt></ruby>","<ruby>昆虫<rt>こんちゅう</rt></ruby>","<ruby>動物<rt>どうぶつ</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>出<rt>で</rt></ruby>かける ときに <ruby>持<rt>も</rt></ruby>っていく ものを まとめた ものを なんという？","choices":["<ruby>道具<rt>どうぐ</rt></ruby>","<ruby>定規<rt>じょうぎ</rt></ruby>","<ruby>荷物<rt>にもつ</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"新しい ものを <ruby>作<rt>つく</rt></ruby>ったり、べんりに したり する ことを なんという？","choices":["<ruby>修理<rt>しゅうり</rt></ruby>","<ruby>整理<rt>せいり</rt></ruby>","<ruby>開発<rt>かいはつ</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"おなじ <ruby>家<rt>いえ</rt></ruby>で すごす <ruby>人<rt>ひと</rt></ruby>たちを なんという？","choices":["<ruby>親類<rt>しんるい</rt></ruby>","<ruby>家族<rt>かぞく</rt></ruby>","<ruby>友<rt>とも</rt></ruby>だち"],"correctIndex":1},{"set":"G3①","text":"<ruby>本当<rt>ほんとう</rt></ruby>に もっている ちから の ことを なんという？","choices":["<ruby>気力<rt>きりょく</rt></ruby>","<ruby>体力<rt>たいりょく</rt></ruby>","<ruby>実力<rt>じつりょく</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"おはなしの 中で、できごとの ひとくぎり を なんという？","choices":["<ruby>題名<rt>だいめい</rt></ruby>","<ruby>絵画<rt>かいが</rt></ruby>","<ruby>場面<rt>ばめん</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>朝<rt>あさ</rt></ruby>、<ruby>学校<rt>がっこう</rt></ruby>へ 行く ことを なんという？","choices":["<ruby>帰宅<rt>きたく</rt></ruby>","<ruby>下校<rt>げこう</rt></ruby>","<ruby>登校<rt>とうこう</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>山<rt>やま</rt></ruby>に のぼる ことを なんという？","choices":["<ruby>登山<rt>とざん</rt></ruby>","<ruby>遠足<rt>えんそく</rt></ruby>","<ruby>散歩<rt>さんぽ</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"よくない できごとが おきる ことを なんという？","choices":["<ruby>攻撃<rt>こうげき</rt></ruby>","<ruby>事件<rt>じけん</rt></ruby>","<ruby>困難<rt>こんなん</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>本<rt>ほん</rt></ruby>を <ruby>読<rt>よ</rt></ruby>んだり <ruby>借<rt>か</rt></ruby>りたり できる たてものを なんという？","choices":["<ruby>図書館<rt>としょかん</rt></ruby>","<ruby>体育館<rt>たいいくかん</rt></ruby>","<ruby>歴史館<rt>れきしかん</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"じゅんばんを しめす ための <ruby>数<rt>かず</rt></ruby>の ことを なんという？","choices":["<ruby>記号<rt>きごう</rt></ruby>","<ruby>番号<rt>ばんごう</rt></ruby>","<ruby>数式<rt>すうしき</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"もの や <ruby>道具<rt>どうぐ</rt></ruby>を つかう ことを なんという？","choices":["<ruby>保存<rt>ほぞん</rt></ruby>","<ruby>使用<rt>しよう</rt></ruby>","<ruby>訓練<rt>くんれん</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"とても おそい <ruby>時間<rt>じかん</rt></ruby>の ことを なんという？","choices":["<ruby>午後<rt>ごご</rt></ruby>","<ruby>深夜<rt>しんや</rt></ruby>","<ruby>夕方<rt>ゆうがた</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>言葉<rt>ことば</rt></ruby>が あらわす 中身 の ことを なんという？","choices":["<ruby>表示<rt>ひょうじ</rt></ruby>","<ruby>意味<rt>いみ</rt></ruby>","<ruby>感想<rt>かんそう</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"しらべて はっきり させる ことを なんという？","choices":["<ruby>危険<rt>きけん</rt></ruby>","<ruby>調査<rt>ちょうさ</rt></ruby>","<ruby>観察<rt>かんさつ</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"「どうして そうなるのか」という わけ の ことを なんという？","choices":["<ruby>理由<rt>りゆう</rt></ruby>","<ruby>結果<rt>けっか</rt></ruby>","<ruby>合図<rt>あいず</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>地面<rt>じめん</rt></ruby>から 出る あたたかい おゆに <ruby>入<rt>はい</rt></ruby>る ばしょ を なんという？","choices":["<ruby>湯気<rt>ゆげ</rt></ruby>","<ruby>温泉<rt>おんせん</rt></ruby>","<ruby>公園<rt>こうえん</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>米<rt>こめ</rt></ruby>から つくった <ruby>日本<rt>にほん</rt></ruby>の おさけを なんという？","choices":["<ruby>茶碗<rt>ちゃわん</rt></ruby>","<ruby>日本酒<rt>にほんしゅ</rt></ruby>","<ruby>果実酒<rt>かじつしゅ</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>文<rt>ぶん</rt></ruby>の まとまり の ことを なんという？","choices":["<ruby>言葉<rt>ことば</rt></ruby>","<ruby>文章<rt>ぶんしょう</rt></ruby>","<ruby>発言<rt>はつげん</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>争<rt>あらそ</rt></ruby>いごと が なくて おだやかな ようすを なんという？","choices":["<ruby>平和<rt>へいわ</rt></ruby>","<ruby>交通<rt>こうつう</rt></ruby>","<ruby>勝利<rt>しょうり</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>本<rt>ほん</rt></ruby>に なにが かいて あるかを しめす いちらん を なんという？","choices":["<ruby>食事<rt>しょくじ</rt></ruby>","<ruby>表紙<rt>ひょうし</rt></ruby>","<ruby>目次<rt>もくじ</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"みんなの かわりに <ruby>前<rt>まえ</rt></ruby>に 出て はたらく <ruby>人<rt>ひと</rt></ruby>を なんという？","choices":["<ruby>主人<rt>しゅじん</rt></ruby>","<ruby>代表<rt>だいひょう</rt></ruby>","<ruby>会員<rt>かいいん</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"今まで なかった ものを <ruby>考<rt>かんが</rt></ruby>えて <ruby>作<rt>つく</rt></ruby>る ことを なんという？","choices":["<ruby>加工<rt>かこう</rt></ruby>","<ruby>制作<rt>せいさく</rt></ruby>","<ruby>発明<rt>はつめい</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>日本<rt>にほん</rt></ruby>を 大きく わけた ところの なまえを なんという？","choices":["<ruby>都道府県<rt>とどうふけん</rt></ruby>","<ruby>県民<rt>けんみん</rt></ruby>","<ruby>東京都<rt>とうきょうと</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"たくさんの <ruby>人<rt>ひと</rt></ruby>に なまえを しられている <ruby>人<rt>ひと</rt></ruby>を なんという？","choices":["<ruby>住人<rt>じゅうにん</rt></ruby>","<ruby>有名人<rt>ゆうめいじん</rt></ruby>","<ruby>先生<rt>せんせい</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>海<rt>うみ</rt></ruby>に うかぶ、とても 大きな こおりの かたまり を なんという？","choices":["<ruby>火山<rt>かざん</rt></ruby>","<ruby>高山<rt>こうざん</rt></ruby>","<ruby>氷山<rt>ひょうざん</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>決<rt>き</rt></ruby>められた <ruby>時間<rt>じかん</rt></ruby>まで のこり わずか の ようすを なんという？","choices":["<ruby>合図<rt>あいず</rt></ruby>","<ruby>発表<rt>はっぴょう</rt></ruby>","<ruby>秒読み<rt>びょうよみ</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>食<rt>た</rt></ruby>べもの や <ruby>作物<rt>さくもつ</rt></ruby>を そだてる しごとを なんという？","choices":["<ruby>手作業<rt>てさぎょう</rt></ruby>","<ruby>料理<rt>りょうり</rt></ruby>","<ruby>農業<rt>のうぎょう</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"わたしたちが すんでいる ほし を なんという？","choices":["<ruby>地球<rt>ちきゅう</rt></ruby>","<ruby>星座<rt>せいざ</rt></ruby>","<ruby>木星<rt>もくせい</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>薬<rt>くすり</rt></ruby>を <ruby>売<rt>う</rt></ruby>っている おみせを なんという？","choices":["<ruby>花屋<rt>はなや</rt></ruby>","<ruby>薬局<rt>やっきょく</rt></ruby>","<ruby>本店<rt>ほんてん</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>人<rt>ひと</rt></ruby>が 多い ほうの いけんで <ruby>決<rt>き</rt></ruby>める ほうほうを なんという？","choices":["<ruby>提案<rt>ていあん</rt></ruby>","<ruby>多数決<rt>たすうけつ</rt></ruby>","<ruby>相談<rt>そうだん</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"ものを そろえたり、きれいに かたづけたり する ことを なんという？","choices":["<ruby>分類<rt>ぶんるい</rt></ruby>","<ruby>点検<rt>てんけん</rt></ruby>","<ruby>整理<rt>せいり</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"どうしたら よいか、<ruby>話<rt>はな</rt></ruby>しあったり する ことを なんという？","choices":["<ruby>相談<rt>そうだん</rt></ruby>","<ruby>指示<rt>しじ</rt></ruby>","<ruby>説明<rt>せつめい</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>向<rt>む</rt></ruby>かいあう <ruby>人<rt>ひと</rt></ruby>を あらわす ことばは どれ？","choices":["<ruby>本人<rt>ほんにん</rt></ruby>","<ruby>相手<rt>あいて</rt></ruby>","<ruby>友人<rt>ゆうじん</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>壁<rt>かべ</rt></ruby>や ものに かってに じ や え を かく ことを なんという？","choices":["<ruby>書写<rt>しょしゃ</rt></ruby>","<ruby>落書<rt>らくが</rt></ruby>き","<ruby>芸術<rt>げいじゅつ</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"ある <ruby>場所<rt>ばしょ</rt></ruby>に <ruby>着<rt>つ</rt></ruby>く ことを なんという？","choices":["<ruby>帰着<rt>きちゃく</rt></ruby>","<ruby>到着<rt>とうちゃく</rt></ruby>","<ruby>出発<rt>しゅっぱつ</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>身<rt>み</rt></ruby>につける ための いふく の ことを なんという？","choices":["<ruby>洗濯<rt>せんたく</rt></ruby>","<ruby>洋服<rt>ようふく</rt></ruby>","<ruby>ハンカチ<rt></rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>乗<rt>の</rt></ruby>りもの などで たくさん あそべる ところを なんという？","choices":["<ruby>住宅地<rt>じゅうたくち</rt></ruby>","<ruby>遊園地<rt>ゆうえんち</rt></ruby>","<ruby>遊具<rt>ゆうぐ</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"すべてを ひっくるめた まとまり の ことを なんという？","choices":["<ruby>半分<rt>はんぶん</rt></ruby>","<ruby>一部<rt>いちぶ</rt></ruby>","<ruby>全体<rt>ぜんたい</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"あまり <ruby>時間<rt>じかん</rt></ruby>が かからない ことを なんという？","choices":["<ruby>時間割<rt>じかんわり</rt></ruby>","<ruby>長期間<rt>ちょうきかん</rt></ruby>","<ruby>短時間<rt>たんじかん</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>地球上<rt>ちきゅうじょう</rt></ruby>の すべての <ruby>国々<rt>くにぐに</rt></ruby>の ことを なんという？","choices":["<ruby>世界<rt>せかい</rt></ruby>","<ruby>外国<rt>がいこく</rt></ruby>","<ruby>地図<rt>ちず</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>道<rt>みち</rt></ruby>を わたって むこうがわへ 行く ことを なんという？","choices":["<ruby>交通<rt>こうつう</rt></ruby>","<ruby>歩行<rt>ほこう</rt></ruby>","<ruby>横断<rt>おうだん</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"それと <ruby>決<rt>き</rt></ruby>める ことを なんという？","choices":["<ruby>指定<rt>してい</rt></ruby>","<ruby>注意<rt>ちゅうい</rt></ruby>","<ruby>理解<rt>りかい</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>列車<rt>れっしゃ</rt></ruby>や <ruby>電車<rt>でんしゃ</rt></ruby>を 走らせる こうつうきかん を なんという？","choices":["<ruby>鉄道<rt>てつどう</rt></ruby>","<ruby>車道<rt>しゃどう</rt></ruby>","<ruby>線路<rt>せんろ</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>心<rt>こころ</rt></ruby>が おちついて、ほっと する ことを なんという？","choices":["<ruby>安心<rt>あんしん</rt></ruby>","<ruby>期待<rt>きたい</rt></ruby>","<ruby>喜<rt>よろこ</rt></ruby>び"],"correctIndex":0},{"set":"G3①","text":"あらかじめ きめて おく <ruby>計画<rt>けいかく</rt></ruby>の ことを なんという？","choices":["<ruby>予定<rt>よてい</rt></ruby>","<ruby>相談<rt>そうだん</rt></ruby>","<ruby>約束<rt>やくそく</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>長<rt>なが</rt></ruby>さを はかる ときに つかう <ruby>道具<rt>どうぐ</rt></ruby>を なんという？","choices":["<ruby>定規<rt>じょうぎ</rt></ruby>","<ruby>分度器<rt>ぶんどき</rt></ruby>","<ruby>コンパス<rt></rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"ものごとの ようすや <ruby>動<rt>うご</rt></ruby>きを あらわす いいかた を なんという？","choices":["<ruby>様子<rt>ようす</rt></ruby>","<ruby>感情<rt>かんじょう</rt></ruby>","<ruby>表情<rt>ひょうじょう</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>体<rt>からだ</rt></ruby>を うごかす ことを なんという？","choices":["<ruby>作業<rt>さぎょう</rt></ruby>","<ruby>運動<rt>うんどう</rt></ruby>","<ruby>散歩<rt>さんぽ</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"あらかじめ たてた <ruby>計画<rt>けいかく</rt></ruby>の ことを なんという？","choices":["<ruby>会議<rt>かいぎ</rt></ruby>","<ruby>案内<rt>あんない</rt></ruby>","<ruby>予定<rt>よてい</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>人<rt>ひと</rt></ruby>から もらった ことばに こたえる ことを なんという？","choices":["<ruby>無視<rt>むし</rt></ruby>","<ruby>会話<rt>かいわ</rt></ruby>","<ruby>返事<rt>へんじ</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>緑<rt>みどり</rt></ruby>いろ の おちゃ の ことを なんという？","choices":["<ruby>緑茶<rt>りょくちゃ</rt></ruby>","<ruby>紅茶<rt>こうちゃ</rt></ruby>","<ruby>牛乳<rt>ぎゅうにゅう</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>別<rt>わか</rt></ruby>れを する ひとを おくりだす <ruby>会<rt>かい</rt></ruby>を なんという？","choices":["<ruby>学芸会<rt>がくげいかい</rt></ruby>","<ruby>発表会<rt>はっぴょうかい</rt></ruby>","<ruby>送別会<rt>そうべつかい</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"すんでいる <ruby>場所<rt>ばしょ</rt></ruby>を あらわす いいかた を なんという？","choices":["<ruby>住所<rt>じゅうしょ</rt></ruby>","<ruby>町名<rt>ちょうめい</rt></ruby>","<ruby>地名<rt>ちめい</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>読<rt>よ</rt></ruby>んだり <ruby>見<rt>み</rt></ruby>たりして おもった ことを かく <ruby>文<rt>ぶん</rt></ruby>を なんという？","choices":["<ruby>感想文<rt>かんそうぶん</rt></ruby>","<ruby>物語文<rt>ものがたりぶん</rt></ruby>","<ruby>記録文<rt>きろくぶん</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>作業<rt>さぎょう</rt></ruby>するときに つかう ものの ことを なんという？","choices":["<ruby>食器<rt>しょっき</rt></ruby>","<ruby>道具<rt>どうぐ</rt></ruby>","<ruby>書類<rt>しょるい</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>人<rt>ひと</rt></ruby>に ひどいことを する わるい <ruby>人<rt>ひと</rt></ruby>を なんという？","choices":["<ruby>迷子<rt>まいご</rt></ruby>","<ruby>観客<rt>かんきゃく</rt></ruby>","<ruby>悪人<rt>あくにん</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"おなじことが ながく つづく ようすを なんという？","choices":["<ruby>加速<rt>かそく</rt></ruby>","<ruby>成立<rt>せいりつ</rt></ruby>","<ruby>持続<rt>じぞく</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"もっと じょうずに なりたい と おもう きもちを なんという？","choices":["<ruby>好奇心<rt>こうきしん</rt></ruby>","<ruby>友情<rt>ゆうじょう</rt></ruby>","<ruby>向上心<rt>こうじょうしん</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"とても かなしい できごと を なんという？","choices":["<ruby>事件<rt>じけん</rt></ruby>","<ruby>混乱<rt>こんらん</rt></ruby>","<ruby>悲劇<rt>ひげき</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>海<rt>うみ</rt></ruby>と <ruby>陸<rt>りく</rt></ruby>の さかいめ に ある <ruby>場所<rt>ばしょ</rt></ruby>を なんという？","choices":["<ruby>山道<rt>やまみち</rt></ruby>","<ruby>川辺<rt>かわべ</rt></ruby>","<ruby>海岸<rt>かいがん</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>車<rt>くるま</rt></ruby>や <ruby>人<rt>ひと</rt></ruby>が とおる ための <ruby>道<rt>みち</rt></ruby>を なんという？","choices":["<ruby>交通<rt>こうつう</rt></ruby>","<ruby>鉄橋<rt>てっきょう</rt></ruby>","<ruby>道路<rt>どうろ</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>違<rt>ちが</rt></ruby>う ものを はっきり わける ことを なんという？","choices":["<ruby>分析<rt>ぶんせき</rt></ruby>","<ruby>判断<rt>はんだん</rt></ruby>","<ruby>区別<rt>くべつ</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>昼間<rt>ひるま</rt></ruby>に そらで あかるく ひかっている てんたい を なんという？","choices":["<ruby>太陽<rt>たいよう</rt></ruby>","<ruby>星座<rt>せいざ</rt></ruby>","<ruby>月面<rt>げつめん</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>水<rt>みず</rt></ruby>の なかで 手あしを うごかして すすむ ことを なんという？","choices":["<ruby>入浴<rt>にゅうよく</rt></ruby>","<ruby>海面<rt>かいめん</rt></ruby>","<ruby>水泳<rt>すいえい</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"じょうずになる ために くりかえして 行う ことを なんという？","choices":["<ruby>点検<rt>てんけん</rt></ruby>","<ruby>想像<rt>そうぞう</rt></ruby>","<ruby>練習<rt>れんしゅう</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>困<rt>こま</rt></ruby>っている <ruby>人<rt>ひと</rt></ruby>を たすける ことを なんという？","choices":["<ruby>手当<rt>てあて</rt></ruby>","<ruby>治療<rt>ちりょう</rt></ruby>","<ruby>救助<rt>きゅうじょ</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>子<rt>こ</rt></ruby>ども むけの ものがたり を なんという？","choices":["<ruby>童話<rt>どうわ</rt></ruby>","<ruby>落語<rt>らくご</rt></ruby>","<ruby>新聞<rt>しんぶん</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"ぼく・わたし の ことを しめす いいかた を なんという？","choices":["<ruby>相手<rt>あいて</rt></ruby>","<ruby>自分自身<rt>じぶんじしん</rt></ruby>","<ruby>他人<rt>たにん</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>絵<rt>え</rt></ruby>や <ruby>文<rt>ぶん</rt></ruby>など、つくられた もの を なんという？","choices":["<ruby>作品<rt>さくひん</rt></ruby>","<ruby>遺品<rt>いひん</rt></ruby>","<ruby>素材<rt>そざい</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>電車<rt>でんしゃ</rt></ruby>や バスなどに のっている <ruby>人<rt>ひと</rt></ruby>を なんという？","choices":["<ruby>運転席<rt>うんてんせき</rt></ruby>","<ruby>乗客<rt>じょうきゃく</rt></ruby>","<ruby>通行人<rt>つうこうにん</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>電車<rt>でんしゃ</rt></ruby>などが さいごに とまる <ruby>場所<rt>ばしょ</rt></ruby>を なんという？","choices":["<ruby>出口<rt>でぐち</rt></ruby>","<ruby>始発<rt>しはつ</rt></ruby>","<ruby>終点<rt>しゅうてん</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>銀<rt>ぎん</rt></ruby>の ような いろ の ことを なんという？","choices":["<ruby>金色<rt>きんいろ</rt></ruby>","<ruby>銀色<rt>ぎんいろ</rt></ruby>","<ruby>黄金<rt>おうごん</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"いま の とし の ひとつ まえ の とし を なんという？","choices":["<ruby>当年<rt>とうねん</rt></ruby>","<ruby>来年<rt>らいねん</rt></ruby>","<ruby>去年<rt>きょねん</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"いまよりも まえ の じだい の こと を なんという？","choices":["<ruby>今日<rt>きょう</rt></ruby>","<ruby>過去<rt>かこ</rt></ruby>","<ruby>未来<rt>みらい</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>書<rt>か</rt></ruby>く ときに つかう、ながい ふで を なんという？","choices":["<ruby>鉛筆<rt>えんぴつ</rt></ruby>","<ruby>毛筆<rt>もうひつ</rt></ruby>","<ruby>万年筆<rt>まんねんひつ</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>学校<rt>がっこう</rt></ruby>に はいる おいわい の ぎょうじ を なんという？","choices":["<ruby>卒業式<rt>そつぎょうしき</rt></ruby>","<ruby>入学式<rt>にゅうがくしき</rt></ruby>","<ruby>開会式<rt>かいかいしき</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>地面<rt>じめん</rt></ruby>に ね を はって そだつ いきもの を なんという？","choices":["<ruby>植物<rt>しょくぶつ</rt></ruby>","<ruby>昆虫<rt>こんちゅう</rt></ruby>","<ruby>動物<rt>どうぶつ</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>人<rt>ひと</rt></ruby>が あつまる こと を なんという？","choices":["<ruby>会談<rt>かいだん</rt></ruby>","<ruby>集合<rt>しゅうごう</rt></ruby>","<ruby>決定<rt>けってい</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"おおむかし の いきもの が いし の ようになった もの を なんという？","choices":["<ruby>化石<rt>かせき</rt></ruby>","<ruby>宝石<rt>ほうせき</rt></ruby>","<ruby>岩石<rt>がんせき</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"<ruby>命<rt>いのち</rt></ruby>が なくなる こと を なんという？","choices":["<ruby>葬式<rt>そうしき</rt></ruby>","<ruby>死亡<rt>しぼう</rt></ruby>","<ruby>発熱<rt>はつねつ</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>人<rt>ひと</rt></ruby>や <ruby>建物<rt>たてもの</rt></ruby>が たくさん あつまっている 大きな まち を なんという？","choices":["<ruby>山里<rt>やまざと</rt></ruby>","<ruby>田舎<rt>いなか</rt></ruby>","<ruby>都会<rt>とかい</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>右<rt>みぎ</rt></ruby>と <ruby>左<rt>ひだり</rt></ruby>の りょうほう の こと を なんという？","choices":["<ruby>側面<rt>そくめん</rt></ruby>","<ruby>反対<rt>はんたい</rt></ruby>","<ruby>両側<rt>りょうがわ</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>体<rt>からだ</rt></ruby>や きもちに かかる おもり の ような もの を なんという？","choices":["<ruby>負担<rt>ふたん</rt></ruby>","<ruby>重力<rt>じゅうりょく</rt></ruby>","<ruby>圧力<rt>あつりょく</rt></ruby>"],"correctIndex":0},{"set":"G3①","text":"ある <ruby>考<rt>かんが</rt></ruby>えに「そうではない」と おもい、ちがう <ruby>考<rt>かんが</rt></ruby>えを 出す こと を なんという？","choices":["<ruby>賛成<rt>さんせい</rt></ruby>","<ruby>反対<rt>はんたい</rt></ruby>","<ruby>同意<rt>どうい</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"<ruby>建物<rt>たてもの</rt></ruby>の いちばん 上に ある、外に 出られる <ruby>場所<rt>ばしょ</rt></ruby>を なんという？","choices":["<ruby>玄関<rt>げんかん</rt></ruby>","<ruby>屋上<rt>おくじょう</rt></ruby>","<ruby>中庭<rt>なかにわ</rt></ruby>"],"correctIndex":1},{"set":"G3①","text":"その ば に いる <ruby>人<rt>ひと</rt></ruby> すべて の こと を なんという？","choices":["<ruby>仲間<rt>なかま</rt></ruby>","<ruby>他人<rt>たにん</rt></ruby>","<ruby>全員<rt>ぜんいん</rt></ruby>"],"correctIndex":2},{"set":"G3①","text":"<ruby>見<rt>み</rt></ruby>た ものを <ruby>絵<rt>え</rt></ruby>や きかいで うつした もの を なんという？","choices":["<ruby>写真<rt>しゃしん</rt></ruby>","<ruby>模写<rt>もしゃ</rt></ruby>","<ruby>絵画<rt>かいが</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"ほんとう の こと を はっきり しめす ことば を なんという？","choices":["<ruby>予想<rt>よそう</rt></ruby>","<ruby>真実<rt>しんじつ</rt></ruby>","<ruby>意見<rt>いけん</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>学校<rt>がっこう</rt></ruby>で さくひん を みたり はっぴょう したり する ぎょうじ を なんという？","choices":["<ruby>運動会<rt>うんどうかい</rt></ruby>","<ruby>体育祭<rt>たいいくさい</rt></ruby>","<ruby>文化祭<rt>ぶんかさい</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>野球<rt>やきゅう</rt></ruby>の かつどう を している グループ を なんという？","choices":["<ruby>吹奏楽<rt>すいそうがく</rt></ruby>","<ruby>体操部<rt>たいそうぶ</rt></ruby>","<ruby>野球部<rt>やきゅうぶ</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>人<rt>ひと</rt></ruby>や ものが つながっている こと を なんという？","choices":["<ruby>対応<rt>たいおう</rt></ruby>","<ruby>結果<rt>けっか</rt></ruby>","<ruby>関係<rt>かんけい</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>チョーク<rt></rt></ruby>で じ を かく くろい <ruby>板<rt>いた</rt></ruby> を なんという？","choices":["<ruby>黒板<rt>こくばん</rt></ruby>","<ruby>掲示板<rt>けいじばん</rt></ruby>","<ruby>書類<rt>しょるい</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>道<rt>みち</rt></ruby>ばた に たっている、<ruby>電線<rt>でんせん</rt></ruby>を ささえる はしら を なんという？","choices":["<ruby>石柱<rt>せきちゅう</rt></ruby>","<ruby>電気<rt>でんき</rt></ruby>","<ruby>電柱<rt>でんちゅう</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>地中<rt>ちちゅう</rt></ruby>から とれる くろい あぶら を なんという？","choices":["<ruby>水銀<rt>すいぎん</rt></ruby>","<ruby>ごま油<rt>ごまあぶら</rt></ruby>","<ruby>石油<rt>せきゆ</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>飛行機<rt>ひこうき</rt></ruby>が でいり する 大きな <ruby>場所<rt>ばしょ</rt></ruby> を なんという？","choices":["<ruby>空港<rt>くうこう</rt></ruby>","<ruby>港町<rt>みなとまち</rt></ruby>","<ruby>駅前<rt>えきまえ</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"みんなで たつ ように うながす ことば を なんという？","choices":["<ruby>発声<rt>はっせい</rt></ruby>","<ruby>起立<rt>きりつ</rt></ruby>","<ruby>開会<rt>かいかい</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>人<rt>ひと</rt></ruby>や <ruby>車<rt>くるま</rt></ruby>が ならんで すすむ こと を なんという？","choices":["<ruby>行列<rt>ぎょうれつ</rt></ruby>","<ruby>隊列<rt>たいれつ</rt></ruby>","<ruby>連続<rt>れんぞく</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>電車<rt>でんしゃ</rt></ruby>に のる ための ちいさな かみ を なんという？","choices":["<ruby>乗車券<rt>じょうしゃけん</rt></ruby>","<ruby>引換券<rt>ひきかえけん</rt></ruby>","<ruby>回数券<rt>かいすうけん</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"とまる えき が すくなく、はやく はしる <ruby>電車<rt>でんしゃ</rt></ruby> を なんという？","choices":["<ruby>各駅停車<rt>かくえきていしゃ</rt></ruby>","<ruby>急行電車<rt>きゅうこうでんしゃ</rt></ruby>","<ruby>地下鉄<rt>ちかてつ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"あとから つけくわえる こと を なんという？","choices":["<ruby>追加<rt>ついか</rt></ruby>","<ruby>加工<rt>かこう</rt></ruby>","<ruby>減少<rt>げんしょう</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>体<rt>からだ</rt></ruby>の なか を ながれている あかい えきたい を なんという？","choices":["<ruby>白血球<rt>はっけっきゅう</rt></ruby>","<ruby>血液<rt>けつえき</rt></ruby>","<ruby>水分<rt>すいぶん</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"おぼえる ために なんども くりかえす こと を なんという？","choices":["<ruby>点検<rt>てんけん</rt></ruby>","<ruby>訓練<rt>くんれん</rt></ruby>","<ruby>暗記<rt>あんき</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>人<rt>ひと</rt></ruby>が あんぜんに わたれる ように つくられた <ruby>橋<rt>はし</rt></ruby> を なんという？","choices":["<ruby>鉄橋<rt>てっきょう</rt></ruby>","<ruby>歩道橋<rt>ほどうきょう</rt></ruby>","<ruby>線路<rt>せんろ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>夏<rt>なつ</rt></ruby>の あと に のこる、あつさ の こと を なんという？","choices":["<ruby>初夏<rt>しょか</rt></ruby>","<ruby>残暑<rt>ざんしょ</rt></ruby>","<ruby>猛暑<rt>もうしょ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>寒<rt>さむ</rt></ruby>い ひ に みにつける、あたたかい きるもの を なんという？","choices":["<ruby>防寒着<rt>ぼうかんぎ</rt></ruby>","<ruby>雨具<rt>あまぐ</rt></ruby>","<ruby>寒波<rt>かんぱ</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"かんたんに たべられる、かるい しょくじ の こと を なんという？","choices":["<ruby>軽食<rt>けいしょく</rt></ruby>","<ruby>主食<rt>しゅしょく</rt></ruby>","<ruby>夜食<rt>やしょく</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"なりゆきが あらかじめ きまっている ように かんじる こと を なんという？","choices":["<ruby>運命<rt>うんめい</rt></ruby>","<ruby>結果<rt>けっか</rt></ruby>","<ruby>幸福<rt>こうふく</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"ある こと を はじめて 行う かい を なんという？","choices":["<ruby>最終日<rt>さいしゅうび</rt></ruby>","<ruby>第一回<rt>だいいっかい</rt></ruby>","<ruby>当日<rt>とうじつ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>一家<rt>いっか</rt></ruby>の ちゅうしん に なっている <ruby>人<rt>ひと</rt></ruby> を なんという？","choices":["<ruby>司会<rt>しかい</rt></ruby>","<ruby>店長<rt>てんちょう</rt></ruby>","<ruby>主人<rt>しゅじん</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>日本<rt>にほん</rt></ruby>の みなみ に ある 大きな <ruby>島<rt>しま</rt></ruby> の なまえ は？","choices":["<ruby>四国<rt>しこく</rt></ruby>","<ruby>九州<rt>きゅうしゅう</rt></ruby>","<ruby>北海道<rt>ほっかいどう</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"あきらめず に がんばる きもち の こと を なんという？","choices":["<ruby>根気<rt>こんき</rt></ruby>","<ruby>意欲<rt>いよく</rt></ruby>","<ruby>友情<rt>ゆうじょう</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"ある かんがえ や もの が おおく の <ruby>人<rt>ひと</rt></ruby> の あいだ で ひろがる こと を なんという？","choices":["<ruby>放送<rt>ほうそう</rt></ruby>","<ruby>流行<rt>りゅうこう</rt></ruby>","<ruby>発見<rt>はっけん</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"みんな に むかって よびかける いいかた を なんという？","choices":["<ruby>諸君<rt>しょくん</rt></ruby>","<ruby>開始<rt>かいし</rt></ruby>","<ruby>先生方<rt>せんせいがた</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>スポーツ<rt></rt></ruby>で、自分 の チーム を まもる うごき を なんという？","choices":["<ruby>応援<rt>おうえん</rt></ruby>","<ruby>守備<rt>しゅび</rt></ruby>","<ruby>攻撃<rt>こうげき</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"まえよりも よく なっていく こと を なんという？","choices":["<ruby>減少<rt>げんしょう</rt></ruby>","<ruby>進歩<rt>しんぽ</rt></ruby>","<ruby>失敗<rt>しっぱい</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"その <ruby>人<rt>ひと</rt></ruby>が うけもつ <ruby>仕事<rt>しごと</rt></ruby>や きめられた たんとう の こと を なんという？","choices":["<ruby>計画<rt>けいかく</rt></ruby>","<ruby>役割<rt>やくわり</rt></ruby>","<ruby>目的<rt>もくてき</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"自分 では ない <ruby>人<rt>ひと</rt></ruby> の こと を なんという？","choices":["<ruby>親友<rt>しんゆう</rt></ruby>","<ruby>他人<rt>たにん</rt></ruby>","<ruby>仲間<rt>なかま</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>大豆<rt>だいず</rt></ruby>から つくられる しろい たべもの を なんという？","choices":["<ruby>豆腐<rt>とうふ</rt></ruby>","<ruby>納豆<rt>なっとう</rt></ruby>","<ruby>寒天<rt>かんてん</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>本<rt>ほん</rt></ruby>を かいたり <ruby>絵<rt>え</rt></ruby>を つくったり した <ruby>人<rt>ひと</rt></ruby> を なんという？","choices":["<ruby>読者<rt>どくしゃ</rt></ruby>","<ruby>作者<rt>さくしゃ</rt></ruby>","<ruby>学者<rt>がくしゃ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>知識<rt>ちしき</rt></ruby>を さずけ、りっぱな <ruby>人<rt>ひと</rt></ruby>に そだてる こと を なんという？","choices":["<ruby>先生<rt>せんせい</rt></ruby>","<ruby>教育<rt>きょういく</rt></ruby>","<ruby>会話<rt>かいわ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>火事<rt>かじ</rt></ruby>の とき に しゅつどう する <ruby>車<rt>くるま</rt></ruby> を なんという？","choices":["<ruby>収集車<rt>しゅうしゅうしゃ</rt></ruby>","<ruby>救急車<rt>きゅうきゅうしゃ</rt></ruby>","<ruby>消防車<rt>しょうぼうしゃ</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"しらせ を あつめる ために はなし を きいたり する こと を なんという？","choices":["<ruby>取材<rt>しゅざい</rt></ruby>","<ruby>連絡<rt>れんらく</rt></ruby>","<ruby>説明<rt>せつめい</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"それほど ながく ない きかん の こと を なんという？","choices":["<ruby>短期間<rt>たんきかん</rt></ruby>","<ruby>長期間<rt>ちょうきかん</rt></ruby>","<ruby>時間割<rt>じかんわり</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>人<rt>ひと</rt></ruby>を いわって よろこび を つたえる こと を なんという？","choices":["<ruby>祝福<rt>しゅくふく</rt></ruby>","<ruby>感動<rt>かんどう</rt></ruby>","<ruby>応援<rt>おうえん</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>心<rt>こころ</rt></ruby>や <ruby>体<rt>からだ</rt></ruby>を つかって くるしい おもい を する こと を なんという？","choices":["<ruby>継続<rt>けいぞく</rt></ruby>","<ruby>運動<rt>うんどう</rt></ruby>","<ruby>苦労<rt>くろう</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"ある かず が、もと に なる かず の なんばい か を あらわす わりあい を なんという？","choices":["<ruby>速<rt>はや</rt></ruby>さ","<ruby>分量<rt>ぶんりょう</rt></ruby>","<ruby>倍率<rt>ばいりつ</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"とりとめ の ない はなし を きらく に する こと を なんという？","choices":["<ruby>雑談<rt>ざつだん</rt></ruby>","<ruby>会議<rt>かいぎ</rt></ruby>","<ruby>説明<rt>せつめい</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"おとな になる と はえかわらない <ruby>歯<rt>は</rt></ruby> を なんという？","choices":["<ruby>永久歯<rt>えいきゅうし</rt></ruby>","<ruby>乳歯<rt>にゅうし</rt></ruby>","<ruby>入れ歯<rt>いれば</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"うえへ 行く ために いちだんずつ のぼる <ruby>場所<rt>ばしょ</rt></ruby> を なんという？","choices":["<ruby>通路<rt>つうろ</rt></ruby>","<ruby>廊下<rt>ろうか</rt></ruby>","<ruby>階段<rt>かいだん</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"まんなか の <ruby>場所<rt>ばしょ</rt></ruby> を なんという？","choices":["<ruby>前方<rt>ぜんぽう</rt></ruby>","<ruby>左端<rt>ひだりはし</rt></ruby>","<ruby>中央<rt>ちゅうおう</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"よその とち へ でかける こと を なんという？","choices":["<ruby>旅行<rt>りょこう</rt></ruby>","<ruby>帰省<rt>きせい</rt></ruby>","<ruby>散歩<rt>さんぽ</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"はなしあって ものごと を きめる あつまり を なんという？","choices":["<ruby>集合<rt>しゅうごう</rt></ruby>","<ruby>会議室<rt>かいぎしつ</rt></ruby>","<ruby>委員会<rt>いいんかい</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"うえの<ruby>学年<rt>がくねん</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>中級<rt>ちゅうきゅう</rt></ruby>","<ruby>下級<rt>かきゅう</rt></ruby>","<ruby>上級<rt>じょうきゅう</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>日本<rt>にほん</rt></ruby>の<ruby>古<rt>ふる</rt></ruby>い<ruby>時代<rt>じだい</rt></ruby>の<ruby>名前<rt>なまえ</rt></ruby>の1つを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>令和<rt>れいわ</rt></ruby>","<ruby>現代<rt>げんだい</rt></ruby>","<ruby>昭和<rt>しょうわ</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>駅<rt>えき</rt></ruby>の<ruby>近<rt>ちか</rt></ruby>くの<ruby>場所<rt>ばしょ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>市場<rt>いちば</rt></ruby>","<ruby>駅前<rt>えきまえ</rt></ruby>","<ruby>停留所<rt>ていりゅうじょ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>学校<rt>がっこう</rt></ruby>で<ruby>先生<rt>せんせい</rt></ruby>から<ruby>教<rt>おし</rt></ruby>えてもらう<ruby>時間<rt>じかん</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>自習<rt>じしゅう</rt></ruby>","<ruby>課題<rt>かだい</rt></ruby>","<ruby>授業<rt>じゅぎょう</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"からだの<ruby>外側<rt>そとがわ</rt></ruby>をおおっているやわらかい<ruby>部分<rt>ぶぶん</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>皮膚<rt>ひふ</rt></ruby>","<ruby>血管<rt>けっかん</rt></ruby>","<ruby>骨格<rt>こっかく</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>お金<rt>おかね</rt></ruby>を<ruby>借<rt>か</rt></ruby>りたときに<ruby>上乗せ<rt>うわのせ</rt></ruby>してはらう<ruby>分<rt>ぶん</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>合計<rt>ごうけい</rt></ruby>","<ruby>会計<rt>かいけい</rt></ruby>","<ruby>利息<rt>りそく</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>見<rt>み</rt></ruby>ためがとてもよい<ruby>人<rt>ひと</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>主人<rt>しゅじん</rt></ruby>","<ruby>名人<rt>めいじん</rt></ruby>","<ruby>美人<rt>びじん</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"ペダルをこいで<ruby>進<rt>すす</rt></ruby>む<ruby>二輪<rt>にりん</rt></ruby>の<ruby>乗<rt>の</rt></ruby>り<ruby>物<rt>もの</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>自転車<rt>じてんしゃ</rt></ruby>","<ruby>三輪車<rt>さんりんしゃ</rt></ruby>","<ruby>台車<rt>だいしゃ</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>体<rt>からだ</rt></ruby>の<ruby>具合<rt>ぐあい</rt></ruby>が<ruby>悪<rt>わる</rt></ruby>くなることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>心配<rt>しんぱい</rt></ruby>","<ruby>病気<rt>びょうき</rt></ruby>","<ruby>治療<rt>ちりょう</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"けがや<ruby>病気<rt>びょうき</rt></ruby>を<ruby>見<rt>み</rt></ruby>てなおす<ruby>人<rt>ひと</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>医者<rt>いしゃ</rt></ruby>","<ruby>運転手<rt>うんてんしゅ</rt></ruby>","<ruby>弁護士<rt>べんごし</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>体<rt>からだ</rt></ruby>をなおすために<ruby>使<rt>つか</rt></ruby>うものを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>石油<rt>せきゆ</rt></ruby>","<ruby>工具<rt>こうぐ</rt></ruby>","<ruby>薬品<rt>やくひん</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>食<rt>た</rt></ruby>べたり<ruby>飲<rt>の</rt></ruby>んだりすることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>食品<rt>しょくひん</rt></ruby>","<ruby>加工品<rt>かこうひん</rt></ruby>","<ruby>飲食<rt>いんしょく</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>体<rt>からだ</rt></ruby>の<ruby>重<rt>おも</rt></ruby>さのことを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>体温<rt>たいおん</rt></ruby>","<ruby>体力<rt>たいりょく</rt></ruby>","<ruby>体重<rt>たいじゅう</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>物<rt>もの</rt></ruby>をあて<ruby>先<rt>さき</rt></ruby>まで<ruby>届<rt>とど</rt></ruby>けることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>輸送<rt>ゆそう</rt></ruby>","<ruby>発表<rt>はっぴょう</rt></ruby>","<ruby>配達<rt>はいたつ</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>温度<rt>おんど</rt></ruby>をはかる<ruby>道具<rt>どうぐ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>温度計<rt>おんどけい</rt></ruby>","<ruby>分度器<rt>ぶんどき</rt></ruby>","<ruby>時計<rt>とけい</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"しあわせだと<ruby>感<rt>かん</rt></ruby>じることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>幸福<rt>こうふく</rt></ruby>","<ruby>満足<rt>まんぞく</rt></ruby>","<ruby>不幸<rt>ふこう</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>何<rt>なに</rt></ruby>かをはじめることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>発見<rt>はっけん</rt></ruby>","<ruby>到着<rt>とうちゃく</rt></ruby>","<ruby>開始<rt>かいし</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>海<rt>うみ</rt></ruby>や<ruby>湖<rt>みずうみ</rt></ruby>に<ruby>細長<rt>ほそなが</rt></ruby>くつきでた<ruby>土地<rt>とち</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>半島<rt>はんとう</rt></ruby>","<ruby>無人島<rt>むじんとう</rt></ruby>","<ruby>島国<rt>しまぐに</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"よい<ruby>結果<rt>けっか</rt></ruby>をねがって<ruby>待<rt>ま</rt></ruby>つ<ruby>気持<rt>きも</rt></ruby>ちを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>心配<rt>しんぱい</rt></ruby>","<ruby>合格<rt>ごうかく</rt></ruby>","<ruby>期待<rt>きたい</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>試験<rt>しけん</rt></ruby>を<ruby>受<rt>う</rt></ruby>けることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>合格<rt>ごうかく</rt></ruby>","<ruby>受験<rt>じゅけん</rt></ruby>","<ruby>面接<rt>めんせつ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"かわりばんこにすることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>交代<rt>こうたい</rt></ruby>","<ruby>分配<rt>ぶんぱい</rt></ruby>","<ruby>分担<rt>ぶんたん</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>曲<rt>ま</rt></ruby>がった<ruby>線<rt>せん</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>直線<rt>ちょくせん</rt></ruby>","<ruby>曲線<rt>きょくせん</rt></ruby>","<ruby>線路<rt>せんろ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>野球<rt>やきゅう</rt></ruby>でボールを<ruby>投<rt>な</rt></ruby>げる<ruby>人<rt>ひと</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>走者<rt>そうしゃ</rt></ruby>","<ruby>投手<rt>とうしゅ</rt></ruby>","<ruby>打者<rt>だしゃ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>燃<rt>も</rt></ruby>やすとよく<ruby>火<rt>ひ</rt></ruby>がつく<ruby>黒<rt>くろ</rt></ruby>い<ruby>石<rt>いし</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>石灰<rt>せっかい</rt></ruby>","<ruby>石炭<rt>せきたん</rt></ruby>","<ruby>岩石<rt>がんせき</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>食<rt>た</rt></ruby>べものをひやして<ruby>保存<rt>ほぞん</rt></ruby>できる<ruby>家電<rt>かでん</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>掃除機<rt>そうじき</rt></ruby>","<ruby>洗濯機<rt>せんたくき</rt></ruby>","<ruby>冷蔵庫<rt>れいぞうこ</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"ひつじの<ruby>毛<rt>け</rt></ruby>から<ruby>作<rt>つく</rt></ruby>られる<ruby>糸<rt>いと</rt></ruby>や<ruby>布<rt>ぬの</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>化繊<rt>かせん</rt></ruby>","<ruby>羊毛<rt>ようもう</rt></ruby>","<ruby>綿花<rt>めんか</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>試合<rt>しあい</rt></ruby>に<ruby>勝<rt>か</rt></ruby>つことを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>活躍<rt>かつやく</rt></ruby>","<ruby>得点<rt>とくてん</rt></ruby>","<ruby>勝利<rt>しょうり</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>学校<rt>がっこう</rt></ruby>で<ruby>出<rt>だ</rt></ruby>されるいえでやる<ruby>学習<rt>がくしゅう</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>宿題<rt>しゅくだい</rt></ruby>","<ruby>課題<rt>かだい</rt></ruby>","<ruby>学業<rt>がくぎょう</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>町<rt>まち</rt></ruby>の<ruby>中<rt>なか</rt></ruby>の<ruby>番号<rt>ばんごう</rt></ruby>の1つを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>勝利<rt>しょうり</rt></ruby>","<ruby>一丁目<rt>いっちょうめ</rt></ruby>","<ruby>分類<rt>ぶんるい</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>予定<rt>よてい</rt></ruby>などを<ruby>書<rt>か</rt></ruby>きこむ<ruby>小<rt>ちい</rt></ruby>さなノートを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>文庫本<rt>ぶんこぼん</rt></ruby>","<ruby>読書<rt>どくしょ</rt></ruby>","<ruby>手帳<rt>てちょう</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"とても<ruby>大<rt>おお</rt></ruby>きくてりっぱな<ruby>建物<rt>たてもの</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>客間<rt>きゃくま</rt></ruby>","<ruby>宮殿<rt>きゅうでん</rt></ruby>","<ruby>飛行機<rt>ひこうき</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>病気<rt>びょうき</rt></ruby>などで<ruby>病院<rt>びょういん</rt></ruby>にとまって<ruby>治療<rt>ちりょう</rt></ruby>を<ruby>受<rt>う</rt></ruby>けることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>通院<rt>つういん</rt></ruby>","<ruby>入院<rt>にゅういん</rt></ruby>","<ruby>診察<rt>しんさつ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>船<rt>ふね</rt></ruby>や<ruby>列車<rt>れっしゃ</rt></ruby>などが<ruby>鳴<rt>な</rt></ruby>らす<ruby>大<rt>おお</rt></ruby>きな<ruby>音<rt>おと</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>号令<rt>ごうれい</rt></ruby>","<ruby>汽笛<rt>きてき</rt></ruby>","<ruby>悲鳴<rt>ひめい</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>人<rt>ひと</rt></ruby>に<ruby>失礼<rt>しつれい</rt></ruby>な<ruby>言動<rt>げんどう</rt></ruby>をしてしまうことを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>無事<rt>ぶじ</rt></ruby>","<ruby>不足<rt>ふそく</rt></ruby>","<ruby>失礼<rt>しつれい</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>物事<rt>ものごと</rt></ruby>を<ruby>深<rt>ふか</rt></ruby>くしらべることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>発明<rt>はつめい</rt></ruby>","<ruby>研究<rt>けんきゅう</rt></ruby>","<ruby>観察<rt>かんさつ</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"<ruby>庭<rt>にわ</rt></ruby>や<ruby>建物<rt>たてもの</rt></ruby>をきれいにつくった<ruby>場所<rt>ばしょ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>花壇<rt>かだん</rt></ruby>","<ruby>公園<rt>こうえん</rt></ruby>","<ruby>庭園<rt>ていえん</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>高校<rt>こうこう</rt></ruby>の<ruby>正式<rt>せいしき</rt></ruby>な<ruby>言<rt>い</rt></ruby>い<ruby>方<rt>かた</rt></ruby>はどれ？","choices":["<ruby>中等学校<rt>ちゅうとうがっこう</rt></ruby>","<ruby>専門学校<rt>せんもんがっこう</rt></ruby>","<ruby>高等学校<rt>こうとうがっこう</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>気<rt>き</rt></ruby>をつけることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>注意<rt>ちゅうい</rt></ruby>","<ruby>返事<rt>へんじ</rt></ruby>","<ruby>応答<rt>おうとう</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>頭<rt>あたま</rt></ruby>からでる<ruby>電気<rt>でんき</rt></ruby>のようすを<ruby>調<rt>しら</rt></ruby>べるときの<ruby>波<rt>なみ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>脳波<rt>のうは</rt></ruby>","<ruby>電動<rt>でんどう</rt></ruby>","<ruby>睡眠<rt>すいみん</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>学<rt>まな</rt></ruby>んだり<ruby>練習<rt>れんしゅう</rt></ruby>したりすることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>勉強<rt>べんきょう</rt></ruby>","<ruby>作業<rt>さぎょう</rt></ruby>","<ruby>宿題<rt>しゅくだい</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>テレビ<rt></rt></ruby>や<ruby>ラジオ<rt></rt></ruby>で<ruby>情報<rt>じょうほう</rt></ruby>を<ruby>伝<rt>つた</rt></ruby>えることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>拍手<rt>はくしゅ</rt></ruby>","<ruby>宣伝<rt>せんでん</rt></ruby>","<ruby>放送<rt>ほうそう</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>野球<rt>やきゅう</rt></ruby>で、バットで<ruby>打<rt>う</rt></ruby>たれてとんでいくボールのことを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>球技<rt>きゅうぎ</rt></ruby>","<ruby>打球<rt>だきゅう</rt></ruby>","<ruby>投球<rt>とうきゅう</rt></ruby>"],"correctIndex":1},{"set":"G3②","text":"とても<ruby>速<rt>はや</rt></ruby>く<ruby>走<rt>はし</rt></ruby>ったり<ruby>動<rt>うご</rt></ruby>いたりすることを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>高速<rt>こうそく</rt></ruby>","<ruby>交通<rt>こうつう</rt></ruby>","<ruby>速達<rt>そくたつ</rt></ruby>"],"correctIndex":0},{"set":"G3②","text":"<ruby>体<rt>からだ</rt></ruby>のあちこちにある、<ruby>感<rt>かん</rt></ruby>じたり<ruby>動<rt>うご</rt></ruby>かしたりするための<ruby>大事<rt>だいじ</rt></ruby>な<ruby>部分<rt>ぶぶん</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>白血球<rt>はっけっきゅう</rt></ruby>","<ruby>血管<rt>けっかん</rt></ruby>","<ruby>神経<rt>しんけい</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"<ruby>神<rt>かみ</rt></ruby>さまをまつっている、<ruby>日本<rt>にほん</rt></ruby>の<ruby>伝統的<rt>でんとうてき</rt></ruby>な<ruby>建物<rt>たてもの</rt></ruby>を<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>教会<rt>きょうかい</rt></ruby>","<ruby>墓地<rt>ぼち</rt></ruby>","<ruby>神社<rt>じんじゃ</rt></ruby>"],"correctIndex":2},{"set":"G3②","text":"とても<ruby>熱<rt>あつ</rt></ruby>いお<ruby>湯<rt>ゆ</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>という？","choices":["<ruby>熱湯<rt>ねっとう</rt></ruby>","<ruby>湯気<rt>ゆげ</rt></ruby>","<ruby>温泉<rt>おんせん</rt></ruby>"],"correctIndex":0},{"set":"G4①","text":"<ruby>朝<rt>あさ</rt></ruby>から<ruby>体<rt>からだ</rt></ruby>がとてもあつく、<ruby>頭<rt>あたま</rt></ruby>がぼーっとして<ruby>立<rt>た</rt></ruby>ち<ruby>上<rt>あ</rt></ruby>がるのもつらい<ruby>状態<rt>じょうたい</rt></ruby>です。<ruby>体温計<rt>たいおんけい</rt></ruby>で<ruby>測<rt>はか</rt></ruby>ると、38<ruby>度<rt>ど</rt></ruby>をこえていました。この<ruby>体<rt>からだ</rt></ruby>のようすを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>発汗<rt>はっかん</rt></ruby>","<ruby>高熱<rt>こうねつ</rt></ruby>","<ruby>冷<rt>ひ</rt></ruby>え"],"correctIndex":1},{"set":"G4①","text":"<ruby>日本<rt>にほん</rt></ruby>の<ruby>地図<rt>ちず</rt></ruby>を<ruby>見<rt>み</rt></ruby>ると、<ruby>全国<rt>ぜんこく</rt></ruby>がいくつもの<ruby>区切<rt>くぎ</rt></ruby>られた<ruby>場所<rt>ばしょ</rt></ruby>に<ruby>分<rt>わ</rt></ruby>かれています。<ruby>群馬<rt>ぐんま</rt></ruby>や<ruby>奈良<rt>なら</rt></ruby>のように、<ruby>日本<rt>にほん</rt></ruby>の<ruby>中<rt>なか</rt></ruby>の<ruby>大<rt>おお</rt></ruby>きな<ruby>地域<rt>ちいき</rt></ruby>の<ruby>区分<rt>くぶん</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>市町村<rt>しちょうそん</rt></ruby>","<ruby>地方<rt>ちほう</rt></ruby>","<ruby>都道府県<rt>とどうふけん</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"<ruby>小学校<rt>しょうがっこう</rt></ruby>や<ruby>中学校<rt>ちゅうがっこう</rt></ruby>で、<ruby>毎日<rt>まいにち</rt></ruby><ruby>勉強<rt>べんきょう</rt></ruby>や<ruby>生活<rt>せいかつ</rt></ruby>をしている<ruby>子<rt>こ</rt></ruby>どもたちをまとめて<ruby>表<rt>あらわ</rt></ruby>すとき、どの<ruby>言<rt>い</rt></ruby>い<ruby>方<rt>かた</rt></ruby>がいちばん<ruby>合<rt>あ</rt></ruby>っているでしょう。","choices":["<ruby>学年<rt>がくねん</rt></ruby>","<ruby>児童生徒<rt>じどうせいと</rt></ruby>","<ruby>先生方<rt>せんせいがた</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"クラスの<ruby>友<rt>とも</rt></ruby>だちと、けんかをしたり<ruby>仲<rt>なか</rt></ruby>よくしたりしながら、つながりをもって<ruby>生活<rt>せいかつ</rt></ruby>しています。<ruby>人<rt>ひと</rt></ruby>と<ruby>人<rt>ひと</rt></ruby>とのつながりを<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>友達<rt>ともだち</rt></ruby>","<ruby>関係<rt>かんけい</rt></ruby>","<ruby>会話<rt>かいわ</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>知<rt>し</rt></ruby>らない<ruby>漢字<rt>かんじ</rt></ruby>の<ruby>読<rt>よ</rt></ruby>み<ruby>方<rt>かた</rt></ruby>や<ruby>意味<rt>いみ</rt></ruby>、<ruby>画数<rt>かくすう</rt></ruby>などを<ruby>調<rt>しら</rt></ruby>べたいときに<ruby>使<rt>つか</rt></ruby>う<ruby>本<rt>ほん</rt></ruby>はどれでしょう。","choices":["<ruby>図鑑<rt>ずかん</rt></ruby>","<ruby>漢字辞典<rt>かんじじてん</rt></ruby>","<ruby>物語集<rt>ものがたりしゅう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"ある<ruby>言葉<rt>ことば</rt></ruby>の<ruby>意味<rt>いみ</rt></ruby>や<ruby>使<rt>つか</rt></ruby>い<ruby>方<rt>かた</rt></ruby>をくわしく<ruby>調<rt>しら</rt></ruby>べたいときに<ruby>使<rt>つか</rt></ruby>う、<ruby>本<rt>ほん</rt></ruby>の<ruby>種類<rt>しゅるい</rt></ruby>はどれでしょう。","choices":["<ruby>国語辞典<rt>こくごじてん</rt></ruby>","<ruby>地図帳<rt>ちずちょう</rt></ruby>","<ruby>問題集<rt>もんだいしゅう</rt></ruby>"],"correctIndex":0},{"set":"G4①","text":"20<ruby>歳<rt>さい</rt></ruby>になる<ruby>人<rt>ひと</rt></ruby>たちが<ruby>集<rt>あつ</rt></ruby>まって、<ruby>大人<rt>おとな</rt></ruby>になったお<ruby>祝<rt>いわ</rt></ruby>いをする<ruby>行事<rt>ぎょうじ</rt></ruby>があります。この<ruby>行事<rt>ぎょうじ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>文化祭<rt>ぶんかさい</rt></ruby>","<ruby>卒業式<rt>そつぎょうしき</rt></ruby>","<ruby>成人式<rt>せいじんしき</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"<ruby>火事<rt>かじ</rt></ruby>や<ruby>地震<rt>じしん</rt></ruby>にそなえて、<ruby>学校<rt>がっこう</rt></ruby>でにげる<ruby>練習<rt>れんしゅう</rt></ruby>をくり<ruby>返<rt>かえ</rt></ruby>し<ruby>行<rt>おこな</rt></ruby>います。このように、<ruby>本番<rt>ほんばん</rt></ruby>にそなえて<ruby>練習<rt>れんしゅう</rt></ruby>することを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>訓練<rt>くんれん</rt></ruby>","<ruby>試合<rt>しあい</rt></ruby>","<ruby>発表<rt>はっぴょう</rt></ruby>"],"correctIndex":0},{"set":"G4①","text":"<ruby>大昔<rt>おおむかし</rt></ruby>から<ruby>現在<rt>げんざい</rt></ruby>まで、<ruby>地球<rt>ちきゅう</rt></ruby>で<ruby>生<rt>い</rt></ruby>きてきたすべての<ruby>人間<rt>にんげん</rt></ruby>の<ruby>仲間<rt>なかま</rt></ruby>をまとめて<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>生物<rt>せいぶつ</rt></ruby>","<ruby>人類<rt>じんるい</rt></ruby>","<ruby>動物<rt>どうぶつ</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"ならんで<ruby>歩<rt>ある</rt></ruby>くときに、<ruby>前<rt>まえ</rt></ruby>の<ruby>人<rt>ひと</rt></ruby>の<ruby>次<rt>つぎ</rt></ruby>に<ruby>自分<rt>じぶん</rt></ruby>が<ruby>入<rt>はい</rt></ruby>るなど、<ruby>決<rt>き</rt></ruby>められたならび<ruby>方<rt>かた</rt></ruby>があります。このならびの<ruby>決<rt>き</rt></ruby>まりを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>列<rt>れつ</rt></ruby>","<ruby>順番<rt>じゅんばん</rt></ruby>","<ruby>方向<rt>ほうこう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>家族<rt>かぞく</rt></ruby>が<ruby>病気<rt>びょうき</rt></ruby>のときに<ruby>心配<rt>しんぱい</rt></ruby>して<ruby>世話<rt>せわ</rt></ruby>をしたり、<ruby>相手<rt>あいて</rt></ruby>のことを<ruby>思<rt>おも</rt></ruby>って<ruby>行動<rt>こうどう</rt></ruby>したりする<ruby>気持<rt>きも</rt></ruby>ちを<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>表情<rt>ひょうじょう</rt></ruby>","<ruby>愛情<rt>あいじょう</rt></ruby>","<ruby>感心<rt>かんしん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>今年<rt>ことし</rt></ruby>の<ruby>前<rt>まえ</rt></ruby>の<ruby>年<rt>とし</rt></ruby>のことを<ruby>話<rt>はな</rt></ruby>すときに<ruby>使<rt>つか</rt></ruby>う<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>先月<rt>せんげつ</rt></ruby>","<ruby>昨年<rt>さくねん</rt></ruby>","<ruby>明日<rt>あした</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>昔<rt>むかし</rt></ruby>、お<ruby>城<rt>しろ</rt></ruby>のまわりには、<ruby>家<rt>いえ</rt></ruby>や<ruby>店<rt>みせ</rt></ruby>が<ruby>集<rt>あつ</rt></ruby>まってつくられた<ruby>町<rt>まち</rt></ruby>がありました。こうした<ruby>町<rt>まち</rt></ruby>の<ruby>呼<rt>よ</rt></ruby>び<ruby>方<rt>かた</rt></ruby>としていちばん<ruby>合<rt>あ</rt></ruby>っているものはどれでしょう。","choices":["<ruby>農村<rt>のうそん</rt></ruby>","<ruby>城下町<rt>じょうかまち</rt></ruby>","<ruby>港町<rt>みなとまち</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>昔<rt>むかし</rt></ruby>から<ruby>語<rt>かた</rt></ruby>りつがれてきたふしぎな<ruby>話<rt>はなし</rt></ruby>で、<ruby>本当<rt>ほんとう</rt></ruby>かどうか<ruby>分<rt>わ</rt></ruby>からない<ruby>物語<rt>ものがたり</rt></ruby>のような<ruby>話<rt>はなし</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>記録<rt>きろく</rt></ruby>","<ruby>伝説<rt>でんせつ</rt></ruby>","<ruby>事実<rt>じじつ</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>分<rt>わ</rt></ruby>からないことを、<ruby>相手<rt>あいて</rt></ruby>に<ruby>分<rt>わ</rt></ruby>かるように<ruby>言葉<rt>ことば</rt></ruby>で<ruby>伝<rt>つた</rt></ruby>えることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>説明<rt>せつめい</rt></ruby>","<ruby>相談<rt>そうだん</rt></ruby>","<ruby>指示<rt>しじ</rt></ruby>"],"correctIndex":0},{"set":"G4①","text":"その<ruby>人<rt>ひと</rt></ruby>がとくに<ruby>好<rt>す</rt></ruby>きで、<ruby>進<rt>すす</rt></ruby>んで<ruby>食<rt>た</rt></ruby>べたがる<ruby>食<rt>た</rt></ruby>べ<ruby>物<rt>もの</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>名物<rt>めいぶつ</rt></ruby>","<ruby>好物<rt>こうぶつ</rt></ruby>","<ruby>食品<rt>しょくひん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>紙<rt>かみ</rt></ruby>に<ruby>文字<rt>もじ</rt></ruby>や<ruby>絵<rt>え</rt></ruby>を、<ruby>機械<rt>きかい</rt></ruby>を<ruby>使<rt>つか</rt></ruby>ってたくさんおなじようにうつし<ruby>取<rt>と</rt></ruby>る<ruby>作業<rt>さぎょう</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>文書<rt>ぶんしょ</rt></ruby>","<ruby>印刷<rt>いんさつ</rt></ruby>","<ruby>作成<rt>さくせい</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"してほしいことや、のぞんでいることを<ruby>相手<rt>あいて</rt></ruby>に<ruby>強<rt>つよ</rt></ruby>く<ruby>伝<rt>つた</rt></ruby>えるときの<ruby>言<rt>い</rt></ruby>い<ruby>方<rt>かた</rt></ruby>として<ruby>合<rt>あ</rt></ruby>っているものはどれでしょう。","choices":["<ruby>感想<rt>かんそう</rt></ruby>","<ruby>要求<rt>ようきゅう</rt></ruby>","<ruby>反省<rt>はんせい</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>遠足<rt>えんそく</rt></ruby>に<ruby>行<rt>い</rt></ruby>く<ruby>理由<rt>りゆう</rt></ruby>が「みんなで<ruby>自然<rt>しぜん</rt></ruby>を<ruby>学<rt>まな</rt></ruby>ぶため」のように、<ruby>行動<rt>こうどう</rt></ruby>をするもとになるねらいのことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>予定<rt>よてい</rt></ruby>","<ruby>理由<rt>りゆう</rt></ruby>","<ruby>目的<rt>もくてき</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"なくてはならないものや、どうしてもいるものを<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>便利<rt>べんり</rt></ruby>","<ruby>大切<rt>たいせつ</rt></ruby>","<ruby>必要<rt>ひつよう</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"かけっこでスタートの<ruby>合図<rt>あいず</rt></ruby>が<ruby>鳴<rt>な</rt></ruby>ったとき、いちばん<ruby>先<rt>さき</rt></ruby>に<ruby>走<rt>はし</rt></ruby>り<ruby>出<rt>だ</rt></ruby>す<ruby>位置<rt>いち</rt></ruby>や、いちばんはじめのことを<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>途中<rt>とちゅう</rt></ruby>","<ruby>最初<rt>さいしょ</rt></ruby>","<ruby>最後<rt>さいご</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>駅<rt>えき</rt></ruby>で<ruby>道<rt>みち</rt></ruby>が<ruby>分<rt>わ</rt></ruby>からない<ruby>人<rt>ひと</rt></ruby>に、<ruby>行<rt>い</rt></ruby>き<ruby>先<rt>さき</rt></ruby>までの<ruby>道<rt>みち</rt></ruby>をおしえてあげるような<ruby>行動<rt>こうどう</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>案内<rt>あんない</rt></ruby>","<ruby>提出<rt>ていしゅつ</rt></ruby>","<ruby>指導<rt>しどう</rt></ruby>"],"correctIndex":0},{"set":"G4①","text":"<ruby>野菜屋<rt>やさいや</rt></ruby>さんやおかし<ruby>屋<rt>や</rt></ruby>さん、<ruby>文房具店<rt>ぶんぼうぐてん</rt></ruby>など、たくさんの<ruby>店<rt>みせ</rt></ruby>が<ruby>道<rt>みち</rt></ruby>の<ruby>両側<rt>りょうがわ</rt></ruby>にならんでいる<ruby>場所<rt>ばしょ</rt></ruby>があります。このような<ruby>場所<rt>ばしょ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>住宅地<rt>じゅうたくち</rt></ruby>","<ruby>商店街<rt>しょうてんがい</rt></ruby>","<ruby>工業地<rt>こうぎょうち</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>学<rt>まな</rt></ruby>んだことがどれくらい<ruby>身<rt>み</rt></ruby>についているかをたしかめるために、<ruby>学校<rt>がっこう</rt></ruby>で<ruby>問題<rt>もんだい</rt></ruby>を<ruby>解<rt>と</rt></ruby>く<ruby>時間<rt>じかん</rt></ruby>があります。このようなとりくみを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>練習<rt>れんしゅう</rt></ruby>","<ruby>発表<rt>はっぴょう</rt></ruby>","<ruby>試験<rt>しけん</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"クラスの<ruby>代表<rt>だいひょう</rt></ruby>や<ruby>市<rt>し</rt></ruby>のリーダーなどを<ruby>決<rt>き</rt></ruby>めるとき、みんなが<ruby>投票<rt>とうひょう</rt></ruby>して<ruby>選<rt>えら</rt></ruby>ぶ<ruby>方法<rt>ほうほう</rt></ruby>があります。この<ruby>決<rt>き</rt></ruby>め<ruby>方<rt>かた</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>相談<rt>そうだん</rt></ruby>","<ruby>選挙<rt>せんきょ</rt></ruby>","<ruby>指名<rt>しめい</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"サッカーやコンサートで、プレーや<ruby>演奏<rt>えんそう</rt></ruby>を<ruby>見<rt>み</rt></ruby>ておうえんしている<ruby>人<rt>ひと</rt></ruby>たちをまとめて<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>出場者<rt>しゅつじょうしゃ</rt></ruby>","<ruby>係員<rt>かかりいん</rt></ruby>","<ruby>観客<rt>かんきゃく</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"ドアノブにさわったときに「パチッ」として、<ruby>指<rt>ゆび</rt></ruby>がしびれることがあります。このときに<ruby>起<rt>お</rt></ruby>きている<ruby>現象<rt>げんしょう</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>電流<rt>でんりゅう</rt></ruby>","<ruby>静電気<rt>せいでんき</rt></ruby>","<ruby>磁力<rt>じりょく</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"オリンピックなどで、その<ruby>国<rt>くに</rt></ruby>を<ruby>表<rt>あらわ</rt></ruby>すためにかかげられている<ruby>旗<rt>はた</rt></ruby>があります。この<ruby>旗<rt>はた</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>名札<rt>なふだ</rt></ruby>","<ruby>政治<rt>せいじ</rt></ruby>","<ruby>国旗<rt>こっき</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"カレーをつくるときの<ruby>肉<rt>にく</rt></ruby>や<ruby>野菜<rt>やさい</rt></ruby>のように、<ruby>料理<rt>りょうり</rt></ruby>や<ruby>工作<rt>こうさく</rt></ruby>のもとになるものを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>道具<rt>どうぐ</rt></ruby>","<ruby>材料<rt>ざいりょう</rt></ruby>","<ruby>作品<rt>さくひん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>草津温泉<rt>くさつおんせん</rt></ruby>があり、<ruby>関東地方<rt>かんとうちほう</rt></ruby>の<ruby>内陸<rt>ないりく</rt></ruby>に<ruby>位置<rt>いち</rt></ruby>する<ruby>県<rt>けん</rt></ruby>の<ruby>名前<rt>なまえ</rt></ruby>はどれでしょう。","choices":["<ruby>栃木県<rt>とちぎけん</rt></ruby>","<ruby>群馬県<rt>ぐんまけん</rt></ruby>","<ruby>長野県<rt>ながのけん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>大仏<rt>だいぶつ</rt></ruby>があり、しかが<ruby>公園<rt>こうえん</rt></ruby>を<ruby>歩<rt>ある</rt></ruby>いていることで<ruby>知<rt>し</rt></ruby>られている<ruby>県<rt>けん</rt></ruby>はどれでしょう。","choices":["<ruby>京都府<rt>きょうとふ</rt></ruby>","<ruby>奈良県<rt>ならけん</rt></ruby>","<ruby>三重県<rt>みえけん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>食<rt>た</rt></ruby>べ<ruby>物<rt>もの</rt></ruby>の<ruby>種類<rt>しゅるい</rt></ruby>が<ruby>多<rt>おお</rt></ruby>く、<ruby>選<rt>えら</rt></ruby>べるものがたくさんあるとき、そのようすを<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>不足<rt>ふそく</rt></ruby>","<ruby>豊富<rt>ほうふ</rt></ruby>","<ruby>単調<rt>たんちょう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>木曽川<rt>きそがわ</rt></ruby>や<ruby>長良川<rt>ながらがわ</rt></ruby>がながれ、<ruby>内陸<rt>ないりく</rt></ruby>に<ruby>位置<rt>いち</rt></ruby>する<ruby>中部地方<rt>ちゅうぶちほう</rt></ruby>の<ruby>県<rt>けん</rt></ruby>はどれでしょう。","choices":["<ruby>岐阜県<rt>ぎふけん</rt></ruby>","<ruby>愛知県<rt>あいちけん</rt></ruby>","<ruby>三重県<rt>みえけん</rt></ruby>"],"correctIndex":0},{"set":"G4①","text":"<ruby>冬<rt>ふゆ</rt></ruby>になると<ruby>日本海側<rt>にほんかいがわ</rt></ruby>に<ruby>冷<rt>つめ</rt></ruby>たいかぜがふき、<ruby>雪<rt>ゆき</rt></ruby>が<ruby>多<rt>おお</rt></ruby>くふります。このように、<ruby>季節<rt>きせつ</rt></ruby>ごとにふく<ruby>向<rt>む</rt></ruby>きが<ruby>変<rt>か</rt></ruby>わるかぜを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>台風<rt>たいふう</rt></ruby>","<ruby>季節風<rt>きせつふう</rt></ruby>","<ruby>つむじ風<rt>つむじかぜ</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>一年<rt>いちねん</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で、<ruby>春<rt>はる</rt></ruby>・<ruby>夏<rt>なつ</rt></ruby>・<ruby>秋<rt>あき</rt></ruby>・<ruby>冬<rt>ふゆ</rt></ruby>のように、<ruby>気温<rt>きおん</rt></ruby>や<ruby>自然<rt>しぜん</rt></ruby>のようすが<ruby>変<rt>か</rt></ruby>わっていくまとまりを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>天候<rt>てんこう</rt></ruby>","<ruby>月日<rt>つきひ</rt></ruby>","<ruby>季節<rt>きせつ</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"いつもとはちがって、とくに<ruby>大切<rt>たいせつ</rt></ruby>にされたり、めずらしかったりするようすを<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>普通<rt>ふつう</rt></ruby>","<ruby>特別<rt>とくべつ</rt></ruby>","<ruby>同様<rt>どうよう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>市<rt>し</rt></ruby>のように<ruby>人<rt>ひと</rt></ruby>が<ruby>多<rt>おお</rt></ruby>く<ruby>集<rt>あつ</rt></ruby>まっている<ruby>地域<rt>ちいき</rt></ruby>ではなく、<ruby>町<rt>まち</rt></ruby>や<ruby>村<rt>むら</rt></ruby>が<ruby>集<rt>あつ</rt></ruby>まっている<ruby>地域<rt>ちいき</rt></ruby>をまとめて<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>市街地<rt>しがいち</rt></ruby>","<ruby>郡部<rt>ぐんぶ</rt></ruby>","<ruby>工業地<rt>こうぎょうち</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>国<rt>くに</rt></ruby>どうしや<ruby>大<rt>おお</rt></ruby>きな<ruby>集団<rt>しゅうだん</rt></ruby>どうしが、<ruby>武器<rt>ぶき</rt></ruby>を<ruby>使<rt>つか</rt></ruby>ってあらそうとても<ruby>大<rt>おお</rt></ruby>きなあらそいを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>競争<rt>きょうそう</rt></ruby>","<ruby>試合<rt>しあい</rt></ruby>","<ruby>戦争<rt>せんそう</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"<ruby>昔<rt>むかし</rt></ruby>の<ruby>日本<rt>にほん</rt></ruby>や<ruby>世界<rt>せかい</rt></ruby>の<ruby>歴史<rt>れきし</rt></ruby>で、たくさんの<ruby>人<rt>ひと</rt></ruby>がたたかいにまきこまれ、<ruby>町<rt>まち</rt></ruby>やくらしが<ruby>大<rt>おお</rt></ruby>きく<ruby>変<rt>か</rt></ruby>わった<ruby>出来事<rt>できごと</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>革命<rt>かくめい</rt></ruby>","<ruby>災害<rt>さいがい</rt></ruby>","<ruby>戦争<rt>せんそう</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"ながい<ruby>行列<rt>ぎょうれつ</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で、いちばん<ruby>前<rt>まえ</rt></ruby>に<ruby>立<rt>た</rt></ruby>つ<ruby>位置<rt>いち</rt></ruby>や、ものごとがはじまるいちばんはじめの<ruby>部分<rt>ぶぶん</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>最後<rt>さいご</rt></ruby>","<ruby>中央<rt>ちゅうおう</rt></ruby>","<ruby>最初<rt>さいしょ</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"<ruby>学校<rt>がっこう</rt></ruby>で、ひるにみんなでおなじ<ruby>献立<rt>こんだて</rt></ruby>を<ruby>食<rt>た</rt></ruby>べる<ruby>食事<rt>しょくじ</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["お<ruby>弁当<rt>べんとう</rt></ruby>","<ruby>学校給食<rt>がっこうきゅうしょく</rt></ruby>","<ruby>外食<rt>がいしょく</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>空港<rt>くうこう</rt></ruby>を<ruby>出発<rt>しゅっぱつ</rt></ruby>して、<ruby>空<rt>そら</rt></ruby>の<ruby>上<rt>うえ</rt></ruby>をながいきょり<ruby>移動<rt>いどう</rt></ruby>し、<ruby>人<rt>ひと</rt></ruby>や<ruby>荷物<rt>にもつ</rt></ruby>をはこぶ<ruby>大<rt>おお</rt></ruby>きなのりものはどれでしょう。","choices":["<ruby>新幹線<rt>しんかんせん</rt></ruby>","<ruby>飛行機<rt>ひこうき</rt></ruby>","フェリー"],"correctIndex":1},{"set":"G4①","text":"けがをしたときに、<ruby>血<rt>ち</rt></ruby>をとめたり、<ruby>傷口<rt>きずぐち</rt></ruby>をまもったりするために<ruby>体<rt>からだ</rt></ruby>にまく<ruby>白<rt>しろ</rt></ruby>い<ruby>布<rt>ぬの</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>絆創膏<rt>ばんそうこう</rt></ruby>","<ruby>包帯<rt>ほうたい</rt></ruby>","テープ"],"correctIndex":1},{"set":"G4①","text":"<ruby>一年中<rt>いちねんじゅう</rt></ruby>あたたかく、<ruby>雨<rt>あめ</rt></ruby>が<ruby>多<rt>おお</rt></ruby>く、ジャングルが<ruby>広<rt>ひろ</rt></ruby>がるような<ruby>地域<rt>ちいき</rt></ruby>の<ruby>気候帯<rt>きこうたい</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>砂漠<rt>さばく</rt></ruby>","<ruby>森林<rt>しんりん</rt></ruby>","<ruby>熱帯<rt>ねったい</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"<ruby>学校<rt>がっこう</rt></ruby>の<ruby>書類<rt>しょるい</rt></ruby>などに、<ruby>名字<rt>みょうじ</rt></ruby>と<ruby>名前<rt>なまえ</rt></ruby>の<ruby>両方<rt>りょうほう</rt></ruby>を<ruby>書い<rt>かい</rt></ruby>てくださいとあるとき、この<ruby>二<rt>ふた</rt></ruby>つをまとめて<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>住所<rt>じゅうしょ</rt></ruby>","<ruby>氏名<rt>しめい</rt></ruby>","<ruby>年齢<rt>ねんれい</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"「<ruby>山<rt>やま</rt></ruby>の<ruby>日<rt>ひ</rt></ruby>」や「こどもの<ruby>日<rt>ひ</rt></ruby>」のように、<ruby>国<rt>くに</rt></ruby>が<ruby>決め<rt>きめ</rt></ruby>て<ruby>休み<rt>やすみ</rt></ruby>になる<ruby>日<rt>ひ</rt></ruby>は<ruby>何<rt>なん</rt></ruby>と<ruby>呼ば<rt>よば</rt></ruby>れているでしょう。","choices":["<ruby>平日<rt>へいじつ</rt></ruby>","<ruby>元日<rt>がんじつ</rt></ruby>","<ruby>祝日<rt>しゅくじつ</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"バスや<ruby>自転車<rt>じてんしゃ</rt></ruby>を<ruby>使わ<rt>つかわ</rt></ruby>ずに、<ruby>自分<rt>じぶん</rt></ruby>の<ruby>足<rt>あし</rt></ruby>だけで<ruby>道<rt>みち</rt></ruby>を<ruby>進<rt>すす</rt></ruby>む<ruby>移動<rt>いどう</rt></ruby>のしかたを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>乗車<rt>じょうしゃ</rt></ruby>","<ruby>徒歩<rt>とほ</rt></ruby>","<ruby>発進<rt>はっしん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>運動会<rt>うんどうかい</rt></ruby>のかけっこで、だれがいちばん<ruby>速<rt>はや</rt></ruby>いかを<ruby>決め<rt>きめ</rt></ruby>るために、<ruby>同時<rt>どうじ</rt></ruby>に<ruby>走<rt>はし</rt></ruby>って<ruby>勝負<rt>しょうぶ</rt></ruby>することを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>協力<rt>きょうりょく</rt></ruby>","<ruby>競争<rt>きょうそう</rt></ruby>","<ruby>相談<rt>そうだん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"たくさんの<ruby>馬<rt>うま</rt></ruby>が<ruby>同時<rt>どうじ</rt></ruby>に<ruby>走<rt>はし</rt></ruby>り、どの<ruby>馬<rt>うま</rt></ruby>が<ruby>早<rt>はや</rt></ruby>くゴールするかを<ruby>見<rt>み</rt></ruby>て<ruby>勝負<rt>しょうぶ</rt></ruby>する<ruby>行事<rt>ぎょうじ</rt></ruby>や<ruby>競技<rt>きょうぎ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>競走<rt>きょうそう</rt></ruby>","<ruby>競馬<rt>けいば</rt></ruby>","<ruby>乗馬<rt>じょうば</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"ともだちと「<ruby>明日<rt>あした</rt></ruby>ここに<ruby>集ま<rt>あつま</rt></ruby>ろう」と<ruby>前<rt>まえ</rt></ruby>もって<ruby>決め<rt>きめ</rt></ruby>て、おたがいに<ruby>守<rt>まも</rt></ruby>ると<ruby>決め<rt>きめ</rt></ruby>たことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>約束<rt>やくそく</rt></ruby>","<ruby>相談<rt>そうだん</rt></ruby>","<ruby>予定<rt>よてい</rt></ruby>"],"correctIndex":0},{"set":"G4①","text":"<ruby>手<rt>て</rt></ruby>や<ruby>服<rt>ふく</rt></ruby>がよごれていなくて、きれいに<ruby>保<rt>たも</rt></ruby>たれているようすを<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>便利<rt>べんり</rt></ruby>","<ruby>清潔<rt>せいけつ</rt></ruby>","<ruby>立派<rt>りっぱ</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"こわれたところや<ruby>足<rt>た</rt></ruby>りないところがまったくなく、すべてそろっているようすを<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>大体<rt>だいたい</rt></ruby>","<ruby>完全<rt>かんぜん</rt></ruby>","<ruby>不足<rt>ふそく</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>国<rt>くに</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で、<ruby>人々<rt>ひとびと</rt></ruby>が<ruby>守<rt>まも</rt></ruby>らなければならないと<ruby>決め<rt>きめ</rt></ruby>られている<ruby>大<rt>おお</rt></ruby>きな<ruby>決まり<rt>きまり</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>規則<rt>きそく</rt></ruby>","<ruby>法律<rt>ほうりつ</rt></ruby>","<ruby>目標<rt>もくひょう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>日本一<rt>にほんいち</rt></ruby><ruby>大<rt>おお</rt></ruby>きな<ruby>湖<rt>みずうみ</rt></ruby>である<ruby>琵琶湖<rt>びわこ</rt></ruby>がある<ruby>県<rt>けん</rt></ruby>はどれでしょう。","choices":["<ruby>福井県<rt>ふくいけん</rt></ruby>","<ruby>滋賀県<rt>しがけん</rt></ruby>","<ruby>岐阜県<rt>ぎふけん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>学校<rt>がっこう</rt></ruby>で、<ruby>人<rt>ひと</rt></ruby>として<ruby>正<rt>ただ</rt></ruby>しく<ruby>生<rt>い</rt></ruby>きることや、<ruby>思<rt>おも</rt></ruby>いやりについて<ruby>学<rt>まな</rt></ruby>ぶ<ruby>教科<rt>きょうか</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>社会<rt>しゃかい</rt></ruby>","<ruby>道徳<rt>どうとく</rt></ruby>","<ruby>図工<rt>ずこう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>体<rt>からだ</rt></ruby>や<ruby>服<rt>ふく</rt></ruby>につけて、よいにおいを<ruby>楽<rt>たの</rt></ruby>しむための<ruby>液体<rt>えきたい</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>消毒液<rt>しょうどくえき</rt></ruby>","<ruby>香水<rt>こうすい</rt></ruby>","<ruby>柔軟剤<rt>じゅうなんざい</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>九州地方<rt>きゅうしゅうちほう</rt></ruby>にあり、<ruby>有明海<rt>ありあけかい</rt></ruby>に<ruby>面<rt>めん</rt></ruby>している<ruby>県<rt>けん</rt></ruby>はどれでしょう。","choices":["<ruby>福岡県<rt>ふくおかけん</rt></ruby>","<ruby>佐賀県<rt>さがけん</rt></ruby>","<ruby>長崎県<rt>ながさきけん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"お<ruby>正月<rt>しょうがつ</rt></ruby>に、「あけましておめでとうございます」と<ruby>気持<rt>きも</rt></ruby>ちを<ruby>伝<rt>つた</rt></ruby>えるために<ruby>送<rt>おく</rt></ruby>るはがきを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>手紙<rt>てがみ</rt></ruby>","<ruby>年賀状<rt>ねんがじょう</rt></ruby>","<ruby>招待状<rt>しょうたいじょう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>土<rt>つち</rt></ruby>の<ruby>器<rt>うつわ</rt></ruby>を<ruby>使<rt>つか</rt></ruby>い、<ruby>狩<rt>か</rt></ruby>りや<ruby>採集<rt>さいしゅう</rt></ruby>をしてくらしていた、<ruby>日本<rt>にほん</rt></ruby>のとても<ruby>古<rt>ふる</rt></ruby>い<ruby>時代<rt>じだい</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>弥生時代<rt>やよいじだい</rt></ruby>","<ruby>江戸時代<rt>えどじだい</rt></ruby>","<ruby>縄文時代<rt>じょうもんじだい</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"20<ruby>歳<rt>さい</rt></ruby>になっておらず、<ruby>大人<rt>おとな</rt></ruby>としての<ruby>責任<rt>せきにん</rt></ruby>をまだ<ruby>持<rt>も</rt></ruby>たない<ruby>年<rt>ねん</rt></ruby>れいの<ruby>人<rt>ひと</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>成人<rt>せいじん</rt></ruby>","<ruby>未成年<rt>みせいねん</rt></ruby>","<ruby>高齢者<rt>こうれいしゃ</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"「これがかなうといいな」と、<ruby>心<rt>こころ</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で<ruby>強<rt>つよ</rt></ruby>くのぞむ<ruby>気持<rt>きも</rt></ruby>ちを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>不安<rt>ふあん</rt></ruby>","<ruby>希望<rt>きぼう</rt></ruby>","<ruby>反省<rt>はんせい</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>将来<rt>しょうらい</rt></ruby>、なりたい<ruby>仕事<rt>しごと</rt></ruby>や、かなえたい<ruby>夢<rt>ゆめ</rt></ruby>について<ruby>前向<rt>まえむ</rt></ruby>きに<ruby>思<rt>おも</rt></ruby>いえがく<ruby>気持<rt>きも</rt></ruby>ちを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>心配<rt>しんぱい</rt></ruby>","<ruby>希望<rt>きぼう</rt></ruby>","<ruby>後悔<rt>こうかい</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>日本<rt>にほん</rt></ruby>という<ruby>国<rt>くに</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で、そこに<ruby>住<rt>す</rt></ruby>み、<ruby>国<rt>くに</rt></ruby>の<ruby>一員<rt>いちいん</rt></ruby>としてくらしている<ruby>人びと<rt>ひとびと</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>市民<rt>しみん</rt></ruby>","<ruby>国民<rt>こくみん</rt></ruby>","<ruby>住民<rt>じゅうみん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>会社<rt>かいしゃ</rt></ruby>などで、<ruby>仕事<rt>しごと</rt></ruby>として<ruby>体<rt>からだ</rt></ruby>や<ruby>頭<rt>あたま</rt></ruby>を<ruby>使<rt>つか</rt></ruby>いて<ruby>働<rt>はたら</rt></ruby>くことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>運動<rt>うんどう</rt></ruby>","<ruby>労働<rt>ろうどう</rt></ruby>","<ruby>学習<rt>がくしゅう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>学校<rt>がっこう</rt></ruby>で、けがをしたときや<ruby>気分<rt>きぶん</rt></ruby>が<ruby>悪<rt>わる</rt></ruby>いときに<ruby>休<rt>やす</rt></ruby>んだり<ruby>手当<rt>てあ</rt></ruby>てをしてもらったりする<ruby>部屋<rt>へや</rt></ruby>はどれでしょう。","choices":["<ruby>職員室<rt>しょくいんしつ</rt></ruby>","<ruby>図書室<rt>としょしつ</rt></ruby>","<ruby>保健室<rt>ほけんしつ</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"よく<ruby>食<rt>た</rt></ruby>べ、よく<ruby>動<rt>うご</rt></ruby>き、<ruby>病気<rt>びょうき</rt></ruby>をしにくいような<ruby>生活<rt>せいかつ</rt></ruby>や<ruby>体<rt>からだ</rt></ruby>のようすを<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>消極的<rt>しょうきょくてき</rt></ruby>","<ruby>健康的<rt>けんこうてき</rt></ruby>","<ruby>機械的<rt>きかいてき</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"「<ruby>今<rt>いま</rt></ruby>すぐ<ruby>集合<rt>しゅうごう</rt></ruby>しなさい」のように、<ruby>上<rt>うえ</rt></ruby>の<ruby>立場<rt>たちば</rt></ruby>の<ruby>人<rt>ひと</rt></ruby>がはっきりとやるように<ruby>言<rt>い</rt></ruby>いわたすことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>相談<rt>そうだん</rt></ruby>","<ruby>命令<rt>めいれい</rt></ruby>","<ruby>依頼<rt>いらい</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>算数<rt>さんすう</rt></ruby>で<ruby>長さ<rt>ながさ</rt></ruby>を「cm」、<ruby>重さ<rt>おもさ</rt></ruby>を「g」のように<ruby>表<rt>あらわ</rt></ruby>すとき、<ruby>数<rt>かず</rt></ruby>の<ruby>大<rt>おお</rt></ruby>きさをそろえて<ruby>示<rt>しめ</rt></ruby>すために<ruby>使<rt>つか</rt></ruby>う<ruby>決まり<rt>きまり</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>記号<rt>きごう</rt></ruby>","<ruby>単位<rt>たんい</rt></ruby>","<ruby>数字<rt>すうじ</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>教室<rt>きょうしつ</rt></ruby>の<ruby>机<rt>つくえ</rt></ruby>やいすを、<ruby>使<rt>つか</rt></ruby>いやすいように<ruby>決<rt>き</rt></ruby>めた<ruby>場所<rt>ばしょ</rt></ruby>に<ruby>並<rt>なら</rt></ruby>べて<ruby>置<rt>お</rt></ruby>くことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>移動<rt>いどう</rt></ruby>","<ruby>配置<rt>はいち</rt></ruby>","<ruby>整理<rt>せいり</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>学校<rt>がっこう</rt></ruby>の<ruby>日<rt>ひ</rt></ruby>に、<ruby>病気<rt>びょうき</rt></ruby>などの<ruby>理由<rt>りゆう</rt></ruby>でお<ruby>休<rt>やす</rt></ruby>みすることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>遅刻<rt>ちこく</rt></ruby>","<ruby>欠席<rt>けっせき</rt></ruby>","<ruby>早退<rt>そうたい</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>空<rt>そら</rt></ruby>にまん<ruby>丸<rt>まる</rt></ruby>の<ruby>月<rt>つき</rt></ruby>が<ruby>見<rt>み</rt></ruby>える<ruby>夜<rt>よる</rt></ruby>があります。この<ruby>形<rt>かたち</rt></ruby>の<ruby>月<rt>つき</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>三日月<rt>みかづき</rt></ruby>","<ruby>半月<rt>はんげつ</rt></ruby>","<ruby>満月<rt>まんげつ</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"<ruby>魚<rt>さかな</rt></ruby>や<ruby>肉<rt>にく</rt></ruby>、<ruby>野菜<rt>やさい</rt></ruby>などをバランスよく<ruby>食<rt>た</rt></ruby>べることで、<ruby>体<rt>からだ</rt></ruby>がじょうぶに<ruby>育<rt>そだ</rt></ruby>つもとになるものはどれでしょう。","choices":["<ruby>成分<rt>せいぶん</rt></ruby>","<ruby>栄養<rt>えいよう</rt></ruby>","<ruby>味覚<rt>みかく</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>小学校<rt>しょうがっこう</rt></ruby>で６<ruby>年間<rt>ねんかん</rt></ruby>の<ruby>学<rt>まな</rt></ruby>びを<ruby>終<rt>お</rt></ruby>え、<ruby>次<rt>つぎ</rt></ruby>の<ruby>学校<rt>がっこう</rt></ruby>へ<ruby>進<rt>すす</rt></ruby>むときのしきりを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>入学<rt>にゅうがく</rt></ruby>","<ruby>卒業<rt>そつぎょう</rt></ruby>","<ruby>進級<rt>しんきゅう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>算数<rt>さんすう</rt></ruby>で<ruby>面積<rt>めんせき</rt></ruby>を「<ruby>平方<rt>へいほう</rt></ruby>センチメートル」のように<ruby>表<rt>あらわ</rt></ruby>すときに<ruby>使<rt>つか</rt></ruby>う、はかるもとになる<ruby>決まり<rt>きまり</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>基準<rt>きじゅん</rt></ruby>","<ruby>単位<rt>たんい</rt></ruby>","<ruby>計算<rt>けいさん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>話<rt>はな</rt></ruby>し<ruby>合<rt>あ</rt></ruby>いや<ruby>調<rt>しら</rt></ruby>べ<ruby>学習<rt>がくしゅう</rt></ruby>の<ruby>最後<rt>さいご</rt></ruby>に、「こう<ruby>考<rt>かんが</rt></ruby>えた」とまとめた<ruby>答<rt>こた</rt></ruby>えの<ruby>部分<rt>ぶぶん</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>例<rt>れい</rt></ruby>","<ruby>結論<rt>けつろん</rt></ruby>","<ruby>途中<rt>とちゅう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>実験<rt>じっけん</rt></ruby>やテストをしたあとで<ruby>分<rt>わ</rt></ruby>かった、<ruby>起<rt>お</rt></ruby>きたことや<ruby>出<rt>で</rt></ruby>た<ruby>数値<rt>すうち</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>予想<rt>よそう</rt></ruby>","<ruby>結果<rt>けっか</rt></ruby>","<ruby>理由<rt>りゆう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>海<rt>うみ</rt></ruby>や<ruby>川<rt>かわ</rt></ruby>で<ruby>魚<rt>さかな</rt></ruby>や<ruby>貝<rt>かい</rt></ruby>などをとって、<ruby>人々<rt>ひとびと</rt></ruby>のくらしに<ruby>役立<rt>やくだ</rt></ruby>てる<ruby>仕事<rt>しごと</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>農業<rt>のうぎょう</rt></ruby>","<ruby>漁業<rt>ぎょぎょう</rt></ruby>","<ruby>工業<rt>こうぎょう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>海<rt>うみ</rt></ruby>に<ruby>出<rt>で</rt></ruby>て<ruby>魚<rt>さかな</rt></ruby>をとる<ruby>仕事<rt>しごと</rt></ruby>をしている<ruby>人<rt>ひと</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>漁師<rt>りょうし</rt></ruby>","<ruby>料理人<rt>りょうりにん</rt></ruby>","<ruby>商人<rt>しょうにん</rt></ruby>"],"correctIndex":0},{"set":"G4①","text":"まん<ruby>丸<rt>まる</rt></ruby>な<ruby>図形<rt>ずけい</rt></ruby>の<ruby>中心<rt>ちゅうしん</rt></ruby>から、ふちまでの<ruby>長さ<rt>ながさ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>直径<rt>ちょっけい</rt></ruby>","<ruby>半径<rt>はんけい</rt></ruby>","<ruby>円周<rt>えんしゅう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"クラスや<ruby>委員会<rt>いいんかい</rt></ruby>で、<ruby>会長<rt>かいちょう</rt></ruby>がいないときに<ruby>代<rt>か</rt></ruby>わりの<ruby>役目<rt>やくめ</rt></ruby>をする<ruby>人<rt>ひと</rt></ruby>の<ruby>立場<rt>たちば</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>書記<rt>しょき</rt></ruby>","<ruby>副会長<rt>ふくかいちょう</rt></ruby>","<ruby>係長<rt>かかりちょう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>昔<rt>むかし</rt></ruby>の<ruby>日本<rt>にほん</rt></ruby>で、<ruby>大名<rt>だいみょう</rt></ruby>につかえて<ruby>仕事<rt>しごと</rt></ruby>をしていた<ruby>人<rt>ひと</rt></ruby>たちを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>農民<rt>のうみん</rt></ruby>","<ruby>家臣<rt>かしん</rt></ruby>","<ruby>商人<rt>しょうにん</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"<ruby>国<rt>くに</rt></ruby>の<ruby>政治<rt>せいじ</rt></ruby>で、<ruby>各分野<rt>かくぶんや</rt></ruby>（<ruby>教育<rt>きょういく</rt></ruby>・お<ruby>金<rt>かね</rt></ruby>・<ruby>防<rt>ぼう</rt></ruby>えいなど）をまとめる<ruby>責任者<rt>せきにんしゃ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>市長<rt>しちょう</rt></ruby>","<ruby>大臣<rt>だいじん</rt></ruby>","<ruby>校長<rt>こうちょう</rt></ruby>"],"correctIndex":1},{"set":"G4①","text":"６<ruby>月<rt>がつ</rt></ruby>ごろ、<ruby>日本<rt>にほん</rt></ruby>の<ruby>上空<rt>じょうくう</rt></ruby>に<ruby>長<rt>なが</rt></ruby>くのびて<ruby>雨<rt>あめ</rt></ruby>を<ruby>多<rt>おお</rt></ruby>くふらせる<ruby>気<rt>き</rt></ruby>しょうの<ruby>境目<rt>さかいめ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>温暖前線<rt>おんだんぜんせん</rt></ruby>","<ruby>寒冷前線<rt>かんれいぜんせん</rt></ruby>","<ruby>梅雨前線<rt>つゆぜんせん</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"スイッチを<ruby>入れ<rt>い</rt></ruby>るとパッと<ruby>明<rt>あか</rt></ruby>るくなり、<ruby>学校<rt>がっこう</rt></ruby>や<ruby>家<rt>いえ</rt></ruby>の<ruby>天井<rt>てんじょう</rt></ruby>についている<ruby>細長<rt>ほそなが</rt></ruby>いあかりを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>ろうそく<rt></rt></ruby>","<ruby>電球<rt>でんきゅう</rt></ruby>","<ruby>蛍光灯<rt>けいこうとう</rt></ruby>"],"correctIndex":2},{"set":"G4①","text":"トラックや<ruby>船<rt>ふね</rt></ruby>、<ruby>飛行機<rt>ひこうき</rt></ruby>などで<ruby>運<rt>はこ</rt></ruby>ばれる、<ruby>商品<rt>しょうひん</rt></ruby>や<ruby>荷物<rt>にもつ</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>乗客<rt>じょうきゃく</rt></ruby>","<ruby>貨物<rt>かもつ</rt></ruby>","<ruby>手紙<rt>てがみ</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>色<rt>いろ</rt></ruby>が<ruby>変<rt>か</rt></ruby>わったり、<ruby>形<rt>かたち</rt></ruby>が<ruby>変<rt>か</rt></ruby>わったりするように、<ruby>前<rt>まえ</rt></ruby>とちがうようすになることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>停止<rt>ていし</rt></ruby>","<ruby>変化<rt>へんか</rt></ruby>","<ruby>継続<rt>けいぞく</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>同<rt>おな</rt></ruby>じ<ruby>仲間<rt>なかま</rt></ruby>でも、<ruby>形<rt>かたち</rt></ruby>やはたらきのちがうものに<ruby>分<rt>わ</rt></ruby>けられるとき、その<ruby>分<rt>わ</rt></ruby>け<ruby>方<rt>かた</rt></ruby>を<ruby>表<rt>あらわ</rt></ruby>すことばはどれでしょう。","choices":["<ruby>差別<rt>さべつ</rt></ruby>","<ruby>種類<rt>しゅるい</rt></ruby>","<ruby>数<rt>かず</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>雨<rt>あめ</rt></ruby>の<ruby>日<rt>ひ</rt></ruby>が三<ruby>日<rt>にち</rt></ruby>つづくように、<ruby>同<rt>おな</rt></ruby>じことが<ruby>切<rt>き</rt></ruby>れずにつながって<ruby>起<rt>お</rt></ruby>こるようすを<ruby>表<rt>あらわ</rt></ruby>すことばはどれでしょう。","choices":["<ruby>途中<rt>とちゅう</rt></ruby>","<ruby>連続<rt>れんぞく</rt></ruby>","<ruby>別々<rt>べつべつ</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>交差点<rt>こうさてん</rt></ruby>で、まっすぐ<ruby>進<rt>すす</rt></ruby>まずに、<ruby>車<rt>くるま</rt></ruby>がみぎのほうへ<ruby>曲<rt>ま</rt></ruby>がる<ruby>動<rt>うご</rt></ruby>きを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>左折<rt>させつ</rt></ruby>","<ruby>右折<rt>うせつ</rt></ruby>","<ruby>停止<rt>ていし</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>ノート<rt></rt></ruby>の<ruby>表紙<rt>ひょうし</rt></ruby>の<ruby>広<rt>ひろ</rt></ruby>さや、<ruby>校庭<rt>こうてい</rt></ruby>の<ruby>広<rt>ひろ</rt></ruby>さのように、「どれくらいの<ruby>広<rt>ひろ</rt></ruby>さか」を<ruby>表<rt>あらわ</rt></ruby>すときに<ruby>使<rt>つか</rt></ruby>うことばはどれでしょう。","choices":["<ruby>長さ<rt>ながさ</rt></ruby>","<ruby>面積<rt>めんせき</rt></ruby>","<ruby>高さ<rt>たかさ</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"おちゃわんによそって<ruby>食<rt>た</rt></ruby>べる、<ruby>炊<rt>た</rt></ruby>いたお<ruby>米<rt>こめ</rt></ruby>のことをふだん<ruby>何<rt>なん</rt></ruby>と<ruby>呼<rt>よ</rt></ruby>ぶでしょう。","choices":["<ruby>パン<rt></rt></ruby>","<ruby>めん<rt></rt></ruby>","<ruby>ご飯<rt>ごはん</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"<ruby>成績<rt>せいせき</rt></ruby>や<ruby>等級<rt>とうきゅう</rt></ruby>を<ruby>上<rt>じょう</rt></ruby>・<ruby>中<rt>ちゅう</rt></ruby>・<ruby>下<rt>げ</rt></ruby>の三<ruby>段階<rt>だんかい</rt></ruby>で<ruby>表<rt>あらわ</rt></ruby>すときに<ruby>使<rt>つか</rt></ruby>われる、たとえの<ruby>言<rt>い</rt></ruby>い<ruby>方<rt>かた</rt></ruby>はどれでしょう。","choices":["<ruby>腹痛<rt>ふくつう</rt></ruby>","<ruby>下車<rt>げしゃ</rt></ruby>","<ruby>松竹梅<rt>しょうちくばい</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"これから<ruby>何<rt>なに</rt></ruby>が<ruby>起<rt>お</rt></ruby>こるか<ruby>分<rt>わ</rt></ruby>からず、<ruby>心<rt>こころ</rt></ruby>がそわそわしておちつかない<ruby>気持<rt>きも</rt></ruby>ちを<ruby>表<rt>あらわ</rt></ruby>すことばはどれでしょう。","choices":["<ruby>安心<rt>あんしん</rt></ruby>","<ruby>不安<rt>ふあん</rt></ruby>","<ruby>希望<rt>きぼう</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>はさみ<rt></rt></ruby>やお<ruby>はし<rt></rt></ruby>を<ruby>使<rt>つか</rt></ruby>うのがあまりうまくなく、<ruby>動<rt>うご</rt></ruby>きがぎこちないようすを<ruby>表<rt>あらわ</rt></ruby>すことばはどれでしょう。","choices":["<ruby>上手<rt>じょうず</rt></ruby>","<ruby>不器用<rt>ぶきよう</rt></ruby>","<ruby>丁寧<rt>ていねい</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>市<rt>し</rt></ruby>や<ruby>国<rt>くに</rt></ruby>の<ruby>大切<rt>たいせつ</rt></ruby>なことを、<ruby>選<rt>えら</rt></ruby>ばれた<ruby>人<rt>ひと</rt></ruby>たちが<ruby>集<rt>あつ</rt></ruby>まって<ruby>話<rt>はな</rt></ruby>し<ruby>合<rt>あ</rt></ruby>う<ruby>場所<rt>ばしょ</rt></ruby>や<ruby>組織<rt>そしき</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>裁判所<rt>さいばんしょ</rt></ruby>","<ruby>議会<rt>ぎかい</rt></ruby>","<ruby>学級会<rt>がっきゅうかい</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>人<rt>ひと</rt></ruby>を<ruby>能力<rt>のうりょく</rt></ruby>や<ruby>生ま<rt>う</rt></ruby>れなどで<ruby>不公平<rt>ふこうへい</rt></ruby>に<ruby>分<rt>わ</rt></ruby>けて、ひどいあつかいをすることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>尊重<rt>そんちょう</rt></ruby>","<ruby>差別<rt>さべつ</rt></ruby>","<ruby>協力<rt>きょうりょく</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"がんばったのにうまくいかず、「くやしいな」と<ruby>思<rt>おも</rt></ruby>うときの<ruby>気持<rt>きも</rt></ruby>ちを<ruby>表<rt>あらわ</rt></ruby>すことばはどれでしょう。","choices":["<ruby>事件<rt>じけん</rt></ruby>","<ruby>残念<rt>ざんねん</rt></ruby>","<ruby>悲劇<rt>ひげき</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>友<rt>とも</rt></ruby>だちに<ruby>時間<rt>じかん</rt></ruby>や<ruby>場所<rt>ばしょ</rt></ruby>を<ruby>知<rt>し</rt></ruby>らせるために、<ruby>電話<rt>でんわ</rt></ruby>やメッセージで<ruby>伝<rt>つた</rt></ruby>えることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>相談<rt>そうだん</rt></ruby>","<ruby>連絡<rt>れんらく</rt></ruby>","<ruby>依頼<rt>いらい</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>山<rt>やま</rt></ruby>や<ruby>川<rt>かわ</rt></ruby>、<ruby>町<rt>まち</rt></ruby>のようすなど、<ruby>目<rt>め</rt></ruby>にうつるまわりのようす<ruby>全体<rt>ぜんたい</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>建物<rt>たてもの</rt></ruby>","<ruby>風景<rt>ふうけい</rt></ruby>","<ruby>気候<rt>きこう</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"１２<ruby>月<rt>がつ</rt></ruby>の<ruby>終<rt>お</rt></ruby>わりごろで、<ruby>一年<rt>いちねん</rt></ruby>のしめくくりの<ruby>時期<rt>じき</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>年始<rt>ねんし</rt></ruby>","<ruby>年末<rt>ねんまつ</rt></ruby>","<ruby>元旦<rt>がんたん</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>発表会<rt>はっぴょうかい</rt></ruby>やしきのはじめとおわりを<ruby>進<rt>すす</rt></ruby>め、つぎの<ruby>人<rt>ひと</rt></ruby>をしょうかいする<ruby>役目<rt>やくめ</rt></ruby>の<ruby>人<rt>ひと</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>出演者<rt>しゅつえんしゃ</rt></ruby>","<ruby>司会者<rt>しかいしゃ</rt></ruby>","<ruby>観客<rt>かんきゃく</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>走<rt>はし</rt></ruby>るタイムや<ruby>試合<rt>しあい</rt></ruby>の<ruby>点数<rt>てんすう</rt></ruby>などを、あとからわかるように<ruby>書<rt>か</rt></ruby>きのこしたものを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>予想<rt>よそう</rt></ruby>","<ruby>記録<rt>きろく</rt></ruby>","<ruby>計画<rt>けいかく</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>集会<rt>しゅうかい</rt></ruby>や<ruby>行事<rt>ぎょうじ</rt></ruby>に、<ruby>自分<rt>じぶん</rt></ruby>も<ruby>加<rt>くわ</rt></ruby>わっていっしょにおこなうことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>見学<rt>けんがく</rt></ruby>","<ruby>参加<rt>さんか</rt></ruby>","<ruby>欠席<rt>けっせき</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>クラブ<rt></rt></ruby>や<ruby>保険<rt>ほけん</rt></ruby>などに、<ruby>新<rt>あたら</rt></ruby>しく<ruby>入<rt>はい</rt></ruby>ることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>退会<rt>たいかい</rt></ruby>","<ruby>加入<rt>かにゅう</rt></ruby>","<ruby>解散<rt>かいさん</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>クラス<rt></rt></ruby>代表や<ruby>市長<rt>しちょう</rt></ruby>などを、かみに<ruby>名前<rt>なまえ</rt></ruby>を<ruby>書<rt>か</rt></ruby>いてみんなでえらぶ<ruby>方法<rt>ほうほう</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>抽選<rt>ちゅうせん</rt></ruby>","<ruby>選挙<rt>せんきょ</rt></ruby>","<ruby>順番<rt>じゅんばん</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>運動会<rt>うんどうかい</rt></ruby>のリレーで、<ruby>友<rt>とも</rt></ruby>だちと<ruby>力<rt>ちから</rt></ruby>をあわせてバトンをつなぐようなかかわり<ruby>方<rt>かた</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>競争<rt>きょうそう</rt></ruby>","<ruby>協力<rt>きょうりょく</rt></ruby>","<ruby>命令<rt>めいれい</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>中学校<rt>ちゅうがっこう</rt></ruby>や<ruby>高校<rt>こうこう</rt></ruby>に<ruby>入<rt>はい</rt></ruby>る<ruby>前<rt>まえ</rt></ruby>に、その<ruby>学校<rt>がっこう</rt></ruby>に<ruby>入<rt>はい</rt></ruby>れるかどうかを<ruby>決<rt>き</rt></ruby>めるために<ruby>受<rt>う</rt></ruby>けるテストを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>実力<rt>じつりょく</rt></ruby>テスト","<ruby>入学試験<rt>にゅうがくしけん</rt></ruby>","<ruby>学力調査<rt>がくりょくちょうさ</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>地球<rt>ちきゅう</rt></ruby>のいちばん<ruby>北<rt>きた</rt></ruby>にちかいところで、<ruby>海<rt>うみ</rt></ruby>がこおり、しろくかがやく<ruby>世界<rt>せかい</rt></ruby>がひろがるちいきをどれというでしょう。","choices":["<ruby>赤道<rt>せきどう</rt></ruby>","<ruby>北極<rt>ほっきょく</rt></ruby>","<ruby>砂漠<rt>さばく</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"たくさんの<ruby>人<rt>ひと</rt></ruby>にしられてはいけないので、ごく一<ruby>部<rt>ぶ</rt></ruby>の<ruby>人<rt>ひと</rt></ruby>だけにしか<ruby>教<rt>おし</rt></ruby>えないようにする<ruby>情報<rt>じょうほう</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>公開<rt>こうかい</rt></ruby>","<ruby>極秘<rt>ごくひ</rt></ruby>","<ruby>速報<rt>そくほう</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>絵<rt>え</rt></ruby>や<ruby>音楽<rt>おんがく</rt></ruby>、<ruby>彫刻<rt>ちょうこく</rt></ruby>など、<ruby>人<rt>ひと</rt></ruby>の<ruby>心<rt>こころ</rt></ruby>を<ruby>動<rt>うご</rt></ruby>かすさくひんをうみだす<ruby>活動<rt>かつどう</rt></ruby>や<ruby>分野<rt>ぶんや</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>科学<rt>かがく</rt></ruby>","<ruby>芸術<rt>げいじゅつ</rt></ruby>","<ruby>技術<rt>ぎじゅつ</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>体力<rt>たいりょく</rt></ruby>や<ruby>時間<rt>じかん</rt></ruby>が<ruby>足<rt>た</rt></ruby>りなくて、「どうやってもできそうにない」と<ruby>判断<rt>はんだん</rt></ruby>するときに<ruby>使<rt>つか</rt></ruby>うことばはどれでしょう。","choices":["<ruby>可能<rt>かのう</rt></ruby>","<ruby>無理<rt>むり</rt></ruby>","<ruby>余裕<rt>よゆう</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>事故<rt>じこ</rt></ruby>やけがもなく、<ruby>何<rt>なに</rt></ruby>ごともなくおわったようすを<ruby>表<rt>あらわ</rt></ruby>すことばはどれでしょう。","choices":["<ruby>危険<rt>きけん</rt></ruby>","<ruby>無事<rt>ぶじ</rt></ruby>","<ruby>不安<rt>ふあん</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>気持<rt>きも</rt></ruby>ちをこめず、<ruby>決<rt>き</rt></ruby>められたとおりにおなじ<ruby>動<rt>うご</rt></ruby>きをくりかえすようなやり<ruby>方<rt>かた</rt></ruby>を<ruby>表<rt>あらわ</rt></ruby>すことばはどれでしょう。","choices":["<ruby>自由<rt>じゆう</rt></ruby>","<ruby>機械的<rt>きかいてき</rt></ruby>","<ruby>創造的<rt>そうぞうてき</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"「それから<ruby>上<rt>うえ</rt></ruby>」を<ruby>意味<rt>いみ</rt></ruby>することばはどれでしょう。","choices":["<ruby>未満<rt>みまん</rt></ruby>","<ruby>途中<rt>とちゅう</rt></ruby>","<ruby>以上<rt>いじょう</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"<ruby>昔<rt>むかし</rt></ruby>の<ruby>道具<rt>どうぐ</rt></ruby>や<ruby>動物<rt>どうぶつ</rt></ruby>のひょうほん、<ruby>歴史<rt>れきし</rt></ruby>のしりょうなどを<ruby>集<rt>あつ</rt></ruby>めて、<ruby>見<rt>み</rt></ruby>たり<ruby>学<rt>まな</rt></ruby>んだりできる<ruby>建物<rt>たてもの</rt></ruby>はどれでしょう。","choices":["<ruby>図書館<rt>としょかん</rt></ruby>","<ruby>博物館<rt>はくぶつかん</rt></ruby>","<ruby>体育館<rt>たいいくかん</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>家<rt>いえ</rt></ruby>の<ruby>中<rt>なか</rt></ruby>に<ruby>水<rt>みず</rt></ruby>を<ruby>運<rt>はこ</rt></ruby>ぶために、<ruby>地下<rt>ちか</rt></ruby>やかべの<ruby>中<rt>なか</rt></ruby>をとおっている<ruby>管<rt>かん</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>電線<rt>でんせん</rt></ruby>","<ruby>水道管<rt>すいどうかん</rt></ruby>","<ruby>排水口<rt>はいすいこう</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"すくないてまで、すぐに<ruby>使<rt>つか</rt></ruby>えたり、<ruby>役<rt>やく</rt></ruby>にたったりするようすを<ruby>表<rt>あらわ</rt></ruby>すことばはどれでしょう。","choices":["<ruby>不便<rt>ふべん</rt></ruby>","<ruby>便利<rt>べんり</rt></ruby>","<ruby>複雑<rt>ふくざつ</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>手紙<rt>てがみ</rt></ruby>や<ruby>荷物<rt>にもつ</rt></ruby>を、とおくの<ruby>人<rt>ひと</rt></ruby>にとどけるしくみや<ruby>仕事<rt>しごと</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>配給<rt>はいきゅう</rt></ruby>","<ruby>郵便<rt>ゆうびん</rt></ruby>","<ruby>販売<rt>はんばい</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>自分<rt>じぶん</rt></ruby>たちのあとに<ruby>生<rt>う</rt></ruby>まれてくる、<ruby>子<rt>こ</rt></ruby>どもやそのまた<ruby>子<rt>こ</rt></ruby>どもたちをまとめて<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>先祖<rt>せんぞ</rt></ruby>","<ruby>子孫<rt>しそん</rt></ruby>","<ruby>親族<rt>しんぞく</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>ジュース<rt></rt></ruby>の<ruby>量<rt>りょう</rt></ruby>を「いまだけおおめ」にするように、もとの<ruby>量<rt>りょう</rt></ruby>よりふやすことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>減少<rt>げんしょう</rt></ruby>","<ruby>増量<rt>ぞうりょう</rt></ruby>","<ruby>固定<rt>こてい</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>図書室<rt>としょしつ</rt></ruby>の<ruby>本<rt>ほん</rt></ruby>を、しばらく<ruby>自分<rt>じぶん</rt></ruby>のところにおいて<ruby>使<rt>つか</rt></ruby>い、あとで<ruby>返<rt>かえ</rt></ruby>すことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>寄付<rt>きふ</rt></ruby>する","<ruby>借用<rt>しゃくよう</rt></ruby>する","<ruby>保存<rt>ほぞん</rt></ruby>する"],"correctIndex":1},{"set":"G4②","text":"<ruby>海<rt>うみ</rt></ruby>のいちばんしたで、<ruby>魚<rt>さかな</rt></ruby>や<ruby>貝<rt>かい</rt></ruby>がすんでいるところを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>海面<rt>かいめん</rt></ruby>","<ruby>海底<rt>かいてい</rt></ruby>","<ruby>海岸<rt>かいがん</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>ごみ<rt></rt></ruby>をもやしてしょりするためにつくられた<ruby>施設<rt>しせつ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>倉庫<rt>そうこ</rt></ruby>","<ruby>工場<rt>こうじょう</rt></ruby>","<ruby>焼却場<rt>しょうきゃくじょう</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"<ruby>道具<rt>どうぐ</rt></ruby>や<ruby>施設<rt>しせつ</rt></ruby>を、<ruby>目的<rt>もくてき</rt></ruby>のために<ruby>使<rt>つか</rt></ruby>うことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>片付<rt>かたづ</rt></ruby>ける","<ruby>利用<rt>りよう</rt></ruby>する","<ruby>保存<rt>ほぞん</rt></ruby>する"],"correctIndex":1},{"set":"G4②","text":"あまりにもおかしくて、<ruby>声<rt>こえ</rt></ruby>を<ruby>出<rt>だ</rt></ruby>しておおきくわらってしまうようすを<ruby>表<rt>あらわ</rt></ruby>すことばはどれでしょう。","choices":["<ruby>微笑<rt>びしょう</rt></ruby>","<ruby>爆笑<rt>ばくしょう</rt></ruby>","<ruby>冷笑<rt>れいしょう</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>自分<rt>じぶん</rt></ruby>の<ruby>行動<rt>こうどう</rt></ruby>をおもいかえして、「つぎは<ruby>気<rt>き</rt></ruby>をつけよう」と<ruby>考<rt>かんが</rt></ruby>えることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>後悔<rt>こうかい</rt></ruby>","<ruby>反省<rt>はんせい</rt></ruby>","<ruby>言<rt>い</rt></ruby>い<ruby>訳<rt>わけ</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>作文<rt>さくぶん</rt></ruby>で、<ruby>意味<rt>いみ</rt></ruby>がつうじるので一<ruby>部<rt>ぶ</rt></ruby>をあえて<ruby>書<rt>か</rt></ruby>かずにみじかくすることがあります。このように<ruby>省<rt>はぶ</rt></ruby>いて<ruby>表<rt>あらわ</rt></ruby>すことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>省略<rt>しょうりゃく</rt></ruby>","<ruby>追加<rt>ついか</rt></ruby>","<ruby>詳細<rt>しょうさい</rt></ruby>"],"correctIndex":0},{"set":"G4②","text":"<ruby>楽し<rt>たの</rt></ruby>しみにしていた<ruby>遠足<rt>えんそく</rt></ruby>が<ruby>雨<rt>あめ</rt></ruby>で<ruby>中止<rt>ちゅうし</rt></ruby>になり、「ああ、くやしいな」と<ruby>思<rt>おも</rt></ruby>ったときの<ruby>気持<rt>きも</rt></ruby>ちを<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>安心<rt>あんしん</rt></ruby>","<ruby>満足<rt>まんぞく</rt></ruby>","<ruby>残念<rt>ざんねん</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"<ruby>自分<rt>じぶん</rt></ruby>のまわりにある<ruby>人<rt>ひと</rt></ruby>や<ruby>物<rt>もの</rt></ruby>、<ruby>景色<rt>けしき</rt></ruby>などをまとめて<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>正面<rt>しょうめん</rt></ruby>","<ruby>内側<rt>うちがわ</rt></ruby>","<ruby>周囲<rt>しゅうい</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"その<ruby>日<rt>ひ</rt></ruby>の<ruby>授業<rt>じゅぎょう</rt></ruby>がすべて<ruby>終<rt>お</rt></ruby>わったあとに、<ruby>家<rt>いえ</rt></ruby>に<ruby>帰<rt>かえ</rt></ruby>ったり<ruby>遊<rt>あそ</rt></ruby>んだりする<ruby>時間帯<rt>じかんたい</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>放課後<rt>ほうかご</rt></ruby>","<ruby>朝練<rt>あされん</rt></ruby>","<ruby>昼休<rt>ひるやす</rt></ruby>み"],"correctIndex":0},{"set":"G4②","text":"<ruby>高<rt>たか</rt></ruby>い<ruby>山<rt>やま</rt></ruby>や<ruby>広<rt>ひろ</rt></ruby>い<ruby>海<rt>うみ</rt></ruby>、<ruby>深<rt>ふか</rt></ruby>い<ruby>森<rt>もり</rt></ruby>など、<ruby>人<rt>ひと</rt></ruby>の<ruby>手<rt>て</rt></ruby>があまり<ruby>加<rt>くわ</rt></ruby>わっていない<ruby>大<rt>おお</rt></ruby>きな<ruby>自然<rt>しぜん</rt></ruby>をまとめて<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>公園<rt>こうえん</rt></ruby>","<ruby>大自然<rt>だいしぜん</rt></ruby>","<ruby>庭園<rt>ていえん</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>人<rt>ひと</rt></ruby>が<ruby>作<rt>つく</rt></ruby>ったものではなく、もともと<ruby>自然<rt>しぜん</rt></ruby>の<ruby>中<rt>なか</rt></ruby>にあるものを<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>合成<rt>ごうせい</rt></ruby>","<ruby>加工<rt>かこう</rt></ruby>","<ruby>天然<rt>てんねん</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"おふろやシャワーに<ruby>入<rt>はい</rt></ruby>って、<ruby>体<rt>からだ</rt></ruby>を<ruby>洗<rt>あら</rt></ruby>いあたためることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>昼寝<rt>ひるね</rt></ruby>","<ruby>入浴<rt>にゅうよく</rt></ruby>","<ruby>着替<rt>きが</rt></ruby>え"],"correctIndex":1},{"set":"G4②","text":"まいた<ruby>種<rt>たね</rt></ruby>から、<ruby>小<rt>ちい</rt></ruby>さな<ruby>芽<rt>め</rt></ruby>が<ruby>出<rt>で</rt></ruby>てくることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>成長<rt>せいちょう</rt></ruby>","<ruby>開花<rt>かいか</rt></ruby>","<ruby>発芽<rt>はつが</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"いままでのやり<ruby>方<rt>かた</rt></ruby>を<ruby>大<rt>おお</rt></ruby>きく<ruby>見直<rt>みなお</rt></ruby>して、よりよく<ruby>変<rt>か</rt></ruby>えていくことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>継続<rt>けいぞく</rt></ruby>","<ruby>改革<rt>かいかく</rt></ruby>","<ruby>保管<rt>ほかん</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"「こうなりたい」「これができたらいいな」と、<ruby>心<rt>こころ</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で<ruby>強<rt>つよ</rt></ruby>く<ruby>思<rt>おも</rt></ruby>いえがく<ruby>気持<rt>きも</rt></ruby>ちを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>不満<rt>ふまん</rt></ruby>","<ruby>心配<rt>しんぱい</rt></ruby>","<ruby>願望<rt>がんぼう</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"あいさつをしなかったり、<ruby>相手<rt>あいて</rt></ruby>を<ruby>大切<rt>たいせつ</rt></ruby>にしない<ruby>態度<rt>たいど</rt></ruby>をとったりすることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>親切<rt>しんせつ</rt></ruby>","<ruby>失礼<rt>しつれい</rt></ruby>","<ruby>尊重<rt>そんちょう</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>学校<rt>がっこう</rt></ruby>の<ruby>近<rt>ちか</rt></ruby>くの<ruby>道路<rt>どうろ</rt></ruby>や<ruby>店<rt>みせ</rt></ruby>など、その<ruby>場所<rt>ばしょ</rt></ruby>のまわりいったいをまとめて<ruby>表<rt>あらわ</rt></ruby>す<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>中心<rt>ちゅうしん</rt></ruby>","<ruby>周辺<rt>しゅうへん</rt></ruby>","<ruby>正面<rt>しょうめん</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>小学校<rt>しょうがっこう</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で、1<ruby>年生<rt>ねんせい</rt></ruby>や2<ruby>年生<rt>ねんせい</rt></ruby>のような<ruby>下<rt>した</rt></ruby>の<ruby>学年<rt>がくねん</rt></ruby>のまとまりを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>上級生<rt>じょうきゅうせい</rt></ruby>","<ruby>高学年<rt>こうがくねん</rt></ruby>","<ruby>低学年<rt>ていがくねん</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"<ruby>試合<rt>しあい</rt></ruby>や<ruby>勝負<rt>しょうぶ</rt></ruby>で<ruby>相手<rt>あいて</rt></ruby>に<ruby>負<rt>ま</rt></ruby>けてしまう<ruby>結果<rt>けっか</rt></ruby>になることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>勝利<rt>しょうり</rt></ruby>","<ruby>敗北<rt>はいぼく</rt></ruby>","<ruby>引分<rt>ひきわ</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>年<rt>とし</rt></ruby>をとり、<ruby>体<rt>からだ</rt></ruby>の<ruby>動<rt>うご</rt></ruby>きなどが<ruby>若<rt>わか</rt></ruby>いころとは<ruby>変<rt>か</rt></ruby>わってきたこうれいの<ruby>人<rt>ひと</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>成人<rt>せいじん</rt></ruby>","<ruby>幼児<rt>ようじ</rt></ruby>","<ruby>老人<rt>ろうじん</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"<ruby>選挙<rt>せんきょ</rt></ruby>で、えらびたい<ruby>人<rt>ひと</rt></ruby>の<ruby>名前<rt>なまえ</rt></ruby>を<ruby>書<rt>か</rt></ruby>いた<ruby>紙<rt>かみ</rt></ruby>を<ruby>箱<rt>はこ</rt></ruby>に<ruby>入<rt>い</rt></ruby>れる<ruby>行動<rt>こうどう</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>投票<rt>とうひょう</rt></ruby>する","<ruby>発言<rt>はつげん</rt></ruby>する","<ruby>記録<rt>きろく</rt></ruby>する"],"correctIndex":0},{"set":"G4②","text":"<ruby>日本<rt>にほん</rt></ruby>のような<ruby>島<rt>しま</rt></ruby>よりも、はるかに<ruby>広<rt>ひろ</rt></ruby>く、ひとつにつながった<ruby>大<rt>おお</rt></ruby>きな<ruby>陸地<rt>りくち</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>太平洋<rt>たいへいよう</rt></ruby>","<ruby>半島<rt>はんとう</rt></ruby>","<ruby>大陸<rt>たいりく</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"みんながそれぞれ<ruby>自分<rt>じぶん</rt></ruby>の<ruby>分<rt>ぶん</rt></ruby>を<ruby>用意<rt>ようい</rt></ruby>したり<ruby>行動<rt>こうどう</rt></ruby>したりするときに<ruby>使<rt>つか</rt></ruby>う<ruby>言葉<rt>ことば</rt></ruby>はどれでしょう。","choices":["<ruby>共同<rt>きょうどう</rt></ruby>","<ruby>各自<rt>かくじ</rt></ruby>","<ruby>全体<rt>ぜんたい</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>赤<rt>あか</rt></ruby>ちゃんがおかあさんの<ruby>体<rt>からだ</rt></ruby>から<ruby>生<rt>う</rt></ruby>まれてくるできごとを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>成長<rt>せいちょう</rt></ruby>","<ruby>出産<rt>しゅっさん</rt></ruby>","<ruby>育児<rt>いくじ</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>本<rt>ほん</rt></ruby>や<ruby>雑誌<rt>ざっし</rt></ruby>の<ruby>最後<rt>さいご</rt></ruby>についている、おまけのカードや<ruby>小<rt>ちい</rt></ruby>さな<ruby>冊子<rt>さっし</rt></ruby>のようなものを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>本文<rt>ほんぶん</rt></ruby>","<ruby>目次<rt>もくじ</rt></ruby>","<ruby>付録<rt>ふろく</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"ポスターを<ruby>動<rt>うご</rt></ruby>かないように、<ruby>同<rt>おな</rt></ruby>じ<ruby>場所<rt>ばしょ</rt></ruby>にしっかりととめておくことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>移動<rt>いどう</rt></ruby>","<ruby>固定<rt>こてい</rt></ruby>","<ruby>変形<rt>へんけい</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>料理<rt>りょうり</rt></ruby>にしょっぱさをつけるために<ruby>使<rt>つか</rt></ruby>う<ruby>白<rt>しろ</rt></ruby>い<ruby>調味料<rt>ちょうみりょう</rt></ruby>はどれでしょう。","choices":["<ruby>故障<rt>こしょう</rt></ruby>","<ruby>食塩<rt>しょくえん</rt></ruby>","<ruby>片栗粉<rt>かたくりこ</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>箱<rt>はこ</rt></ruby>の<ruby>正面<rt>しょうめん</rt></ruby>や<ruby>後<rt>うし</rt></ruby>ろではない、よこの<ruby>部分<rt>ぶぶん</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>底面<rt>ていめん</rt></ruby>","<ruby>上面<rt>じょうめん</rt></ruby>","<ruby>側面<rt>そくめん</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"うまくいかず、<ruby>時間<rt>じかん</rt></ruby>や<ruby>力<rt>ちから</rt></ruby>をたくさん<ruby>使<rt>つか</rt></ruby>って<ruby>大変<rt>たいへん</rt></ruby>な<ruby>思<rt>おも</rt></ruby>いをすることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>休養<rt>きゅうよう</rt></ruby>","<ruby>苦労<rt>くろう</rt></ruby>","<ruby>成功<rt>せいこう</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>マラソン<rt>まらそん</rt></ruby>でゴールを<ruby>目指<rt>めざ</rt></ruby>すように、「ここまでがんばろう」と<ruby>決<rt>き</rt></ruby>めるとうたつてんを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>目標<rt>もくひょう</rt></ruby>","<ruby>結果<rt>けっか</rt></ruby>","<ruby>途中<rt>とちゅう</rt></ruby>"],"correctIndex":0},{"set":"G4②","text":"<ruby>町<rt>まち</rt></ruby>で<ruby>事件<rt>じけん</rt></ruby>や<ruby>事故<rt>じこ</rt></ruby>が<ruby>起<rt>お</rt></ruby>きたときに、<ruby>人々<rt>ひとびと</rt></ruby>の<ruby>安全<rt>あんぜん</rt></ruby>を<ruby>守<rt>まも</rt></ruby>る<ruby>仕事<rt>しごと</rt></ruby>をしている<ruby>人<rt>ひと</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>消防士<rt>しょうぼうし</rt></ruby>","<ruby>警察官<rt>けいさつかん</rt></ruby>","<ruby>医師<rt>いし</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>市長<rt>しちょう</rt></ruby>や<ruby>委員<rt>いいん</rt></ruby>になるために、「<ruby>自分<rt>じぶん</rt></ruby>がなります」となのり<ruby>出<rt>で</rt></ruby>ることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>辞退<rt>じたい</rt></ruby>","<ruby>立候補<rt>りっこうほ</rt></ruby>","<ruby>任命<rt>にんめい</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>事件<rt>じけん</rt></ruby>の<ruby>調査<rt>ちょうさ</rt></ruby>をしたり、<ruby>交通<rt>こうつう</rt></ruby>の<ruby>安全<rt>あんぜん</rt></ruby>を<ruby>守<rt>まも</rt></ruby>ったりする<ruby>組織<rt>そしき</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>警察<rt>けいさつ</rt></ruby>","<ruby>市役所<rt>しやくしょ</rt></ruby>","<ruby>裁判所<rt>さいばんしょ</rt></ruby>"],"correctIndex":0},{"set":"G4②","text":"一<ruby>億円<rt>おくえん</rt></ruby>を一<ruby>万<rt>まん</rt></ruby>こあつめたほどの、とても<ruby>大<rt>おお</rt></ruby>きなおかねの<ruby>単位<rt>たんい</rt></ruby>はどれでしょう。","choices":["<ruby>千円<rt>せんえん</rt></ruby>","<ruby>一兆円<rt>いっちょうえん</rt></ruby>","<ruby>一万円<rt>いちまんえん</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"テレビなどで<ruby>聞<rt>き</rt></ruby>く、とても<ruby>大<rt>おお</rt></ruby>きなおかねの<ruby>額<rt>がく</rt></ruby>で、<ruby>宝<rt>たから</rt></ruby>くじの<ruby>当選金<rt>とうせんきん</rt></ruby>などによく<ruby>出<rt>で</rt></ruby>てくる<ruby>単位<rt>たんい</rt></ruby>はどれでしょう。","choices":["<ruby>一万円<rt>いちまんえん</rt></ruby>","<ruby>一億円<rt>いちおくえん</rt></ruby>","<ruby>千円<rt>せんえん</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>遠<rt>とお</rt></ruby>くにある<ruby>星<rt>ほし</rt></ruby>や<ruby>山<rt>やま</rt></ruby>などを<ruby>大<rt>おお</rt></ruby>きく<ruby>見<rt>み</rt></ruby>えるようにする<ruby>道具<rt>どうぐ</rt></ruby>はどれでしょう。","choices":["<ruby>虫眼鏡<rt>むしめがね</rt></ruby>","<ruby>老眼鏡<rt>ろうがんきょう</rt></ruby>","<ruby>望遠鏡<rt>ぼうえんきょう</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"<ruby>台風<rt>たいふう</rt></ruby>や<ruby>事故<rt>じこ</rt></ruby>で、<ruby>家<rt>いえ</rt></ruby>がこわれたり<ruby>人<rt>ひと</rt></ruby>がけがをしたりするような、うけたえいきょうを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>成果<rt>せいか</rt></ruby>","<ruby>被害<rt>ひがい</rt></ruby>","<ruby>利益<rt>りえき</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>国<rt>くに</rt></ruby>や<ruby>市<rt>し</rt></ruby>のことを<ruby>話<rt>はな</rt></ruby>し<ruby>合<rt>あ</rt></ruby>い、<ruby>決<rt>き</rt></ruby>まりを<ruby>作<rt>つく</rt></ruby>っていくはたらき<ruby>全体<rt>ぜんたい</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>教育<rt>きょういく</rt></ruby>","<ruby>経済<rt>けいざい</rt></ruby>","<ruby>政治<rt>せいじ</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"<ruby>けが<rt>けが</rt></ruby>や<ruby>病気<rt>びょうき</rt></ruby>をよくするために、<ruby>手当<rt>てあ</rt></ruby>てやくすりを<ruby>使<rt>つか</rt></ruby>うことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>観察<rt>かんさつ</rt></ruby>","<ruby>治療<rt>ちりょう</rt></ruby>","<ruby>予防<rt>よぼう</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"むずかしいことにあきらめず、くり<ruby>返<rt>かえ</rt></ruby>しがんばりつづけることを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>怠慢<rt>たいまん</rt></ruby>","<ruby>努力<rt>どりょく</rt></ruby>","<ruby>休止<rt>きゅうし</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"たくさんの<ruby>荷物<rt>にもつ</rt></ruby>や<ruby>商品<rt>しょうひん</rt></ruby>を、まとめて<ruby>保管<rt>ほかん</rt></ruby>しておく<ruby>大<rt>おお</rt></ruby>きな<ruby>建物<rt>たてもの</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>工場<rt>こうじょう</rt></ruby>","<ruby>店舗<rt>てんぽ</rt></ruby>","<ruby>倉庫<rt>そうこ</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"たくさんのかみのおかねが、ひとまとめに<ruby>束<rt>たば</rt></ruby>ねられている<ruby>状態<rt>じょうたい</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>小銭<rt>こぜに</rt></ruby>","<ruby>札束<rt>さつたば</rt></ruby>","<ruby>封筒<rt>ふうとう</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>計画<rt>けいかく</rt></ruby>していたことがうまくいかず、<ruby>失敗<rt>しっぱい</rt></ruby>してしまった<ruby>結果<rt>けっか</rt></ruby>のことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>成功<rt>せいこう</rt></ruby>","<ruby>不成功<rt>ふせいこう</rt></ruby>","<ruby>完成<rt>かんせい</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>皿<rt>さら</rt></ruby>やおわん、コップなど、<ruby>食事<rt>しょくじ</rt></ruby>のときに<ruby>使<rt>つか</rt></ruby>う<ruby>道具<rt>どうぐ</rt></ruby>をまとめて<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>食材<rt>しょくざい</rt></ruby>","<ruby>調味料<rt>ちょうみりょう</rt></ruby>","<ruby>食器<rt>しょっき</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"<ruby>日本語<rt>にほんご</rt></ruby>とはちがい、<ruby>外国<rt>がいこく</rt></ruby>で<ruby>広<rt>ひろ</rt></ruby>く<ruby>使<rt>つか</rt></ruby>われている「Hello」などのことばの<ruby>言語<rt>げんご</rt></ruby>はどれでしょう。","choices":["<ruby>中国語<rt>ちゅうごくご</rt></ruby>","<ruby>英語<rt>えいご</rt></ruby>","<ruby>国語<rt>こくご</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>牛<rt>うし</rt></ruby>や<ruby>馬<rt>うま</rt></ruby>などを、<ruby>広<rt>ひろ</rt></ruby>い<ruby>土地<rt>とち</rt></ruby>で<ruby>育<rt>そだ</rt></ruby>てている<ruby>場所<rt>ばしょ</rt></ruby>を<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>農園<rt>のうえん</rt></ruby>","<ruby>牧場<rt>ぼくじょう</rt></ruby>","<ruby>漁港<rt>ぎょこう</rt></ruby>"],"correctIndex":1},{"set":"G4②","text":"<ruby>食<rt>た</rt></ruby>べものをひやして、<ruby>長持<rt>ながも</rt></ruby>ちさせるために<ruby>家<rt>いえ</rt></ruby>で<ruby>使<rt>つか</rt></ruby>う<ruby>電気<rt>でんき</rt></ruby>の<ruby>機械<rt>きかい</rt></ruby>はどれでしょう。","choices":["<ruby>電子<rt>でんし</rt></ruby>レンジ","<ruby>洗濯機<rt>せんたくき</rt></ruby>","<ruby>冷蔵庫<rt>れいぞうこ</rt></ruby>"],"correctIndex":2},{"set":"G4②","text":"<ruby>クラス<rt>くらす</rt></ruby>のみんなで<ruby>声<rt>こえ</rt></ruby>をそろえておなじ<ruby>歌<rt>うた</rt></ruby>をうたうことを<ruby>何<rt>なん</rt></ruby>というでしょう。","choices":["<ruby>合唱<rt>がっしょう</rt></ruby>","<ruby>朗読<rt>ろうどく</rt></ruby>","<ruby>独唱<rt>どくしょう</rt></ruby>"],"correctIndex":0}];
+function uniq(arr){ return [...new Set(arr)]; }
+const AVAILABLE_GRADES = (function(){
+  const gs = uniq(QUIZ_DATA.map(r=>r.set)).filter(Boolean);
+  // 表示順を固定
+  const order = ["G3①","G3②","G4①","G4②"];
+  return order.filter(g=>gs.includes(g));
+})();
+function buildQuestionsForGrade(g){
+  let rows = QUIZ_DATA;
+  if(g) rows = rows.filter(r=>r.set === g);
+  return rows.map(r=>({
+    text: r.text,
+    choices: [r.choices[0], r.choices[1], r.choices[2]],
+    correctIndex: clampInt(r.correctIndex, 0, 2),
+  }));
+}
+
+let CURRENT_GRADE = (AVAILABLE_GRADES[0] || "G3①");
+let questions = buildQuestionsForGrade(CURRENT_GRADE);
+// ============================
+// Online Sync (Firebase RTDB)
+// - URL params: ?room=ROOM&me=1|2
+// - Fallback to offline on any init failure
+// ============================
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBtKWi2tXanWuDf_Du5C9tr5ZwOAfNBRIs",
+  authDomain: "goi-battle-g3.firebaseapp.com",
+  projectId: "goi-battle-g3",
+  storageBucket: "goi-battle-g3.firebasestorage.app",
+  messagingSenderId: "1052102588017",
+  appId: "1:1052102588017:web:e8a09649466f4504f08dd0",
+  measurementId: "G-Y7TQVZ2R2V"
+};
+
+const ONLINE = {
+  enabled: false,
+  room: "",
+  me: 0,
+  db: null,
+  refs: { room: null, state: null, meta: null },
+  lastRev: 0,
+  suppress: false,
+  // Firebase funcs (filled after init)
+  ref: null, onValue: null, get: null, set: null, update: null, serverTimestamp: null
+};
+
+// --- DOM ---
+const qTextEl = document.getElementById("questionText");
+const qHintEl = document.getElementById("questionHint");
+const choicesEl = document.getElementById("choicesContainer");
+const feedbackEl = document.getElementById("feedback");
+const qNumberEl = document.getElementById("qNumber");
+const qTotalEl = document.getElementById("qTotal");
+const progressFillEl = document.getElementById("progressFill");
+const scoreTextEl = document.getElementById("scoreText");
+const nextBtn = document.getElementById("nextBtn");
+const resultArea = document.getElementById("resultArea");
+const rouletteWheelEl = document.getElementById("rouletteWheel");
+const gimmickLabelEl = document.querySelector(".roulette-label");
+const cardContainerEl = document.getElementById("cardContainer");
+
+const roomInput = document.getElementById("roomInput");
+const makeRoomUrlBtn = document.getElementById("makeRoomUrlBtn");
+const urlP1 = document.getElementById("urlP1");
+const urlP2 = document.getElementById("urlP2");
+const onlineStatus = document.getElementById("onlineStatus");
+
+const mePlayerEl = document.getElementById("mePlayer");
+const turnPlayerEl = document.getElementById("turnPlayer");
+const badgeP1El = document.getElementById("badgeP1");
+const badgeP2El = document.getElementById("badgeP2");
+const startBtn = document.getElementById("startBtn");
+const resetBtn = document.getElementById("resetBtn");
+const gradeSelect = document.getElementById("gradeSelect");
+
+
+// --- helpers ---
+
+// --- turn beep ---
+let prevTurnPlayer = null;
+let audioCtx = null;
+function playTurnBeep(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.12, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0);
+    o.stop(t0 + 0.2);
+  }catch(e){}
+}
+
+function clampInt(n, min, max){
+  const x = Number(n);
+  if(!Number.isFinite(x)) return min;
+  return Math.max(min, Math.min(max, Math.trunc(x)));
+}
+function shuffle(array){
+  const arr = array.slice();
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+function nowRev(){ return Date.now(); }
+
+function parseParams(){
+  const sp = new URLSearchParams(location.search);
+  const room = (sp.get("room") || "").trim();
+  const me = clampInt(sp.get("me"), 0, 2);
+  return { room, me };
+}
+function setOnlineStatusText(text){ if(onlineStatus) onlineStatus.textContent = text; }
+function buildUrls(room){
+  const base = location.origin + location.pathname;
+  const r = encodeURIComponent(room);
+  return {
+    p1: `${base}?room=${r}&me=1`,
+    p2: `${base}?room=${r}&me=2`
+  };
+}
+
+if(makeRoomUrlBtn){
+  makeRoomUrlBtn.addEventListener("click", ()=>{
+    const room = (roomInput?.value || "").trim();
+    if(!room) return;
+    const u = buildUrls(room);
+    if(urlP1) urlP1.value = u.p1;
+    if(urlP2) urlP2.value = u.p2;
+  });
+}
+
+
+
+// --- 学年セレクト初期化 ---
+function initGradeSelect(){
+  if(!gradeSelect) return;
+  gradeSelect.innerHTML = "";
+  AVAILABLE_GRADES.forEach(g=>{
+    const opt = document.createElement("option");
+    opt.value = g;
+    opt.textContent = g;
+    gradeSelect.appendChild(opt);
+  });
+  gradeSelect.value = CURRENT_GRADE;
+
+  gradeSelect.addEventListener("change", ()=>{
+    const g = (gradeSelect.value || (AVAILABLE_GRADES[0] || "G3①"));
+    if(ONLINE.enabled && ONLINE.me !== 1){
+      // P2は変更不可（ズレ防止）
+      gradeSelect.value = CURRENT_GRADE;
+      return;
+    }
+    setGradeAndReset(g, true);
+  });
+}
+initGradeSelect();
+
+function setGradeLocal(g){
+  const ng = (AVAILABLE_GRADES.includes(g) ? g : (AVAILABLE_GRADES[0] || "G3①"));
+  CURRENT_GRADE = ng;
+  questions = buildQuestionsForGrade(CURRENT_GRADE);
+  if(gradeSelect) gradeSelect.value = CURRENT_GRADE;
+}
+
+async function setGradeAndReset(g, sync){
+  setGradeLocal(g);
+  // ★学年変更＝クイズ全体リセット（番号・得点・順番がズレないように）
+  if(sync){
+    await applyAndSync(()=> {
+      const ns = defaultState();
+      ns.started = true;
+      ns.turnPlayer = 1;
+      return ns;
+    }, "reset");
+  }else{
+    STATE = defaultState();
+    renderFromState();
+  }
+}
+
+// --- start / reset (P1 only in online) ---
+if(startBtn){
+  startBtn.addEventListener("click", ()=>{
+    if(!canOperate("start")) return;
+    applyAndSync((s)=>{
+      if(s.started) return s;
+      const ns = defaultState();
+      ns.started = true;
+      ns.turnPlayer = 1;
+      return ns;
+    }, "start");
+  });
+}
+if(resetBtn){
+  resetBtn.addEventListener("click", ()=>{
+    if(!canOperate("reset")) return;
+    applyAndSync(()=> {
+      const ns = defaultState();
+      ns.started = true;
+      ns.turnPlayer = 1;
+      return ns;
+    }, "reset");
+  });
+}
+
+// --- Game State ---
+const GIMMICK_TYPES = ["roulette","dice","treasure","card"];
+
+function defaultGimmick(){
+  return {
+    type: null, enabled: false, spinning: false,
+    rouletteValue: 1, diceValue: 1, treasureValue: null,
+    cardNums: [], cardSelected: null, cardSelectedValue: null, cardRevealed: false
+  };
+}
+
+function defaultState(){
+  // ★学年ごとの問題を使用
+  if(!questions || questions.length === 0){
+    questions = buildQuestionsForGrade(CURRENT_GRADE);
+  }
+  const order = shuffle([...Array(questions.length)].map((_,i)=>i));
+  const choiceOrder = shuffle([0,1,2]);
+  const firstQ = questions[order[0]];
+  const correctBtn = choiceOrder.indexOf(firstQ.correctIndex);
+  return {
+    ver: 2, started: true,
+    grade: CURRENT_GRADE,
+    quizOrder: order, currentIndex: 0, score: 0,
+    answeredCurrent: false,
+    choiceOrder, currentCorrectButton: correctBtn,
+    selectedButton: null, lastWasCorrect: null, feedbackText: "",
+    turnPlayer: 1,
+    gimmick: defaultGimmick(),
+    meta: { rev: nowRev(), by: 1 }
+  };
+}
+
+let STATE = defaultState();
+
+function canOperate(actionKind){
+  if(!ONLINE.enabled) return true;
+  if(actionKind === "reset" || actionKind === "start") return ONLINE.me === 1;
+  return ONLINE.me === STATE.turnPlayer;
+}
+
+// --- local spin animation (no network spam) ---
+let localSpinTimer = null;
+function stopLocalSpinTimer(){ if(localSpinTimer){ clearInterval(localSpinTimer); localSpinTimer=null; } }
+
+function resetGimmickUI(){
+  stopLocalSpinTimer();
+  if(rouletteWheelEl){
+    rouletteWheelEl.textContent = "？";
+    rouletteWheelEl.classList.add("disabled");
+    rouletteWheelEl.style.display = "inline-flex";
+  }
+  if(cardContainerEl){ cardContainerEl.innerHTML = ""; cardContainerEl.style.display = "none"; }
+  if(gimmickLabelEl){ gimmickLabelEl.textContent = "せいかいしたら しかけが でるよ"; }
+}
+
+function renderGimmickFromState(){
+  stopLocalSpinTimer();
+  const g = STATE.gimmick || {};
+  if(!g.type){ resetGimmickUI(); return; }
+
+  if(g.type === "card"){
+    if(rouletteWheelEl){ rouletteWheelEl.classList.add("disabled"); rouletteWheelEl.style.display = "none"; }
+    if(gimmickLabelEl){
+      gimmickLabelEl.textContent = g.cardRevealed ? `えらんだ すうじ：${g.cardSelectedValue}` : "カードを 1まい えらぼう！ 🎴";
+    }
+    if(cardContainerEl){
+      cardContainerEl.style.display = "flex";
+      cardContainerEl.innerHTML = "";
+      (g.cardNums || []).forEach((num, idx)=>{
+        const card = document.createElement("div");
+        card.className = "card-option";
+        card.textContent = (g.cardRevealed && g.cardSelected === idx) ? String(num) : "？";
+        if(!g.enabled || g.cardRevealed) card.classList.add("disabled");
+        if(g.cardRevealed && g.cardSelected === idx) card.classList.add("selected");
+        card.addEventListener("click", ()=> onPickCard(idx));
+        cardContainerEl.appendChild(card);
+      });
+    }
+    return;
+  }
+
+  if(cardContainerEl){ cardContainerEl.innerHTML = ""; cardContainerEl.style.display = "none"; }
+  if(rouletteWheelEl){ rouletteWheelEl.style.display = "inline-flex"; }
+
+  if(g.type === "roulette"){
+    if(gimmickLabelEl) gimmickLabelEl.textContent = "ルーレットを まわそう！ 🎯";
+    if(rouletteWheelEl){
+      rouletteWheelEl.classList.toggle("disabled", !g.enabled);
+      rouletteWheelEl.textContent = g.spinning ? String(g.rouletteValue || 1) : (g.enabled ? "▶" : String(g.rouletteValue || 1));
+    }
+    if(g.spinning && rouletteWheelEl){
+      let v = g.rouletteValue || 1;
+      localSpinTimer = setInterval(()=>{ v++; if(v>10) v=1; rouletteWheelEl.textContent = String(v); }, 80);
+    }
+    return;
+  }
+  if(g.type === "dice"){
+    if(gimmickLabelEl) gimmickLabelEl.textContent = "サイコロを ふろう！ 🎲";
+    if(rouletteWheelEl){
+      rouletteWheelEl.classList.toggle("disabled", !g.enabled);
+      rouletteWheelEl.textContent = g.spinning ? ("🎲 " + (g.diceValue || 1)) : (g.enabled ? "🎲" : ("🎲 " + (g.diceValue || 1)));
+    }
+    if(g.spinning && rouletteWheelEl){
+      localSpinTimer = setInterval(()=>{ const v = Math.floor(Math.random()*6)+1; rouletteWheelEl.textContent = "🎲 " + v; }, 80);
+    }
+    return;
+  }
+  if(g.type === "treasure"){
+    if(gimmickLabelEl) gimmickLabelEl.textContent = "たからばこを あけてみよう！ 📦";
+    if(rouletteWheelEl){
+      rouletteWheelEl.classList.toggle("disabled", !g.enabled);
+      rouletteWheelEl.textContent = g.treasureValue ? ("📦 → " + g.treasureValue) : "📦";
+    }
+    return;
+  }
+}
+
+function updateProgress(){
+  const total = STATE.quizOrder?.length || questions.length;
+  const percent = (STATE.currentIndex / total) * 100;
+  if(progressFillEl) progressFillEl.style.width = percent + "%";
+}
+
+function renderFromState(){
+  // player labels & button availability
+  if(mePlayerEl){
+    mePlayerEl.textContent = ONLINE.enabled ? `プレイヤー${ONLINE.me}` : "オフライン";
+  }
+  if(turnPlayerEl){
+    turnPlayerEl.textContent = `プレイヤー${STATE.turnPlayer || 1}`;
+    // active player blink
+  const tp = (STATE.turnPlayer || 1);
+  if(badgeP1El && badgeP2El){
+    const p1Active = (tp === 1);
+    badgeP1El.classList.toggle("active", p1Active);
+    badgeP2El.classList.toggle("active", !p1Active);
+    badgeP1El.classList.toggle("blink", p1Active);
+    badgeP2El.classList.toggle("blink", !p1Active);
+  }
+  }
+  if(startBtn){
+    if(canOperate("start")) startBtn.classList.remove("disabled");
+    else startBtn.classList.add("disabled");
+  }
+  if(resetBtn){
+    if(canOperate("reset")) resetBtn.classList.remove("disabled");
+    else resetBtn.classList.add("disabled");
+  }
+
+  // turn change beep
+  if(prevTurnPlayer !== null && (STATE.turnPlayer || 1) !== prevTurnPlayer){
+    playTurnBeep();
+  }
+  prevTurnPlayer = (STATE.turnPlayer || 1);
+
+  // waiting (before start)
+  if(ONLINE.enabled && STATE.started === false){
+    const total = STATE.quizOrder?.length || questions.length;
+    if(qTotalEl) qTotalEl.textContent = String(total);
+    if(qNumberEl) qNumberEl.textContent = "1";
+    if(progressFillEl) progressFillEl.style.width = "0%";
+    if(qTextEl) qTextEl.textContent = "スタートを押してください。";
+    if(qHintEl) qHintEl.textContent = "";
+    if(scoreTextEl) scoreTextEl.textContent = "せいかい：0 もん";
+    if(feedbackEl){ feedbackEl.textContent = ""; feedbackEl.className = "feedback"; }
+    if(choicesEl) choicesEl.innerHTML = "";
+    if(nextBtn){ nextBtn.textContent = "こたえを えらんでね"; nextBtn.classList.add("disabled"); }
+    resetGimmickUI();
+    if(resultArea) resultArea.innerHTML = "";
+    return;
+  }
+  const total = STATE.quizOrder?.length || questions.length;
+  if(qTotalEl) qTotalEl.textContent = String(total);
+  const qIdx = STATE.quizOrder[STATE.currentIndex];
+  const q = questions[qIdx];
+
+  if(qNumberEl) qNumberEl.textContent = String(STATE.currentIndex + 1);
+  updateProgress();
+  if(qTextEl) qTextEl.innerHTML = q.text;
+  if(qHintEl) qHintEl.textContent = q.hint || "";
+  if(scoreTextEl) scoreTextEl.textContent = `せいかい：${STATE.score} もん`;
+
+  if(feedbackEl){
+    feedbackEl.textContent = STATE.feedbackText || "";
+    feedbackEl.className = "feedback" + (STATE.lastWasCorrect === true ? " correct" : (STATE.lastWasCorrect === false ? " wrong" : ""));
+  }
+
+  // choices
+  if(choicesEl){
+    choicesEl.innerHTML = "";
+    const order = STATE.choiceOrder || [0,1,2];
+    order.forEach((choiceIdx, buttonIdx)=>{
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "choice-btn";
+
+      const labelSpan = document.createElement("span");
+      labelSpan.className = "label";
+      labelSpan.innerHTML = q.choices[choiceIdx];
+
+      const markSpan = document.createElement("span");
+      markSpan.className = "mark";
+      markSpan.textContent = String.fromCharCode(65 + buttonIdx);
+
+      btn.appendChild(labelSpan);
+      btn.appendChild(markSpan);
+      btn.addEventListener("click", ()=> onChoose(buttonIdx));
+      choicesEl.appendChild(btn);
+    });
+
+    const buttons = Array.from(choicesEl.getElementsByClassName("choice-btn"));
+    if(STATE.answeredCurrent){
+      buttons.forEach(b=> b.classList.add("disabled"));
+      const sel = STATE.selectedButton;
+      if(sel !== null && sel !== undefined && buttons[sel]){
+        buttons[sel].classList.add(STATE.lastWasCorrect ? "correct" : "wrong");
+      }
+      if(!STATE.lastWasCorrect){
+        const cb = STATE.currentCorrectButton;
+        if(cb !== null && cb !== undefined && buttons[cb]) buttons[cb].classList.add("correct");
+      }
+    }
+  }
+
+  // next button
+  if(nextBtn){
+    const isLast = STATE.currentIndex === total - 1;
+    nextBtn.textContent = isLast ? "さいごの けっか を みる" : "えらんだら つぎへ ➜";
+    if(!STATE.answeredCurrent) nextBtn.classList.add("disabled");
+    else nextBtn.classList.remove("disabled");
+  }
+
+  // gimmick
+  if(STATE.answeredCurrent && STATE.lastWasCorrect){ renderGimmickFromState(); }
+  else resetGimmickUI();
+
+  // result area (kept same UI wording)
+  if(resultArea){
+    resultArea.innerHTML = "";
+    if(STATE.currentIndex === total - 1 && STATE.answeredCurrent){
+      const percent = Math.round((STATE.score / total) * 100);
+      let message = "";
+      if(percent === 100) message = "💮 すばらしい！ ぜんぶ 正解です。ごいりょく ばっちり！";
+      else if(percent >= 70) message = "✨ よくできました！ あとすこしで まんてんです。";
+      else if(percent >= 50) message = "◯ がんばりました。 もういちど チャレンジしてみよう。";
+      else message = "📘 これから どんどん ごいを ふやしていこう。";
+
+      resultArea.innerHTML = `けっか：${STATE.score} / ${total} もん <br>${message}`;
+      const restart = document.createElement("button");
+      restart.type = "button";
+      restart.textContent = "もういちど チャレンジ";
+      restart.className = "restart-btn";
+      restart.addEventListener("click", ()=> onRestart());
+      resultArea.appendChild(restart);
+    }
+  }
+
+  // turn gating
+  if(ONLINE.enabled){
+    const myTurn = (ONLINE.me === STATE.turnPlayer);
+    const lock = !myTurn;
+    const btns = Array.from(choicesEl?.getElementsByClassName("choice-btn") || []);
+    btns.forEach(b=>{
+      if(lock) b.classList.add("disabled");
+      else if(!STATE.answeredCurrent) b.classList.remove("disabled");
+    });
+    if(nextBtn){
+      if(lock) nextBtn.classList.add("disabled");
+      else if(STATE.answeredCurrent) nextBtn.classList.remove("disabled");
+    }
+    if(rouletteWheelEl && lock) rouletteWheelEl.classList.add("disabled");
+    // restart button gating is handled in onRestart()
+  }
+}
+
+function setState(next, by){
+  // ★オンライン受信時に学年を同期
+  if(next && next.grade && next.grade !== CURRENT_GRADE){
+    setGradeLocal(next.grade);
+  }
+  STATE = next;
+  STATE.meta = { rev: nowRev(), by: by || (ONLINE.enabled ? ONLINE.me : 1) };
+  renderFromState();
+}
+
+async function pushState(){
+  if(!ONLINE.enabled) return;
+  if(ONLINE.suppress) return;
+  if(!ONLINE.refs.state || !ONLINE.refs.meta) return;
+  const rev = STATE.meta?.rev || nowRev();
+  ONLINE.lastRev = Math.max(ONLINE.lastRev, rev);
+  try{
+    await ONLINE.update(ONLINE.refs.meta, { rev, updatedAt: ONLINE.serverTimestamp() });
+    await ONLINE.set(ONLINE.refs.state, STATE);
+  }catch(e){
+    ONLINE.enabled = false;
+    setOnlineStatusText("オフライン");
+  }
+}
+
+async function applyAndSync(updater, actionKind){
+  if(!canOperate(actionKind)) return;
+  const by = ONLINE.enabled ? ONLINE.me : 1;
+  ONLINE.suppress = true;
+  try{
+    const next = updater(structuredClone(STATE));
+    ONLINE.suppress = false;
+    setState(next, by);
+    await pushState();
+  }catch(e){
+    ONLINE.suppress = false;
+  }
+}
+
+function prepareNextQuestion(s){
+  const qIdx = s.quizOrder[s.currentIndex];
+  const q = questions[qIdx];
+  s.choiceOrder = shuffle([0,1,2]);
+  s.currentCorrectButton = s.choiceOrder.indexOf(q.correctIndex);
+  s.answeredCurrent = false;
+  s.selectedButton = null;
+  s.lastWasCorrect = null;
+  s.feedbackText = "";
+  s.gimmick = defaultGimmick();
+  return s;
+}
+
+function onChoose(buttonIndex){
+  applyAndSync((s)=>{
+    if(s.answeredCurrent) return s;
+    s.answeredCurrent = true;
+    s.selectedButton = buttonIndex;
+    const correct = (buttonIndex === s.currentCorrectButton);
+    s.lastWasCorrect = correct;
+    if(correct){
+      s.score += 1;
+      s.feedbackText = "⭕ 正解！";
+      const t = GIMMICK_TYPES[Math.floor(Math.random()*GIMMICK_TYPES.length)];
+      s.gimmick.type = t;
+      if(t === "card"){
+        const nums = [];
+        while(nums.length < 3){
+          const n = Math.floor(Math.random()*10)+1;
+          if(!nums.includes(n)) nums.push(n);
+        }
+        s.gimmick.cardNums = nums;
+        s.gimmick.enabled = true;
+      }else{
+        s.gimmick.enabled = true;
+        s.gimmick.spinning = false;
+      }
+    }else{
+      s.feedbackText = "❌ ざんねん。";
+      s.gimmick = defaultGimmick();
+    }
+    return s;
+  }, "answer");
+}
+
+function onNext(){
+  applyAndSync((s)=>{
+    if(!s.answeredCurrent) return s;
+    const total = s.quizOrder.length;
+    if(s.currentIndex < total - 1){
+      s.currentIndex += 1;
+      s.turnPlayer = (s.turnPlayer === 1 ? 2 : 1);
+      s = prepareNextQuestion(s);
+    }
+    return s;
+  }, "next");
+}
+
+function onRestart(){
+  applyAndSync((_s)=>{
+    const ns = defaultState();
+    ns.turnPlayer = 1;
+    return ns;
+  }, "reset");
+}
+
+function onRouletteClick(){
+  applyAndSync((s)=>{
+    const g = s.gimmick;
+    if(!g || !g.type) return s;
+    if(!g.enabled && !g.spinning) return s;
+    if(g.type === "treasure"){
+      if(!g.treasureValue){
+        g.treasureValue = Math.floor(Math.random()*10)+1;
+        g.enabled = false;
+        g.spinning = false;
+      }
+      return s;
+    }
+    if(!g.spinning){
+      g.spinning = true;
+      g.enabled = true;
+      return s;
+    }else{
+      g.spinning = false;
+      g.enabled = false;
+      if(g.type === "roulette") g.rouletteValue = Math.floor(Math.random()*10)+1;
+      if(g.type === "dice") g.diceValue = Math.floor(Math.random()*6)+1;
+      return s;
+    }
+  }, "gimmick");
+}
+
+function onPickCard(idx){
+  applyAndSync((s)=>{
+    const g = s.gimmick;
+    if(!g || g.type !== "card") return s;
+    if(!g.enabled || g.cardRevealed) return s;
+    g.cardSelected = idx;
+    g.cardSelectedValue = (g.cardNums || [])[idx] ?? null;
+    g.cardRevealed = true;
+    g.enabled = false;
+    return s;
+  }, "gimmick");
+}
+
+if(nextBtn){
+  nextBtn.addEventListener("click", ()=>{
+    if(nextBtn.classList.contains("disabled")) return;
+    if(ONLINE.enabled && !canOperate("next")) return;
+    onNext();
+  });
+}
+if(rouletteWheelEl){
+  rouletteWheelEl.addEventListener("click", ()=>{
+    if(ONLINE.enabled && !canOperate("gimmick")) return;
+    onRouletteClick();
+  });
+}
+
+async function initOnlineIfPossible(){
+  const params = parseParams();
+  if(roomInput) roomInput.value = params.room || "";
+  if(params.room){
+    const u = buildUrls(params.room);
+    if(urlP1) urlP1.value = u.p1;
+    if(urlP2) urlP2.value = u.p2;
+  }
+  if(!params.room || !(params.me === 1 || params.me === 2)){
+    ONLINE.enabled = false;
+    setOnlineStatusText("オフライン");
+    return;
+  }
+  try{
+    const appMod = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js");
+    const dbMod  = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js");
+    const app = appMod.initializeApp(firebaseConfig);
+    const db = dbMod.getDatabase(app);
+
+    ONLINE.enabled = true;
+    ONLINE.room = params.room;
+    ONLINE.me = params.me;
+    ONLINE.db = db;
+    ONLINE.ref = dbMod.ref;
+    ONLINE.onValue = dbMod.onValue;
+    ONLINE.get = dbMod.get;
+    ONLINE.set = dbMod.set;
+    ONLINE.update = dbMod.update;
+    ONLINE.serverTimestamp = dbMod.serverTimestamp;
+
+    ONLINE.refs.room = ONLINE.ref(db, `rooms/${ONLINE.room}`);
+    ONLINE.refs.state = ONLINE.ref(db, `rooms/${ONLINE.room}/state`);
+    ONLINE.refs.meta  = ONLINE.ref(db, `rooms/${ONLINE.room}/meta`);
+
+    setOnlineStatusText(`オンライン：room=${ONLINE.room} / me=${ONLINE.me}`);
+
+    const snap = await ONLINE.get(ONLINE.refs.state);
+    if(!snap.exists()){
+      // まだ部屋に状態が無い場合：P1が「スタート」を押すまで待機
+      if(ONLINE.me === 1 || ONLINE.me === 2){
+        const ns = defaultState();
+        ns.started = false;
+        ns.feedbackText = "";
+        ns.turnPlayer = 1;
+        STATE = ns;
+        renderFromState();
+      }
+    }else{
+      const remote = snap.val();
+      if(remote?.meta?.rev) ONLINE.lastRev = remote.meta.rev;
+      STATE = remote || STATE;
+      renderFromState();
+    }
+
+    ONLINE.onValue(ONLINE.refs.state, (snapshot)=>{
+      const remote = snapshot.val();
+      if(!remote) return;
+      const rev = remote?.meta?.rev || 0;
+      if(rev <= ONLINE.lastRev) return;
+      ONLINE.lastRev = rev;
+      ONLINE.suppress = true;
+      try{ STATE = remote; renderFromState(); }
+      finally{ ONLINE.suppress = false; }
+    });
+  }catch(e){
+    ONLINE.enabled = false;
+    setOnlineStatusText("オフライン");
+  }
+}
+
+// start
+renderFromState();
+initOnlineIfPossible();
+  </script>
+</body>
+</html>
