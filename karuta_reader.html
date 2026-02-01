@@ -72,7 +72,7 @@
   }
   .controls{
     margin-top:10px;
-    display:flex; gap:8px; flex-wrap:wrap;
+    display:flex; gap:16px; flex-wrap:wrap;
     align-items:center;
   }
   button{
@@ -145,6 +145,16 @@
     font-size:12px;
     color:var(--sub);
   }
+
+/* === Button order adjustment (layout only) === */
+#controls { display:flex; gap:18px; }
+#nextBtn { order:1; }
+#speakBtn { order:2; margin-right:24px; }
+#prevBtn { order:3; }
+#hintBtn { order:4; }
+#stopBtn { order:5; }
+/* === End layout adjustment === */
+
 </style>
 </head>
 <body>
@@ -161,8 +171,9 @@
         <div class="displayText" id="displayText">CSVを読み込んでください</div>
       </div>
 
-      <div class="controls">
+      <div class="controls" id="controls">
         <button class="primary" id="nextBtn" disabled>つぎ</button>
+        <button id="prevBtn" disabled>1つもどる</button>
         <button id="speakBtn" disabled>読み上げ</button>
         <button id="hintBtn" disabled>ヒント</button>
         <button class="ghost" id="stopBtn" disabled>停止</button>
@@ -353,6 +364,7 @@
   const resetBtn = $("resetBtn");
 
   const nextBtn = $("nextBtn");
+  const prevBtn = $("prevBtn");
   const speakBtn = $("speakBtn");
   const hintBtn = $("hintBtn");
   const stopBtn = $("stopBtn");
@@ -386,6 +398,7 @@
 
   function disablePlayButtons(){
     nextBtn.disabled = true;
+    prevBtn.disabled = true;
     speakBtn.disabled = true;
     hintBtn.disabled = true;
     stopBtn.disabled = true;
@@ -393,6 +406,7 @@
 
   function enablePlayButtons(){
     nextBtn.disabled = false;
+    prevBtn.disabled = true; // idxが進むまで無効
     speakBtn.disabled = false;
     hintBtn.disabled = false;
     stopBtn.disabled = false;
@@ -498,6 +512,9 @@
   }
 
   function updateDisplay(){
+    // 「1つもどる」は idx>0 のときだけ有効
+    prevBtn.disabled = !(deckReady && idx > 0 && current);
+
     if(!current){
       displayText.textContent = deckReady ? "つぎを押してください" : "山札を作ってください";
       return;
@@ -626,6 +643,25 @@
   buildBtn.addEventListener("click", buildDeck);
   resetBtn.addEventListener("click", resetAll);
 
+  prevBtn.addEventListener("click", ()=>{
+    if(!deckReady) return;
+    stopSpeak();
+    if(idx <= 0){
+      idx = Math.max(-1, idx);
+      setMsg("これ以上もどれません。");
+      updateDisplay();
+      setRemain();
+      return;
+    }
+    idx--;
+    current = deck[idx] || null;
+    updateDisplay();
+    setRemain();
+    setStatus(`出題中（${idx+1}/${deck.length}）`);
+    // 「つぎ」を押したら自動で読み上げ
+    readMain();
+  });
+
   nextBtn.addEventListener("click", ()=>{
     if(!deckReady) return;
     stopSpeak();
@@ -643,6 +679,8 @@
     updateDisplay();
     setRemain();
     setStatus(`出題中（${idx+1}/${deck.length}）`);
+    // 「つぎ」を押したら自動で読み上げ
+    readMain();
   });
 
   speakBtn.addEventListener("click", readMain);
