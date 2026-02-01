@@ -1,0 +1,3967 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>熟語づくりカードゲーム</title>
+<style>
+  :root{
+    --bg1:#eef2ff; --bg2:#f3e8ff;
+    --card:#ffffffd9;
+    --ink:#111827; --sub:#4b5563;
+    --primary:#4f46e5; --primarySoft:#e0e7ff;
+    --ok:#16a34a; --ng:#dc2626;
+    --border:#d1d5db;
+    --shadow:0 10px 25px rgba(0,0,0,.08);
+    --radius:18px;
+
+    --sameTileSize: 110px;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{
+    margin:0; min-height:100vh; padding:16px;
+    display:flex; justify-content:center; align-items:center;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+    color:var(--ink);
+  }
+  .app{
+    width:min(1080px,100%);
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    position:relative;
+  }
+  header{
+    padding:16px 18px;
+    border-bottom:1px solid var(--border);
+    display:flex; gap:12px; align-items:center; justify-content:space-between;
+    background:linear-gradient(180deg,#ffffffcc,#ffffff99);
+  }
+  header h1{ margin:0; font-size:18px; letter-spacing:.02em; }
+  .pill{
+    font-size:12px; color:var(--sub);
+    background:var(--primarySoft);
+    border:1px solid #c7d2fe;
+    padding:6px 10px;
+    border-radius:999px;
+    display:inline-flex; gap:8px; align-items:center;
+    white-space:nowrap;
+  }
+  .wrap{ padding:16px 18px 18px; display:grid; gap:14px; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1.75fr .25fr;
+    gap:14px;
+  }
+  @media (max-width:980px){
+    .grid{ grid-template-columns:1fr; }
+  }
+
+  .card{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:14px;
+  }
+  .card h2{
+    margin:0 0 10px 0;
+    font-size:14px;
+    color:var(--sub);
+    font-weight:700;
+    letter-spacing:.02em;
+  }
+
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .row > *{ flex:0 0 auto; }
+
+  button{
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--ink);
+    border-radius:14px;
+    padding:10px 12px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 6px 16px rgba(0,0,0,.06);
+  }
+  button.primary{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+  button.warn{
+    background:#fff7ed;
+    border-color:#fed7aa;
+  }
+  button:disabled{ opacity:.5; cursor:not-allowed; box-shadow:none; }
+  select, input{
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px 12px;
+    font-weight:700;
+    background:#fff;
+    color:var(--ink);
+  }
+  input{ width:110px; }
+
+  .sectionTitle{
+    margin:14px 0 8px 0;
+    font-size:15px;
+    font-weight:900;
+    color:var(--ink);
+  }
+
+  .tiles{
+    display:grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap:10px;
+  }
+  @media (max-width:520px){ .tiles{ grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .tile{
+    user-select:none;
+    border:1px solid var(--border);
+    border-radius:18px;
+    background:#fff;
+    padding:18px 0px;
+    text-align:center;
+    font-size:44px;
+    font-weight:900;
+    line-height:1;
+    box-shadow:0 10px 22px rgba(0,0,0,.07);
+    cursor:pointer;
+    overflow:hidden;
+  }
+  .tile.bad{
+    animation:shake .25s linear 1;
+    outline:3px solid #fecaca;
+    border-color:#fecaca;
+    background:#fff1f2;
+  }
+  @keyframes shake{
+    0%{ transform:translateX(0); }
+    25%{ transform:translateX(-3px); }
+    50%{ transform:translateX(3px); }
+    75%{ transform:translateX(-2px); }
+    100%{ transform:translateX(0); }
+  }
+
+  .msg{
+    margin-top:10px;
+    padding:12px 14px;
+    border-radius:16px;
+    font-weight:900;
+    font-size:16px;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--sub);
+  }
+  .msg.ok{ border-color:#bbf7d0; background:#ecfdf5; color:#166534; }
+  .msg.ng{ border-color:#fecaca; background:#fff1f2; color:#991b1b; }
+
+  .miniInfo{
+    margin-top:8px;
+    padding:10px 12px;
+    border-radius:14px;
+    border:1px dashed var(--border);
+    background:#f8fafc;
+    color:var(--sub);
+    font-weight:900;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  #missInfo{ display:none; }
+
+  .scoreboard{
+    display:flex;
+    gap:8px;
+    flex-wrap:nowrap;
+    align-items:stretch;
+  }
+  .pRow{
+    flex:1 1 0;
+    min-width:0;
+    display:flex; gap:8px; align-items:flex-start; justify-content:space-between;
+    padding:6px 10px;
+    border:1px solid var(--border);
+    border-radius:14px; background:#fff;
+  }
+  .pRow .left{
+    display:flex; gap:8px; align-items:center; font-weight:900;
+    min-width:0;
+  }
+  .pRow .left span:last-child{
+    font-size:12px;
+    white-space:nowrap;
+  }
+  .pRow .pts{
+    font-weight:900; color:var(--ink);
+    display:flex; gap:8px; align-items:center;
+    white-space:nowrap;
+    font-size:12px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+  .pRow .ptVal{ color:var(--ng); }
+  .statusTag{
+    display:block;
+    margin-top:2px;
+    font-size:11px;
+    font-weight:900;
+    padding:4px 8px;
+    border-radius:999px;
+    border:1px solid #fecaca;
+    background:#fff1f2;
+    color:#991b1b;
+    white-space:nowrap;
+    flex: 1 0 100%;
+    text-align:right;
+  }
+  .statusTag.miss{
+    border-color:#fed7aa;
+    background:#fff7ed;
+    color:#9a3412;
+  }
+
+  .dot{ width:10px; height:10px; border-radius:999px; background:#cbd5e1; }
+  .pRow.active{
+    border-color:#a5b4fc;
+    background:#eef2ff;
+    animation:activePulse 980ms ease-in-out infinite;
+  }
+  .pRow.active .dot{
+    background:#4f46e5;
+    animation:dotPulse 980ms ease-in-out infinite;
+  }
+  @keyframes activePulse{
+    0%{ box-shadow:0 0 0 rgba(79,70,229,.0); transform:translateY(0); }
+    50%{ box-shadow:0 0 0 6px rgba(79,70,229,.14); transform:translateY(-1px); }
+    100%{ box-shadow:0 0 0 rgba(79,70,229,.0); transform:translateY(0); }
+  }
+  @keyframes dotPulse{
+    0%{ transform:scale(1); opacity:.75; }
+    50%{ transform:scale(1.25); opacity:1; }
+    100%{ transform:scale(1); opacity:.75; }
+  }
+
+  details{ border:1px solid var(--border); border-radius:14px; overflow:hidden; background:#fff; }
+  summary{
+    cursor:pointer; padding:10px 12px; font-weight:900; color:var(--sub);
+    list-style:none;
+  }
+  summary::-webkit-details-marker{ display:none; }
+  .list{ padding:0 12px 12px; display:flex; gap:8px; flex-wrap:wrap; }
+  .tag{
+    font-size:14px;
+    font-weight:900;
+    color:var(--ink);
+    background:#f1f5e9;
+    border:1px solid #e2e8f0;
+    padding:8px 12px;
+    border-radius:999px;
+  }
+  .muted{ color:var(--sub); }
+
+  /* ▼▼▼ ここだけ変更：右側の設定行を改行しないで1列表示にする ▼▼▼ */
+  #rightSide .settingRow{
+    flex-wrap:nowrap;
+    align-items:center;
+  }
+  #rightSide .settingRow label{
+    white-space:nowrap;
+    flex:0 0 auto;
+  }
+  #rightSide .settingRow select,
+  #rightSide .settingRow input{
+    white-space:nowrap;
+    flex:1 1 auto;
+    min-width:0;
+  }
+  /* ▲▲▲ ここだけ変更 ▲▲▲ */
+
+  .drawPickGrid{
+    display:grid;
+    grid-template-columns: minmax(240px, 0.70fr) minmax(0, 1.30fr);
+    gap:4px;
+    align-items:start;
+    margin-top:6px;
+  }
+  .drawPickCol{ min-width:0; }
+  .drawPickCol .sectionTitle{ margin-top:0; }
+
+  .pickPanel{
+    display:flex; gap:12px; align-items:center;
+    flex-wrap:nowrap;
+    overflow:visible;
+    background:#fff; border:1px solid var(--border);
+    border-radius:18px; padding:14px;
+    box-shadow:0 10px 22px rgba(0,0,0,.07);
+    min-width:0;
+  }
+
+  .slotWrap{ display:flex; gap:8px; align-items:center; min-width:0; }
+  .slotLabel{ font-size:14px; color:var(--sub); font-weight:900; }
+
+  .slot{
+    width:var(--sameTileSize); height:var(--sameTileSize);
+    border-radius:18px;
+    border:1px solid var(--border);
+    background:#f8fafc;
+    display:grid; place-items:center;
+    font-size:44px; font-weight:900;
+    cursor:pointer;
+    user-select:none;
+    overflow:hidden;
+    flex:0 0 auto;
+  }
+  .slot.filled{ background:#fff; }
+
+  .eq{ font-weight:900; color:var(--sub); font-size:20px; flex:0 0 auto; }
+
+  .wordBox{
+    min-width:120px;
+    padding:14px 16px;
+    border-radius:18px;
+    border:1px solid var(--border);
+    background:#fff;
+    font-weight:900;
+    font-size:28px;
+    text-align:center;
+    flex:1 1 auto;
+    white-space:nowrap;
+  }
+
+  .chip{
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:900;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    box-shadow:0 6px 16px rgba(0,0,0,.06);
+  }
+  .chip .mini{
+    width:var(--sameTileSize); height:var(--sameTileSize);
+    display:grid; place-items:center;
+    border-radius:18px;
+    border:1px solid var(--border);
+    font-size:44px;
+    font-weight:900;
+    background:#f8fafc;
+    line-height:1;
+    overflow:hidden;
+  }
+  .chip:disabled{ opacity:.5; cursor:not-allowed; box-shadow:none; }
+
+  .speakBtn{
+    margin:10px 12px 0;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-weight:900;
+  }
+
+  .ansSpeakWrap{
+    margin-top:10px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .ansSpeakBtn{
+    display:none;
+    align-items:center;
+    gap:8px;
+    font-weight:900;
+    border-color:#c7d2fe;
+    background:#eef2ff;
+  }
+  .ansInfo{
+    display:none;
+    width:100%;
+    padding:12px 14px;
+    border-radius:16px;
+    border:1px solid #c7d2fe;
+    background:#eef2ff;
+    font-weight:900;
+    color:#111827;
+    line-height:1.6;
+  }
+  .ansInfo .sub{ color:var(--sub); font-weight:900; }
+
+  ruby rt{ font-size:10px; color:var(--sub); font-weight:900; }
+
+  .settings{ display:grid; gap:10px; margin-bottom:10px; }
+  .settingRow{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .settingRow label{ font-weight:900; }
+  .stack{ display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+
+  .kusudamaOverlay{
+    position:absolute; inset:0;
+    background:rgba(17,24,39,.25);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+  }
+  .kusudama{
+    width:min(520px,86vw);
+    height:min(360px,60vh);
+    position:relative;
+  }
+  .rope{
+    position:absolute; left:50%; top:0;
+    width:3px; height:120px;
+    transform:translateX(-50%);
+    background:rgba(255,255,255,.8);
+    border-radius:999px;
+  }
+  .ball{
+    position:absolute; left:50%; top:105px;
+    width:240px; height:240px;
+    transform:translateX(-50%);
+    border-radius:999px;
+    border:2px solid rgba(255,255,255,.8);
+    background:rgba(255,255,255,.2);
+    box-shadow:0 18px 40px rgba(0,0,0,.25);
+    overflow:hidden;
+  }
+  .half{
+    position:absolute; top:0; bottom:0;
+    width:50%;
+    background:rgba(255,255,255,.55);
+    border:1px solid rgba(255,255,255,.75);
+    backdrop-filter: blur(2px);
+  }
+  .half.left{ left:0; border-right:none; }
+  .half.right{ right:0; border-left:none; }
+  .knot{
+    position:absolute; left:50%; top:50%;
+    width:26px; height:26px;
+    transform:translate(-50%,-50%);
+    border-radius:10px;
+    background:rgba(255,255,255,.85);
+    border:1px solid rgba(255,255,255,.9);
+  }
+  .banner{
+    position:absolute; left:50%; top:355px;
+    transform:translateX(-50%);
+    padding:10px 14px;
+    border-radius:16px;
+    background:rgba(255,255,255,.92);
+    border:1px solid rgba(255,255,255,.9);
+    font-weight:900;
+    color:#111827;
+    box-shadow:0 10px 24px rgba(0,0,0,.18);
+    text-align:center;
+    min-width:260px;
+  }
+  .streamers{
+    position:absolute; left:50%; top:220px;
+    width:1px; height:1px;
+    transform:translateX(-50%);
+    pointer-events:none;
+  }
+  .streamer{
+    position:absolute; left:0; top:0;
+    width:10px; height:140px;
+    border-radius:999px;
+    opacity:.95;
+    transform-origin: top center;
+    animation:fall 1100ms ease-out forwards;
+  }
+  @keyframes fall{
+    0%{ transform:translate(-50%,0) rotate(var(--r)) scaleY(.2); opacity:0; }
+    25%{ opacity:1; }
+    100%{ transform:translate(calc(-50% + var(--x)), 190px) rotate(calc(var(--r) * 1.2)) scaleY(1); opacity:0; }
+  }
+  .kusudama.burst .ball .half.left{ animation:openL 520ms ease-out forwards; }
+  .kusudama.burst .ball .half.right{ animation:openR 520ms ease-out forwards; }
+  @keyframes openL{ to{ transform:translateX(-110px) rotate(-18deg); } }
+  @keyframes openR{ to{ transform:translateX(110px) rotate(18deg); } }
+
+  .kWrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:2px;
+    line-height:1;
+    padding:0;
+    max-width:100%;
+  }
+  .kOn, .kKun{
+    font-size:9px;
+    font-weight:900;
+    color:var(--sub);
+    white-space:normal;
+    text-align:center;
+    line-height:1.05;
+    word-break:break-word;
+    overflow-wrap:anywhere;
+    max-width:100%;
+  }
+  .kCore{
+    font-size:44px;
+    font-weight:900;
+    color:var(--ink);
+    line-height:1;
+  }
+  .slot .kOn, .slot .kKun{ font-size:8px; line-height:1.05; }
+  .slot .kCore{ font-size:34px; }
+  .chip .mini .kOn, .chip .mini .kKun{ font-size:8px; line-height:1.05; }
+  .chip .mini .kCore{ font-size:42px; }
+
+  /* ★オンライン部屋UI（見た目は既存に馴染ませる） */
+  #roomMaker{
+    margin:8px 0; padding:8px;
+    border:1px solid var(--border);
+    border-radius:14px;
+    background:#fff;
+  }
+  #roomMaker .title{ font-weight:900; color:var(--ink); margin-bottom:6px; }
+  #roomMaker input{ width:100%; }
+  #roomMaker .small{ font-size:12px; color:var(--sub); font-weight:800; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header>
+    <h1>熟語づくりカードゲーム</h1>
+    <div class="pill" id="topPill">準備中</div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      <div class="card" id="leftPlay">
+
+        <div class="scoreboard" id="scoreboard"></div>
+        <div class="msg ok" id="winMsg" style="display:none;"></div>
+
+        <div class="row" style="margin-bottom:12px; margin-top:12px;">
+          <button class="primary" id="drawBtn">１まい引く</button>
+          <button id="checkBtn">できた！</button>
+          <button id="endBtn"><ruby>番<rt>ばん</rt></ruby>を<ruby>終<rt>お</rt></ruby>える</button>
+
+          <button id="addFieldBtn" class="warn" style="display:none;">
+            <ruby>場札<rt>ばふだ</rt></ruby>を<ruby>追加<rt>ついか</rt></ruby>する
+          </button>
+
+          <button class="warn" id="skipNextBtn" style="display:none;">つぎへ</button>
+        </div>
+
+        <div class="sectionTitle"><ruby>場札<rt>ばふだ</rt></ruby></div>
+        <div class="tiles" id="field"></div>
+
+        <div class="drawPickGrid">
+          <div class="drawPickCol">
+            <div class="sectionTitle"><ruby>引<rt>ひ</rt></ruby>いた<ruby>札<rt>ふだ</rt></ruby>（タップで①②へ）</div>
+            <div class="row" style="gap:10px; margin-bottom:10px;">
+              <button class="chip" id="drawChip" type="button" disabled>
+                <span class="muted"><ruby>引札<rt>ひきふだ</rt></ruby></span>
+                <span class="mini" id="drawMini">—</span>
+                <span class="muted">→①②</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="drawPickCol">
+            <div class="sectionTitle"><ruby>順番<rt>じゅんばん</rt></ruby>を<ruby>決<rt>き</rt></ruby>めて<ruby>作<rt>つく</rt></ruby>る</div>
+            <div class="pickPanel">
+              <div class="slotWrap">
+                <div class="slotLabel">①</div>
+                <div class="slot" id="slot1" title="タップで消す">—</div>
+              </div>
+              <div class="eq">→</div>
+              <div class="slotWrap">
+                <div class="slotLabel">②</div>
+                <div class="slot" id="slot2" title="タップで消す">—</div>
+              </div>
+              <div class="eq">=</div>
+              <div class="wordBox" id="wordBox">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg" id="msg">スタートを押すと開始します。</div>
+
+        <div class="ansSpeakWrap" id="ansSpeakWrap">
+          <button class="ansSpeakBtn" id="ansSpeakBtn" type="button" aria-label="正答の読みと意味をよみあげ">
+            🔊 よみ・いみ・れいぶん
+          </button>
+          <div class="ansInfo" id="ansInfo" aria-live="polite"></div>
+        </div>
+
+        <div class="miniInfo" id="missInfo">
+          <div>ミス</div>
+          <div id="missCount">—</div>
+        </div>
+
+        <details style="margin-top:12px;" open>
+          <summary><ruby>できた</ruby>じゅく<ruby>語<rt>ご</rt></ruby>（<ruby>同<rt>おな</rt></ruby>じ<ruby>熟語<rt>じゅくご</rt></ruby>は1<ruby>回<rt>かい</rt></ruby>まで）</summary>
+          <div class="list" id="madeList"></div>
+        </details>
+      </div>
+
+      <div class="card" id="rightSide">
+
+        <!-- ★必須：部屋UI -->
+        <div id="roomMaker">
+          <div class="title">オンライン対戦リンク作成</div>
+          <div class="row" style="gap:8px; align-items:center;">
+            <input id="roomInput" placeholder="部屋番号（例: class1）" style="width:160px;">
+            <button id="makeRoomUrlBtn" type="button">URL作成</button>
+          </div>
+          <div style="margin-top:6px;" class="small">
+            プレイヤー1用：
+            <input id="urlP1" readonly style="width:100%;">
+          </div>
+          <div style="margin-top:6px;" class="small">
+            プレイヤー2用：
+            <input id="urlP2" readonly style="width:100%;">
+          </div>
+        </div>
+
+        <div class="settings">
+          <div class="settingRow">
+            <label class="muted">出題</label>
+            <select id="gradeSelect" title="出題する漢字">
+              <option value="g1">1年の漢字</option>
+              <option value="g2">2年の漢字</option>
+              <option value="g12">1，2年の漢字</option>
+              <option value="g3">3年の漢字</option>
+              <option value="g123">1・2・3年の漢字</option>
+            </select>
+          </div>
+
+          <div class="settingRow">
+            <label class="muted">読み表示</label>
+            <select id="readingToggle" title="音読み・訓読みの表示">
+              <option value="on" selected>ある</option>
+              <option value="off">なし</option>
+            </select>
+          </div>
+
+          <div class="settingRow">
+            <label class="muted">人数</label>
+            <select id="playerCount">
+              <option value="2">2人</option>
+              <option value="3">3人</option>
+              <option value="4">4人</option>
+            </select>
+          </div>
+
+          <div class="settingRow">
+            <label class="muted">勝利ポイント</label>
+            <input id="targetPoints" type="number" min="1" step="1" value="5"/>
+          </div>
+
+          <div class="settingRow">
+            <label class="muted">ミスで休み</label>
+            <select id="missLimit" title="この回数「その言葉はありません」で1回休み">
+              <option value="2">2回</option>
+              <option value="3" selected>3回</option>
+              <option value="4">4回</option>
+              <option value="5">5回</option>
+              <option value="6">6回</option>
+              <option value="7">7回</option>
+              <option value="8">8回</option>
+            </select>
+          </div>
+
+          <div class="settingRow" style="flex-direction:column; align-items:flex-start;">
+            <button class="primary" id="startBtn">スタート</button>
+            <button id="resetBtn">リセット</button>
+          
+            <button id="speechEnableBtn">🔈 音声ON</button>
+          </div>
+        </div>
+
+        <details id="rules" style="margin-top:12px;">
+          <summary><ruby>遊び方<rt>あそびかた</rt></ruby></summary>
+
+          <div class="row" style="padding:0 12px 0;">
+            <button class="speakBtn" id="speakBtn" type="button">▶ よみあげ</button>
+            <button class="speakBtn" id="stopSpeakBtn" type="button">■ とめる</button>
+</div>
+
+          <div id="ruleText" style="padding:10px 12px 12px; color:var(--sub); font-weight:800; line-height:1.75;">
+            <div>・<ruby>最初<rt>さいしょ</rt></ruby>に<ruby>場札<rt>ばふだ</rt></ruby>が6<ruby>枚<rt>まい</rt></ruby><ruby>出<rt>で</rt></ruby>ます。</div>
+            <div>・<ruby>自分<rt>じぶん</rt></ruby>の<ruby>番<rt>ばん</rt></ruby>では、<ruby>必<rt>かなら</rt></ruby>ず<ruby>山札<rt>やまふだ</rt></ruby>から1<ruby>枚<rt>まい</rt></ruby><ruby>引<rt>ひ</rt></ruby>きます（1<ruby>回<rt>かい</rt></ruby>だけ）。</div>
+            <div>・①②の<ruby>枠<rt>わく</rt></ruby>に、<ruby>場札<rt>ばふだ</rt></ruby>どうし、または、<ruby>引札<rt>ひきふだ</rt></ruby>＋<ruby>場札<rt>ばふだ</rt></ruby>をタップして<ruby>入<rt>い</rt></ruby>れます。</div>
+            <div>・できたら「できた！」をタップします。<ruby>正答<rt>せいとう</rt></ruby>なら1ポイント。</div>
+            <div>・<ruby>作<rt>つく</rt></ruby>れなかったときは、<ruby>引<rt>ひ</rt></ruby>いた<ruby>札<rt>ふだ</rt></ruby>は<ruby>場札<rt>ばふだ</rt></ruby>に<ruby>並<rt>なら</rt></ruby>び、<ruby>場札<rt>ばふだ</rt></ruby>がどんどん<ruby>増<rt>ふ</rt></ruby>えます。</div>
+            <div>・<ruby>場札<rt>ばふだ</rt></ruby>が3<ruby>枚<rt>まい</rt></ruby><ruby>以下<rt>いか</rt></ruby>になったら、「<ruby>場札<rt>ばふだ</rt></ruby>を<ruby>追加<rt>ついか</rt></ruby>する」のボタンで<ruby>札<rt>ふだ</rt></ruby>を<ruby>追加<rt>ついか</rt></ruby>できます。</div>
+            <div>・<ruby>番<rt>ばん</rt></ruby>を<ruby>終<rt>お</rt></ruby>えるとき、<ruby>手元<rt>てもと</rt></ruby>に<ruby>残<rt>のこ</rt></ruby>った<ruby>引札<rt>ひきふだ</rt></ruby>も<ruby>場札<rt>ばふだ</rt></ruby>へ<ruby>追加<rt>ついか</rt></ruby>されます。</div>
+            <div>・<ruby>目標<rt>もくひょう</rt></ruby>ポイントに<ruby>達<rt>たっ</rt></ruby>した<ruby>人<rt>ひと</rt></ruby>が<ruby>勝<rt>か</rt></ruby>ち（<ruby>設定<rt>せってい</rt></ruby>で<ruby>変更<rt>へんこう</rt></ruby>できます）。</div>
+            <div>・1ターンで「その<ruby>言葉<rt>ことば</rt></ruby>はありません」が<ruby>設定<rt>せってい</rt></ruby><ruby>回数<rt>かいすう</rt></ruby><ruby>出<rt>で</rt></ruby>たら、次の<ruby>自分<rt>じぶん</rt></ruby>の<ruby>番<rt>ばん</rt></ruby>は1<ruby>回<rt>かい</rt></ruby><ruby>休<rt>やす</rt></ruby>みです。「つぎへ」で<ruby>進<rt>すす</rt></ruby>みます。</div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <div class="kusudamaOverlay" id="kusudamaOverlay" aria-hidden="true">
+    <div class="kusudama" id="kusudama">
+      <div class="rope"></div>
+      <div class="ball">
+        <div class="half left"></div>
+        <div class="half right"></div>
+        <div class="knot"></div>
+      </div>
+      <div class="streamers" id="streamers"></div>
+      <div class="banner" id="kusudamaBanner">おめでとう！</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================
+  オフライン版（元コード）をベースに
+  オンライン対戦（Firebase RTDB）対応
+  - URL: ?room=部屋名&me=1 / ?room=部屋名&me=2
+  - オフライン時は従来通り
+  - P1のみスタート/リセット
+  - 手番以外は操作不可
+  - 状態は丸ごと同期（state）
+  - 追加要望：
+    ・正答/不正答メッセージも相手へ
+    ・🔊(よみ・いみ・れいぶん)も相手へ
+    ・勝利のくす玉も相手へ
+    ・1枚引く前は番を終えられない
+============================ */
+
+// ============================
+// ★Firebase設定（指定通り埋め込み）
+// ============================
+const firebaseConfig = {
+  apiKey: "AIzaSyDGyfFnmlFjJNyj8gyHcNje0SowgtTjDyU",
+  authDomain: "jyukugo-battle.firebaseapp.com",
+  databaseURL: "https://jyukugo-battle-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "jyukugo-battle",
+  storageBucket: "jyukugo-battle.firebasestorage.app",
+  messagingSenderId: "15379559721",
+  appId: "1:15379559721:web:9776dfdf39b4a38a047338"
+};
+
+// ============================
+// ★オンライン判定（URLパラメータ）
+// ============================
+const QS = new URLSearchParams(location.search);
+const ROOM_ID = (QS.get("room") || "").trim();
+const ME_ID = Number(QS.get("me") || 0);
+
+const ONLINE = {
+  enabled: !!(ROOM_ID && (ME_ID === 1 || ME_ID === 2)),
+  ready: false,
+  suppress: false,
+  lastRev: 0,
+  isApplyingRemote: false,
+  _db: null,
+  _ref: null,
+  _onValue: null,
+  _set: null,
+  _update: null,
+  _push: null,
+  _serverTimestamp: null,
+  _onChildAdded: null
+};
+
+// ============================
+// UI（部屋リンク作成）
+// ============================
+const roomInputEl = document.getElementById("roomInput");
+const makeRoomUrlBtn = document.getElementById("makeRoomUrlBtn");
+const urlP1El = document.getElementById("urlP1");
+const urlP2El = document.getElementById("urlP2");
+
+roomInputEl.addEventListener("keydown", (e)=>{
+  if(e.key === "Enter"){
+    e.preventDefault();
+    makeRoomUrlBtn.click();
+  }
+});
+
+function makeRoomUrls(room){
+  const base = location.origin + location.pathname;
+  const r = encodeURIComponent(room);
+  return {
+    p1: `${base}?room=${r}&me=1`,
+    p2: `${base}?room=${r}&me=2`
+  };
+}
+makeRoomUrlBtn.addEventListener("click", ()=>{
+  const room = (roomInputEl.value || "").trim();
+  if(!room){
+    // 何も入っていないときは案内だけ出す
+    try{ setMsg("部屋番号を入力してから「URL作成」を押してね。","ng"); }catch(_){}
+    return;
+  }
+  const u = makeRoomUrls(room);
+  urlP1El.value = u.p1;
+  urlP2El.value = u.p2;
+
+  // できたことが分かるようにメッセージを出す（相手側には送らない：ローカル案内）
+  try{ setMsg("URLを作成しました。プレイヤー1用/2用をコピーして共有してください。","ok"); }catch(_){}
+
+  // まずはP1をコピー（失敗してもOK）
+  try{
+    urlP1El.focus();
+    urlP1El.select();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(urlP1El.value).catch(()=>{ try{ document.execCommand("copy"); }catch(_2){} });
+    }else{
+      try{ document.execCommand("copy"); }catch(_3){}
+    }
+  }catch(_){}
+});
+
+// 初期表示：URLで入ってる部屋なら表示
+if(ROOM_ID){
+  roomInputEl.value = ROOM_ID;
+  const u = makeRoomUrls(ROOM_ID);
+  urlP1El.value = u.p1;
+  urlP2El.value = u.p2;
+}
+
+// ============================
+// 元コード（オフライン）
+// ============================
+const HAS_SPEECH = ("speechSynthesis" in window) && ("SpeechSynthesisUtterance" in window);
+function safeCancelSpeech(){ if(!HAS_SPEECH) return; try{ window.speechSynthesis.cancel(); }catch(_){} }
+
+// ============================
+// ★SpeechSynthesis 解放（遠隔読み上げが鳴らない対策）
+// ブラウザは「ユーザー操作が一度も無い状態」だと speechSynthesis.speak() を無視/ブロックすることがあります。
+// そのため、最初のタップ/クリック等で「無音の超短い発話」を一度だけ実行して解放します。
+// また、解放前に届いた遠隔読み上げはキューに溜め、解放後にまとめて再生します。
+// ============================
+const SPEECH_GATE = {
+  unlocked: false,
+  pending: [] // { text, onEnd }
+};
+
+function flushPendingSpeech(){
+  if(!HAS_SPEECH) return;
+  if(!SPEECH_GATE.unlocked) return;
+  const list = SPEECH_GATE.pending.splice(0, SPEECH_GATE.pending.length);
+  for(const item of list){
+    try{ speakTextNow(item.text, item.onEnd); }catch(_){ try{ item.onEnd && item.onEnd(); }catch(__){} }
+  }
+}
+
+function unlockSpeech(){
+  if(!HAS_SPEECH) return;
+  if(SPEECH_GATE.unlocked) return;
+  try{
+    // ★voices を一度触っておく（環境によってはこれが無いと speak が無視される）
+    try{ window.speechSynthesis.getVoices(); }catch(_){}
+
+    // ★ブラウザによって「無音」「空文字」は解放として認められないことがあるため、
+    // 極小音量で超短い1文字だけ発話して解放する（ほぼ聞こえない）
+    const u = new SpeechSynthesisUtterance("あ");
+    u.lang = "ja-JP";
+    u.rate = 2.0;
+    u.pitch = 1.0;
+    u.volume = 0.02; // かなり小さく（0だと無視される端末がある）
+    u.onend = ()=>{};
+    u.onerror = ()=>{};
+
+    try{ window.speechSynthesis.cancel(); }catch(_){}
+    window.speechSynthesis.speak(u);
+
+    // ★短時間で止める（完全に無音化できない端末でも目立たない）
+    setTimeout(()=>{ try{ window.speechSynthesis.cancel(); }catch(_){} }, 160);
+
+    SPEECH_GATE.unlocked = true;
+    flushPendingSpeech();
+  }catch(_){}
+}
+
+// ★端末によっては「どこかタップ」では SpeechSynthesis が解放されず、
+// 読み上げボタンを一度押さないと遠隔読み上げが鳴らないことがあります。
+// その場合、この関数を「ユーザーが押したボタン」から呼び、確実に解放します。
+function unlockSpeechHard(){
+  if(!HAS_SPEECH) return false;
+  try{
+    // voices を読み込み
+    try{ window.speechSynthesis.getVoices(); }catch(_){}
+    // “明示的ボタン操作”としての speak を1回通す（短く）
+    const u = new SpeechSynthesisUtterance("はい");
+    u.lang = "ja-JP";
+    u.rate = 2.0;
+    u.pitch = 1.0;
+    u.volume = 0.6; // 確実性優先（無音/極小は無視される端末がある）
+    u.onend = ()=>{};
+    u.onerror = ()=>{};
+    try{ window.speechSynthesis.cancel(); }catch(_){}
+    window.speechSynthesis.speak(u);
+
+    // すぐキャンセルしても「解放」扱いになる端末が多い
+    setTimeout(()=>{ try{ window.speechSynthesis.cancel(); }catch(_){} }, 220);
+
+    SPEECH_GATE.unlocked = true;
+    flushPendingSpeech();
+    return true;
+  }catch(_){
+    return false;
+  }
+}
+
+// ============================
+// ★効果音（オンラインでも同期）
+//   - "tap"：ピコピコ（操作の合図）
+//   - "turn"：番が変わった合図
+//   ※ブラウザの仕様で、最初の1回はユーザー操作で音声が解放されます
+// ============================
+const SFX = {
+  unlocked: false,
+  ctx: null,
+  pending: []  // ★未解放中に来た効果音イベントを一時保存
+};
+
+function flushPendingSfx(){
+  if(!SFX.unlocked) return;
+  const list = SFX.pending.splice(0, SFX.pending.length);
+  for(const kind of list){
+    try{ playSfxLocal(kind); }catch(_){}
+  }
+}
+
+function unlockAudio(){
+  if(SFX.unlocked) return;
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+
+    // ★ユーザー操作の中で AudioContext を作る（自動再生規制対策）
+    SFX.ctx = new AC();
+
+    // iOS等：resumeが必要なことがある
+    if(SFX.ctx.state === "suspended"){
+      SFX.ctx.resume().catch(()=>{});
+    }
+
+    // ★無音で一瞬だけ鳴らして「解放」を確実にする（iOS対策）
+    try{
+      const ctx = SFX.ctx;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      g.gain.value = 0.000001; // ほぼ無音
+      osc.frequency.value = 440;
+      osc.connect(g); g.connect(ctx.destination);
+      const t0 = ctx.currentTime;
+      osc.start(t0);
+      osc.stop(t0 + 0.02);
+    }catch(_){}
+
+    SFX.unlocked = true;
+    flushPendingSfx();
+  }catch(_){}
+}
+
+// ★「何を触っても」解放されるように、複数イベントで拾う（select/ボタン/画面タップ対策）
+const _unlockOnce = (ev)=>{
+  unlockAudio();
+  unlockSpeech();
+  // 1回で十分なので全部解除
+  window.removeEventListener("pointerdown", _unlockOnce, true);
+  window.removeEventListener("touchstart", _unlockOnce, true);
+  window.removeEventListener("touchend", _unlockOnce, true);
+  window.removeEventListener("mousedown", _unlockOnce, true);
+  window.removeEventListener("click", _unlockOnce, true);
+  window.removeEventListener("keydown", _unlockOnce, true);
+  window.removeEventListener("focusin", _unlockOnce, true);
+};
+window.addEventListener("pointerdown", _unlockOnce, true);
+window.addEventListener("touchstart", _unlockOnce, true);
+window.addEventListener("touchend", _unlockOnce, true);   // ★iOS対策：touchstartが拾えない場合
+window.addEventListener("mousedown", _unlockOnce, true);
+window.addEventListener("click", _unlockOnce, true);
+window.addEventListener("keydown", _unlockOnce, true);
+window.addEventListener("focusin", _unlockOnce, true);    // ★select/input を触った時に確実に拾う
+
+function playBeep(freq, durationMs, gain=0.06, when=0){
+  if(!SFX.unlocked || !SFX.ctx) return;
+  try{
+    const ctx = SFX.ctx;
+    const t0 = ctx.currentTime + (when || 0);
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    g.gain.value = 0.0001;
+    osc.connect(g);
+    g.connect(ctx.destination);
+
+    // クリックノイズを減らすためにエンベロープ
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(gain, t0 + 0.01);
+    g.gain.linearRampToValueAtTime(0.0001, t0 + (durationMs/1000));
+
+    osc.start(t0);
+    osc.stop(t0 + (durationMs/1000) + 0.02);
+  }catch(_){}
+}
+
+function playSfxLocal(kind){
+  // 未解放なら鳴らせない → いったん保存して、解放後にまとめて鳴らす
+  if(!SFX.unlocked){ SFX.pending.push(String(kind||"")); return; }
+
+  if(kind === "tap"){
+    // ピコピコ（短く2回）
+    playBeep(880, 60, 0.05, 0.00);
+    playBeep(660, 70, 0.05, 0.08);
+    return;
+  }
+  if(kind === "turn"){
+    // 番が変わった（少し長め）
+    playBeep(523.25, 120, 0.06, 0.00); // C5
+    playBeep(783.99, 80, 0.05, 0.14);  // G5
+    return;
+  }
+}
+
+function playSfx(kind, sendAlso=true){
+  // ローカル再生
+  playSfxLocal(kind);
+  // 相手にも送る
+  if(sendAlso){
+    try{ sendOnlineEvent("sfx", { kind: String(kind||"") }); }catch(_){ }
+  }
+}
+
+
+const TTS_DICT = [
+  ["消防車", "しょうぼうしゃ"],["的", "てき"],
+];
+function ttsNormalize(text){
+  let out = String(text ?? "");
+  for(const [k, v] of TTS_DICT){ out = out.split(k).join(v); }
+  return out;
+}
+
+const KANJI_READINGS = {
+  "音": { on:"オン", kun:"おと・ね" },
+  "下": { on:"カ・ゲ", kun:"した・しも・さ（げる）・くだ（る）・お（りる）" },
+  "火": { on:"カ", kun:"ひ" },
+  "学": { on:"ガク", kun:"まな（ぶ）" },
+  "気": { on:"キ・ケ", kun:"" },
+  "金": { on:"キン・コン", kun:"かね・かな" },
+  "空": { on:"クウ", kun:"そら・あ（く）・から" },
+  "月": { on:"ゲツ・ガツ", kun:"つき" },
+  "見": { on:"ケン", kun:"み（る）" },
+  "口": { on:"コウ・ク", kun:"くち" },
+  "山": { on:"サン", kun:"やま" },
+  "車": { on:"シャ", kun:"くるま" },
+  "手": { on:"シュ", kun:"て" },
+  "出": { on:"シュツ", kun:"で（る）・だ（す）" },
+  "小": { on:"ショウ", kun:"ちい（さい）・こ・お" },
+  "上": { on:"ジョウ", kun:"うえ・うわ・かみ・あ（げる）・のぼ（る）" },
+  "人": { on:"ジン・ニン", kun:"ひと" },
+  "水": { on:"スイ", kun:"みず" },
+  "生": { on:"セイ・ショウ", kun:"い（きる）・う（む）・は（える）・なま" },
+  "先": { on:"セン", kun:"さき" },
+  "足": { on:"ソク", kun:"あし・た（す）" },
+  "大": { on:"ダイ・タイ", kun:"おお（きい）" },
+  "中": { on:"チュウ・ジュウ", kun:"なか" },
+  "天": { on:"テン", kun:"あま" },
+  "日": { on:"ニチ・ジツ", kun:"ひ・か" },
+  "入": { on:"ニュウ", kun:"い（れる）・はい（る）" },
+  "年": { on:"ネン", kun:"とし" },
+  "文": { on:"ブン・モン", kun:"ふみ" },
+  "本": { on:"ホン", kun:"もと" },
+  "名": { on:"メイ・ミョウ", kun:"な" },
+  "目": { on:"モク", kun:"め" },
+  "力": { on:"リョク・リキ", kun:"ちから" },
+
+  "家": { on:"カ・ケ", kun:"いえ・や" },
+  "会": { on:"カイ", kun:"あ（う）" },
+  "海": { on:"カイ", kun:"うみ" },
+  "外": { on:"ガイ・ゲ", kun:"そと・ほか・はず（す）" },
+  "元": { on:"ゲン・ガン", kun:"もと" },
+  "言": { on:"ゲン・ゴン", kun:"い（う）・こと" },
+  "原": { on:"ゲン", kun:"はら" },
+  "後": { on:"ゴ・コウ", kun:"のち・うし（ろ）・あと" },
+  "行": { on:"コウ・ギョウ", kun:"い（く）・おこな（う）" },
+  "国": { on:"コク", kun:"くに" },
+  "作": { on:"サク・サ", kun:"つく（る）" },
+  "書": { on:"ショク", kun:"か（く）" },
+  "場": { on:"ジョウ", kun:"ば" },
+  "食": { on:"ショク", kun:"た（べる）・く（う）" },
+  "心": { on:"シン", kun:"こころ" },
+  "新": { on:"シン", kun:"あたら（しい）・にい・あら（た）" },
+  "数": { on:"スウ", kun:"かず・かぞ（える）" },
+  "前": { on:"ゼン", kun:"まえ" },
+  "体": { on:"タイ・テイ", kun:"からだ" },
+  "地": { on:"チ・ジ", kun:"" },
+  "長": { on:"チョウ", kun:"なが（い）" },
+  "直": { on:"チョク・ジキ", kun:"なお（す）、ただ（ちに）" },
+  "通": { on:"ツウ", kun:"とお（る）・かよ（う）" },
+  "当": { on:"トウ", kun:"あ（たる）" },
+  "頭": { on:"トウ・ズ", kun:"あたま・かしら" },
+  "道": { on:"ドウ", kun:"みち" },
+  "内": { on:"ナイ", kun:"うち" },
+  "風": { on:"フウ", kun:"かぜ・かざ" },
+  "分": { on:"フン・ブン・ブ", kun:"わ（ける）" },
+  "方": { on:"ホウ", kun:"かた" },
+  "門": { on:"モン", kun:"かど" },
+  "夜": { on:"ヤ", kun:"よる・よ" },
+  "野": { on:"ヤ", kun:"の" },
+  "用": { on:"ヨウ", kun:"もち（いる）" },
+  "来": { on:"ライ", kun:"く（る）" },
+
+  "悪": { on:"アク・オ", kun:"わる（い）" },
+  "意": { on:"イ", kun:"" },
+  "運": { on:"ウン", kun:"はこ（ぶ）" },
+  "化": { on:"カ・ケ", kun:"ば（ける）" },
+  "開": { on:"カイ", kun:"ひら（く）・あ（く）" },
+  "感": { on:"カン", kun:"" },
+  "期": { on:"キ・ゴ", kun:"" },
+  "業": { on:"ギョウ・ゴウ", kun:"わざ" },
+  "局": { on:"キョク", kun:"" },
+  "事": { on:"ジ", kun:"こと" },
+  "実": { on:"ジツ", kun:"み・みの（る）" },
+  "所": { on:"ショ", kun:"ところ" },
+  "身": { on:"シン", kun:"み" },
+  "進": { on:"シン", kun:"すす（む）" },
+  "全": { on:"ゼン", kun:"まった（く）・すべ（て）" },
+  "代": { on:"ダイ・タイ", kun:"か（える）・よ・しろ" },
+  "着": { on:"チャク", kun:"き（る）・つ（く）" },
+  "定": { on:"テイ・ジョウ", kun:"さだ（める）" },
+  "転": { on:"テン", kun:"ころ（ぶ）" },
+  "動": { on:"ドウ", kun:"うご（く）" },
+  "配": { on:"ハイ", kun:"くば（る）" },
+  "発": { on:"ハツ・ホツ", kun:"" },
+  "筆": { on:"ヒツ", kun:"ふで" },
+  "品": { on:"ヒン", kun:"しな" },
+  "部": { on:"ブ", kun:"" },
+  "物": { on:"ブツ・モツ", kun:"もの" },
+  "平": { on:"ヘイ・ビョウ", kun:"たい（ら）・ひら" },
+  "命": { on:"メイ・ミョウ", kun:"いのち" },
+  "面": { on:"メン", kun:"おも・おもて・つら" },
+  "洋": { on:"ヨウ", kun:"" },
+  "流": { on:"リュウ・ル", kun:"なが（れる）" },
+  "路": { on:"ロ", kun:"じ・みち" },
+  "和": { on:"ワ", kun:"やわ（らぐ）・なご（む）" }
+};
+
+const KANJI_BY_GRADE = {
+  g1: ["音","下","火","学","気","金","空","月","見","口","山","車","手","出","小","上","人","水","生","先","足","大","中","天","日","入","年","文","本","名","目","力"],
+  g2: ["家","会","海","外","元","言","原","後","行","国","作","書","場","食","心","新","数","前","体","地","長","直","通","当","頭","道","内","風","分","方","門","夜","野","用","来"],
+  g3: ["悪","意","運","化","開","感","期","業","局","事","実","所","身","進","全","代","着","定","転","動","配","発","筆","品","部","物","平","命","面","洋","流","路","和"]
+};
+KANJI_BY_GRADE.g12 = [...KANJI_BY_GRADE.g1, ...KANJI_BY_GRADE.g2];
+KANJI_BY_GRADE.g123 = [...KANJI_BY_GRADE.g1, ...KANJI_BY_GRADE.g2, ...KANJI_BY_GRADE.g3];
+
+const JUKUGO_TSV = `
+音感	おんかん	音の高い・低いなどのちがいを聞き分ける力	音感がよい人は音のちがいにすぐ気づきます
+音頭	おんど	みんなで歌ったりおどったりするときの歌や調子	先生が音頭をとってみんなで手をたたきました
+足音	あしおと	人や動物が歩いたときに出る音	ろう下で足音がしてだれか来たと分かりました
+心音	しんおん	心ぞうが動くときに出る音	病院で心音を聞いてもらいました
+全音	ぜんおん	音と音の間が「半音2つ分」あいていること（音の間の広さ）	ピアノでドからレは全音です。
+長音	ちょうおん	声や音を長くのばして出す音	お父さんの「とう」は長音です
+発音	はつおん	言葉の音を声に出すこと	英語の発音をれんしゅうします
+本音	ほんね	心の中で本当に思っていること	本音を言うと、宿題はやりたくないです。
+物音	ものおと	物が動いたり当たったりして出る音	夜に物音がして目がさめました
+和音	わおん	いくつかの音を同時に鳴らした音	ピアノで和音をひくときれいにひびきます
+下部	かぶ	全体の中で下のほうの部分	黒板の下部に今日の宿題を書きました
+下流	かりゅう	川の流れで下のほう（海に近いほう）	川の下流には広い川原があります
+下山	げざん	山から下りること	暗くなる前に下山しました
+下車	げしゃ	次のえきで電車やバスからおりること	次の駅で下車してください
+下水	げすい	使った水などを集めて流すしくみ（またはその水）	台所で使った水は下水に流れます
+下足	げそく	くつやはきもの	げん関で下足をそろえました
+下品	げひん	言葉づかいやふるまいが上品でないようす	人をばかにする言い方は下品です
+下着	したぎ	服の下に身につける服	寒い日はあたたかい下着を着ます
+下心	したごころ	人に言えない、よくないねらい（ずるい気持ち）	おこづかいがほしくて手伝ったと思われたら、下心があるみたいだ。
+下地	したじ	もとになる部分／前もってしておく準備	絵をきれいにぬるために下地をぬりました
+下火	したび	前よりもさかんでなくなること	そのあそびは今では下火になりました
+下見	したみ	前もって見てようすをたしかめること	遠足の前に先生が場所を下見しました
+下期	しもき	一年などを前半後半に分けたときの後半	会社では下期の目標を決めます
+下手	へた	うまくできないこと	わたしは字を書くのが下手です
+風下	かざしも	風がふいていく方向	けむりが来ないように風下に立ちました
+上下	じょうげ	上と下	エレベーターで上下にいどうします
+足下	あしもと	足のまわりや立っている場所	夜は足下に気をつけて歩きましょう
+地下	ちか	地面の下	この建物の地下に店があります
+直下	ちょっか	すぐ下	看板の直下に立たないでください。
+手下	てした	命令を受けて動く人	親分の手下が集まりました
+天下	てんか	世の中全体	天下に名が知れた人です
+年下	としした	自分より年が若い人	年下の友だちと遊びました
+部下	ぶか	仕事で自分より立場が下の人	部下と話し合いをしました
+目下	もっか	今のところ	目下の目標は九九をおぼえることです
+門下	もんか	ある先生について学んでいる人たち	先生の門下で学びました
+火気	かき	火や熱に関すること	火気に注意してください
+火口	かこう	火山でマグマなどが出る穴	火山の火口を見学しました
+火山	かざん	地面の中の熱いものがふき出す山	日本には火山が多いです
+火事	かじ	火が出て建物などが燃えること	近くで火事がありました
+火中	かちゅう	火の中	火中に物を投げ入れてはいけません
+火力	かりょく	火がもつ強さ	火力を弱くしてください
+火元	ひもと	火が出はじめた場所	火元をたしかめました
+口火	くちび	物事が始まるきっかけ	先生が口火を切りました
+直火	じかび	なべなどを直接火にかけること	直火で料理します
+出火	しゅっか	火が出ること	台所から出火しました
+大火	たいか	大きな火事	町で大火がありました
+着火	ちゃっか	火をつけること	木に着火しました
+野火	のび	野原に広がって燃える火	野火が広がりました
+発火	はっか	物が原因で火が出ること	電池が発火しました
+学業	がくぎょう	勉強すること	学業に力を入れています
+学生	がくせい	学校で学んでいる人	兄は大学生です
+学長	がくちょう	大学のいちばん上の責任者	学長があいさつしました
+学内	がくない	学校の中	学内で行事があります
+学年	がくねん	学校での学ぶ年ごとの区分	学年が上がりました
+学部	がくぶ	大学で学ぶ分野ごとのまとまり	理科の学部に入ります
+学風	がくふう	その学校の学び方や考え方の特色	この学校には自由な学風があります
+学名	がくめい	生き物につけられた学問上の名前	植物には学名があります
+学力	がくりょく	学んだことを理解し使う力	学力を高めるために毎日勉強します
+学会	がっかい	研究について話し合う集まり	先生が学会に出ました
+学期	がっき	一年をいくつかに分けた学ぶ期間	新しい学期が始まります
+科学	かがく	自然のしくみを調べる学問	科学の実けんをしました
+見学	けんがく	実際に見て学ぶこと	工場を見学しました
+後学	こうがく	あとから学ぶこと	後学のためにもう少し説明してください
+国学	こくがく	日本の言葉や歴史などを研究する学問	国学について学びました
+実学	じつがく	生活や仕事に役立つ学問	実学を学ぶことは大切です
+小学	しょうがく	小学校で学ぶこと	小学での学びを大切にします
+進学	しんがく	次の学校に進むこと	中学へ進学します
+数学	すうがく	数や形のしくみを学ぶ教科	数学の問題をときました
+大学	だいがく	高校のあとに行く専門的に学ぶ学校	兄は大学に通っています
+地学	ちがく	地球や自然のしくみを調べる学問	地学で星の話を聞きました
+中学	ちゅうがく	小学校のあとに通う学校	来年中学に入ります
+通学	つうがく	学校に通うこと	毎日自転車で通学します
+転学	てんがく	通っている学校を変えること	引っこしで転学しました
+入学	にゅうがく	学校に入ること	四月に入学します
+文学	ぶんがく	文章や物語などを研究し味わう学問	文学の本を読みました
+夜学	やがく	夜に学ぶ学校や勉強	仕事のあと夜学に通います
+力学	りきがく	物が動く力やはたらきを調べる学問	力学の考え方を学びました
+気運	きうん	物事が進みやすくなる流れ	大会に向けて気運が高まりました
+気化	きか	液体が気体に変わること	水が気化してかわきます
+気心	きごころ	気持ちが分かり合っていること	気心の知れた友だちです
+気体	きたい	形が決まらない空気のような状態	空気は気体です
+気長	きなが	あせらずゆっくり待てるようす	気長に結果を待ちます
+気品	きひん	上品でおちついた感じ	気品のある話し方です
+気風	きふう	その人や集団のふんいきや気質	明るい気風の学校です
+気分	きぶん	そのときの心のようす	今日は気分がいいです
+気前	きまえ	お金や物を気持ちよく出すようす	気前よく分けてくれました
+気門	きもん	虫などが空気を出し入れする体のあな	虫は気門で息をします
+気流	きりゅう	空気の流れ	空の気流が速くなっています
+気力	きりょく	がんばろうとする心の力	気力をふりしぼって走りました
+気配	けはい	何かが起こりそうなようす	雨の気配がします
+意気	いき	やろうとする気持ち	意気こんで発表しました
+内気	うちき	気が弱くて引っこみ思案なこと	内気な子でも手を上げました
+運気	うんき	運のめぐり合わせ	今年は運気がよさそうです
+外気	がいき	外の空気	外気を入れてかん気します
+火気	かき	火や熱に関すること	火気に注意しましょう
+空気	くうき	まわりにあって目に見えない気体	新しい空気を入れます
+元気	げんき	体や心がじょうぶなようす	今日も元気に学校へ行きます
+上気	じょうき	気持ちが高ぶって顔が赤くなるようす	走って上気した顔になりました
+生気	せいき	生き生きとした気分やいきおい。活気。	生気がよみがえる。
+大気	たいき	地球のまわりをつつむ空気	この季節は大気が不安定だから注意が必要
+通気	つうき	空気を通すこと	部屋の通気をよくします
+天気	てんき	空のようす	今日は天気がいいです
+人気	にんき	多くの人に好まれていること	この本は人気があります
+平気	へいき	気にしないで落ち着いていること	少し雨でも平気です
+本気	ほんき	まじめに取り組む気持ち	本気で練習します
+水気	みずけ	水をふくんでいるようす	紙に水気があります
+和気	わき	なごやかでやさしいふんいき	和気あいあいと話しました
+悪気	わるぎ	わざと困らせようとする気持ち	悪気はありませんでした
+金物	かなもの	金属でできた道具や物	金物の音がしました
+金目	かねめ	お金としての価値	金目の物は大切にします
+金運	きんうん	お金に関する運	今年は金運がよいです
+金山	きんざん	金が取れる山	昔この山は金山でした
+金品	きんぴん	お金や貴重な物	金品を大切にあつかいます
+頭金	あたまきん	はじめに払うお金	家を買うときに頭金を払いました
+元金	がんきん	もとのお金	元金を少しずつ返します
+口金	くちがね	入れ物の口につける金具	ふくろの口金が外れました
+出金	しゅっきん	お金を出すこと	口座から出金しました
+大金	たいきん	たくさんのお金	大金を持ち歩きません
+代金	だいきん	品物を買ったときに払うお金	代金をはらいました
+入金	にゅうきん	お金が入ること	給料が口座に入金されました
+年金	ねんきん	年をとったあとにもらうお金	年金の話を聞きました
+空手	からて	道具を使わず手や足で行う武道	空手を習っています
+空気	くうき	まわりにあって目に見えない気体	空気がきれいです
+空車	くうしゃ	人や荷物が乗っていない車	空車のタクシーを見つけました
+空前	くうぜん	これまでにないほど大きいこと	空前の記録が出ました
+空中	くうちゅう	地面や床から離れたところ	鳥が空中を飛びます
+空転	くうてん	うまく進まずむだに回ること	話し合いが空転しました
+空路	くうろ	空を通る道	飛行機は空路を進みます
+大空	おおぞら	広くひろがる空	青い大空が広がります
+上空	じょうくう	空の高いところ	上空を飛行機が通りました
+天空	てんくう	とても高い空	天空に星が見えます
+夜空	よぞら	夜に見える空	夜空に月が出ました
+月食	げっしょく	月が地球の影に入り見えにくくなること	月食を観察しました
+月面	げつめん	月の表面	月面の写真を見ました
+月日	つきひ	時間の流れ	長い月日がたちました
+月見	つきみ	月を見て楽しむこと	家族で月見をしました
+月夜	つきよ	月が出ている夜	明るい月夜でした
+新月	しんげつ	月がほとんど見えないとき	今夜は新月です
+先月	せんげつ	今の月の前の月	先月は雨が多かったです
+前月	ぜんげつ	今の月の前の月	前月の記録を見ます
+長月	ながつき	旧暦九月の名前	長月のころは夜が長いです
+年月	ねんげつ	長い時間	長い年月がたちました
+文月	ふみづき	旧暦七月の名前	文月には星祭りがあります
+名月	めいげつ	とくに美しい月	今夜は名月です
+来月	らいげつ	次の月	来月に行事があります
+見学	けんがく	実際に見て学ぶこと	工場を見学しました
+見当	けんとう	だいたいの目安	見当がつきました
+見物	けんぶつ	見て楽しむこと	祭りを見物しました
+見事	みごと	とてもすばらしいようす	見事な発表でした
+見所	みどころ	見る価値のあるところ	この町には見所があります
+見本	みほん	手本として見せるもの	見本を見て作ります
+意見	いけん	自分の考え	自分の意見を言いました
+会見	かいけん	人前で話し質問を受けること	市長が会見しました
+外見	がいけん	外から見たようす	外見で人を判断しません
+風見	かざみ	風の向きを知るための道具	風見が回っています
+後見	こうけん	あとから助けて支えること	成年後見人がつきました
+下見	したみ	前もって見てたしかめること	会場を下見しました
+所見	しょけん	見たり調べたりして思ったこと	先生の所見を聞きました
+先見	せんけん	先のことを見通す考え	先見の明があります
+月見	つきみ	月を見て楽しむこと	秋に月見をします
+発見	はっけん	今まで知られていなかったことを見つけること	新しい星を発見しました
+口数	くちかず	話す量	今日は口数が少ないです
+口車	くちぐるま	うまい言葉で人を動かすこと	口車に乗らないようにします
+口先	くちさき	言葉だけのこと	口先だけで約束しません
+口火	くちび	物事が始まるきっかけ	先生が口火を切りました
+口元	くちもと	口のまわり	口元を手でおさえました
+口外	こうがい	外の人に話すこと	この話は口外しないでください
+口実	こうじつ	本当の理由をかくす言いわけ	雨を口実に休みました
+口上	こうじょう	人前でのあいさつや話	開会の口上がありました
+口頭	こうとう	書かずに口で話すこと	口頭で説明しました
+悪口	わるくち	人のよくないところを言うこと	友だちの悪口を言いません
+開口	かいこう	口を開くこと	大きく開口しました
+大口	おおぐち	量や金額が多いこと	大口の注文が入りました
+火口	かこう	火山でマグマなどが出る穴	火山の火口を見ました
+門口	もんぐち	門の入り口	門口で待ち合わせました
+小口	こぐち	量や金額が少ないこと	小口の支払いです
+人口	じんこう	ある場所に住んでいる人の数	町の人口が増えました
+手口	てぐち	やり方や方法	新しい手口を考えます
+出口	でぐち	外に出るところ	出口はこちらです
+山海	さんかい	山と海	山海の幸を味わいます
+山上	さんじょう	山の上	山上から景色を見ました
+山水	さんすい	山や川の自然の景色	山水の絵を見ました
+山地	さんち	山が多い土地	山地が広がっています
+山中	さんちゅう	山の中	山中で道に迷いました
+山道	やまみち	山の中を通る道	山道を歩きます
+山門	さんもん	寺の門	山門をくぐりました
+山野	さんや	山や野原	山野をかけ回ります
+山車	だし	祭りで引く大きな飾り車	祭りで山車を引きました
+山風	やまかぜ	山から吹きおろす風	山風が強いです
+山国	やまぐに	山が多い国や地域	日本は山国です
+山路	やまじ	山の中の道	山路を歩いて進みます
+山手	やまて	町や土地の高いほう	山手の町に住んでいます
+山場	やまば	いちばん大切なところ	試合はここが山場です
+車上	しゃじょう	車の上	車上に荷物をのせました
+車体	しゃたい	車のからだの部分	車体をきれいにします
+車中	しゃちゅう	車の中	車中で本を読みました
+車道	しゃどう	車が通るための道	車道をわたるときは注意します
+車内	しゃない	車の中	車内では静かにします
+外車	がいしゃ	外国で作られた車	外車を見かけました
+空車	くうしゃ	人や荷物が乗っていない車	空車のバスが来ました
+口車	くちぐるま	うまい言葉で人を動かすこと	口車にだまされません
+下車	げしゃ	電車やバスなどからおりること	次の駅で下車します
+水車	すいしゃ	水の力で回る車	川に水車があります
+前車	ぜんしゃ	前を走っている車	前車とのきょりをとります
+山車	だし	祭りで引く大きな飾り車	町で山車が出ました
+配車	はいしゃ	車を手配すること	タクシーを配車しました
+発車	はっしゃ	車が出発すること	電車が発車しました
+風車	ふうしゃ	風の力で回る車	風車が回っています
+手動	しゅどう	人の手で動かすこと	手動でスイッチを入れます
+手足	てあし	手と足	手足をのばします
+手当	てあて	世話をしたりお金を支払ったりすること	けがの手当をしました
+手数	てすう	手間や作業の回数	手数が多くかかります
+手口	てぐち	やり方や方法	よい手口を考えます
+手心	てごころ	相手のことを考えて少し加減すること	手心を加えて教えました
+手先	てさき	指や手の先	手先を使って作ります
+手下	てした	命令を受けて動く人	親分の手下です
+手品	てじな	ふしぎに見せる芸	手品を見せてもらいました
+手配	てはい	前もって準備すること	会場の手配をします
+手本	てほん	まねをする見本	先生の字を手本にします
+手前	てまえ	自分の近く	手前にかばんを置きました
+手元	てもと	手の近くや今使っている物	手元の本を開きます
+悪手	あくしゅ	よくない打ち手ややり方	その考えは悪手でした
+新手	あらて	あたらしいやり方	新手の方法を試します
+上手	じょうず	物事がうまくできること	字を書くのが上手です
+大手	おおて	規模が大きく力のあること	大手の会社です
+空手	からて	道具を使わず手や足で行う武道	空手の練習をします
+小手	こて	手や腕の一部分	小手を動かして打ちます
+後手	ごて	物事の動きが相手より遅れること	後手に回りました
+下手	へた	うまくできないこと	歌が下手です
+先手	せんて	相手より先に行動すること	先手を打ちました
+着手	ちゃくしゅ	仕事や勉強を始めること	計画に着手します
+入手	にゅうしゅ	手に入れること	資料を入手しました
+人手	ひとで	仕事をする人の数	人手が足りません
+平手	ひらて	ひらいた手のひら	平手でたたきました
+名手	めいしゅ	とても上手な人	野球の名手です
+元手	もとで	もとになるお金や材料	元手をためます
+野手	やしゅ	野球で守りをする選手	野手が守ります
+山手	やまて	町や土地の高いほう	山手の道を歩きます
+出火	しゅっか	火が出ること	夜に出火しました
+出金	しゅっきん	お金を出すこと	銀行で出金します
+出家	しゅっけ	家を出て仏門に入ること	昔は出家する人がいました
+出国	しゅっこく	国の外へ出ること	明日出国します
+出身	しゅっしん	生まれ育った場所	東京出身です
+出生	しゅっしょう	生まれること	新しい命が出生しました
+出場	しゅつじょう	大会や行事に出ること	大会に出場します
+出水	しゅっすい	川などの水が増えてあふれること	大雨で出水しました
+出頭	しゅっとう	決められた場所に出向くこと	警察に出頭しました
+出勤	しゅっきん	仕事のために職場へ行くこと	朝八時に出勤します
+出入	でいり	出たり入ったりすること	人の出入が多い店です
+出発	しゅっぱつ	出かけること	朝早く出発しました
+出品	しゅっぴん	品物を出して売ること	作品を出品します
+出力	しゅつりょく	力やエネルギーを外に出すこと	機械の出力を上げます
+小口	こぐち	量や金額が少ないこと	小口の注文です
+小言	こごと	こまかく言う注意	母に小言を言われました
+小作	こさく	人の土地を借りて作物を作ること	昔は小作をする人がいました
+小手	こて	手や腕のひじから先の部分	小手をのばします
+小人	こびと	体の小さい人／昔話の小さな人	小人が出てくる話です
+小筆	こふで	小さく書くための筆	小筆で字を書きました
+小道	こみち	せまい道	小道を通って帰ります
+小路	こうじ	町の中にあるせまい道	小路を歩きました
+小物	こもの	小さな道具や品物	小物を整理します
+小学	しょうがく	小学校で学ぶこと	小学の学習を大切にします
+小国	しょうこく	国土や人口が小さい国	小国にも長い歴史があります
+小事	しょうじ	小さな出来事	小事を気にしません
+小食	しょうしょく	食べる量が少ないこと	小食な子です
+小心	しょうしん	気が小さくこわがりなこと	小心でもがんばります
+小数	しょうすう	一より小さい数	小数の計算をします
+小品	しょうひん	小さくまとまった作品	小品の絵を見ました
+大小	だいしょう	大きいことと小さいこと	大小の石があります
+上着	うわぎ	服の上に着る服	寒いので上着を着ます
+上期	じょうき	一年のはじめのほうの期間	上期のまとめをします
+上手	じょうず	物事がうまくできること	歌が上手です
+上意	じょうい	目上の人の考えや命令	上意にしたがいます
+上気	じょうき	顔が赤くなるほど気持ちが高ぶること	走って上気しました
+上空	じょうくう	空の高いところ	上空に雲があります
+上下	じょうげ	上と下	上下に動かします
+上水	じょうすい	飲み水として使う水	町の上水を守ります
+上体	じょうたい	体の上の部分	上体を起こします
+上代	じょうだい	品物につけられた値段	上代をたしかめます
+上人	しょうにん	仏教のお坊さん	上人の話を聞きました
+上品	じょうひん	言葉づかいやふるまいがていねいなこと	上品な話し方です
+上物	じょうもの	質がよい品物	上物の野菜です
+上方	かみがた	京都や大阪を中心とした地方	上方の文化を学びます
+上流	じょうりゅう	川の上のほう	川の上流で遊びました
+海上	かいじょう	海の上	船が海上を進みます
+風上	かざかみ	風がふいてくるほう	風上に立ちます
+口上	こうじょう	人前でのあいさつや話	開会の口上がありました
+言上	ごんじょう	目上の人に申し上げること	大名に言上しました
+山上	さんじょう	山の上	山上から町を見ました
+車上	しゃじょう	車の上	車上に荷物を積みます
+身上	しんじょう	その人の立場や暮らしのようす	身上を話しました
+水上	すいじょう	水の上	水上を船が進みます
+頭上	ずじょう	頭の上	頭上に鳥が飛びました
+地上	ちじょう	地面の上	地上におります
+長上	ちょうじょう	年や立場が上の人	長上の人を立てます
+天上	てんじょう	空の上	天上の月が輝いている
+年上	としうえ	自分より年が多い人	年上の兄です
+目上	めうえ	立場や年が上の人	目上の人にあいさつします
+洋上	ようじょう	広い海の上	洋上で日の出を見ました
+路上	ろじょう	道路の上	路上にごみをすてません
+人家	じんか	人の住んでいる家	人家が見えてきました
+人海	じんかい	とても多くの人	人海にまぎれました
+人後	じんご	人よりあと	人後に落ちません
+人口	じんこう	ある場所に住んでいる人の数	市の人口が増えました
+人事	じんじ	人に関わる事がら	人事をつくします
+人心	じんしん	人の心	人心をつかみます
+人身	じんしん	人の体や命	人身事故に注意します
+人生	じんせい	人が生きていく一生	人生について考えます
+人体	じんたい	人の体	人体のしくみを学びます
+人道	じんどう	人として正しい行い	人道に反する行いです
+人品	じんぴん	人の性格や品のよさ	人品のある人です
+人物	じんぶつ	人のようすや性格	すばらしい人物です
+人文	じんぶん	人の文化や考え方に関すること	人文の学びを深めます
+人名	じんめい	人の名前	人名を正しく書きます
+人命	じんめい	人のいのち	人命を守ります
+人面	じんめん	人の顔	人面の形をえがきます
+人力	じんりき	人の力	人力で運びます
+人気	にんき	多くの人に好まれていること	この店は人気です
+人数	にんずう	人の数	人数をかぞえます
+人足	にんそく	働く人	工事に人足が集まりました
+人手	ひとで	仕事をする人の数	人手が足りません
+人出	ひとで	人が集まること	祭りで人出が多いです
+人前	ひとまえ	ほかの人が見ているところ	人前で話します
+人目	ひとめ	人の目／見ている人	人目を気にします
+悪人	あくにん	悪いことをする人	悪人をゆるしません
+大人	おとな	子どもではない人	大人になりました
+外人	がいじん	外国の人	外人の先生です
+原人	げんじん	大昔に生きていた人類	原人の生活を学びます
+小人	こびと	体の小さい人／昔話の小さな人	小人の話を読みました
+上人	しょうにん	仏教のお坊さん	上人の教えを聞きます
+新人	しんじん	新しく入ってきた人	新人が入りました
+先人	せんじん	昔の人	先人の知えに学びます
+前人	ぜんじん	それより前の人	前人の業績を調べます
+天人	てんにん	天に住むと考えられている人	天人のえを見ました
+当人	とうにん	その人自身	当人に聞きます
+名人	めいじん	とてもすぐれた人	書道の名人です
+文人	ぶんじん	文章や学問にすぐれた人	文人の書を読みました
+本人	ほんにん	その人自身	本人に確認します
+門人	もんじん	先生について学んでいる人	先生の門人です
+水運	すいうん	水の上を使った運び方	水運で物を運びます
+水車	すいしゃ	水の力で回る車	川で水車が回っています
+水上	すいじょう	水の上	水上を船が進みます
+水道	すいどう	水を家などに送るしくみ	水道の水を使います
+水分	すいぶん	水の成分や水の量	水分をしっかり取ります
+水平	すいへい	かたむいていないようす	机を水平にします
+水面	すいめん	水の表面	水面が光っています
+水門	すいもん	水の流れを調節する門	水門を開けます
+水流	すいりゅう	水の流れ	水流が速いです
+水力	すいりょく	水がもつ力	水力を利用します
+水路	すいろ	水が流れる道	水路をそうじします
+水着	みずぎ	水に入るときに着る服	水着に着がえます
+水気	みずけ	水をふくんでいるようす	紙に水気があります
+大水	おおみず	たくさんの水	大水で川があふれました
+海水	かいすい	海の水	海水はしょっぱいです
+行水	ぎょうずい	体を水で洗ってさっぱりすること	夏に行水します
+下水	げすい	使った水などを流すしくみ	下水を整えます
+出水	しゅっすい	川などの水が増えてあふれること	雨で出水しました
+上水	じょうすい	飲み水として使う水	上水を大切にします
+進水	しんすい	船を水にうかべること	船が進水しました
+着水	ちゃくすい	水の上に下りること	飛行機が着水しました
+天水	てんすい	雨など空からふる水	天水をためます
+生水	なまみず	わかしていない水	生水は飲みません
+配水	はいすい	水を分けて送ること	町に配水します
+用水	ようすい	生活や農業に使う水	田んぼに用水を引きます
+流水	りゅうすい	流れている水	流水がきれいです
+生地	きじ	布／もとになる材料	服の生地をえらびます
+生家	せいか	生まれ育った家	生家をたずねました
+生業	なりわい	生活のための仕事	家族の生業を学びました
+生後	せいご	生まれてからあと	生後三か月です
+生前	せいぜん	生きているあいだ	生前の話を聞きました
+生体	せいたい	生きている体	生体のしくみを調べます
+生長	せいちょう	生き物が大きく育つこと	植物が生長します
+生年	せいねん	生まれた年	生年を調べます
+生物	せいぶつ	生きているもの	海の生物を見ました
+生命	せいめい	生きているいのち	生命を大切にします
+生来	せいらい	生まれつき	生来の性格です
+生身	なまみ	生きているそのままの体	生身で寒さにたえます
+学生	がくせい	学校で学んでいる人	学生が集まります
+原生	げんせい	自然のままの状態	原生の森が残ります
+出生	しゅっしょう	生まれること	新しい命が出生しました
+小生	しょうせい	自分をへりくだって言う言い方	小生は未熟です
+新生	しんせい	新しく生まれ変わること	町が新生しました
+人生	じんせい	人が生きていく一生	人生を大切にします
+先生	せんせい	教えてくれる人	先生に質問します
+転生	てんせい	生まれ変わること	物語で転生します
+発生	はっせい	物事が起こること	事故が発生しました
+平生	へいぜい	ふだんいつも	平生から努力します
+野生	やせい	自然の中で育つこと	野生の動物です
+先月	せんげつ	今の月の前の月	先月の記録です
+先見	せんけん	先のことを見通す考え	先見の明があります
+先行	せんこう	先に行くこと	列の先行グループです
+先日	せんじつ	少し前の日	先日の話を思い出します
+先進	せんしん	ほかより先に進んでいること	先進の技術です
+先人	せんじん	昔の人	先人の知えに学びます
+先生	せんせい	教えてくれる人	先生に相談します
+先代	せんだい	前の代の人	先代の話を聞きました
+先着	せんちゃく	先に着くこと	先着順です
+先手	せんて	相手より先に行動すること	先手を打ちました
+先天	せんてん	生まれつきそなわっていること	彼の数学の才能は先天的なものだ
+先頭	せんとう	いちばん先	列の先頭に立ちます
+先入	せんにゅう	先に入ること	会場に先入します
+先年	せんねん	少し前の年	先年の出来事です
+先発	せんぱつ	いちばん初めに出ること	先発の選手です
+先方	せんぽう	相手の人や相手の側	先方に連絡します
+後先	あとさき	前と後	後先を考えます
+口先	くちさき	言葉だけのこと	口先だけでは足りません
+手先	てさき	指や手の先	手先を使います
+出先	でさき	出かけた先	出先で雨に会いました
+筆先	ふでさき	筆の先	筆先をととのえます
+目先	めさき	近い将来やすぐ前のこと	目先のことにとらわれません
+足代	あしだい	旅や移動に使うお金	足代を用意します
+足場	あしば	立ったり作業したりする場所	足場を固めます
+足元	あしもと	足のまわりや立っている場所	足元に注意します
+下足	げそく	くつやはきもの	下足をそろえます
+長足	ちょうそく	大きく進むこと	長足の進歩です
+手足	てあし	手と足	手足を動かします
+出足	であし	出て行くときの動き	出足が速いです
+発足	ほっそく	新しく始まること	新しい会が発足しました
+大風	おおかぜ	強い風	夜に大風がふきました
+大方	おおかた	だいたい	大方の予想が当たりました
+大口	おおぐち	量や金額が多いこと	大口の注文です
+大筆	おおふで	大きな筆	大筆で字を書きました
+大水	おおみず	たくさんの水	大水で川があふれました
+大物	おおもの	力やえいきょうの大きい人や物	大物の選手です
+大路	おおじ	広い道	大路を歩きます
+大意	たいい	話や文章のおおまかな意味	話の大意をまとめます
+大局	たいきょく	全体の大きなようす	大局を見て考えます
+大山	たいざん	大きな山	大山に登りました
+大事	だいじ	とても大切なこと	体を大事にします
+大地	だいち	広い土地	大地に立ちます
+中期	ちゅうき	ある期間のまん中のころ	中期の計画です
+中天	ちゅうてん	空のまん中あたり	太陽が中天にあります
+中日	なかび	相撲や演劇などで、客に見せている期間の真ん中の日	夏場所もいよいよ中日をむかえる
+中年	ちゅうねん	大人のまん中ごろの年ごろ	中年の人です
+中部	ちゅうぶ	ある場所のまん中の部分	日本の中部地方です
+中流	ちゅうりゅう	上でも下でもないくらい	中流のくらしです
+中和	ちゅうわ	強さや性質をやわらげること	薬で中和します
+中身	なかみ	中に入っているもの	箱の中身を見ます
+意中	いちゅう	心の中で思っていること	意中の人です
+命中	めいちゅう	ねらったところに当たること	的に命中しました
+天外	てんがい	思いもよらないところ	天外な考えです
+天日	てんぴ	太陽の光	そめものを天日にさらす
+天分	てんぶん	生まれつきの才能	天分を生かします
+天命	てんめい	天から与えられた運命	天命を信じます
+天文	てんもん	星や空のようすを調べる学問	天文を学びます
+後天	こうてん	生まれたあとに身につくこと	後天の力です
+野天	のてん	屋根のない外	野天で食事をしました
+日食	にっしょく	太陽が月にかくれる現象	日食を観察しました
+日数	にっすう	日にちの数	日数を数えます
+日中	にっちゅう	昼のあいだ	日中は暑いです
+日直	にっちょく	その日当番をする人	今日は日直です
+日当	にっとう	一日分としてもらうお金	日当をもらいました
+日本	にほん	わたしたちが住んでいる国	日本に住んでいます
+日長	ひなが	昼の時間が長いこと	春は日長になります
+日和	ひより	天気のようす	今日はよい日和です
+元日	がんじつ	一年のはじめの日	元日に初日の出を見ました
+期日	きじつ	決められた日	期日までに出します
+後日	ごじつ	あとになってから	後日知らせます
+数日	すうじつ	何日か	数日休みます
+先日	せんじつ	少し前の日	先日の話です
+前日	ぜんじつ	その日の前の日	前日に準備します
+全日	ぜんじつ	一日じゅう	全日参加します
+月日	つきひ	時間の流れ	長い月日が流れました
+当日	とうじつ	その日	当日に集まります
+平日	へいじつ	土日や祝日でない日	平日に学校があります
+本日	ほんじつ	きょう	本日の予定です
+命日	めいにち	人が亡くなった日	祖父の命日です
+来日	らいにち	日本に来ること	外国から来日します
+入会	にゅうかい	会に入ること	クラブに入会しました
+入学	にゅうがく	学校に入ること	四月に入学します
+入金	にゅうきん	お金が入ること	口座に入金しました
+入国	にゅうこく	国の中に入ること	日本に入国しました
+入山	にゅうざん	山に入ること	朝から入山しました
+入手	にゅうしゅ	手に入れること	新しい本を入手しました
+入所	にゅうしょ	施設や場所に入ること	施設に入所しました
+入場	にゅうじょう	会場に入ること	入場の時間です
+入水	にゅうすい	水に入ること	川に入水しました
+入部	にゅうぶ	部活動に入ること	野球部に入部しました
+入門	にゅうもん	学び始めることやその入口	書道に入門しました
+入用	にゅうよう	必要なこと	入用な物を買います
+入力	にゅうりょく	文字や数字を機械に入れること	文字を入力します
+出入	でいり	出たり入ったりすること	人の出入が多い場所です
+進入	しんにゅう	中へ進んで入ること	立入禁止に進入しません
+新入	しんにゅう	新しく入ること	新入の生徒です
+転入	てんにゅう	よそから移って入ること	転入生が来ました
+流入	りゅうにゅう	流れこんで入ること	川に水が流入します
+年上	としうえ	自分より年が多い人	年上の兄です
+年下	としした	自分より年が少ない人	年下の友だちです
+年期	ねんき	あることを続ける決められた年数	年期が明けました
+年金	ねんきん	年をとったあとにもらうお金	年金の話を聞きました
+年月	ねんげつ	長い時間	長い年月がたちました
+年中	ねんじゅう	一年じゅう	年中花がさきます
+年数	ねんすう	年の数	年数を数えます
+年代	ねんだい	ある時代の区分	年代ごとに分けます
+年長	ねんちょう	年が上であること	年長の子です
+年頭	ねんとう	年のはじめ	年頭に目標を立てます
+年内	ねんない	その年のうち	年内に終わらせます
+年配	ねんぱい	年のころ	年配の人です
+来年	らいねん	次の年	来年また会います
+学年	がくねん	学校で学ぶ年の区分	学年が上がりました
+後年	こうねん	のちの年	後年になって評価されました
+新年	しんねん	新しい年	新年をむかえました
+生年	せいねん	生まれた年	生年を調べます
+先年	せんねん	少し前の年	先年の出来事です
+前年	ぜんねん	その年の前の年	前年と比べます
+中年	ちゅうねん	大人のまん中ごろの年ごろ	中年の人です
+定年	ていねん	仕事をやめる決められた年	父は定年です
+当年	とうねん	その年	当年の計画です
+長年	ながねん	長いあいだ	長年の努力です
+平年	へいねん	特別なことのないふつうの年	平年の気温です
+本年	ほんねん	今年	本年もよろしくお願いします
+来年	らいねん	次の年	来年また会います
+文月	ふみづき	旧暦七月の名前	文月の夜は星がきれいです
+文意	ぶんい	文章の意味	文意を考えます
+文化	ぶんか	人々のくらしや考え方のまとまり	日本の文化を学びます
+文学	ぶんがく	文章や物語を学び味わう学問	文学の本を読みます
+文書	ぶんしょ	書かれた文や書類	文書を作ります
+文人	ぶんじん	文章を書くことにすぐれた人	文人の作品です
+文体	ぶんたい	文章の書き方の特徴	文体をくらべます
+文通	ぶんつう	手紙のやりとりをすること	友だちと文通します
+文筆	ぶんぴつ	文章を書くこと	文筆の仕事です
+文物	ぶんぶつ	文化に関わる物	文物を大切にします
+文面	ぶんめん	書かれている文章の内容	文面を読みます
+悪文	あくぶん	分かりにくい文章	悪文を直します
+空文	くうぶん	中身のない文章	空文では伝わりません
+言文	げんぶん	言葉と文章	言文のちがいを学びます
+原文	げんぶん	もとの文章	原文を読みます
+国文	こくぶん	その国の言葉で書かれた文章	国文の資料です
+作文	さくぶん	文章を書くこと	作文を書きました
+人文	じんぶん	人の文化や考え方に関する分野	人文の学びです
+全文	ぜんぶん	文章のすべて	全文を読みました
+長文	ちょうぶん	長い文章	長文にちょう戦します
+天文	てんもん	星や空のようすを調べる学問	天文の話を聞きました
+本文	ほんぶん	文章の中心となる部分	本文をよく読みます
+名文	めいぶん	よくできた文章	名文として知られています
+和文	わぶん	日本語で書かれた文章	和文で書きます
+本意	ほんい	本当に思っている考え	本意ではありません
+本気	ほんき	まじめに取り組む気持ち	本気で練習します
+本業	ほんぎょう	その人が主にしている仕事	本業に集中します
+本局	ほんきょく	組織や仕事の中心となる場所	本局に集まります
+本家	ほんけ	家の中心となる家	本家に集まりました
+本国	ほんごく	その人や会社のもとの国	本国に帰ります
+本山	ほんざん	宗派の中心となる寺	本山をたずねました
+本日	ほんじつ	きょう	本日の予定です
+本心	ほんしん	心の中の本当の気持ち	本心を話しました
+本体	ほんたい	もとになる大切な部分	本体を動かします
+本当	ほんとう	うそではないこと	それは本当です
+本人	ほんにん	その人自身	本人に聞きます
+本音	ほんね	心の中で本当に思っていること	本音を言いました
+本年	ほんねん	今年	本年の目標です
+本場	ほんば	もとになった場所	本場の味です
+本部	ほんぶ	組織の中心となる場所	本部に連絡します
+本分	ほんぶん	人として守るべきつとめ	本分をはたします
+本文	ほんぶん	文章の中心となる部分	本文を写します
+本名	ほんみょう	本当の名前	本名を書きます
+本命	ほんめい	いちばん大切だと思うもの	本命の相手です
+本物	ほんもの	にせものではない物	本物を見ました
+本来	ほんらい	もともと	本来の目的です
+本流	ほんりゅう	中心となる流れ	本流に戻ります
+元本	がんぽん	もとのお金	元本を守ります
+原本	げんぽん	写す前のもとの本	原本を確認します
+新本	しんぽん	新しく作られた本	新本が出ました
+手本	てほん	まねをする見本	先生の字を手本にします
+日本	にほん	わたしたちが住んでいる国	日本に住んでいます
+配本	はいほん	本を配ること	図書を配本します
+見本	みほん	手本として見せる物	見本を見て作ります
+名前	なまえ	人や物を区別するための呼び名	名前を書きます
+名代	みょうだい	代わりに用事をする人	名代として出かけます
+名家	めいか	よく知られた家	名家の出です
+名月	めいげつ	とくに美しい月	今夜は名月です
+名言	めいげん	心に残る大切な言葉	名言を心にとめます
+名作	めいさく	すぐれた作品	名作を読みました
+名山	めいざん	有名な山	名山に登ります
+名実	めいじつ	名前と中身	名実ともに立派です
+名手	めいしゅ	とても上手な人	野球の名手です
+名所	めいしょ	有名な場所	名所を見学します
+名人	めいじん	すぐれた技や力をもつ人	名人のわざです
+名品	めいひん	すぐれた品物	名品を集めます
+名物	めいぶつ	その土地で有名な物	町の名物です
+名文	めいぶん	よくできた文章	名文を音読します
+名目	めいもく	表向きの理由や名前	名目を立てます
+名門	めいもん	由緒のある家や学校	名門校です
+悪名	あくめい	よくないことで広まった名前	悪名が広がります
+学名	がくめい	生き物につけられた学問上の名前	植物の学名です
+家名	かめい	家の名前	家名を守ります
+実名	じつめい	本当の名前	実名で書きます
+書名	しょめい	本の名前	書名を記録します
+人名	じんめい	人の名前	人名を調べます
+大名	だいみょう	昔の日本で土地を治めた人	大名の城です
+地名	ちめい	土地の名前	地名を覚えます
+品名	ひんめい	品物の名前	品名を確認します
+本名	ほんみょう	本当の名前	本名を書きました
+命名	めいめい	名前をつけること	新しい星に命名しました
+和名	わめい	日本で使われる名前	和名で呼びます
+目上	めうえ	年や立場が上の人	目上の人にあいさつします
+目頭	めがしら	目の内側の角	目頭があつくなります
+目方	めかた	重さ	目方をはかります
+目先	めさき	近い将来やすぐ前のこと	目先のことを考えます
+目下	もっか	今のところ	目下の目標です
+目元	めもと	目のまわり	目元がやさしいです
+目前	もくぜん	目の前	目前にせまります
+金目	かねめ	お金としての価値	金目の物です
+着目	ちゃくもく	大事な点に目を向けること	変化に着目します
+人目	ひとめ	ほかの人の目	人目を気にします
+平目	ひらめ	魚の名前	平目を食べました
+品目	ひんもく	品物の種類	品目を分けます
+見目	みめ	見た目	見目がよい服です
+名目	めいもく	表向きの理由や名前	名目を立てました
+面目	めんもく	人としての立場や名誉	面目を保ちます
+力学	りきがく	物が動く力を調べる学問	力学を学びます
+力作	りきさく	力をこめて作った作品	力作が完成しました
+学力	がくりょく	学んだことを理解し使う力	学力を高めます
+火力	かりょく	火がもつ強さ	火力を弱めます
+気力	きりょく	がんばろうとする心の力	気力をふりしぼります
+国力	こくりょく	国がもつ力	国力を高めます
+実力	じつりょく	実際に身についている力	実力を発揮します
+出力	しゅつりょく	外に出す力やエネルギー	機械の出力を上げます
+地力	じりょく	もともともっている力	地力をつけます
+人力	じんりょく	人の力	人力で運びます
+水力	すいりょく	水がもつ力	水力を利用します
+全力	ぜんりょく	もっている力をすべて出すこと	全力で走ります
+体力	たいりょく	体の強さ	体力をきたえます
+動力	どうりょく	物を動かすもとになる力	動力を使います
+入力	にゅうりょく	文字や数字を機械に入れること	文字を入力します
+筆力	ひつりょく	文章や字を書く力	筆力を高めます
+風力	ふうりょく	風がもつ力	風力で回します
+家路	いえじ	家へ帰る途中の道	夕方、家路を急ぎました
+家出	いえで	家を出て、帰らないでいること	家出をすると家族が心配します
+家業	かぎょう	その家が代々続けている仕事	父は家業を手つだっています
+家事	かじ	家の中で行う仕事（そうじや料理など）	家事を分けて手つだいます
+家長	かちょう	家族をまとめる立場の人	家長として家族を守ります
+家内	かない	自分の妻をへりくだって言う言葉	家内は料理が得意です
+家風	かふう	その家に代々伝わる考え方やならわし	この家は家風を大切にします
+家名	かめい	その家の名前や名声	家名にきずがつきました
+家来	けらい	主人につかえて働く人	家来が主人の命令を聞きました
+国家	こっか	国全体のこと	国家のきまりを守ります
+作家	さっか	小説や物語などを書く人	将来は作家になりたいです
+実家	じっか	生まれ育った家	夏休みに実家へ帰ります
+出家	しゅっけ	家を出て、僧になること	むかし、出家した人もいました
+書家	しょか	書道の作品を書く人	書家の字は力強いです
+生家	せいか	生まれた家	生家をたずねました
+大家	たいか	学問や芸術などですぐれた人	絵の大家の作品を見ました
+当家	とうけ	その家、自分の家	当家の決まりにしたがいます
+分家	ぶんけ	本家から分かれてできた家	分家として新しく家を建てました
+平家	へいけ	平氏という武士の一族	平家の物語を読みました
+本家	ほんけ	家系の中心となる家	正月は本家に集まります
+名家	めいか	世間によく知られた家	名家の出として知られています
+会期	かいき	会や集まりが行われる期間	会期は三日間です
+会見	かいけん	人前で話をしたり質問を受けたりすること	記者会見が開かれました
+会場	かいじょう	会や行事が行われる場所	会場に早めに着きました
+会食	かいしょく	一緒に食事をすること	友だちと会食しました
+会心	かいしん	とても満足すること、うまくいったこと	会心の出来でうれしいです
+会長	かいちょう	会のいちばん上の立場の人	会長があいさつしました
+開会	かいかい	会を始めること	九時に開会します
+学会	がっかい	学問について話し合う集まり	先生が学会に出ました
+国会	こっかい	国の大切なことを話し合って決める会	国会で法律を話し合います
+大会	たいかい	多くの人が集まる大きな会	運動大会がありました
+入会	にゅうかい	会の仲間に入ること	サッカークラブに入会します
+分会	ぶんかい	大きな会を分けて作った会	地域ごとに分会があります
+面会	めんかい	人と直接会うこと	病院で面会しました
+夜会	やかい	夜に開かれる集まり	夜会で音楽を聞きました
+海原	うなばら	広くひらけた海	船から海原が見えました
+海運	かいうん	船を使って物を運ぶこと	海運で荷物を運びます
+海外	かいがい	外国や外国の地域	海外へ旅行に行きました
+海国	かいこく	海に囲まれた国	日本は海国です
+海上	かいじょう	海の上	海上に船が見えます
+海水	かいすい	海の水	海水はしょっぱいです
+海風	うみかぜ	海から吹いてくる風	海風が気持ちいいです
+海面	かいめん	海の表面	海面がきらきら光っています
+海路	かいろ	海を通る道	船は海路を進みます
+海洋	かいよう	とても広い海	海洋ごみが問題です
+外海	そとうみ	陸から遠い広い海	外海は波が高いです
+山海	さんかい	山と海	山海の景色を楽しみました
+大海	たいかい	とても広く大きな海	大海へ船を出しました
+内海	うちうみ	陸地に入りこんだ海	内海は波がしずかです
+外気	がいき	外の空気	外気が冷たいです
+外見	がいけん	外から見たようす	外見で決めつけません
+外国	がいこく	ほかの国	外国の文化を学びます
+外車	がいしゃ	外国で作られた車	外車が道を走っています
+外出	がいしゅつ	家の外へ出ること	午後に外出します
+外食	がいしょく	家の外で食事をすること	今日は外食にします
+外人	がいじん	外国の人	外人の先生と話しました
+外地	がいち	外国の土地	外地でくらしたことがあります
+外部	がいぶ	外の部分	外部の人が来ました
+外面	がいめん	外から見えるようす	外面は元気そうです
+外野	がいや	関係のない立場	外野の意見は気にしません
+外洋	がいよう	陸から遠い広い海	外洋を航海します
+外来	がいらい	外から来ること	外来の患者が来ました
+外道	げどう	人として正しくない行い	外道な行いはゆるされません
+意外	いがい	思っていたのとちがうこと	意外な答えでした
+局外	きょくがい	そのことに関わらない立場	局外の立場です
+言外	げんがい	言葉に出さない意味	言外の気持ちを考えます
+口外	こうがい	外の人に話すこと	秘密を口外しません
+国外	こくがい	国の外	国外へ出ます
+場外	じょうがい	会場の外	場外で待ちました
+心外	しんがい	思いがけず不満に思うこと	その言い方は心外です
+天外	てんがい	思いもよらないこと	天外な話でした
+内外	ないがい	内と外	内外の意見を聞きます
+部外	ぶがい	その組や集まりの外	部外者は入れません
+門外	もんがい	その分野の専門でないこと	門外なので教えてください
+野外	やがい	建物の外	野外で遊びました
+元金	がんきん	もとのお金	元金を守ります
+元日	がんじつ	一年のはじめの日（一月一日）	元日に初もうでをしました
+元本	がんぽん	もとのお金や資本	元本が大切です
+元来	がんらい	もともと	元来、静かな町です
+元気	げんき	体や心がじょうぶなようす	今日も元気です
+元手	もとで	もとになるお金や材料	元手をためて店を始めます
+足元	あしもと	足のまわりや、立っている場所	足元に気をつけて歩きます
+家元	いえもと	茶道や花道などで、その流派をまとめる中心の家（またはその人）	家元の考えを学びました
+口元	くちもと	口のまわり	口元をハンカチでふきます
+国元	くにもと	その人の出身地やもとの国	国元の家族に手紙を書きます
+地元	じもと	自分が住んでいる土地	地元のお祭りに行きました
+中元	ちゅうげん	夏のまん中ごろの時期（おくり物の時期）	中元の品を送ります
+手元	てもと	手の近くや、今使っているところ	手元の資料を見ます
+火元	ひもと	火が出はじめた場所	火元を確認しました
+身元	みもと	その人がどこのだれかということ	身元が分かりました
+目先	めさき	近い将来や、すぐ前のこと	目先のことにとらわれません
+言外	げんがい	言葉に出さない意味	言外の思いをくみ取ります
+言行	げんこう	言葉と行い	言行が一致しています
+言動	げんどう	言葉や行い	言動に気をつけます
+金言	きんげん	とても大切な言葉	金言を心に刻みます
+小言	こごと	こまかく言う注意	小言を言われました
+進言	しんげん	目上の人に意見を言うこと	意見を進言します
+前言	ぜんげん	前に言った言葉	前言を取り消します
+体言	たいげん	名詞など、物やことを表す言葉	体言を見分けます
+直言	ちょくげん	遠回しでなく、はっきり言うこと	直言してくれました
+発言	はつげん	自分の意見を言うこと	手を挙げて発言します
+方言	ほうげん	ある地域で使われる言葉	方言を覚えました
+名言	めいげん	心に残るすぐれた言葉	名言に感動しました
+原作	げんさく	もとになった作品	原作を読みました
+原書	げんしょ	もとの本	原書で確かめます
+原人	げんじん	大むかしに生きていた人類	原人のくらしを学びました
+原生	げんせい	自然のままの状態	原生の森が残っています
+原動	げんどう	動くもとになる力	原動となる考えです
+原発	げんぱつ	原子力で電気を作る発電所	原発のしくみを学びます
+原文	げんぶん	もとの文章	原文を読みました
+原本	げんぽん	写す前のもとの本	原本で確認します
+原野	げんや	人の手があまり入っていない広い野原	原野が広がっています
+海原	うなばら	広くひらけた海	海原に船が出ました
+野原	のはら	草が広がる野の場所	野原で遊びました
+平原	へいげん	広くて平らな土地	平原が続いています
+後先	あとさき	前と後	後先を考えて行動します
+後学	こうがく	あとから学ぶこと	後学のために聞きました
+後期	こうき	ある期間の後半	後期の授業が始まります
+後進	こうしん	あとから進んでくる人	後進の指導をします
+後天	こうてん	生まれたあとに身につくこと	後天的に学びます
+後転	こうてん	うしろ向きに回る動き	後転の練習をします
+後年	こうねん	のちの年	後年、思い出します
+後部	こうぶ	後ろの部分	車の後部です
+後方	こうほう	うしろのほう	後方を確認します
+後日	ごじつ	あとになってから	後日お知らせします
+後手	ごて	相手より動きが遅れること	後手に回りました
+事後	じご	出来事のあと	事後の対応をします
+食後	しょくご	食事のあと	食後に休みます
+生後	せいご	生まれてからあと	生後一年です
+前後	ぜんご	前と後	前後をよく確かめます
+直後	ちょくご	すぐあと	雨の直後は道がすべります
+行事	ぎょうじ	決まった日に行う行い	学校の行事があります
+行書	ぎょうしょ	少しくずして書く書き方	行書で名前を書きました
+行水	ぎょうずい	体を水で洗ってさっぱりすること	夏に行水をしました
+行頭	ぎょうとう	行のはじめ	行頭をそろえます
+行進	こうしん	列を作って進むこと	みんなで行進します
+行動	こうどう	考えに基づいて動くこと	正しい行動をします
+行路	こうろ	通っていく道	行路を地図で確認します
+行方	ゆくえ	どこへ行ったか、先のようす	行方をさがします
+悪行	あくぎょう	悪い行い	悪行は改めます
+運行	うんこう	決められた通りに動くこと	電車は予定通り運行します
+実行	じっこう	実際に行うこと	計画を実行します
+進行	しんこう	物事が進んでいくこと	工事が進行しています
+先行	せんこう	先に行くこと	先行して調べます
+代行	だいこう	代わりに行うこと	先生の仕事を代行します
+直行	ちょっこう	寄り道をせずに行くこと	家へ直行します
+通行	つうこう	道を通って行くこと	通行に注意します
+発行	はっこう	本や券などを出すこと	切手を発行します
+品行	ひんこう	人のふるまい	品行を正します
+平行	へいこう	同じ向きでならぶこと	線が平行です
+夜行	やこう	夜に行くこと	夜行列車に乗ります
+洋行	ようこう	外国へ行くこと	父は洋行しました
+流行	りゅうこう	多くの人の間ではやること	流行の服です
+国元	くにもと	ふるさと、故郷	国元の母が米を送ってきた
+国運	こくうん	国の運命や勢い	国運を考えます
+国外	こくがい	国の外	国外へ出ます
+国道	こくどう	国が管理する大きな道	国道を通ります
+国内	こくない	国の中	国内で旅行します
+国文	こくぶん	その国の言葉で書かれた文章	国文を読みます
+国力	こくりょく	国がもつ力	国力を高めます
+国家	こっか	国とそのしくみ	国家の役割を学びます
+国会	こっかい	国の大切なことを話し合って決める会	国会中継を見ました
+海国	かいこく	海に囲まれた国	日本は海国です
+開国	かいこく	外国と交流を始めること	日本は開国しました
+外国	がいこく	ほかの国	外国の友だちがいます
+出国	しゅっこく	国の外へ出ること	空港で出国します
+小国	しょうこく	小さな国	小国でも工夫があります
+全国	ぜんこく	国じゅうすべて	全国大会に出ます
+大国	たいこく	力の大きな国	大国と交流します
+中国	ちゅうごく	アジアにある国の名前	中国の歴史を学びます
+天国	てんごく	しあわせな世界	天国のような場所です
+入国	にゅうこく	国の中に入ること	日本に入国しました
+本国	ほんごく	もとの国	本国へ帰ります
+山国	やまぐに	山が多い国や地域	日本は山国です
+作業	さぎょう	仕事として行うこと	作業を分けて進めます
+作品	さくひん	作ったもの	すてきな作品です
+作風	さくふう	作品のつくり方の特徴	作風に個性があります
+作文	さくぶん	文章を書くこと	作文を書きました
+作物	さくもつ	育てて作る植物	作物を育てます
+作家	さっか	文章や作品を作る人	有名な作家です
+作動	さどう	機械などが動くこと	機械が作動します
+作用	さよう	物が他に与えるはたらき	薬の作用を調べます
+原作	げんさく	もとになった作品	原作と映画を比べます
+所作	しょさ	動きやふるまい	ていねいな所作です
+新作	しんさく	新しく作った作品	新作が発表されました
+大作	たいさく	大きくて力のこもった作品	力のこもった大作です
+動作	どうさ	体や機械の動き	動作をゆっくり行います
+発作	ほっさ	急に起こる体の変化	発作が起きました
+名作	めいさく	とてもすぐれた作品	名作を読みました
+力作	りきさく	力をこめて作った作品	みんなの力作です
+書家	しょか	書道にすぐれた人	書家の展示を見ました
+書体	しょたい	文字の形の種類	読みやすい書体です
+書道	しょどう	字を書く芸術	書道を習っています
+書名	しょめい	本の名前	書名をメモします
+書面	しょめん	書かれた文書	書面で知らせます
+書物	しょもつ	本	古い書物を読みます
+悪書	あくしょ	よくない内容の本	悪書に注意します
+行書	ぎょうしょ	少しくずした書き方	行書で書きました
+原書	げんしょ	もとの本	原書を確認します
+代書	だいしょ	代わりに書くこと	申請を代書します
+文書	ぶんしょ	書かれた文や書類	文書を提出します
+洋書	ようしょ	外国の本	洋書を読みます
+和書	わしょ	日本の本	和書を集めます
+場外	じょうがい	会場の外	場外で待ちます
+場内	じょうない	会場の中	場内は静かです
+場数	ばかず	経験した回数	場数を踏みました
+場所	ばしょ	物や人があるところ	集合場所を決めます
+場面	ばめん	そのときのようす	大事な場面です
+足場	あしば	立ったり作業したりする場所	足場を確かめます
+会場	かいじょう	集まりを行う場所	会場に入ります
+開場	かいじょう	会場を開くこと	九時に開場します
+出場	しゅつじょう	大会や行事に出ること	大会に出場します
+道場	どうじょう	武道などを学ぶ場所	道場で練習します
+入場	にゅうじょう	会場に入ること	入場の列に並びます
+本場	ほんば	もとになった場所	本場の味です
+山場	やまば	いちばん大切なところ	ここが山場です
+来場	らいじょう	会場に来ること	多くの人が来場しました
+食後	しょくご	食事のあと	食後に歯をみがきます
+食事	しょくじ	ごはんを食べること	家族で食事します
+食前	しょくぜん	食事の前	食前に手を洗います
+食通	しょくつう	食べ物にくわしい人	父は食通です
+食道	しょくどう	食べ物が通る体の中の管	食道を通ります
+食品	しょくひん	食べ物	食品を選びます
+食物	しょくもつ	食べるもの	食物を大切にします
+食用	しょくよう	食べるために使うこと	食用の油です
+食感	しょっかん	食べたときの感じ	食感が楽しいです
+悪食	あくしょく	よくない食べ方	悪食を改めます
+会食	かいしょく	人といっしょに食事をすること	会食の席です
+外食	がいしょく	家の外で食事をすること	今日は外食です
+月食	げっしょく	月が地球の影に入る現象	月食を見ました
+小食	しょうしょく	食べる量が少ないこと	小食でも元気です
+大食	たいしょく	たくさん食べること	大食は体に良くありません
+心地	ここち	気持ち。気分。	心地よい風です
+心音	しんおん	心ぞうが動くときの音	心音を聞きます
+心外	しんがい	思いがけず不満に思うこと	その言い方は心外です
+心中	しんちゅう	心の中で思っていること	心中を話しました
+心身	しんしん	心と体	心身をきたえます
+心頭	しんとう	心の中	心頭に思い浮かべます
+心配	しんぱい	気がかりに思うこと	友だちを心配します
+悪心	あくしん	いやな気持ち	悪心をいだきません
+会心	かいしん	思いどおりにうまくいくこと	これは、会心の作です
+感心	かんしん	すごいと思うこと	努力に感心しました
+気心	きごころ	気持ちが分かり合っていること	気心の知れた友だちです
+下心	したごころ	表に出さない考え	下心はありません
+小心	しょうしん	気が小さく、こわがりなこと	小心なので、冒険はできない
+人心	じんしん	人の心	人心をつかみます
+中心	ちゅうしん	まん中	町の中心です
+手心	てごころ	少し加減すること	手心を加えました
+内心	ないしん	心の中の思い	内心では喜んでいます
+本心	ほんしん	本当の気持ち	本心を話します
+物心	ものごころ	物事が分かる心	物心がついたころです
+野心	やしん	大きな望み	野心をいだきます
+用心	ようじん	気をつけること	足元に用心します
+新手	あらて	新しいやり方	新手の方法です
+新月	しんげつ	月がほとんど見えないとき	今夜は新月です
+新作	しんさく	新しく作った作品	新作を発表します
+新出	しんしゅつ	新しく現れること	新出の問題です
+新進	しんしん	新しく力をあらわしてくること	新進の研究者に期待する
+新人	しんじん	新しく入ってきた人	新人を迎えます
+新生	しんせい	新しく生まれ変わること	学校が新生します
+新着	しんちゃく	新しく届くこと	新着のお知らせです
+新道	しんどう	新しく作られた道	広い新道ができた
+新入	しんにゅう	新しく入ること	この方は新入生です
+新年	しんねん	新しい年	新年を祝います
+新品	しんぴん	新しい品物	新品を使います
+新風	しんぷう	今までにはない新しい考え方や、やり方	日本料理界に新風をふきこむ
+新書	しんしょ	新しく出た本	新書の感想文を書いた
+数学	すうがく	数や形のしくみを学ぶ教科	数学の授業が好きです
+数日	すうじつ	何日か	数日で終わります
+口数	くちかず	話す量	口数が少ない人です
+小数	しょうすう	一より小さい数や点を使った数	小数の計算をします
+定数	ていすう	決まった数	参加者が定数に達する
+手数	てすう	手間や作業の回数	お手数をかけました
+頭数	あたまかず	人数や数	頭数をそろえます
+日数	にっすう	日にちの数	日数を数えます
+人数	にんずう	人の数	人数を確認します
+年数	ねんすう	年の数	年数がたちました
+場数	ばかず	経験した回数。多くの経験。	場数を踏みました
+部数	ぶすう	本や新聞の数	新聞の部数です
+分数	ぶんすう	全体を分けた数	分数を学びます
+前期	ぜんき	ある期間の前半	前期のまとめです
+前月	ぜんげつ	今の月の前の月	前月より増えました
+前言	ぜんげん	前に言った言葉	前言を守ります
+前後	ぜんご	前と後	前後を見ます
+前日	ぜんじつ	その日の前の日	前日に準備します
+前車	ぜんしゃ	前を走っている車	前車に注意します
+前身	ぜんしん	前の姿や前の立場	前身は別の学校です
+前進	ぜんしん	前へ進むこと	一歩前進します
+前人	ぜんじん	前の時代の人	前人の知恵を学びます
+前代	ぜんだい	前の代	前代の記録です
+前転	ぜんてん	前に回る動き	前転の練習をします
+前頭	ぜんとう	頭の前のほう	前頭をぶつけました
+前年	ぜんねん	その年の前の年	前年より多いです
+前方	ぜんぽう	前のほう	前方を見ます
+前面	ぜんめん	前のほう全体	前面に出ます
+前夜	ぜんや	その日の前の夜	試合の前夜は早く寝ました
+気前	きまえ	お金や物を気持ちよく出すようす	気前よくおごってくれました
+空前	くうぜん	これまでにないほど大きいこと	空前の人気です
+事前	じぜん	前もって	事前に知らせます
+食前	しょくぜん	食事の前	食前に手を洗います
+生前	せいぜん	生きているあいだ	生前の思い出です
+直前	ちょくぜん	すぐ前	出発の直前です
+手前	てまえ	自分の近く	手前に置きます
+出前	でまえ	料理などを届けてもらうこと	夜に出前を取りました
+名前	なまえ	人や物を区別するための呼び名	名前を書きます
+人前	ひとまえ	ほかの人が見ているところ	人前で話します
+風前	ふうぜん	危険が近いようす	風前のともしびです
+面前	めんぜん	目の前	面前で話しました
+目前	もくぜん	すぐ目の前	目前にせまります
+門前	もんぜん	門の前	門前で待ちます
+体感	たいかん	体で感じること	寒さを体感します
+体言	たいげん	名詞など、物やことを表す言葉	体言を見分けます
+体長	たいちょう	体の長さ	魚の体長を測ります
+体内	たいない	体の中	体内のしくみです
+体面	たいめん	人としての立場や名誉	体面を保ちます
+体力	たいりょく	体の強さ	体力をつけます
+気体	きたい	形が決まらない状態	空気は気体です
+実体	じったい	実際にあるもの	実体を確かめます
+車体	しゃたい	車のからだの部分	車体を調べます
+上体	じょうたい	体の上の部分	上体を起こします
+書体	しょたい	文字の形の種類	読みやすい書体です
+身体	しんたい	人の体	身体を大切にします
+人体	じんたい	人の体	人体の図です
+生体	せいたい	生きている体	生体の反応です
+全体	ぜんたい	すべてを合わせたもの	全体を見ます
+大体	だいたい	おおよそのようす	大体の予定を立てます
+天体	てんたい	星や月など空にある物	天体を観察します
+風体	ふうてい	見た目のようす	風体が変わりました
+物体	ぶったい	形のあるもの	重い物体です
+文体	ぶんたい	文章の書き方の特徴	文体を比べます
+流体	りゅうたい	液体や気体のように流れるもの	水は流体です
+地金	じがね	加工する前の金属	地金を集めます
+地所	じしょ	土地や場所	地所を調べます
+地道	じみち	こつこつ続けるようす	地道に努力します
+地面	じめん	地の表面	地面がぬれています
+地元	じもと	自分が住んでいる土地	地元を大切にします
+地力	じりょく	もともともっている力	地力を高めます
+地下	ちか	地面の下	地下に入ります
+地学	ちがく	地球や自然のしくみを学ぶ学問	地学を学びます
+地上	ちじょう	地面の上	地上に出ます
+地方	ちほう	ある地域	地方の文化です
+地名	ちめい	土地の名前	地名を覚えます
+意地	いじ	自分の考えを通そうとする気持ち	意地を張らないで
+生地	きじ	布やもとになる材料	生地を切ります
+局地	きょくち	限られたせまい地域	局地的な雨です
+見地	けんち	物事を見る立場	別の見地から考えます
+心地	ここち	感じのよさ	心地よい音です
+山地	さんち	山が多い土地	山地を歩きます
+下地	したじ	もとになる部分や準備	下地を作ります
+実地	じっち	実際の場所	実地で学びます
+着地	ちゃくち	地面におりること	安全に着地しました
+天地	てんち	空と地面、または世の中	天地がひっくり返る
+当地	とうち	この場所	当地の天気です
+内地	ないち	国内の土地	内地で学びます
+平地	へいち	平らな土地	平地を走ります
+用地	ようち	使うための土地	用地を確保します
+路地	ろじ	せまい道	路地を歩きます
+長音	ちょうおん	音を長くのばして出す音	長音をのばします
+長期	ちょうき	長い期間	長期の計画です
+長所	ちょうしょ	よいところ	長所を見つけます
+長上	ちょうじょう	年や立場が上の人	長上を敬います
+長身	ちょうしん	背が高い体つき	長身の選手です
+長足	ちょうそく	大きく進むこと	長足の進歩です
+長文	ちょうぶん	長い文章	長文を読みます
+長命	ちょうめい	長生きすること	長命を願います
+長月	ながつき	旧暦九月の名前	長月の行事です
+長年	ながねん	長いあいだ	長年の努力です
+面長	おもなが	顔が細長いこと	面長の顔です
+会長	かいちょう	会のまとめ役	会長が話します
+学長	がくちょう	大学のいちばん上の責任者	学長のあいさつです
+家長	かちょう	家族をまとめる人	家長が決めます
+気長	きなが	あせらず待つようす	気長に待ちます
+局長	きょくちょう	局のいちばん上の人	局長が説明します
+所長	しょちょう	事務所などの長	所長に会います
+身長	しんちょう	体の高さ	身長を測ります
+生長	せいちょう	生き物が大きく育つこと	植物が生長します
+全長	ぜんちょう	全体の長さ	全長を測ります
+体長	たいちょう	体の長さ	体長を調べます
+年長	ねんちょう	年が上であること	年長の人です
+日長	ひなが	昼の時間が長いこと	春は日長です
+部長	ぶちょう	部のまとめ役	部長が決定します
+夜長	よなが	夜の時間が長いこと	秋は夜長です
+直火	じかび	火に直接あてること	直火で焼きます
+直筆	じきひつ	自分で書いた文字	直筆の手紙です
+直言	ちょくげん	はっきり言うこと	直言しました
+直後	ちょくご	すぐあと	開始直後です
+直進	ちょくしん	まっすぐ進むこと	直進してください
+直前	ちょくぜん	すぐ前	出発直前です
+直通	ちょくつう	途中で止まらず通ること	直通電車です
+直面	ちょくめん	目の前で起こること	問題に直面します
+直感	ちょっかん	考える前に感じること	直感で選びます
+直行	ちょっこう	まっすぐ行くこと	家へ直行します
+実直	じっちょく	正直でまじめなこと	実直な人です
+当直	とうちょく	当番として夜などに仕事をすること	当直に入ります
+日直	にっちょく	その日の当番	今日は日直です
+通学	つうがく	学校に通うこと	毎日通学します
+通気	つうき	空気を通すこと	通気をよくします
+通行	つうこう	道を通ること	通行止めです
+通風	つうふう	風を通すこと	通風を確保します
+通分	つうぶん	分数の分母をそろえること	通分して計算します
+通路	つうろ	通るための道	通路をあけます
+通夜	つや	亡くなった人のために夜通し行う集まり	通夜に出ます
+開通	かいつう	道や線が使えるようになること	道が開通します
+食通	しょくつう	食べ物にくわしい人	食通の友だちです
+全通	ぜんつう	全部が通じること	信号が全通します
+直通	ちょくつう	途中で止まらずに通ること	直通で行きます
+文通	ぶんつう	手紙でやりとりをすること	友だちと文通します
+流通	りゅうつう	物が売り買いされて動くこと	商品が流通します
+当意	とうい	ちょうどよい考え	当意の案です
+当家	とうけ	その家	当家の考えです
+当日	とうじつ	その日	当日に集まります
+当代	とうだい	今の時代	当代の文化です
+当地	とうち	この場所	当地の名物です
+当直	とうちょく	当番として夜などに仕事をすること	当直をします
+当人	とうにん	その人本人	当人に聞きます
+当年	とうねん	その年	当年の目標です
+当分	とうぶん	しばらくのあいだ	当分休みます
+当方	とうほう	こちら側	当方で準備します
+当面	とうめん	今のところ	当面の課題です
+目当	めあて	ねらい	目当の店です
+手当	てあて	世話をしたり、お金を支払ったりすること	手当を受けます
+日当	にっとう	一日分としてもらうお金	日当をもらいます
+配当	はいとう	利益などを分けて与えること	配当が出ます
+本当	ほんとう	うそではないこと	本当の話です
+頭金	あたまきん	はじめに払うお金	頭金を払います
+頭上	ずじょう	頭の上	頭上に注意
+頭身	とうしん	頭の大きさを基準にした体の長さ	八頭身です
+頭数	あたまかず	人数や数	頭数を数えます
+頭部	とうぶ	頭の部分	頭部を守ります
+頭目	とうもく	集団のまとめ役	頭目が指示します
+音頭	おんど	みんなで歌ったり動いたりするときの調子	音頭を取ります
+行頭	ぎょうとう	行のはじめ	行頭をそろえます
+口頭	こうとう	話し言葉で言うこと	口頭で説明します
+地頭	じとう	その土地を治めていた人（昔の役職）	地頭の役目です
+出頭	しゅっとう	決められた所へ出て行くこと	出頭します
+先頭	せんとう	いちばん前	先頭を歩きます
+前頭	ぜんとう	前のほう	前頭に立ちます
+年頭	ねんとう	年のはじめ	年頭のあいさつです
+筆頭	ひっとう	いちばん上・最初	筆頭の名前です
+目頭	めがしら	目の内側の角	目頭をおさえます
+路頭	ろとう	行くあてがないこと	路頭に迷います
+道化	どうけ	人を笑わせる役	道化の役です
+道場	どうじょう	武道や芸を学ぶ場所	道場で練習します
+道中	どうちゅう	行く途中	道中は安全です
+道路	どうろ	車や人が通る道	道路を渡ります
+外道	げどう	正しくない行い	外道な行いです
+国道	こくどう	国が管理する大きな道	国道を走ります
+小道	こみち	小さな道	小道を通ります
+山道	やまみち	山の中の道	山道を歩きます
+地道	じみち	こつこつとまじめにすること	地道に続けます
+車道	しゃどう	車が通る道	車道に出ません
+食道	しょくどう	口から胃まで食べ物が通る管	食道を通ります
+書道	しょどう	字を書く芸術	書道を習います
+新道	しんどう	新しくできた道	新道が開きます
+人道	じんどう	人として正しい行い	人道を守ります
+水道	すいどう	水を送るしくみ	水道を使います
+大道	おおどう	大きな道	大道を進みます
+中道	ちゅうどう	かたよらない考え方	中道をえらびます
+野道	のみち	野原の中の道	野道を歩きます
+夜道	よみち	夜に通る道	夜道に気をつけて
+内気	ないき	気が弱くて引っこみ思案なこと	内気な子です
+内金	うちきん	代金の一部として先に払うお金	内金を入れます
+内海	ないかい	陸に囲まれた海	内海は波が静かです
+内外	ないがい	内と外	内外の意見です
+内実	ないじつ	表に出ていない本当の中身	内実を知ります
+内心	ないしん	心の中の思い	内心は不安です
+内地	ないち	国内の土地	内地に戻ります
+内通	ないつう	味方の中にいて、こっそり敵に通じること	敵側に内通する
+内定	ないてい	正式に決まる前に決めること	内定をもらいます
+内部	ないぶ	中の部分	内部を調べます
+内面	ないめん	心の中や表から見えない部分	内面を見ます
+内野	ないや	野球で内がわの守り	内野を守ります
+学内	がくない	学校の中	学内で活動します
+家内	かない	自分の家の中、または妻	家内と相談します
+国内	こくない	国の中	国内旅行です
+車内	しゃない	車の中	車内で待ちます
+場内	じょうない	会場の中	場内が混みます
+体内	たいない	体の中	体内に入ります
+年内	ねんない	その年のうち	年内に終えます
+身内	みうち	家族や親せき	身内で話します
+風上	かざかみ	風がふいてくるほう	風上に立ちます
+風下	かざしも	風がふいていくほう	風下に立ちません
+風見	かざみ	風の向きを知るための物	風見を見ます
+風化	ふうか	風や雨で形がくずれること	岩が風化します
+風車	ふうしゃ	風の力で回る車	風車が回ります
+風前	ふうぜん	すぐ消えそうなようす	風前の灯です
+風体	ふうてい	見た目や身なり	風体が変わります
+風物	ふうぶつ	その土地らしい自然や物	風物を楽しみます
+風力	ふうりょく	風がもつ力	風力を利用します
+風流	ふうりゅう	上品で味わいがあること	風流な景色です
+悪風	あくふう	よくない風習やならわし	悪風にそまる
+海風	うみかぜ	海からふく風	海風が気持ちいい
+大風	おおかぜ	とても強い風	大風が吹きました
+学風	がくふう	学校や学問の進め方の特色	自由な学風です
+家風	かふう	家に伝わる考え方やならわし	家風を大切にします
+作風	さくふう	作品に表れる作者の特徴	作風が分かります
+通風	つうふう	風を通すこと	通風を良くします
+山風	やまかぜ	山からふく風	山風が冷たい
+洋風	ようふう	西洋のやり方や様式	洋風の家です
+夜風	よかぜ	夜にふく風	夜風に当たります
+和風	わふう	日本風のやり方や様式	和風の料理です
+分化	ぶんか	分かれてちがいが生まれること	文化が分化します
+分会	ぶんかい	全体を分けた一つの会	分会を開きます
+分業	ぶんぎょう	仕事を分けて行うこと	分業で進めます
+分家	ぶんけ	本家から分かれた家	分家を立てます
+分身	ぶんしん	自分の代わりのような存在	分身の術です
+分数	ぶんすう	全体を分けたときの数	分数を学びます
+分配	ぶんぱい	分けて配ること	公平に分配します
+分野	ぶんや	専門となる範囲	得意な分野です
+分流	ぶんりゅう	流れが分かれること	川が分流します
+気分	きぶん	そのときの心のようす	気分がいい
+水分	すいぶん	水の成分	水分をとります
+通分	つうぶん	分数の分母を同じにすること	通分します
+天分	てんぶん	生まれつきもっている才能	天分をのばす教育をする
+当分	とうぶん	しばらくのあいだ	当分休みます
+野分	のわき	秋にふく強い風	野分が来ました
+配分	はいぶん	分けて配ること	役割を配分します
+部分	ぶぶん	全体の中の一つのところ	一部分です
+本分	ほんぶん	その人が本来しなければならないつとめ	学生の本分は勉強だ。
+身分	みぶん	その人の立場	身分をわきまえます
+夜分	やぶん	夜の時間	夜分に失礼します
+方言	ほうげん	地方ごとの言葉	方言で話します
+方面	ほうめん	ある方向や地域	北の方面です
+大方	おおかた	だいたいのところ	大方できました
+上方	かみがた	京都・大阪を中心とした地方	上方の文化です
+後方	こうほう	うしろのほう	後方を確認します
+先方	せんぽう	相手の人や相手の側	先方に連絡します
+前方	ぜんぽう	前のほう	前方を見ます
+地方	ちほう	国の中のある地域	地方の町です
+当方	とうほう	こちらの側	当方で対応します
+平方	へいほう	正方形の面積	平方を計算します
+目方	めかた	重さ	目方を量ります
+行方	ゆくえ	どこへ行ったかという先	行方を探します
+門口	かどぐち	門の前	門口に立ちます
+門出	かどで	新しく出発すること	門出を祝います
+門下	もんか	先生について学ぶ人たち	門下に入ります
+門人	もんじん	師について学ぶ人	門人が集まります
+門前	もんぜん	門の前	門前で待ちます
+開門	かいもん	門を開くこと	朝に開門します
+気門	きもん	昆虫が呼吸する穴	気門で呼吸します
+山門	さんもん	寺の正面の門	山門をくぐります
+水門	すいもん	水を調節する門	水門を開けます
+前門	ぜんもん	前にある門	前門を通ります
+入門	にゅうもん	学び始めること	剣道に入門します
+部門	ぶもん	分けられた仕事や分野	担当部門です
+名門	めいもん	名が知られた家や学校	名門校です
+夜会	やかい	夜にひらく集まり	夜会に出ます
+夜学	やがく	夜に勉強する学校	夜学に通います
+夜業	やぎょう	夜に行う仕事	夜業が続きます
+夜行	やこう	夜に出かけたり進んだりすること	夜行バスです
+夜食	やしょく	夜に食べる食事	夜食をとります
+夜分	やぶん	夜の時間	夜分に帰ります
+夜来	やらい	夜になってから	夜来の雨がやんだ
+夜風	よかぜ	夜にふく風	夜風が涼しい
+夜空	よぞら	夜の空	夜空を見上げます
+夜中	よなか	夜のまん中ごろ	夜中に目がさめます
+夜長	よなが	夜が長く感じられる時期	秋は夜長です
+夜道	よみち	夜に通る道	夜道に注意します
+前夜	ぜんや	ある日の前の夜	試合の前夜です
+月夜	つきよ	月が出て明るい夜	月夜の散歩です
+通夜	つや	亡くなった人を思って夜通し行う集まり	通夜に参列します
+日夜	にちや	昼と夜、いつも	日夜努力します
+野中	のなか	野原の中	野中を歩きます
+野原	のはら	草が広がる平らな土地	野原で遊びます
+野火	のび	野原で起こる火事	野火に注意します
+野道	のみち	野原の中の道	野道を進みます
+野山	のやま	山や野原	野山をかけます
+野分	のわき	秋にふく強い風	野分の季節です
+野外	やがい	建物の外	野外活動です
+野手	やしゅ	野球で守りをする選手	野手が守ります
+野心	やしん	大きな望みをもつ心	野心をいだきます
+野生	やせい	自然の中で育つこと	野生の動物です
+外野	がいや	自分に関係のない立場	外野は口出ししない
+原野	げんや	人の手があまり入っていない広い土地	原野が広がります
+山野	さんや	山と野原	山野を歩きます
+内野	ないや	野球で内側を守る場所	内野を守ります
+分野	ぶんや	専門となる範囲	得意な分野です
+平野	へいや	平らで広い土地	平野が広がります
+用意	ようい	前もって準備すること	用意をします
+用事	ようじ	しなければならないこと	用事があります
+用心	ようじん	気をつけること	用心してください
+用水	ようすい	農業などに使う水	用水を引きます
+用地	ようち	使うための土地	用地を確保します
+用品	ようひん	使うための物	生活用品です
+悪用	あくよう	よくない目的で使うこと	悪用しません
+運用	うんよう	うまく使ってはたらかせること	制度を運用します
+作用	さよう	物が他に与えるはたらき	薬が作用します
+実用	じつよう	実際に役立つこと	実用的です
+食用	しょくよう	食べるために使うこと	食用の油です
+所用	しょよう	しなければならない用事	所用で出ます
+代用	だいよう	代わりに使うこと	代用します
+着用	ちゃくよう	服などを身につけること	制服を着用します
+通用	つうよう	役に立って使えること	英語は多くの国で通用する
+転用	てんよう	別の目的に使うこと	土地を転用します
+日用	にちよう	毎日の生活に使うこと（またはその物）	日用品です
+入用	にゅうよう	必要であること	お金が入用です
+流用	りゅうよう	ほかに使うべき物を勝手に使うこと	予算を流用します
+来意	らいい	相手が来た目的	来意を聞きます
+来期	らいき	次の期間	来期の計画です
+来月	らいげつ	次の月	来月会います
+来場	らいじょう	会場に来ること	多くが来場します
+来日	らいにち	日本に来ること	来日します
+来年	らいねん	次の年	来年の予定です
+外来	がいらい	外から来ること	外来の患者です
+元来	がんらい	もともと	元来元気です
+家来	けらい	主人につかえて働く人	家来が命令を聞きます
+生来	せいらい	生まれつき	生来の性格です
+出来	でき	物事ができあがること	仕事の出来がいい
+年来	ねんらい	長いあいだ	年来の友だちです
+本来	ほんらい	もともとそうであること	本来の目的です
+夜来	やらい	前の夜からつづくこと	夜来の雨です
+悪意	あくい	人をだましたり、きずつけたりしようとする気持ち。	悪意のあるうわさを広めるのはやめよう。
+悪運	あくうん	運が悪く、よくないことが続くこと。	今日は悪運が重なって、バスにも乗りおくれた。
+悪行	あくぎょう	してはいけない悪い行い。	悪行をくり返すと、みんなの信頼を失う。
+悪事	あくじ	法律や社会の決まりに反する行い。	悪事に手を出さないように、自分を正す。
+悪食	あくしょく	ふつうは食べないような物を好んで食べること。	テレビで悪食のチャレンジを見てびっくりした。
+悪手	あくしゅ	失敗につながる、よくないやり方や手。	そこで言い返したのは悪手で、話がこじれてしまった。
+悪書	あくしょ	内容がよくなく、ためにならない本。	うその情報ばかりの悪書には気をつけよう。
+悪人	あくにん	悪い行いをする人。	悪人の言うことでも、全部がうそとは限らない。
+悪筆	あくひつ	字が下手で読みにくいこと。	ぼくは悪筆だから、ていねいに書くようにしている。
+悪風	あくふう	社会によくない影響をあたえる習慣や風習。	悪風にそまる。
+悪文	あくぶん	意味が分かりにくい、よくない文章。	先生に、説明が足りなくて悪文になっていると言われた。
+悪名	あくめい	悪いことで世間に知られてしまう評判。	悪名が広まる前に、きちんとあやまった。
+悪用	あくよう	本来はよい目的のものを、悪いことに使うこと。	人の写真を勝手に使うのは悪用になることがある。
+悪路	あくろ	でこぼこしていて通りにくい道。	雨のあとで悪路になり、歩くのが大変だった。
+悪化	あっか	状態が前より悪くなること。	かぜを放っておいたら、せきが悪化した。
+悪口	わるぐち	人をきずつける言い方。	悪口を言うより、いいところを見つけたい。
+悪気	わるぎ	わざと悪いことをしようとする気持ち。	悪気はなかったのに、言い方がきつかった。
+意外	いがい	思っていたこととちがうこと。	意外にその問題はかんたんだった。
+意気	いき	何かをやろうとする元気な気持ち。	意気こんで練習したら、少し上手になった。
+意見	いけん	自分の考え。	ぼくの意見も聞いてください。
+意地	いじ	自分の考えを曲げまいとする気持ち。	意地を張らずに、先にあやまればよかった。
+意中	いちゅう	心の中で思っていること／気に入っている相手。	意中の人に、あいさつできてうれしかった。
+作意	さくい	作品を作るときの作者の考え。	物語の作意をしっかり読み取る。
+大意	たいい	文章や話のだいたいの意味。	まず大意をつかんでから、くわしく読む。
+内意	ないい	表に出していない本当の考え。	佐藤君の内意を聞く。
+文意	ぶんい	文章にこめられた意味。	文意を考えながら、ゆっくり読んだ。
+本意	ほんい	本当に思っていること、本当の気持ち。	本意ではないけれど、今回はがまんした。
+用意	ようい	前もって準備をすること。	遠足の用意を前の日にすませた。
+運気	うんき	運のよさ・悪さのようす。	今日は運気がよい気がする。
+運行	うんこう	決まった道や時間で運ばれたり動いたりすること。	電車は時刻表どおりに運行している。
+運転	うんてん	車や機械を動かしてあやつること。	父は毎日車を運転して仕事に行く。
+運動	うんどう	体を動かすこと／物が動くこと。	休み時間に運動すると気分がすっきりする。
+運命	うんめい	人の力では変えられないと考えられるさだめ。	これも運命だと思って受け止めた。
+運用	うんよう	物や制度をうまく使うこと。	タブレットを学習に運用している。
+海運	かいうん	船を使って物を運ぶこと。	昔は海運がとても大切だった。
+開運	かいうん	運がよくなること。	お参りして開運を願った。
+気運	きうん	物事が進みそうな世の中の流れや雰囲気。	新しい考えが広がる気運が高まっている。
+金運	きんうん	お金に関する運のよしあし。	今年は金運がいいと聞いてうれしい。
+国運	こくうん	国全体の運命やゆくえ。	国運をかけた大事業。
+水運	すいうん	川や海を使って物を運ぶこと。	この町は水運で発展した。
+命運	めいうん	生死や成功がどうなるかというさだめ。	試合の結果は命運を分けた。
+化学	かがく	物の性質や変わり方を調べる学問。	理科で化学の実験をした。
+化身	けしん	別のものの姿になって現れたもの。	物語では、神が人の化身として現れる。
+開化	かいか	文化や考え方が進んで新しくなること。	町は外国の文化で開化した。
+気化	きか	液体が気体に変わること。	水が水蒸気になるのは気化だ。
+進化	しんか	よりよい形へ変わっていくこと。	生き物は長い時間をかけて進化する。
+転化	てんか	性質や形が別のものに変わること。	熱を加えて物質が転化した。
+道化	どうけ	人を笑わせる役や、ふざけたふるまい。	道化のしぐさに、みんなが笑った。
+風化	ふうか	時間がたって、形や意味がうすれていくこと。	長い年月で石の文字が風化した。
+文化	ぶんか	人々のくらしの中で受けつがれてきた考え方や習慣。	日本の文化を大切にしたい。
+分化	ぶんか	一つのものが、役割ごとに分かれていくこと。	体の中で細胞が分化していく。
+開会	かいかい	会や集まりを始めること。	校長先生のあいさつで開会した。
+開業	かいぎょう	仕事や店を新しく始めること。	父は去年、小さな店を開業した。
+開局	かいきょく	放送局などを新しく作って始めること。	新しいテレビ局が開局した。
+開口	かいこう	口を開くこと。	先生が開口一番、大事な話をした。
+開国	かいこく	外国との行き来や貿易を始めること。	日本は昔、開国して世界とつながった。
+開場	かいじょう	会場を開いて人を入れること。	開場前から人がならんでいた。
+開通	かいつう	道や線路などが使えるようになること。	新しい橋が開通した。
+開発	かいはつ	土地や技術を役立つように作り出すこと。	町の開発が進んでいる。
+開門	かいもん	門を開くこと。	朝になると学校の門が開門する。
+全開	ぜんかい	全部を開くこと。	窓を全開にして空気を入れかえた。
+感化	かんか	人の考えや行いに影響をあたえること。	本の言葉に強く感化された。
+感心	かんしん	すごいと思って心を動かされること。	弟のがんばりに感心した。
+感動	かんどう	心が強く動かされること。	映画を見て感動した。
+音感	おんかん	音の高さや強さのちがいを聞き分ける力。	彼女は音感がとてもよい。
+実感	じっかん	実際に体や心で感じること。	練習の大切さを実感した。
+所感	しょかん	見たり聞いたりして思ったこと。	旅行の所感を作文に書いた。
+食感	しょっかん	食べたときのかたさや歯ざわり。	このりんごは食感がいい。
+体感	たいかん	体で直接感じること。	寒さを体感する朝だった。
+直感	ちょっかん	よく考えなくても、すぐに感じ取ること。	直感で答えを選んだ。
+力感	りきかん	力の強さや手ごたえの感じ。	ボールに力感があった。
+流感	りゅうかん	インフルエンザのこと。	冬になると流感が流行する。
+期日	きじつ	決められた日。	しめ切りの期日を守ろう。
+会期	かいき	会や集まりが開かれている期間。	会期は三日間です。
+学期	がっき	学校で区切っている学ぶ期間。	二学期が始まった。
+上期	かみき	一年の前半の期間。	上期の成績が発表された。
+後期	こうき	一年の後半の期間。	後期も目標を立ててがんばる。
+下期	しもき	一年の後半の期間。	下期に向けて新しい計画を立てた。
+前期	ぜんき	期間のはじめのほう。	前期は体調をくずしがちだった。
+中期	ちゅうき	期間のまんなかのころ。	中期で計画を見直した。
+長期	ちょうき	長い期間。	長期の休みを使って旅行した。
+定期	ていき	決まった時期ごとに行うこと。	定期テストの勉強を始めた。
+年期	ねんき	あることを続けてきた年数。	この仕事も年期が入ってきた。
+来期	らいき	次に来る期間。	来期の予定を話し合った。
+開業	かいぎょう	仕事や店を新しく始めること。	兄は春に開業する予定だ。
+家業	かぎょう	家で代々続けている仕事。	実家の家業を手伝っている。
+作業	さぎょう	仕事として行うしごとや動き。	静かに作業を進めた。
+事業	じぎょう	社会のために計画して行う大きな仕事。	新しい事業が始まった。
+実業	じつぎょう	物を作ったり売ったりする実際の仕事。	役所をやめて、実業につく。
+所業	しょぎょう	その人が行った行い（よい意味にも悪い意味にも使う）。	彼の所業は多くの人を驚かせた。
+生業	なりわい	生活のためにしている仕事。	漁業を生業としてくらしている。
+転業	てんぎょう	仕事の種類を変えること。	飲食店へ転業する
+分業	ぶんぎょう	仕事を分けて受け持つこと。	分業すると仕事がはかどる。
+本業	ほんぎょう	その人の主な仕事。	音楽は本業ではない。
+局外	きょくがい	その仕事や組織の外。	その問題は局外の人には分からない。
+局所	きょくしょ	ある限られた場所。	痛みは局所に集まっている。
+局地	きょくち	あるせまい地域。	局地的な雨が降った。
+局長	きょくちょう	局の責任者。	局長が会議をまとめた。
+局部	きょくぶ	体や物の一部分。	けがは足の局部だった。
+局面	きょくめん	物事のある場面や状態。	事態は新しい局面に入った。
+開局	かいきょく	放送局などを新しく作って始めること。	ラジオ局が開局した。
+大局	たいきょく	全体を大きく見たときの流れ。	大局を見て判断する。
+当局	とうきょく	その問題を担当している役所や組織。	当局が調査を始めた。
+入局	にゅうきょく	局に入ること。	希望して入局した。
+本局	ほんきょく	中心となる局。	本局から連絡が入った。
+事後	じご	物事が終わったあと。	事後に先生へ報告した。
+事実	じじつ	本当に起こったこと。	うわさではなく事実を確かめよう。
+事前	じぜん	物事が起こる前。	事前に連絡を入れた。
+事物	じぶつ	実際にある物や出来事。	歴史の事物を学んだ。
+悪事	あくじ	法律や社会の決まりに反する行い。	悪事に関わらないよう気をつける。
+火事	かじ	火が出て建物などが燃えること。	近くで火事があった。
+家事	かじ	家の中で行う仕事（そうじ・料理など）。	家事を手伝った。
+行事	ぎょうじ	決まった時期に行うできごと。	学校の行事を楽しみにしている。
+国事	こくじ	国に関わる大切な事がら。	国事として話し合われた。
+小事	しょうじ	小さな出来事。	しょうじでも大切にしよう。
+食事	しょくじ	食べ物を食べること。	家族で食事をした。
+人事	じんじ	人に関する事がらやできごと。	人事の発表があった。
+大事	だいじ	とても大切なこと。	健康は大事だ。
+見事	みごと	とてもすばらしいようす。	みごとな演技だった。
+用事	ようじ	しなければならないこと。	用事があって先に帰る。
+実家	じっか	生まれ育った家。	休みに実家へ帰った。
+実学	じつがく	実際の生活に役立つ学問。	実学を学ぶと役に立つ。
+実感	じっかん	実際に体や心で感じること。	上達を実感した。
+実行	じっこう	計画したことを行うこと。	計画を実行した。
+実数	じっすう	実際の数。	実数で数えた。
+実体	じったい	実際にある姿や中身。	問題の実体が分かった。
+実地	じっち	実際の場所や現場。	実地で学ぶ。
+実直	じっちょく	正直でまじめなようす。	実直な人だ。
+実物	じつぶつ	本物の品。	実物を見て確認した。
+実名	じつめい	本当の名前。	実名で申し込む。
+実用	じつよう	実際に使えること。	実用的な道具だ。
+実力	じつりょく	本当の力や能力。	実力を発揮した。
+口実	こうじつ	本当の理由ではなく、言い訳として使う理由。	用事を口実に断った。
+着実	ちゃくじつ	一つ一つ確かに進んでいるようす。	努力が着実に実を結んだ。
+内実	ないじつ	表に出ていない本当の中身。	話し合いで内実が明らかになった。
+名実	めいじつ	名前と実際の内容。	名実ともにリーダーと認められた。
+所感	しょかん	見聞きして感じたこと。	見学の所感をまとめた。
+所見	しょけん	見たことから考えた意見。	先生の所見を聞いた。
+所行	しょぎょう	その人がした行い。	彼の所行は評価された。
+所業	しょぎょう	その人が行ったこと（よい意味にも悪い意味にも使う）。	その所業は人々の記憶に残った。
+所作	しょさ	動作やふるまい。	所作がていねいだ。
+所長	しょちょう	役所や施設の長。	所長が説明した。
+所定	しょてい	あらかじめ決められていること。	所定の場所に集まる。
+所用	しょよう	用事。	所用で外出する。
+局所	きょくしょ	ある限られた場所。	薬を局所にぬる。
+地所	じしょ	土地。	祖父は地所を持っている。
+出所	でどころ	出てきた場所や原因。	うわさの出所を調べる。
+長所	ちょうしょ	よいところ。	長所をのばしたい。
+入所	にゅうしょ	施設などに入ること。	新しい施設に入所した。
+場所	ばしょ	物や人があるところ。	集合場所を決めた。
+見所	みどころ	特に注目すべきところ。	この映画の見所は音楽だ。
+名所	めいしょ	有名な場所。	京都は名所が多い。
+身上	しんじょう	身分や生活のようす。	身上を明かした。
+身体	しんたい	からだ。	身体を大切にする。
+身代	しんだい	家の財産。	身代を守る。
+身長	しんちょう	背の高さ。	身長がのびた。
+身内	みうち	家族や親しい人。	身内で話し合った。
+身分	みぶん	社会での立場。	身分をわきまえる。
+身元	みもと	その人がどこの誰かということ。	身元が確認された。
+後身	こうしん	あとをつぐ人。	後身を育てる。
+出身	しゅっしん	生まれ育ったところ。	東京出身です。
+心身	しんしん	心と体の両方。	心身ともに元気でいたい。
+人身	じんしん	人の体や命。	人身に関わる事故を防ぐ。
+前進	ぜんしん	前へ進むこと。	勇気を出して前進した。
+長身	ちょうしん	背が高いこと。	兄は長身で目立つ。
+転身	てんしん	立場や仕事を変えること。	会社をやめて転身した。
+中身	なかみ	中に入っているもの。	箱の中身を確かめた。
+生身	なまみ	作り物ではない、本当の体。	生身でぶつかるのは危ない。
+分身	ぶんしん	自分の代わりとなる存在。	分身のように働いた。
+進学	しんがく	上の学校へ進むこと。	中学へ進学する。
+進言	しんげん	目上の人に意見を言うこと。	先生に進言した。
+進行	しんこう	物事が進んでいくこと。	工事が順調に進行している。
+進出	しんしゅつ	新しい場所や分野へ出ていくこと。	海外へ進出した。
+進水	しんすい	船を初めて水に浮かべること。	新しい船が進水した。
+進入	しんにゅう	中へ入りこむこと。	立ち入り禁止区域に進入した。
+進物	しんもつ	おくりもの。	進物を用意した。
+進路	しんろ	これから進む道や方向。	進路を考える時期だ。
+行進	こうしん	列になって歩くこと。	音楽に合わせて行進した。
+先進	せんしん	進んだ考えや技術をもっていること。	先進的な研究だ。
+直進	ちょくしん	まっすぐ進むこと。	道を直進する。
+発進	はっしん	動き出すこと。	列車が発進した。
+全音	ぜんおん	音の高さのちがいを表す単位。	全音と半音を学んだ。
+全会	ぜんかい	全員が集まること。	全会一致で決まった。
+全開	ぜんかい	全部を開くこと。	窓を全開にした。
+全国	ぜんこく	国じゅうすべて。	全国から参加者が集まった。
+全身	ぜんしん	体の全部。	全身がつかれて動けなかった。
+全日	ぜんじつ	一日じゅう。	雨が全日降り続いた。
+全体	ぜんたい	すべてを合わせたもの。	全体の流れを考えよう。
+全長	ぜんちょう	はじめから終わりまでの長さ。	橋の全長を調べた。
+全通	ぜんつう	全部が通じること。	電話が全通して安心した。
+全部	ぜんぶ	すべて。	宿題は全部終わった。
+全文	ぜんぶん	文章のすべて。	全文を声に出して読んだ。
+全面	ぜんめん	全体にわたること。	全面的に見直す。
+全力	ぜんりょく	持っている力をすべて出すこと。	全力で走った。
+代物	しろもの	その物・問題の品。	なかなかの代物だ。
+代金	だいきん	物を買ったときに払うお金。	代金をレジで払った。
+代行	だいこう	本人の代わりに行うこと。	父の代わりに代行した。
+代作	だいさく	他人の代わりに作品を作ること。	代作だと分かった。
+代書	だいしょ	他人に代わって書くこと。	手紙を代書してもらった。
+代筆	だいひつ	本人の代わりに文章を書くこと。	申込書を代筆した。
+代用	だいよう	代わりの物として使うこと。	紙を布で代用した。
+足代	あしだい	交通に使うお金。	足代を用意する。
+車代	くるまだい	車を使うための費用。	車代を精算した。
+上代	じょうだい	商品を売るときの値段。	上代を確認する。
+身代	しんだい	家の財産。	身代を受けついだ。
+先代	せんだい	前の代の人。	先代の社長を知っている。
+前代	ぜんだい	前の時代や代。	前代の考え方を学ぶ。
+当代	とうだい	今の時代。	当代の名人と呼ばれる。
+年代	ねんだい	年の区切りで見た時代。	九十年代の音楽。
+名代	なだい	有名であること。	名代の店として知られる。
+着物	きもの	日本の伝統的な衣服。	祭りで着物を着た。
+着実	ちゃくじつ	一つ一つ確かに進んでいるようす。	準備が着実に進む。
+着手	ちゃくしゅ	仕事などを始めること。	計画に着手した。
+着水	ちゃくすい	水の上におりること。	飛行機が着水した。
+着地	ちゃくち	地面におりること。	無事に着地した。
+着目	ちゃくもく	大切だと思って注意して見ること。	先生は結果より努力に着目した。
+着用	ちゃくよう	服などを身につけて使うこと。	校内では名札を着用する。
+着火	ちゃっか	火がつくこと。	たき火に火が着火した。
+上着	うわぎ	上に着る服。	寒いので上着を着た。
+下着	したぎ	服の下に着る衣類。	新しい下着を用意した。
+新着	しんちゃく	新しく届いたもの。	図書館に新着の本が入った。
+先着	せんちゃく	先に着いた順。	先着順で席が決まる。
+定着	ていちゃく	ある場所や状態に落ち着くこと。	この方法が学校に定着した。
+発着	はっちゃく	出発と到着。	電車の発着時刻を調べる。
+水着	みずぎ	水の中で着る服。	夏に水着を着て泳いだ。
+定期	ていき	決まった時期ごとに行うこと。	定期検査を受ける。
+定見	ていけん	しっかり決まった考え。	自分の定見を持つ。
+定食	ていしょく	決まった組み合わせの食事。	昼は定食を食べた。
+定着	ていちゃく	しっかり根づいて広まること。	習慣として定着した。
+定年	ていねん	仕事をやめることになる年齢。	父は来年定年だ。
+国定	こくてい	国が正式に決めたこと。	国定の教科書。
+所定	しょてい	あらかじめ決められていること。	所定の時間に集合。
+内定	ないてい	正式決定の前に決まること。	進学先が内定した。
+平定	へいてい	争いをしずめて落ち着かせること。	国を平定した。
+転化	てんか	性質や形が別のものに変わること。	水が氷に転化した。
+転学	てんがく	学校を変わること。	引っこしで転学した。
+転業	てんぎょう	仕事の種類を変えること。	父は転業を考えている。
+転作	てんさく	作る作物を変えること。	畑で転作を行った。
+転出	てんしゅつ	他の場所へ移ること。	都会へ転出した。
+転身	てんしん	立場や仕事を変えること。	選手から指導者に転身した。
+転生	てんせい	生まれ変わること。	物語で転生する。
+転地	てんち	住む場所を変えること。	転地して生活を始めた。
+転入	てんにゅう	よそから入ってくること。	新しい友だちが転入した。
+転用	てんよう	別の目的に使いかえること。	空き教室を転用した。
+気転	きてん	その場に合った、すばやい考えのめぐり。	気転がきいて助かった。
+空転	くうてん	力が伝わらず、むだに回ること。	タイヤが空転した。
+後転	こうてん	うしろ向きに回ること。	体操で後転をした。
+前転	ぜんてん	前向きに回ること。	マットで前転を練習した。
+動転	どうてん	急なことで気持ちが落ち着かなくなること。	事故の知らせに動転した。
+流転	るてん	つぎつぎにうつりかわること。	万物は流転する。
+動作	どうさ	体や機械の動き。	ロボットの動作を確認する。
+動物	どうぶつ	自分で動き、えさを食べて生きる生き物。	動物を大切にしよう。
+動力	どうりょく	物を動かす力。	風力が動力になる。
+言動	げんどう	言葉と行い。	言動に気をつける。
+原動	げんどう	物事が動き出すもとになること。	原動力になった。
+行動	こうどう	考えて実際に行うこと。	正しい行動を選ぶ。
+作動	さどう	機械などが動くこと。	ボタンを押すと作動する。
+出動	しゅつどう	仕事のために出て行くこと。	消防車が出動した。
+手動	しゅどう	人の手で動かすこと。	手動で操作する。
+流動	りゅうどう	形や状態が変わりやすく動くこと。	流動的な計画だ。
+配下	はいか	命令を受けて動く人たち。	部下や配下が集まった。
+配車	はいしゃ	車を割り当てること。	タクシーを配車した。
+配水	はいすい	水を分けて送ること。	町の配水が止まった。
+配当	はいとう	利益や物を分けて与えること。	会社が配当を出した。
+配分	はいぶん	分けて配ること。	時間を公平に配分する。
+配本	はいほん	本を各所に配ること。	新刊の配本が始まった。
+気配	けはい	何かが起こりそうな様子。	雨の気配がする。
+心配	しんぱい	悪いことが起こらないか気にすること。	家族を心配する。
+手配	てはい	前もって準備や手続きをすること。	旅行のてはいを早めにすませた。
+年配	ねんぱい	年が上の人。	年配の方に席をゆずった。
+分配	ぶんぱい	分けて配ること。	おかしを人数分に分配した。
+発意	はつい	何かをしようと思いつくこと。	会議で新しい案の発意が出た。
+発音	はつおん	言葉の音を声に出すこと。	英語の発音を練習する。
+発火	はっか	火が出ること。	機械から発火した。
+発見	はっけん	今まで知られていなかったことを見つけること。	新しい星を発見した。
+発言	はつげん	考えを言葉にして言うこと。	勇気を出して発言した。
+発行	はっこう	本や新聞などを出すこと。	学校新聞を発行した。
+発車	はっしゃ	乗り物が出発すること。	電車が発車した。
+発進	はっしん	動き出すこと。	ロケットが発進した。
+発生	はっせい	物事が起こること。	トラブルが発生した。
+発着	はっちゃく	出発と到着。	発着時刻を確認する。
+発動	はつどう	働き始めること。	警報が発動した。
+発作	ほっさ	急に起こる体や心の変化。	せきの発作が出た。
+発足	ほっそく	新しく始まること。	新チームが発足した。
+開発	かいはつ	土地や技術を役立つように作り出すこと。	町の開発が進む。
+原発	げんぱつ	原子力で電気を作る発電所。	原発の安全について学んだ。
+後発	こうはつ	あとから始まること。	後発のチームが追い上げた。
+出発	しゅっぱつ	出かけること。	朝早く出発した。
+先発	せんぱつ	先に行うこと。	先発の投手が登場した。
+筆頭	ひっとう	いちばんはじめ。	名簿の筆頭に名前がある。
+筆力	ひつりょく	文章を書く力。	練習で筆力がついた。
+筆先	ふでさき	筆の先。	筆先を整える。
+運筆	うんぴつ	筆やえんぴつを動かして字を書くこと。	正しい運筆を身につける。
+大筆	おおぶで	太い字を書くための大きな筆。	おおぶでで大字を書く。
+小筆	こぶで	細い字を書くための小さな筆。	こぶでで名前を書く。
+直筆	じきひつ	本人が自分で書いたもの。	直筆の手紙をもらった。
+文筆	ぶんぴつ	文章を書いたり表現したりすること。	文筆の仕事にあこがれている。
+品物	しなもの	売ったり使ったりする物。	店にいろいろな品物がならんでいる。
+品行	ひんこう	人のふるまいや行い。	品行正しく生活する。
+品名	ひんめい	商品の名前。	品名をメモしておいた。
+品目	ひんもく	品物の種類ごとの区分。	品目ごとに整理する。
+気品	きひん	上品で落ち着いた感じ。	話し方に気品がある。
+金品	きんぴん	お金や貴重な品物。	金品を大切に保管する。
+下品	げひん	上品でないようす。	人をばかにする言い方は下品だ。
+作品	さくひん	作った物や書いたもの。	図工で作品を作った。
+出品	しゅっぴん	品物を出して売ったり見せたりすること。	作品を展覧会に出品した。
+小品	しょうひん	小さな作品。	短い詩は小品として発表された。
+上品	じょうひん	礼儀正しく、落ち着いたようす。	上品な話し方を心がける。
+食品	しょくひん	食べるための物。	食品を冷ぞう庫に入れる。
+新品	しんぴん	新しく作られた物。	新品のノートを使う。
+人品	じんぴん	人柄や性格。	人品のいやしからぬ人。
+手品	てじな	人をあっと言わせる芸。	手品を見ておどろいた。
+名品	めいひん	すぐれた品物。	この焼き物は名品だ。
+洋品	ようひん	洋服や西洋風の品物。	洋品店で買い物をした。
+用品	ようひん	使うための道具。	掃除用品をそろえた。
+部下	ぶか	上の人の指示で働く人。	部下と相談して決めた。
+部外	ぶがい	その組織や集まりの外。	部外の人には話せない。
+部数	ぶすう	本などの数。	発行部数が増えた。
+部長	ぶちょう	部のまとめ役。	部長が会議を開いた。
+部品	ぶひん	機械などを作るための一部分。	部品を交換した。
+部分	ぶぶん	全体の中の一部。	大事な部分を読む。
+部門	ぶもん	組織の中の区切り。	営業部門で働く。
+外部	がいぶ	外がわ。	外部からの意見を聞く。
+学部	がくぶ	大学での学びの区分。	理学部に進学した。
+下部	かぶ	下の部分。	山の下部に村がある。
+局部	きょくぶ	全体の中の一部分。	痛みは局部にある。
+後部	こうぶ	うしろの部分。	車の後部に荷物を積む。
+上部	じょうぶ	上の部分。	建物の上部を点検した。
+全部	ぜんぶ	すべて。	全部終わった。
+中部	ちゅうぶ	まんなかの部分。	日本の中部地方。
+頭部	とうぶ	頭の部分。	頭部を守る。
+内部	ないぶ	中がわ。	内部の様子を見る。
+入部	にゅうぶ	部に入ること。	部活に入部した。
+本部	ほんぶ	中心となるところ。	本部に連絡する。
+物心	ものごころ	物事がわかるようになる心。	物心がついたころの思い出。
+物体	ぶったい	形のあるもの。	重い物体を動かす。
+物品	ぶっぴん	さまざまな品物。	物品を整理した。
+物音	ものおと	物が動いたり当たったりして出る音。	夜に物音がした。
+物見	ものみ	見物すること。	城を物見した。
+大物	おおもの	大きな力や地位をもつ人。	政界の大物だ。
+金物	かなもの	金属でできた物。	金物を修理する。
+見物	けんぶつ	実際に見て楽しむこと。	工場を見物した。
+小物	こもの	小さな道具や品物。	小物を整理する。
+作物	さくもつ	畑や田で作る植物。	今年の作物はよく育った。
+事物	じぶつ	実際にある物や出来事。	歴史の事物を学ぶ。
+上物	じょうもの	質のよい品。	この魚は上物だ。
+食物	しょくもつ	人や動物が食べるもの。	新鮮な食物をとる。
+書物	しょもつ	本。	古い書物を読む。
+代物	しろもの	その物・問題の品。	なかなかの代物だ。
+人物	じんぶつ	ある特徴をもった人。	歴史上の人物を調べた。
+進物	しんもつ	おくりもの。	お祝いの進物を用意した。
+生物	せいぶつ	生きているもの。	池の生物を観察した。
+長物	ながもの	長い形をした物。	長物は運びにくい。
+風物	ふうぶつ	その土地や季節を感じさせる物や景色。	春の風物を楽しむ。
+文物	ぶんぶつ	文化に関わる物や制度。	文物を守る活動がある。
+本物	ほんもの	にせではない、本当の物。	本物かどうか確かめる。
+名物	めいぶつ	その土地や店で有名な物。	町の名物を食べた。
+平手	ひらて	平らに開いた手。	平手打ちをくう。
+平目	ひらめ	海にいる、平たい体の魚。	ひらめの刺身を食べた。
+平気	へいき	こわがったり気にしたりしないようす。	彼は平気な顔をしていた。
+平家	へいけ	平らな形の家／平氏の一族。	歴史で平家を学ぶ。
+平原	へいげん	広くて平らな土地。	草原の平原が広がる。
+平行	へいこう	同じ方向に進み、交わらないこと。	二本の線は平行だ。
+平日	へいじつ	土日や祝日でない日。	平日は学校がある。
+平生	へいぜい	ふだん、いつも。	平生から準備している。
+平地	へいち	平らな土地。	平地に家が建つ。
+平定	へいてい	争いをおさめて落ち着かせること。	争いを平定した。
+平年	へいねん	ふつうの年。	平年より暑い夏だ。
+平方	へいほう	正方形の面積の表し方。	辺の長さを平方で表す。
+平面	へいめん	平らな面。	紙を平面に置く。
+平野	へいや	広くて平らな野原。	草の広がる平野を走った。
+平和	へいわ	争いがなく、穏やかな状態。	世界が平和でありますように。
+水平	すいへい	水面のように平らなこと。	机が水平か確かめる。
+和平	わへい	争いをやめて仲直りすること。	話し合いで和平が成立した。
+命中	めいちゅう	ねらったところに当たること。	的に命中した。
+命日	めいにち	人が亡くなった日。	祖父の命日に手を合わせた。
+命名	めいめい	名前をつけること。	子犬に名前を命名した。
+人名	じんめい	人の名前。	名簿に人名を書く。
+生命	せいめい	生きていること、そのいのち。	生命を大切にする。
+長命	ちょうめい	長く生きること。	祖母は長命だ。
+天命	てんめい	天から与えられたと考えられる運命。	天命を信じて進む。
+本命	ほんめい	いちばん大切だと思っているもの。	この案が本命だ。
+用命	ようめい	命令や仕事を言いつけること。	上司から用命を受けた。
+面長	おもなが	顔が縦に長い形。	彼は面長の顔立ちだ。
+面会	めんかい	人と直接会うこと。	家族と面会した。
+面前	めんぜん	目の前。	面前で説明する。
+面体	めんたい	顔つきや表情。	面体が引きしまった。
+面目	めんぼく	世間に対する名誉や体面。	面目を保つ。
+海面	かいめん	海の水の表面。	夕日が海面に映ってきれいだった。
+外面	がいめん	外から見える様子。	外面は元気そうに見えた。
+局面	きょくめん	物事のある場面や状態。	事態は新しい局面に入った。
+月面	げつめん	月の表面。	ロケットが月面に着陸した。
+地面	じめん	地表。	雨で地面がぬれている。
+書面	しょめん	書いてある文書。	書面で知らせを受け取った。
+人面	じんめん	人の顔。	人面のような岩が話題になった。
+水面	すいめん	水の表面。	風で水面がゆれている。
+全面	ぜんめん	全体にわたること。	計画を全面的に見直した。
+体面	たいめん	人前での立場や名誉。	体面を気にしすぎないほうがいい。
+直面	ちょくめん	問題などに直接向かうこと。	大きな課題に直面した。
+当面	とうめん	今のところ。	当面はこの方法で進める。
+内面	ないめん	心の中や内がわ。	内面の気持ちを大切にする。
+場面	ばめん	物事の一場面。	その場面をよく覚えている。
+文面	ぶんめん	文章の表現や書きぶり。	文面から気持ちが伝わった。
+平面	へいめん	平らな面。	紙を平面に広げる。
+方面	ほうめん	向きや分野。	この方面に進みたい。
+路面	ろめん	道の表面。	雨で路面がすべりやすい。
+洋行	ようこう	外国へ行くこと。	父は仕事で洋行した。
+洋書	ようしょ	西洋の言葉で書かれた本。	図書館で洋書をさがした。
+洋上	ようじょう	海の上。	船が洋上を進んでいる。
+洋食	ようしょく	西洋風の料理。	今日は洋食を食べた。
+洋品	ようひん	洋服や西洋風の品物。	洋品店で買い物をした。
+洋風	ようふう	西洋の様式。	洋風の家に住んでいる。
+海洋	かいよう	広い海。	青い海洋が広がる。
+外洋	がいよう	陸から遠い海。	外洋は波が高い。
+大洋	たいよう	とても広い海。	大洋を渡る船。
+和洋	わよう	日本風と西洋風。	和洋折衷の料理。
+流会	りゅうえ	予定していた会が中止になること。	天候不良で流会になった。
+流感	りゅうかん	インフルエンザのこと。	冬に流感がはやる。
+流言	りゅうげん	根拠のないうわさ。	流言にまどわされない。
+流行	りゅうこう	多くの人の間で広まること。	この歌が流行している。
+流失	りゅうしつ	水などに流されて失われること。	土砂が川に流失した。
+流水	りゅうすい	流れている水。	流水で手を洗う。
+流体	りゅうたい	液体や気体のように流れるもの。	水は流体の一つだ。
+流通	りゅうつう	物やお金が行き来すること。	商品が流通する。
+流入	りゅうにゅう	外から中へ流れ込むこと。	人が町に流入した。
+流用	りゅうよう	本来の目的とは別に使うこと。	予算を流用した。
+流転	るてん	世の中の移り変わりにしたがって変わること。	人生の流転を感じる。
+海流	かいりゅう	海の中を流れる水の流れ。	海流によって、魚の動きが変わります。
+下流	かりゅう	川の下のほう。	下流に町がある。
+気流	きりゅう	空気の流れ。	上空の気流を調べる。
+上流	じょうりゅう	川の上のほう。	上流で水をくむ。
+水流	すいりゅう	水の流れ。	川の水流が速い。
+中流	ちゅうりゅう	川の中ほど／社会の中間の立場。	中流のあたりで魚をとる。
+直流	ちょくりゅう	向きが変わらずに流れる電気。	電池は直流を出す。
+風流	ふうりゅう	上品で味わいがあるようす。	風流な景色を楽しんだ。
+分流	ぶんりゅう	流れがいくつかに分かれること。	川が二つに分流していた。
+本流	ほんりゅう	中心となる流れ。	この考え方が本流だ。
+路地	ろじ	家と家の間などにあるせまい道。	路地をぬけて近道した。
+路上	ろじょう	道の上。	路上で工事が行われている。
+路頭	ろとう	たよる所がなく、道に出ること。	仕事を失い路頭に迷った。
+路面	ろめん	道の表面。	雨で路面がすべりやすい。
+悪路	あくろ	でこぼこして通りにくい道。	山道は悪路だった。
+家路	いえじ	家へ帰る道。	夕方、家路を急いだ。
+大路	おおじ	広い道。	大路をまっすぐ進む。
+海路	かいろ	海の上の交通路。	昔の海路を調べた。
+空路	くうろ	空を通る交通路。	飛行機は空路で向かった。
+行路	こうろ	通っていく道。	登山の行路を確認する。
+小路	こうじ	せまい道。	小さな小路に入った。
+進路	しんろ	これから進む道や方向。	進路について話し合う。
+水路	すいろ	水を流したり通したりする道。	畑に水路を作った。
+通路	つうろ	人や物が通る道。	通路をふさがないで。
+道路	どうろ	人や車が通るための道。	新しい道路ができた。
+山路	やまじ	山の中の道。	山路は足元に注意が必要だ。
+和音	わおん	いくつかの音を同時に出した音。	ピアノで和音をひいた。
+和気	わき	なごやかな気分。	教室に和気が広がった。
+和書	わしょ	日本語で書かれた本。	和書を読んで調べた。
+和食	わしょく	日本の食事。	和食は体にやさしい。
+和風	わふう	日本の様式。	和風の庭が美しい。
+和文	わぶん	日本語の文章。	和文で作文を書く。
+和名	わめい	日本での名前。	植物の和名を調べる。
+中和	ちゅうわ	反対の性質を打ち消しておだやかにすること。	薬で中和した。
+日和	ひより	天気や、その日の具合。	今日は行楽日和だ。
+`.trim();
+
+function buildJukugoDB(tsv){
+  const db = Object.create(null);
+  const lines = tsv.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  for(const line of lines){
+    const parts = line.split("\t");
+    if(parts.length < 2) continue;
+    const k = (parts[0]||"").trim();
+    const y = (parts[1]||"").trim();
+    const imi = (parts[2]||"").trim();
+    const rei = (parts[3]||"").trim();
+    if(!k) continue;
+    if(!db[k]) db[k] = { yomi: y, imi: imi, reibun: rei };
+  }
+  return db;
+}
+const JUKUGO_DB = buildJukugoDB(JUKUGO_TSV);
+const ANSWER_SET = new Set(Object.keys(JUKUGO_DB));
+
+const el = (id)=>document.getElementById(id);
+const fieldEl = el("field");
+const msgEl = el("msg");
+const topPill = el("topPill");
+const drawBtn = el("drawBtn");
+const checkBtn = el("checkBtn");
+const endBtn = el("endBtn");
+const startBtn = el("startBtn");
+const resetBtn = el("resetBtn");
+const gradeSelect = el("gradeSelect");
+const playerCountSel = el("playerCount");
+const targetPointsInp = el("targetPoints");
+const missLimitSel = el("missLimit");
+const scoreboardEl = el("scoreboard");
+const winMsgEl = el("winMsg");
+const skipNextBtn = el("skipNextBtn");
+const drawChip = el("drawChip");
+const drawMini = el("drawMini");
+const slot1El = el("slot1");
+const slot2El = el("slot2");
+const wordBox = el("wordBox");
+const madeListEl = el("madeList");
+const missCountEl = el("missCount");
+const kusudamaOverlay = el("kusudamaOverlay");
+const kusudama = el("kusudama");
+const streamers = el("streamers");
+const kusudamaBanner = el("kusudamaBanner");
+const speakBtn = el("speakBtn");
+const stopSpeakBtn = el("stopSpeakBtn");
+const speechEnableBtn = el("speechEnableBtn");
+const ansSpeakBtn = el("ansSpeakBtn");
+const ansInfo = el("ansInfo");
+const addFieldBtn = el("addFieldBtn");
+const readingToggle = el("readingToggle");
+
+if(!HAS_SPEECH){
+  speakBtn.addEventListener("click", ()=> setMsg("この環境では音声読み上げが使えません。", "ng"));
+  stopSpeakBtn.addEventListener("click", ()=> setMsg("この環境では音声読み上げが使えません。", "ng"));
+  ansSpeakBtn.addEventListener("click", ()=> setMsg("この環境では音声読み上げが使えません。", "ng"));
+}
+
+// ★音声ONボタン（SpeechSynthesis 解放用）
+// P2が「一度も読み上げを押してないと遠隔読み上げが鳴らない」端末向け。
+// 1回押すだけで以後の遠隔読み上げも鳴るようになります。
+if(speechEnableBtn){
+  if(!HAS_SPEECH){
+    speechEnableBtn.style.display = "none";
+  }else{
+    speechEnableBtn.addEventListener("click", ()=>{
+      const ok = unlockSpeechHard();
+      if(ok){
+        speechEnableBtn.style.display = "none";
+        setMsg("音声を有効にしました。以後、相手の読み上げも聞こえます。","ok");
+      }else{
+        setMsg("音声を有効にできませんでした（端末の音声設定を確認してください）。","ng");
+      }
+    });
+  }
+}
+
+// ============ 状態（オフライン同等）===========
+let started = false;
+let deck = [];
+let field = [];
+let players = [];
+let current = 0;
+let targetPoints = 5;
+let missLimit = 3;
+
+let drewThisTurn = false;
+let drawnKanji = null;
+let missThisTurn = 0;
+
+let slot1 = null;
+let slot2 = null;
+let made = new Set();
+
+let lastCorrectWord = null;
+let speakingAnswerUtterance = null;
+let speakingRuleUtterance = null;
+
+let holdAdvance = false;
+
+let showReadings = true;
+
+// ============================
+// ★オンライン：操作可否（手番制）
+// ============================
+function canOperateNow(){
+  if(!ONLINE.enabled) return true;        // オフラインは従来通り
+  if(!started) return false;
+  return (ME_ID === (current + 1));       // currentは0-based
+}
+
+// ============================
+// 便利関数
+// ============================
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function setMsgLocal(text, kind=""){
+  msgEl.classList.remove("ok","ng");
+  if(kind) msgEl.classList.add(kind);
+  msgEl.textContent = text;
+}
+// ★メッセージは相手にも表示（イベント）
+function setMsg(text, kind=""){
+  setMsgLocal(text, kind);
+  if(ONLINE.enabled) sendOnlineEvent("msg", { text, kind });
+}
+function setTopPill(text){ topPill.textContent = text; }
+
+function clearAnswerSpeakUI(){
+  ansSpeakBtn.style.display = "none";
+  ansInfo.style.display = "none";
+  ansInfo.innerHTML = "";
+  lastCorrectWord = null;
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, (c)=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+function formatReadingLines(s){
+  const t = String(s || "").trim();
+  if(!t) return "";
+  const parts = t.split("・").map(x=>x.trim()).filter(Boolean);
+  if(parts.length <= 1) return escapeHtml(t);
+  return parts.map(escapeHtml).join("・<br>");
+}
+function kanjiHtml(k){
+  if(!showReadings) return escapeHtml(k);
+  const r = KANJI_READINGS[k] || { on:"", kun:"" };
+  const on = r.on ? formatReadingLines(r.on) : "";
+  const kun = r.kun ? formatReadingLines(r.kun) : "";
+  return (
+    `<div class="kWrap">` +
+      `<div class="kOn">${on}</div>` +
+      `<div class="kCore">${escapeHtml(k)}</div>` +
+      `<div class="kKun">${kun}</div>` +
+    `</div>`
+  );
+}
+
+function renderField(){
+  fieldEl.innerHTML = "";
+  field.forEach((k, idx)=>{
+    const d = document.createElement("div");
+    d.className = "tile";
+    d.innerHTML = kanjiHtml(k);
+    d.dataset.idx = String(idx);
+    d.addEventListener("click", ()=> onPickField(idx));
+    fieldEl.appendChild(d);
+  });
+}
+function renderSlots(){
+  if(slot1){ slot1El.innerHTML = kanjiHtml(slot1.value); }
+  else{ slot1El.textContent = "—"; }
+  if(slot2){ slot2El.innerHTML = kanjiHtml(slot2.value); }
+  else{ slot2El.textContent = "—"; }
+  slot1El.classList.toggle("filled", !!slot1);
+  slot2El.classList.toggle("filled", !!slot2);
+  wordBox.textContent = (slot1 && slot2) ? (slot1.value + slot2.value) : "—";
+}
+function renderDraw(){
+  if(drawnKanji){ drawMini.innerHTML = kanjiHtml(drawnKanji); }
+  else{ drawMini.textContent = "—"; }
+  drawChip.disabled = !drawnKanji;
+}
+function renderMade(){
+  madeListEl.innerHTML = "";
+  [...made].forEach(w=>{
+    const s = document.createElement("span");
+    s.className = "tag";
+    s.textContent = w;
+    madeListEl.appendChild(s);
+  });
+}
+function renderMiss(){ missCountEl.textContent = started ? `${missThisTurn} / ${missLimit}` : "—"; }
+
+function renderScoreboard(){
+  scoreboardEl.innerHTML = "";
+  players.forEach((p, idx)=>{
+    const row = document.createElement("div");
+    row.className = "pRow" + (idx===current ? " active":"");
+    const left = document.createElement("div");
+    left.className = "left";
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    const name = document.createElement("span");
+    name.textContent = `プレイヤー${idx+1}`;
+    left.appendChild(dot);
+    left.appendChild(name);
+
+    const pts = document.createElement("div");
+    pts.className = "pts";
+
+    const pt = document.createElement("span");
+    pt.className = "ptVal";
+    pt.textContent = `${p.points} pt`;
+    pts.appendChild(pt);
+
+    if(started && idx === current){
+      const st = document.createElement("span");
+      if(p.skipNext){
+        st.className = "statusTag";
+        st.textContent = "次休み";
+      }else{
+        st.className = "statusTag miss";
+        st.textContent = `ミス ${missThisTurn} / ${missLimit}`;
+      }
+      pts.appendChild(st);
+    }else if(p.skipNext){
+      const st = document.createElement("span");
+      st.className = "statusTag";
+      st.textContent = "次休み";
+      pts.appendChild(st);
+    }
+
+    row.appendChild(left);
+    row.appendChild(pts);
+    scoreboardEl.appendChild(row);
+  });
+}
+
+function updateTurnUI(){
+  const online = ONLINE.enabled;
+
+  if(!started){
+    drawBtn.disabled = true;
+    checkBtn.disabled = true;
+    endBtn.disabled = true;
+    skipNextBtn.style.display = "none";
+    addFieldBtn.style.display = "none";
+    addFieldBtn.disabled = true;
+
+    // ★オンライン：P1のみスタート/リセット
+    if(online){
+      startBtn.disabled = (ME_ID !== 1);
+      resetBtn.disabled = (ME_ID !== 1);
+    }else{
+      startBtn.disabled = false;
+      resetBtn.disabled = false;
+    }
+    return;
+  }
+
+  const p = players[current];
+  setTopPill(`プレイヤー${current+1}の番`);
+
+  // ★オンライン：手番以外は操作不可
+  const myTurn = canOperateNow();
+
+  if(holdAdvance){
+    drawBtn.disabled = true;
+    checkBtn.disabled = true;
+    endBtn.disabled = true;
+    skipNextBtn.style.display = "inline-flex";
+    addFieldBtn.style.display = "none";
+    addFieldBtn.disabled = true;
+
+    if(online && !myTurn){
+      skipNextBtn.disabled = true;
+    }else{
+      skipNextBtn.disabled = false;
+    }
+
+    renderScoreboard();
+    renderMiss();
+    renderSlots();
+    renderDraw();
+    return;
+  }
+
+  if(p.skipNext){
+    drawBtn.disabled = true;
+    checkBtn.disabled = true;
+    endBtn.disabled = true;
+    skipNextBtn.style.display = "inline-flex";
+    skipNextBtn.disabled = (online && !myTurn);
+  }else{
+    skipNextBtn.style.display = "none";
+    drawBtn.disabled = drewThisTurn || (online && !myTurn);
+    checkBtn.disabled = (!drewThisTurn) || (online && !myTurn);
+
+    // ★要望：1枚引く前は番を終えられない
+    endBtn.disabled = (!drewThisTurn) || (online && !myTurn);
+  }
+
+  if(field.length <= 3 && started){
+    addFieldBtn.style.display = "inline-flex";
+    addFieldBtn.disabled = (players[current]?.skipNext) ? true : (online && !myTurn);
+  }else{
+    addFieldBtn.style.display = "none";
+    addFieldBtn.disabled = true;
+  }
+
+  // ★オンライン：P1のみリセット
+  if(online){
+    resetBtn.disabled = (ME_ID !== 1);
+  }else{
+    resetBtn.disabled = false;
+  }
+
+  renderScoreboard();
+  renderMiss();
+  renderSlots();
+  renderDraw();
+}
+
+function firstEmptySlot(){ if(!slot1) return 1; if(!slot2) return 2; return 0; }
+function putToSlot(obj){
+  const n = firstEmptySlot();
+  if(n===0) return;
+  if(n===1) slot1 = obj;
+  if(n===2) slot2 = obj;
+  renderSlots();
+  updateTurnUI();
+  pushStateIfOnline();
+}
+function clearSlot(n){
+  if(n===1) slot1 = null;
+  if(n===2) slot2 = null;
+  renderSlots();
+  updateTurnUI();
+  pushStateIfOnline();
+}
+slot1El.addEventListener("click", ()=>{
+  if(ONLINE.enabled && !canOperateNow()) return;
+  clearSlot(1);
+});
+slot2El.addEventListener("click", ()=>{
+  if(ONLINE.enabled && !canOperateNow()) return;
+  clearSlot(2);
+});
+
+function onPickField(idx){
+  if(!started) return;
+  if(ONLINE.enabled && !canOperateNow()) return;
+
+  const p = players[current];
+  if(p.skipNext) return;
+  if(holdAdvance) return;
+
+  if(!drewThisTurn){
+    setMsg("先に「１まい引く」を押してね。","ng");
+    return;
+  }
+  const already = (slot1?.src==="field" && slot1.index===idx) || (slot2?.src==="field" && slot2.index===idx);
+  if(already) return;
+  putToSlot({ src:"field", value: field[idx], index: idx });
+}
+drawChip.addEventListener("click", ()=>{
+  if(!started) return;
+  if(ONLINE.enabled && !canOperateNow()) return;
+
+  const p = players[current];
+  if(p.skipNext) return;
+  if(holdAdvance) return;
+
+  if(!drewThisTurn){
+    setMsg("先に「１まい引く」を押してね。","ng");
+    return;
+  }
+  if(!drawnKanji) return;
+
+  const already = (slot1?.src==="draw") || (slot2?.src==="draw");
+  if(already) return;
+
+  putToSlot({ src:"draw", value: drawnKanji });
+});
+
+function buildDeckForGrade(gradeKey){
+  const pool = KANJI_BY_GRADE[gradeKey] || KANJI_BY_GRADE.g1;
+  const d = [...pool];
+  return shuffle(d);
+}
+
+function burstKusudama(winnerIndex){
+  kusudamaOverlay.style.display = "flex";
+  kusudama.classList.remove("burst");
+  streamers.innerHTML = "";
+  kusudamaBanner.textContent = `プレイヤー${winnerIndex+1}の勝ち！`;
+
+  requestAnimationFrame(()=>{
+    kusudama.classList.add("burst");
+    for(let i=0;i<18;i++){
+      const s = document.createElement("div");
+      s.className = "streamer";
+      const r = (Math.random()*120 - 60).toFixed(1) + "deg";
+      const x = (Math.random()*340 - 170).toFixed(1) + "px";
+      s.style.setProperty("--r", r);
+      s.style.setProperty("--x", x);
+      streamers.appendChild(s);
+    }
+    setTimeout(()=>{ kusudamaOverlay.style.display="none"; }, 1400);
+  });
+}
+
+let cachedVoices = [];
+function refreshVoices(){
+  if(!HAS_SPEECH) return;
+  try{ cachedVoices = window.speechSynthesis.getVoices() || []; }catch(_){ cachedVoices = []; }
+}
+refreshVoices();
+if(HAS_SPEECH){ window.speechSynthesis.onvoiceschanged = refreshVoices; }
+function pickJaVoice(){
+  if(!HAS_SPEECH) return null;
+  const voices = cachedVoices.length ? cachedVoices : (window.speechSynthesis.getVoices?.() || []);
+  return voices.find(v => /ja|JP/i.test(v.lang)) || voices[0] || null;
+}
+function speakTextNow(text, onEnd){
+  if(!HAS_SPEECH){ onEnd && onEnd(); return null; }
+  try{
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(ttsNormalize(text));
+    const v = pickJaVoice();
+    if(v) u.voice = v;
+    u.lang = "ja-JP";
+    u.rate = 1.0;
+    u.pitch = 1.0;
+    u.onend = ()=>{ onEnd && onEnd(); };
+    u.onerror = ()=>{ onEnd && onEnd(); };
+    window.speechSynthesis.speak(u);
+    return u;
+  }catch(e){
+    onEnd && onEnd();
+    return null;
+  }
+}
+
+// ★遠隔読み上げ：解放前はキューに積む（P2がまだ一度も読み上げてないと鳴らない問題の対策）
+function speakText(text, onEnd){
+  if(!HAS_SPEECH){ onEnd && onEnd(); return null; }
+  if(!SPEECH_GATE.unlocked){
+    SPEECH_GATE.pending.push({ text: String(text||""), onEnd });
+    return null;
+  }
+  return speakTextNow(text, onEnd);
+}
+
+speakBtn.addEventListener("click", ()=>{
+  unlockSpeech();
+  if(!HAS_SPEECH){ setMsg("この環境では音声読み上げが使えません。","ng"); return; }
+  const text = [
+  "最初に ばふだ が6枚出ます。",
+  "自分の ばん では、必ず やまふだ から1枚引きます。1回だけ。",
+  "１、２のわくに、ばふだ どうし、または ひきふだ と ばふだ を、タップしていれます。",
+  "できたら、できた！ をタップします。正答なら1ポイント。",
+  "作れなかったときは、引いた ふだ は ばふだ に並び、ばふだ がどんどん増えます。",
+  "ばふだ が3枚以下になったら、ばふだ を追加する のボタンで、ふだ を追加できます。",
+  "ばん を終えるとき、手元に残った ひきふだ も ばふだ へ追加されます。",
+  "目標ポイントに達した人が勝ち。設定で変更できます。",
+  "1ターンで、その言葉はありません、が設定回数出たら、次の自分の ばん は1回休みです。つぎへ、で進みます。"
+].join(" ");
+  speakingRuleUtterance = speakText(text);
+});
+stopSpeakBtn.addEventListener("click", ()=>{
+  if(!HAS_SPEECH){ setMsg("この環境では音声読み上げが使えません。","ng"); return; }
+  safeCancelSpeech();
+  speakingRuleUtterance = null;
+});
+
+// ★🔊：押したら相手にも流す（イベント）
+ansSpeakBtn.addEventListener("click", ()=>{
+  unlockSpeech();
+  if(!lastCorrectWord) return;
+  const info = JUKUGO_DB[lastCorrectWord];
+  if(!info) return;
+
+  ansInfo.innerHTML =
+    `<div>【${escapeHtml(lastCorrectWord)}】</div>` +
+    `<div class="sub">よみ：${escapeHtml(info.yomi || "")}</div>` +
+    `<div class="sub">いみ：${escapeHtml(info.imi || "")}</div>` +
+    `<div class="sub">れいぶん：${escapeHtml(info.reibun || "")}</div>`;
+  ansInfo.style.display = "block";
+
+  const word = lastCorrectWord;
+  const yomi = info.yomi || "";
+  const reibunRaw = info.reibun || "";
+  const reibunSpeak = (reibunRaw && word && yomi) ? (reibunRaw.split(word).join(yomi)) : reibunRaw;
+
+  const speakStr = `よみ、${yomi}。いみ、${info.imi || ""}。れいぶん、${reibunSpeak}`;
+  speakingAnswerUtterance = speakText(speakStr, ()=>{
+    ansInfo.style.display = "none";
+    ansInfo.innerHTML = "";
+    speakingAnswerUtterance = null;
+  });
+
+  if(ONLINE.enabled){
+    sendOnlineEvent("speakAnswer", {
+      word,
+      info: { yomi: info.yomi || "", imi: info.imi || "", reibun: info.reibun || "" }
+    });
+  }
+});
+
+function resetTurnState(){
+  drewThisTurn = false;
+  drawnKanji = null;
+  missThisTurn = 0;
+  slot1 = null;
+  slot2 = null;
+  clearAnswerSpeakUI();
+  renderSlots();
+  renderDraw();
+  renderMiss();
+}
+
+function nextPlayer(){
+  holdAdvance = false;
+  current = (current + 1) % players.length;
+  resetTurnState();
+  renderScoreboard();
+  updateTurnUI();
+
+  const p = players[current];
+  if(p.skipNext) setMsg(`プレイヤー${current+1}は休みです。「つぎへ」で進めます。`);
+  else setMsg(`プレイヤー${current+1}の番です。「１まい引く」から始めます。`);
+  playSfx("turn", true);
+  pushStateIfOnline(true);
+}
+
+function checkWin(){
+  const winner = players.findIndex(p => p.points >= targetPoints);
+  if(winner >= 0){
+    winMsgEl.style.display = "block";
+    winMsgEl.textContent = `プレイヤー${winner+1}の勝ち！`;
+    drawBtn.disabled = true;
+    checkBtn.disabled = true;
+    endBtn.disabled = true;
+    skipNextBtn.style.display = "none";
+    addFieldBtn.style.display = "none";
+    burstKusudama(winner);
+
+    // ★相手にもクス玉
+    if(ONLINE.enabled) sendOnlineEvent("kusudama", { winnerIndex: winner });
+
+    started = false;
+    setTopPill("終了");
+    pushStateIfOnline();
+    return true;
+  }
+  return false;
+}
+
+function endTurnHoldAdvance(){
+  if(drawnKanji){ field.push(drawnKanji); drawnKanji = null; }
+  slot1 = null; slot2 = null;
+  renderField();
+  renderSlots();
+  renderDraw();
+  holdAdvance = true;
+  updateTurnUI();
+  pushStateIfOnline();
+}
+
+drawBtn.addEventListener("click", ()=>{
+  if(!started) return;
+  if(ONLINE.enabled && !canOperateNow()) return;
+
+  const p = players[current];
+  if(p.skipNext) return;
+  if(drewThisTurn) return;
+  if(holdAdvance) return;
+
+  if(deck.length === 0){
+    setMsg("山札がなくなりました。もう引けません（リセットしてね）。","ng");
+    return;
+  }
+  drawnKanji = deck.pop();
+  drewThisTurn = true;
+  renderDraw();
+  updateTurnUI();
+  setMsg("引いた札を①②に入れて、熟語を作ってね。");
+  pushStateIfOnline();
+});
+
+checkBtn.addEventListener("click", ()=>{
+  if(!started) return;
+  if(ONLINE.enabled && !canOperateNow()) return;
+
+  const p = players[current];
+  if(p.skipNext) return;
+  if(holdAdvance) return;
+
+  if(!drewThisTurn){
+    setMsg("先に「１まい引く」を押してね。","ng");
+    return;
+  }
+  if(!slot1 || !slot2){
+    setMsg("①②をうめてから「できた！」を押してね。","ng");
+    return;
+  }
+
+  const word = slot1.value + slot2.value;
+
+  if(!ANSWER_SET.has(word)){
+    missThisTurn++;
+    renderMiss();
+    flashBadTiles();
+
+    if(missThisTurn >= missLimit){
+      p.skipNext = true;
+      playSfx("tap", true);
+    setMsg("その言葉はありません。ミスがたまったので、次の自分の番は休みです。","ng");
+      renderScoreboard();
+      endTurnHoldAdvance();
+      return;
+    }
+    playSfx("tap", true);
+    setMsg("その言葉はありません。","ng");
+    renderScoreboard();
+    pushStateIfOnline();
+    return;
+  }
+
+  if(made.has(word)){
+    setMsg("その熟語は、もうできています（同じ熟語は1回まで）。","ng");
+    return;
+  }
+
+  made.add(word);
+  p.points += 1;
+  renderMade();
+  renderScoreboard();
+
+  playSfx("tap", true);
+  setMsg("正答！ 1ポイント！ 🔊で よみ・いみ・れいぶん を聞けます。つづけて作れます。","ok");
+
+  lastCorrectWord = word;
+  ansSpeakBtn.style.display = "inline-flex";
+
+  consumeUsedTiles();
+
+  if(checkWin()) return;
+
+  updateTurnUI();
+  pushStateIfOnline();
+});
+
+function consumeUsedTiles(){
+  const usedFieldIdx = [];
+  if(slot1?.src==="field") usedFieldIdx.push(slot1.index);
+  if(slot2?.src==="field") usedFieldIdx.push(slot2.index);
+
+  usedFieldIdx.sort((a,b)=>b-a).forEach(i=>{
+    if(typeof i==="number" && i>=0 && i<field.length) field.splice(i,1);
+  });
+
+  if(slot1?.src==="draw" || slot2?.src==="draw"){ drawnKanji = null; }
+
+  slot1 = null; slot2 = null;
+  renderField();
+  renderSlots();
+  renderDraw();
+}
+
+function endTurn(force=false){
+  if(drawnKanji){ field.push(drawnKanji); drawnKanji = null; }
+  slot1 = null; slot2 = null;
+  renderField();
+  renderSlots();
+  renderDraw();
+  if(force) setTimeout(()=> nextPlayer(), 250);
+  else nextPlayer();
+}
+
+endBtn.addEventListener("click", ()=>{
+  if(!started) return;
+  if(ONLINE.enabled && !canOperateNow()) return;
+
+  const p = players[current];
+  if(p.skipNext) return;
+  if(holdAdvance) return;
+
+  // ★要望：1枚引く前は終えられない
+  if(!drewThisTurn){
+    setMsg("先に「１まい引く」を押してね。","ng");
+    return;
+  }
+  playSfx("tap", true);
+  endTurn(false);
+});
+
+skipNextBtn.addEventListener("click", ()=>{
+  if(!started) return;
+  if(ONLINE.enabled && !canOperateNow()) return;
+
+  if(holdAdvance){
+    holdAdvance = false;
+    setMsg("「つぎへ」を押しました。次の人へ進みます。");
+    setTimeout(()=> nextPlayer(), 250);
+    pushStateIfOnline();
+    return;
+  }
+
+  const p = players[current];
+  if(!p.skipNext) return;
+  p.skipNext = false;
+  renderScoreboard();
+  setMsg(`プレイヤー${current+1}の休みが終わりました。次の人へ進みます。`);
+  setTimeout(()=> nextPlayer(), 250);
+  pushStateIfOnline();
+});
+
+addFieldBtn.addEventListener("click", ()=>{
+  if(!started) return;
+  if(ONLINE.enabled && !canOperateNow()) return;
+
+  const p = players[current];
+  if(p.skipNext) return;
+  if(holdAdvance) return;
+
+  if(deck.length === 0){
+    setMsg("山札がなくなりました。場札を追加できません。","ng");
+    return;
+  }
+  const n = Math.min(3, deck.length);
+  for(let i=0;i<n;i++){ field.push(deck.pop()); }
+  renderField();
+  updateTurnUI();
+  setMsg(`場札を追加しました（${n}枚）。`);
+  pushStateIfOnline();
+});
+
+// ============================
+// ★スタート/リセット（オンラインはP1のみ）
+// ============================
+startBtn.addEventListener("click", ()=>{
+  if(ONLINE.enabled && ME_ID !== 1) return;
+
+  const pc = Number(playerCountSel.value);
+  targetPoints = Math.max(1, Number(targetPointsInp.value)||5);
+  missLimit = Number(missLimitSel.value)||3;
+
+  players = Array.from({length:pc}, ()=>({ points:0, skipNext:false }));
+  current = 0;
+  holdAdvance = false;
+
+  made = new Set();
+  renderMade();
+
+  deck = buildDeckForGrade(gradeSelect.value);
+  field = deck.splice(0,6);
+  renderField();
+
+  resetTurnState();
+  started = true;
+  winMsgEl.style.display = "none";
+  setTopPill("プレイヤー1の番");
+  setMsg("プレイヤー1の番です。「１まい引く」から始めます。");
+  renderScoreboard();
+  updateTurnUI();
+
+  pushStateIfOnline(true);
+});
+
+resetBtn.addEventListener("click", ()=>{
+  if(ONLINE.enabled && ME_ID !== 1) return;
+
+  safeCancelSpeech();
+  started = false;
+  deck = [];
+  field = [];
+  players = [];
+  current = 0;
+  made = new Set();
+  slot1 = null; slot2 = null;
+  drewThisTurn = false;
+  drawnKanji = null;
+  missThisTurn = 0;
+  holdAdvance = false;
+  winMsgEl.style.display = "none";
+  setTopPill("準備中");
+  setMsg("スタートを押すと開始します。");
+  clearAnswerSpeakUI();
+  renderField();
+  renderSlots();
+  renderDraw();
+  renderMade();
+  renderMiss();
+  renderScoreboard();
+  updateTurnUI();
+
+  pushStateIfOnline(true);
+});
+
+function flashBadTiles(){
+  const badIdx = [];
+  if(slot1?.src==="field") badIdx.push(slot1.index);
+  if(slot2?.src==="field") badIdx.push(slot2.index);
+  badIdx.forEach(i=>{
+    const t = fieldEl.querySelector(`.tile[data-idx="${i}"]`);
+    if(!t) return;
+    t.classList.add("bad");
+    setTimeout(()=>t.classList.remove("bad"), 260);
+  });
+}
+
+readingToggle.addEventListener("change", ()=>{
+  showReadings = (readingToggle.value === "on");
+  renderField();
+  renderSlots();
+  renderDraw();
+  pushStateIfOnline();
+});
+
+showReadings = (readingToggle.value === "on");
+updateTurnUI();
+renderSlots();
+renderDraw();
+renderMiss();
+
+// ============================
+// ★オンライン：状態同期（state）
+// ============================
+function makeStateSnapshot(){
+  return {
+    started,
+    deck: [...deck],
+    field: [...field],
+    players: players.map(p=>({ points: p.points, skipNext: !!p.skipNext })),
+    current,
+    targetPoints,
+    missLimit,
+    drewThisTurn,
+    drawnKanji: drawnKanji || null,
+    missThisTurn,
+    slot1: slot1 ? { src: slot1.src, value: slot1.value, index: (slot1.index ?? null) } : null,
+    slot2: slot2 ? { src: slot2.src, value: slot2.value, index: (slot2.index ?? null) } : null,
+    made: [...made],
+    holdAdvance: !!holdAdvance,
+    showReadings: !!showReadings,
+    settings: {
+      grade: gradeSelect.value,
+      playerCount: Number(playerCountSel.value),
+      targetPointsInput: Number(targetPointsInp.value),
+      missLimitValue: Number(missLimitSel.value),
+      readingToggle: readingToggle.value
+    }
+  };
+}
+
+function applyStateSnapshot(st){
+  if(!st || typeof st !== "object") return;
+
+  // UI設定値も揃える（開始前にズレないため）
+  if(st.settings){
+    if(typeof st.settings.grade === "string") gradeSelect.value = st.settings.grade;
+    if(st.settings.playerCount != null) playerCountSel.value = String(st.settings.playerCount);
+    if(st.settings.targetPointsInput != null) targetPointsInp.value = String(st.settings.targetPointsInput);
+    if(st.settings.missLimitValue != null) missLimitSel.value = String(st.settings.missLimitValue);
+    if(typeof st.settings.readingToggle === "string") readingToggle.value = st.settings.readingToggle;
+  }
+
+  started = !!st.started;
+  deck = Array.isArray(st.deck) ? [...st.deck] : [];
+  field = Array.isArray(st.field) ? [...st.field] : [];
+  players = Array.isArray(st.players) ? st.players.map(p=>({ points: Number(p.points)||0, skipNext: !!p.skipNext })) : [];
+  current = Number(st.current)||0;
+  targetPoints = Math.max(1, Number(st.targetPoints)||5);
+  missLimit = Number(st.missLimit)||3;
+  drewThisTurn = !!st.drewThisTurn;
+  drawnKanji = (st.drawnKanji==null) ? null : String(st.drawnKanji);
+  missThisTurn = Number(st.missThisTurn)||0;
+  slot1 = st.slot1 ? { src: st.slot1.src, value: st.slot1.value, index: (st.slot1.index ?? null) } : null;
+  slot2 = st.slot2 ? { src: st.slot2.src, value: st.slot2.value, index: (st.slot2.index ?? null) } : null;
+  made = new Set(Array.isArray(st.made) ? st.made : []);
+  holdAdvance = !!st.holdAdvance;
+
+  if(typeof st.showReadings === "boolean") showReadings = st.showReadings;
+
+  // 表示更新
+  renderField();
+  renderSlots();
+  renderDraw();
+  renderMade();
+  renderMiss();
+  renderScoreboard();
+
+  if(!started){
+    setTopPill("準備中");
+  }else{
+    setTopPill(`プレイヤー${current+1}の番`);
+  }
+  updateTurnUI();
+}
+
+function statePath(){
+  return `rooms/${ROOM_ID}/state`;
+}
+function metaPath(){
+  return `rooms/${ROOM_ID}/meta`;
+}
+
+async function pushStateIfOnline(force=false){
+  if(!ONLINE.enabled) return;
+  if(!ONLINE.ready) return;
+  if(ONLINE.suppress) return;
+  if(ONLINE.isApplyingRemote) return;
+
+  // 手番者 or P1のstart/resetのみ送る運用
+  // （ただしメッセージはイベントで別送）
+  // ★注意：ターンを進めた直後は current が相手番になるため、force=true のときは例外的に送信を許可する
+  if(!force){
+    if(started && !canOperateNow()) return;
+    if(!started && ME_ID !== 1) return;
+  }else{
+    // force=true：直前まで手番だった側が「ターン進行後の状態」を送るための救済
+    if(!(ME_ID === 1 || ME_ID === 2)) return;
+  }
+
+  const rev = Date.now();
+  ONLINE.lastRev = rev;
+
+  try{
+    const st = makeStateSnapshot();
+    await ONLINE._update(ONLINE._ref(ONLINE._db, metaPath()), { rev, updatedAt: ONLINE._serverTimestamp() });
+    await ONLINE._set(ONLINE._ref(ONLINE._db, statePath()), st);
+  }catch(_){
+    // 失敗時は黙ってオフライン継続
+  }
+}
+
+// ============================
+// ★オンライン：イベント送受信（msg / speak / kusudama）
+// ============================
+function eventsPath(){
+  return `rooms/${ROOM_ID}/events`;
+}
+let _eventsInited = false;
+let _eventsStartAt = Date.now();
+let _seenEventKeys = new Set();
+
+function sendOnlineEvent(type, payload){
+  if(!ONLINE.enabled) return;
+  if(!ONLINE.ready) return;
+  try{
+    const ev = { type, payload: payload || {}, from: ME_ID||0, ts: Date.now() };
+    const p = ONLINE._push(ONLINE._ref(ONLINE._db, eventsPath()));
+    ONLINE._set(p, ev);
+  }catch(_){}
+}
+
+function initOnlineEvents(){
+  if(_eventsInited) return;
+  if(!ONLINE.enabled) return;
+  if(!ONLINE.ready) return;
+
+  _eventsInited = true;
+  try{
+    ONLINE._onChildAdded(ONLINE._ref(ONLINE._db, eventsPath()), (snap)=>{
+      const key = snap.key;
+      const ev = snap.val();
+      if(!ev || !key) return;
+      if(_seenEventKeys.has(key)) return;
+      _seenEventKeys.add(key);
+      // ★端末の時計ズレでイベントが捨てられるのを防ぐ（tsフィルタ無し）
+      if(ev.from === ME_ID) return;
+      handleOnlineEvent(ev);
+    });
+  }catch(_){}
+}
+
+function handleOnlineEvent(ev){
+  const t = ev.type;
+  const p = ev.payload || {};
+
+  if(t === "msg"){
+    setMsgLocal(p.text || "", p.kind || "");
+    return;
+  }
+  if(t === "speakAnswer"){
+    const word = String(p.word || "");
+    const info = p.info || null;
+    if(!word || !info) return;
+
+    ansInfo.innerHTML =
+      `<div>【${escapeHtml(word)}】</div>` +
+      `<div class="sub">よみ：${escapeHtml(info.yomi || "")}</div>` +
+      `<div class="sub">いみ：${escapeHtml(info.imi || "")}</div>` +
+      `<div class="sub">れいぶん：${escapeHtml(info.reibun || "")}</div>`;
+    ansInfo.style.display = "block";
+    ansSpeakBtn.style.display = "inline-flex";
+    lastCorrectWord = word;
+
+    const yomi = info.yomi || "";
+    const reibunRaw = info.reibun || "";
+    const reibunSpeak = (reibunRaw && word && yomi) ? (reibunRaw.split(word).join(yomi)) : reibunRaw;
+    const speakStr = `よみ、${yomi}。いみ、${info.imi || ""}。れいぶん、${reibunSpeak}`;
+
+    speakingAnswerUtterance = speakText(speakStr, ()=>{
+      ansInfo.style.display = "none";
+      ansInfo.innerHTML = "";
+      speakingAnswerUtterance = null;
+    });
+    return;
+  }
+  if(t === "kusudama"){
+    const winner = Number(p.winnerIndex);
+    if(Number.isFinite(winner) && winner >= 0){
+      burstKusudama(winner);
+    }
+    return;
+  }
+  if(t === "sfx"){
+    const kind = String(p.kind || "");
+    if(!kind) return;
+    // 受信側は送信し返さない
+    playSfx(kind, false);
+    return;
+  }
+
+}
+
+// ============================
+// ★オンライン：Firebaseのロード（失敗したらオフライン継続）
+// ============================
+async function initOnlineIfNeeded(){
+  if(!ONLINE.enabled) return;
+
+  try{
+    const appMod = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js");
+    const dbMod = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js");
+
+    const app = appMod.initializeApp(firebaseConfig);
+    const db = dbMod.getDatabase(app);
+
+    ONLINE._db = db;
+    ONLINE._ref = dbMod.ref;
+    ONLINE._onValue = dbMod.onValue;
+    ONLINE._set = dbMod.set;
+    ONLINE._update = dbMod.update;
+    ONLINE._push = dbMod.push;
+    ONLINE._serverTimestamp = dbMod.serverTimestamp;
+    ONLINE._onChildAdded = dbMod.onChildAdded;
+
+    ONLINE.ready = true;
+
+    // state受信：常時追従
+    ONLINE._onValue(ONLINE._ref(db, statePath()), (snap)=>{
+      const st = snap.val();
+      if(!st) return;
+
+      // リモート適用中は push を抑制
+      ONLINE.isApplyingRemote = true;
+      try{
+        applyStateSnapshot(st);
+      }finally{
+        ONLINE.isApplyingRemote = false;
+      }
+    });
+
+    initOnlineEvents();
+
+    // UI制約
+    if(ME_ID !== 1){
+      startBtn.disabled = true;
+      resetBtn.disabled = true;
+    }
+
+    setMsgLocal(`オンライン対戦：部屋「${ROOM_ID}」  プレイヤー${ME_ID}`, "ok");
+
+  }catch(e){
+    // Firebaseが読み込めない＝オフラインとして動かす
+    ONLINE.enabled = false;
+    ONLINE.ready = false;
+    setMsgLocal("オンライン機能の読み込みに失敗しました（オフラインで動作します）。", "ng");
+    updateTurnUI();
+  }
+}
+
+// 起動
+initOnlineIfNeeded();
+</script>
+</body>
+</html>
