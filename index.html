@@ -961,7 +961,16 @@ canvas#shooterCanvas{
           <button class="muted" id="manageClearInputBtn" type="button">入力を消す</button>
         </div>
 
-        <div class="manageNote" id="manageNote"></div>
+        
+
+        <div class="manageBtns" style="margin-top:12px;">
+          <input id="manageCsvFile" type="file" accept=".csv,text/csv" style="max-width:260px;" />
+          <button class="ghost" id="manageCsvImportBtn" type="button">CSV読み込み（上書き）</button>
+          <button class="ghost" id="manageCsvExportBtn" type="button">CSV出力</button>
+        </div>
+        <div class="manageSub" style="margin-top:6px;">CSV形式：1列目=漢字、2列目以降=よみ（複数可）</div>
+
+<div class="manageNote" id="manageNote"></div>
       </div>
 
       <div class="manageSection">
@@ -2576,6 +2585,123 @@ function saveWordsToLocalStorage(){
   }catch(e){}
 }
 
+
+/* ===== 問題管理：CSV入出力 ===== */
+function parseCsvLine(line){
+  // RFC4180ざっくり対応（ダブルクォート対応）
+  const out = [];
+  let cur = "";
+  let inQ = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(inQ){
+      if(ch === '"'){
+        if(line[i+1] === '"'){ cur += '"'; i++; }
+        else{ inQ = false; }
+      }else{
+        cur += ch;
+      }
+    }else{
+      if(ch === '"'){ inQ = true; }
+      else if(ch === ','){ out.push(cur); cur = ""; }
+      else{ cur += ch; }
+    }
+  }
+  out.push(cur);
+  return out.map(s => String(s ?? "").trim());
+}
+function parseCsvTextToItems(csvText){
+  const text = String(csvText ?? "").replace(/^\uFEFF/, ""); // BOM除去
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>0);
+  if(lines.length===0) return [];
+
+  // 先頭がヘッダっぽければスキップ
+  const first = parseCsvLine(lines[0]).map(x=>x.toLowerCase());
+  const headerish = first.includes("prompt") || first.includes("kanji") || first.includes("answer") || first[0]==="漢字";
+  const startAt = headerish ? 1 : 0;
+
+  const items = [];
+  for(let i=startAt;i<lines.length;i++){
+    const cols = parseCsvLine(lines[i]).filter(c => c!== "");
+    if(cols.length < 2) continue;
+    const prompt = cols[0];
+    const answers = cols.slice(1).filter(Boolean);
+    items.push({prompt, answers});
+  }
+  return items;
+}
+function itemsToCsvText(items){
+  const rows = [];
+  // 最大列数（prompt + answers）
+  let maxA = 1;
+  for(const it of (items||[])){
+    const n = (it.answers||[]).length;
+    if(n > maxA) maxA = n;
+  }
+  const header = ["prompt", ...Array.from({length:maxA}, (_,i)=>`answer${i+1}`)];
+  rows.push(header);
+
+  const esc = (v) => {
+    const s = String(v ?? "");
+    if(/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+    return s;
+  };
+
+  for(const it of (items||[])){
+    const p = String(it.prompt ?? "");
+    const a = (it.answers||[]).map(x=>String(x ?? ""));
+    const row = [p, ...a];
+    // 足りない分を空で埋める
+    while(row.length < 1 + maxA) row.push("");
+    rows.push(row);
+  }
+  return rows.map(r => r.map(esc).join(",")).join("\n");
+}
+function downloadTextFile(filename, text, mime){
+  try{
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + String(text ?? "")], {type: (mime || "text/plain;charset=utf-8")});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }catch(e){}
+}
+function importCsvIntoItems(){
+  if(!manageCsvFileEl || !manageCsvFileEl.files || manageCsvFileEl.files.length===0){
+    if(manageNoteEl) manageNoteEl.textContent = "CSVファイルを選んでください";
+    return;
+  }
+  const file = manageCsvFileEl.files[0];
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = String(reader.result ?? "");
+    const items = parseCsvTextToItems(text);
+    if(!items || items.length===0){
+      if(manageNoteEl) manageNoteEl.textContent = "CSVから問題を読み込めませんでした（形式：1列目=漢字、2列目以降=よみ）";
+      return;
+    }
+    ITEMS = items;
+    saveWordsToLocalStorage();
+    renderManageList();
+    if(manageNoteEl) manageNoteEl.textContent = `${ITEMS.length}問 読み込みました（保存しました）`;
+    // 学習側にも即反映
+    try{ start(); }catch(e){}
+  };
+  reader.onerror = () => {
+    if(manageNoteEl) manageNoteEl.textContent = "CSVの読み込みに失敗しました";
+  };
+  reader.readAsText(file, "utf-8");
+}
+function exportItemsToCsv(){
+  const csv = itemsToCsvText(ITEMS || []);
+  downloadTextFile("kanji_words.csv", csv, "text/csv;charset=utf-8");
+}
+
 /* 管理画面UI */
 const manageBtn = document.getElementById("manageBtn");
 const manageOverlayEl = document.getElementById("manageOverlay");
@@ -2587,6 +2713,9 @@ const manageCheckAllBtn = document.getElementById("manageCheckAllBtn");
 const manageDeleteBtn = document.getElementById("manageDeleteBtn");
 const manageBackBtn = document.getElementById("manageBackBtn");
 const manageNoteEl = document.getElementById("manageNote");
+const manageCsvFileEl = document.getElementById("manageCsvFile");
+const manageCsvImportBtn = document.getElementById("manageCsvImportBtn");
+const manageCsvExportBtn = document.getElementById("manageCsvExportBtn");
 
 function openManage(){
   if(!manageOverlayEl) return;
@@ -2781,6 +2910,13 @@ if(manageCheckAllBtn){
 }
 if(manageDeleteBtn){
   manageDeleteBtn.addEventListener("click", ()=> deleteCheckedManage());
+}
+
+if(manageCsvImportBtn){
+  manageCsvImportBtn.addEventListener("click", ()=> importCsvIntoItems());
+}
+if(manageCsvExportBtn){
+  manageCsvExportBtn.addEventListener("click", ()=> exportItemsToCsv());
 }
 
 /* 初回：保存があれば読み込む（デフォルトを上書き） */
