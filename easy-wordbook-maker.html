@@ -194,7 +194,9 @@
     font:inherit;
     font-size:14px;
     line-height:1.45;
-  }
+  
+      padding-right: 4mm !important; /* avoid punch hole */
+    }
   .toggleRow{
     display:flex; gap:8px; align-items:center; flex-wrap:wrap;
   }
@@ -231,7 +233,10 @@
     font:inherit;
     font-size:14px;
     line-height:1.45;
-  }
+  
+      padding-right: 4mm !important; /* avoid punch hole */
+      padding-top: 8mm !important; /* avoid punch hole at top-right */
+    }
   .lenWarn{ font-size:12px; color:#b91c1c; margin-top:4px; display:none; font-weight:900; }
   .overLimit{ border-color:#dc2626 !important; box-shadow:0 0 0 3px rgba(220,38,38,.12) !important; }
   .lenWarn.show{ display:block; }
@@ -457,7 +462,7 @@
     .cell{
       flex:1 1 0 !important;
       min-height:0 !important;
-      padding: 15mm 18mm 5mm 5mm !important;
+      padding: 8mm 8mm 4mm 4mm !important;
       position:relative !important;
       display:flex !important;
       flex-direction:column !important;
@@ -467,19 +472,13 @@
     }
     .cell:last-child{ border-bottom:0 !important; }
 
-    /* Punch hole markers (print only): 5mm circle at top-right of each row (3 per block => 12 per page) */
-    .cell::after{
-      content:"";
-      position:absolute;
-      top:7mm;
-      right:7mm;
-      width:5mm;
-      height:5mm;
-      border:0.8pt solid #000 !important;
-      border-radius:50%;
-      background:transparent !important;
-      pointer-events:none;
+    /* Extra punch-hole safe area for 3rd row (bottom): widen right/top padding */
+    .section > .cell:nth-child(3){
+      padding-right: 14mm !important;
+      padding-top: 10mm !important;
     }
+
+
 
     .cell:first-child{ justify-content:center !important; align-items:center !important; }
 
@@ -515,6 +514,11 @@
       margin:0 0 2mm 0 !important;
     }
     .titleLine.hidden{ display:none !important; }
+    /* If title is not printed, push body down to avoid punch hole area */
+    .titleLine.hidden + .bodyArea{
+      padding-top: 8mm !important;
+    }
+
 
     .bodyArea{
       border:0 !important;
@@ -522,8 +526,8 @@
       background:transparent !important;
       resize:none !important;
       min-height:0 !important;
-      font-size: 15pt !important;
-      line-height:1.55 !important;
+      font-size: 13pt !important;
+      line-height:1.45 !important;
       width:100% !important;
       overflow:hidden !important;
     
@@ -540,8 +544,8 @@
       background:transparent !important;
       resize:none !important;
       min-height:0 !important;
-      font-size: 15pt !important;
-      line-height:1.55 !important;
+      font-size: 13pt !important;
+      line-height:1.45 !important;
       width:100% !important;
       overflow:hidden !important;
     
@@ -674,7 +678,7 @@
 <script>
 (() => {
   const KEY = "kanji_4block_cards_v1";
-  const MAX_TEXT_CHARS = 28;
+  const MAX_TEXT_CHARS = 45;
   const $ = (sel, root=document) => root.querySelector(sel);
 
   const defaultBlock = () => ({
@@ -1466,6 +1470,11 @@ function updateTitleEditsForPage(pageIndex){
         body.value = (b.body || "");
 
         cell2.appendChild(body);
+        // 2段目の文字数警告（印刷プレビュー用）
+        const bodyWarn = document.createElement("div");
+        bodyWarn.className = "lenWarn";
+        _setLenWarn(bodyWarn, _countChars(body.value));
+        cell2.appendChild(bodyWarn);
 
         // cell 3: free text
         const cell3 = document.createElement("div");
@@ -1475,6 +1484,11 @@ function updateTitleEditsForPage(pageIndex){
         freeText.className = "freeTextArea";
         freeText.value = (b.free2Text || "");
         cell3.appendChild(freeText);
+        // 3段目の文字数警告（印刷プレビュー用）
+        const freeWarn = document.createElement("div");
+        freeWarn.className = "lenWarn";
+        _setLenWarn(freeWarn, _countChars(freeText.value));
+        cell3.appendChild(freeWarn);
 
         sec.appendChild(cell1);
         sec.appendChild(cell2);
