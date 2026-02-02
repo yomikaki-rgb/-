@@ -1,0 +1,1810 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>かんたん単語帳メーカー</title>
+<style>
+  :root{
+    --bg1:#f5f7ff; --bg2:#f7f1ff;
+    --card:#ffffffd9;
+    --ink:#111827; --sub:#4b5563;
+    --primary:#4f46e5; --primarySoft:#e0e7ff;
+    --ok:#16a34a; --ng:#dc2626;
+    --border:#d1d5db;
+    --shadow:0 10px 25px rgba(0,0,0,.08);
+    --radius:18px;
+    --gap:12px;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh;
+    font-family: "UDデジタル教科書体 NK","UD デジタル 教科書体 NK","UD Digital Kyokasho NK","デジタル教科書体NK-R","UDデジタル教科書体 NK-R","UD デジタル 教科書体 NK-R","UD Digital Kyokasho NK-R","UDデジタル教科書体 N","UD デジタル 教科書体 N","UD Digital Kyokasho N","UD Digital Kyokasho","BIZ UDゴシック","Noto Sans JP",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    color:var(--ink);
+    background: radial-gradient(1200px 800px at 20% 10%, var(--bg2), transparent 60%),
+                radial-gradient(1200px 800px at 80% 20%, var(--bg1), transparent 60%),
+                #fff;
+  }
+  .wrap{ max-width:1100px; margin:0 auto; padding:14px; }
+  header{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:20px; padding:12px 12px; box-shadow:var(--shadow);
+  }
+  header h1{
+    margin:0; font-size:18px; font-weight:800; letter-spacing:.02em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .pill{
+    font-size:12px; font-weight:700; color:var(--sub);
+    background:#fff; border:1px solid var(--border);
+    border-radius:999px; padding:4px 10px;
+  }
+  .row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .grow{ flex:1; min-width:220px; }
+  /* v16 layout tweaks */
+.ctrl{
+    display:flex; align-items:center; gap:8px;
+    background:#fff; border:1px solid var(--border);
+    border-radius:14px; padding:8px 10px;
+  }
+  label{ font-size:12px; color:var(--sub); font-weight:700; }
+  input[type="text"], select{
+    font:inherit; font-size:14px;
+    border:1px solid var(--border); border-radius:10px;
+    padding:8px 10px; outline:none; background:#fff;
+  }
+  input[type="text"]:focus{ border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,70,229,.12); }
+  button{
+    font:inherit; font-weight:800; letter-spacing:.02em;
+    border:1px solid var(--border); background:#fff;
+    border-radius:14px; padding:10px 12px;
+    cursor:pointer;
+  }
+  button.primary{ background:var(--primary); color:#fff; border-color:transparent; }
+  button.soft{ background:var(--primarySoft); color:var(--primary); border-color:transparent; }
+  button.danger{ background:#fff; color:var(--ng); border-color:#fecaca; }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  .note{ font-size:12px; color:var(--sub); }
+  .main{ display:grid; grid-template-columns: 1fr; gap:12px; margin-top:12px; }
+  .panel{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:20px; padding:12px; box-shadow:var(--shadow);
+  }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    padding:6px 2px 10px;
+  }
+  .topbar .title{ font-weight:900; }
+  .pager{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .pager .idx{
+    font-weight:900; background:#fff; border:1px solid var(--border);
+    border-radius:999px; padding:6px 10px; font-size:12px;
+  }
+
+  /* Editor (2-page / 2-up) */
+  .editor2up{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    align-items:start;
+  }
+  @media (max-width: 980px){
+    .editor2up{ grid-template-columns: 1fr; }
+  }
+  .pageCol{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .pageHdr{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:8px 10px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:16px;
+  }
+  .pageHdr .pTitle{ font-weight:900; color:var(--sub); font-size:12px; }
+  .pageHdr .pSub{ font-weight:900; font-size:12px; background:var(--primarySoft); color:var(--primary); padding:4px 10px; border-radius:999px; }
+  .pageGrid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gap);
+  }
+  @media (max-width: 520px){
+    .pageGrid{ grid-template-columns: 1fr; }
+  }
+  /* Block card */
+.block{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:18px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.06);
+    overflow:hidden;
+    display:flex; flex-direction:column;
+    min-height: 360px;
+  }
+  .blockHead{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 10px 8px;
+    background: linear-gradient(180deg, #fff, #fafafa);
+    border-bottom:1px solid var(--border);
+  }
+  .statusBadge{
+    font-size:11px; font-weight:900;
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:999px;
+    padding:4px 8px;
+    color:var(--sub);
+  }
+  .statusBadge.ok{ color:var(--ok); border-color:#bbf7d0; }
+  .statusBadge.mid{ color:#b45309; border-color:#fde68a; }
+  .statusBadge.ng{ color:var(--ng); border-color:#fecaca; }
+
+  .section{ padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .cell{ }
+  .kanjiInput{
+    width:100%;
+    text-align:center;
+    font-size:72px;
+    font-weight:900;
+    line-height:1.05;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:14px;
+  }
+    .kanjiInput[data-len=\"2\"]{ font-size: 95pt !important; }
+  .titleLine{
+    font-size:12px;
+    font-weight:900;
+    color:var(--sub);
+    margin:0;
+    line-height:1.2;
+    display:none;
+}
+  .titleLine.hidden{ display:none; }
+
+  .titleEdit{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:8px 10px;
+    font:inherit;
+    font-size:13px;
+    font-weight:900;
+    color:var(--ink);
+    background:#fff;
+  }
+
+  .titleEdit.derived{
+    background:#f8fafc;
+    color:var(--sub);
+  }
+  .bodyArea{
+    width:100%;
+    min-height:70px;
+    resize:vertical;
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:10px;
+    font:inherit;
+    font-size:14px;
+    line-height:1.45;
+  }
+  .toggleRow{
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  }
+  .seg{
+    display:inline-flex;
+    border:1px solid var(--border);
+    border-radius:999px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .seg button{
+    border:0;
+    border-right:1px solid var(--border);
+    border-radius:0;
+    padding:8px 12px;
+    font-size:13px;
+    background:#fff;
+    color:var(--sub);
+    font-weight:900;
+  }
+  .seg button:last-child{ border-right:0; }
+  .seg button.active{
+    background:var(--primarySoft);
+    color:var(--primary);
+  }
+
+  .freeTextArea{
+    width:100%;
+    min-height:70px;
+    resize:vertical;
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:10px;
+    font:inherit;
+    font-size:14px;
+    line-height:1.45;
+  }
+  .lenWarn{ font-size:12px; color:#b91c1c; margin-top:4px; display:none; font-weight:900; }
+  .overLimit{ border-color:#dc2626 !important; box-shadow:0 0 0 3px rgba(220,38,38,.12) !important; }
+  .lenWarn.show{ display:block; }
+
+
+  .drop{
+    border:2px dashed #c7cbe0;
+    border-radius:16px;
+    padding:10px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+    background: #fbfcff;
+  }
+  .drop .hint{ font-size:12px; color:var(--sub); font-weight:800; }
+  .drop .mini{ font-size:11px; color:var(--sub); }
+  .drop input[type="file"]{ display:none; }
+  .drop .btns{ display:flex; gap:8px; align-items:center; }
+  .thumb{
+    width:100%;
+    height:160px;
+    border-radius:16px;
+    border:1px solid var(--border);
+    background:#f8fafc;
+    overflow:hidden;
+    display:none;
+  }
+  .thumb{ --fit: contain; }
+  .thumb[data-fit="cover"]{ --fit: cover; }
+  .thumb img{
+    width:100%;
+    height:100%;
+    object-fit: var(--fit); /* contain=切れない / cover=切り抜く */
+    background:#fff;
+    display:block;
+  }
+  .thumb.show{ display:block; }
+  .drop.hidden{ display:none; }
+  .freeTextWrap.hidden{ display:none; }
+  .btnTiny{
+    font-size:12px;
+    padding:8px 10px;
+    border-radius:12px;
+  }
+
+  /* Flash mode overlay */
+  .overlay{
+    position:fixed; inset:0;
+    background: rgba(17,24,39,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    z-index:50;
+  }
+  .overlay.show{ display:flex; }
+  .flash{
+    width:min(980px, 96vw);
+    background:#fff;
+    border-radius:22px;
+    border:1px solid var(--border);
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    overflow:hidden;
+  }
+  .flashTop{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:12px 14px;
+    background:linear-gradient(180deg,#fff,#fafafa);
+    border-bottom:1px solid var(--border);
+  }
+  .flashTop .left{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    font-weight:900;
+  }
+  .flashTop .count{
+    font-size:12px;
+    color:var(--sub);
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:6px 10px;
+    font-weight:900;
+  }
+  .flashTop .right{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .flashBody{
+    padding:14px;
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:12px;
+  }
+  .flashCard{
+    border:1px solid var(--border);
+    border-radius:18px;
+    overflow:hidden;
+    background:#fff;
+    min-height: 340px;
+    display:flex;
+    flex-direction:column;
+  }
+  .flashCard .pad{ padding:12px; display:flex; flex-direction:column; gap:10px; height:100%; }
+  .kFlash{
+    font-size:86px;
+    text-align:center;
+    font-weight:900;
+    line-height:1.05;
+    margin:0;
+  }
+  .tFlash{
+    font-size:24px;
+    font-weight:900;
+    color:var(--sub);
+    margin:0;
+    line-height:1.2;
+  }
+  .tFlash.hidden{ display:none; }
+  .bFlash{
+    white-space:pre-wrap;
+    font-size:36px;
+    line-height:1.55;
+    color:var(--ink);
+    flex:0 0 auto;
+  }
+  .free2FlashText{
+    white-space:pre-wrap;
+    font-size:36px;
+    line-height:1.55;
+    color:var(--ink);
+  }
+  .free2FlashImg{
+    --fit: contain;
+    width:100%;
+    height:170px;
+    border-radius:16px;
+    border:1px solid var(--border);
+    overflow:hidden;
+    background:#f8fafc;
+  }
+  .free2FlashImg[data-fit="cover"]{ --fit: cover; }
+  .free2FlashImg img{ width:100%; height:100%; object-fit: var(--fit); display:block; }
+  .flashMeta{
+    margin-top:auto;
+    display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+    padding-top:10px;
+    border-top:1px dashed #e5e7eb;
+  }
+  .markBtns{ display:flex; gap:8px; }
+  .tapHint{ font-size:12px; color:var(--sub); font-weight:900; }
+  .chip{
+    font-size:11px; font-weight:900;
+    border:1px solid var(--border);
+    border-radius:999px; padding:5px 9px; background:#fff; color:var(--sub);
+  }
+
+
+  .printAll{ display:none; }
+
+  /* Print */
+  @page{
+    size: A4 portrait;
+    margin: 5mm;
+  }
+  
+/* Flash: status buttons */
+.flashStatus{ display:flex; gap:8px; align-items:center; }
+.stBtn{
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:14px;
+  padding:10px 12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.stBtn.active{ border-color: transparent; color:#111; }
+.stBtn.active.not{ background:#e0e7ff; }
+.stBtn.active.mid{ background:#fde68a; }
+.stBtn.active.learned{ background:#bbf7d0; }
+@media print{
+    #grid{ display:none !important; }
+    .printAll{ display:block !important; }
+    .printPage{ page-break-after: always; }
+    .printPage:last-child{ page-break-after: auto; }
+    body{ background:#fff; }
+    header, .topbar, .note, .overlay{ display:none !important; }
+    .wrap{ max-width:none; padding:0; }
+    .panel{ border:0; box-shadow:none; padding:0; background:#fff; }
+
+    /* --- 2x2 layout on a single A4 page --- */
+    .grid{
+      display:grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 6mm !important;
+      break-inside: avoid;
+    }
+
+    .block{
+      box-shadow:none !important;
+      border: 1.8pt solid #2563eb !important; /* blue outer border */
+      border-radius:0 !important;
+      overflow:hidden !important;
+      break-inside: avoid !important;
+
+      /* Fit blocks to A4 portrait with @page margin 8mm:
+         content size ~ 194mm x 281mm, with 6mm gap => each block ~ 94mm x 137.5mm */
+      width: 94mm;
+      height: 137.5mm;
+    }
+    .blockHead{ display:none !important; }
+    .titleLine{ display:block !important; }
+
+
+    /* --- Make 3 equal rows with inner blue lines --- */
+    .section{
+      padding:0 !important;
+      gap:0 !important;
+      height:100% !important;
+      display:flex !important;
+      flex-direction:column !important;
+    }
+    .cell{
+      flex:1 1 0 !important;
+      min-height:0 !important;
+      padding: 15mm 18mm 5mm 5mm !important;
+      position:relative !important;
+      display:flex !important;
+      flex-direction:column !important;
+      justify-content:flex-start !important;
+      overflow:hidden !important;
+      border-bottom: 1.8pt solid #2563eb !important;
+    }
+    .cell:last-child{ border-bottom:0 !important; }
+
+    /* Punch hole markers (print only): 5mm circle at top-right of each row (3 per block => 12 per page) */
+    .cell::after{
+      content:"";
+      position:absolute;
+      top:7mm;
+      right:7mm;
+      width:5mm;
+      height:5mm;
+      border:0.8pt solid #000 !important;
+      border-radius:50%;
+      background:transparent !important;
+      pointer-events:none;
+    }
+
+    .cell:first-child{ justify-content:center !important; align-items:center !important; }
+
+    /* hide editor-only controls */
+    .toggleRow, .seg, .drop, .btnTiny{ display:none !important; }
+    .titleEdit{ display:none !important; }
+
+    /* DO NOT print placeholders */
+    input::placeholder, textarea::placeholder{ color: transparent !important; }
+
+    /* --- Top (Kanji) --- */
+    .kanjiInput{
+      border:0 !important;
+      padding:0 !important;
+      background:transparent !important;
+      color:#000 !important;
+      -webkit-text-fill-color:#000 !important;
+      font-size: 120pt !important;
+      line-height:1.0 !important;
+      text-align:center !important;
+      width:100% !important;
+      height:auto !important;
+      display:block !important;
+      margin:0 !important;
+    }
+
+    /* --- Middle (Title + Body) --- */
+    .titleLine{
+      display:block !important;
+      font-size: 12pt !important; /* small */
+      font-weight: 900 !important;
+      color:#000 !important;
+      margin:0 0 2mm 0 !important;
+    }
+    .titleLine.hidden{ display:none !important; }
+
+    .bodyArea{
+      border:0 !important;
+      padding:0 !important;
+      background:transparent !important;
+      resize:none !important;
+      min-height:0 !important;
+      font-size: 15pt !important;
+      line-height:1.55 !important;
+      width:100% !important;
+      overflow:hidden !important;
+    
+      box-sizing:border-box !important;
+      display:block !important;
+    
+      height:100% !important;
+    }
+
+    /* --- Bottom (Free2: text or image) --- */
+    .freeTextArea{
+      border:0 !important;
+      padding:0 !important;
+      background:transparent !important;
+      resize:none !important;
+      min-height:0 !important;
+      font-size: 15pt !important;
+      line-height:1.55 !important;
+      width:100% !important;
+      overflow:hidden !important;
+    
+      box-sizing:border-box !important;
+      display:block !important;
+    
+      height:100% !important;
+    }
+    .thumb{
+      display:block !important;
+      --fit: contain !important;
+      height: 100% !important;
+      border: 0 !important; /* inside row already framed by outer border */
+      border-radius:0 !important;
+      overflow:hidden !important;
+      background:#fff !important;
+    }
+    .thumb img{ width:100% !important; height:100% !important; object-fit: var(--fit) !important; display:block !important; }
+
+    .thumb[data-fit="cover"]{ --fit: cover !important; }
+
+    /* If no image (or in text mode), hide image box; text will take the space */
+    .thumb:not(.show){ display:none !important; }
+    .freeTextWrap.hidden{ display:none !important; }
+  }
+
+  .fileBtn{
+    font:inherit; font-weight:800; letter-spacing:.02em;
+    border:1px solid var(--border);
+    border-radius:14px; padding:10px 12px;
+    display:inline-flex; align-items:center; gap:8px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .dangerSoft{ background:#ffe9e9; color:#b91c1c; border-color:transparent; }
+  .delChkWrap{ display:inline-flex; align-items:center; gap:6px; font-weight:800; }
+  .commonTitleEdit{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:10px 12px;
+    font:inherit;
+    font-weight:800;
+    background:#fff;
+  }
+
+
+/* v16: wider action buttons + remove note area spacing */
+.topGrid{ align-items:flex-start; }
+.ctrl{ flex-wrap:wrap; }
+.ctrl button, .ctrl .fileBtn{ padding:14px 18px; border-radius:16px; font-size:18px; min-width:110px; }
+.ctrl .fileBtn{ display:inline-flex; align-items:center; justify-content:center; }
+@media print{ .titleEdit{ display:none !important; } }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>かんたん単語帳メーカー</h1>
+    <div class="row grow"><div class="ctrl" style="min-width:220px;">
+        <label for="pageSelect">ページ</label>
+        <select id="pageSelect"></select>
+        <button id="addPageBtn" class="soft">＋ページ</button>
+        <button id="delPageBtn" class="danger">ページ削除</button>
+        <button id="delSelectedBtn" class="dangerSoft">選択削除</button>
+      </div>
+      <div class="ctrl">
+        <button id="printBtn" class="soft">印刷</button>
+        <button id="exportCsvBtn" class="soft">CSV出力</button>
+        <label class="fileBtn soft">CSV読み込み<input id="importCsvInput" type="file" accept=".csv,text/csv" style="display:none"></label>
+        <button id="flashBtn" class="primary">フラッシュカード</button>
+      </div>
+    </div>
+</header>
+
+  <div class="main">
+    <div class="panel">
+      <div class="topbar">
+        <div class="title">編集</div>
+        <div class="pager">
+          <span class="idx" id="pageLabel">Page 1</span>
+          <span class="idx" id="savedHint">保存済み</span>
+        </div>
+      </div>
+      <div class="editor2up" id="grid"></div>
+      <div id="printAll" class="printAll"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Flash overlay -->
+<div class="overlay" id="overlay">
+  <div class="flash" role="dialog" aria-modal="true">
+    <div class="flashTop">
+      <div class="left">
+        <span>フラッシュカード</span>
+        <span class="count" id="flashCount">0 / 0</span>
+        <span class="chip" id="flashFilterChip">フィルタ：すべて</span>
+        <span class="chip" id="flashStepChip">表示：1/3</span>
+      </div>
+      <div class="right">
+        <label style="display:flex; align-items:center; gap:8px; font-weight:900; color:var(--sub);">
+          フィルタ
+          <select id="filterSelect">
+            <option value="all">すべて</option>
+            <option value="not">まだ（未学習/学習中）</option>
+            <option value="learned">覚えた</option>
+          </select>
+        </label>
+        <button id="closeFlashBtn">閉じる</button>
+      </div>
+    </div>
+    <div class="flashBody" id="flashBody"></div>
+    <div style="padding:12px 14px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div class="tapHint">タップで表示が進みます（段階表示 → 次のページ）</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <div class="flashStatus">
+          <button id="flashStNot" class="stBtn">まだ</button>
+          <button id="flashStMid" class="stBtn">学習中</button>
+          <button id="flashStOk" class="stBtn">覚えた</button>
+        </div>
+        <button id="prevBtn">もどる</button>
+        <button id="nextBtn" class="primary">つぎ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const KEY = "kanji_4block_cards_v1";
+  const MAX_TEXT_CHARS = 28;
+  const $ = (sel, root=document) => root.querySelector(sel);
+
+  const defaultBlock = () => ({
+    kanji: "",
+    title: "",
+    body: "",
+    free2Text: "",
+    status: "not" // "not" | "mid" | "learned"
+  });
+
+  const defaultPage = () => ({
+    commonTitle: "",
+    blocks: [defaultBlock(), defaultBlock(), defaultBlock(), defaultBlock()]
+  });
+
+  const defaultState = () => ({
+    pages: [defaultPage()],
+    currentPage: 0
+  });
+
+  let state = load();
+
+  // UI refs
+  const grid = $("#grid");
+  const pageSelect = $("#pageSelect");
+  const pageLabel = $("#pageLabel");
+  const savedHint = $("#savedHint");
+
+  // Flash refs
+  const overlay = $("#overlay");
+  const flashBody = $("#flashBody");
+  const flashCount = $("#flashCount");
+  const filterSelect = $("#filterSelect");
+  const flashFilterChip = $("#flashFilterChip");
+  const flashStepChip = $("#flashStepChip");
+  const flashStNot = $("#flashStNot");
+  const flashStMid = $("#flashStMid");
+  const flashStOk = $("#flashStOk");
+
+  const closeFlashBtn = $("#closeFlashBtn");
+  const flashBtn = $("#flashBtn");
+  const printBtn = $("#printBtn");
+  const addPageBtn = $("#addPageBtn");
+  const delPageBtn = $("#delPageBtn");
+  const delSelectedBtn = $("#delSelectedBtn");
+  const exportCsvBtn = $("#exportCsvBtn");
+  const importCsvInput = $("#importCsvInput");
+
+  const prevBtn = $("#prevBtn");
+  const nextBtn = $("#nextBtn");
+
+  // Helpers
+  function _countChars(s){
+    return (s||"").replace(/\r/g,"").length;
+  }
+  function _setLenWarn(warnEl, n){
+    if(!warnEl) return;
+    if(n > MAX_TEXT_CHARS){
+      warnEl.textContent = `※ ${MAX_TEXT_CHARS}文字を超えています（${n}文字）`;
+      warnEl.classList.add("show");
+    }else{
+      warnEl.textContent = "";
+      warnEl.classList.remove("show");
+    }
+  }
+
+  // 入力中に「上限超え」になった瞬間だけ、1回だけアラートを出す（やかましくしないため）
+  function attachLimitAlert(textarea, warnEl, label){
+    if(!textarea) return;
+    let prevOver = false;
+    textarea.addEventListener("input", ()=>{
+      const n = _countChars(textarea.value);
+      _setLenWarn(warnEl, n);
+      const over = n > MAX_TEXT_CHARS;
+      if(over && !prevOver){
+        alert(`${label} が ${MAX_TEXT_CHARS}文字を超えました（${n}文字）。\n${MAX_TEXT_CHARS}文字以内にしてください。`);
+      }
+      prevOver = over;
+      textarea.classList.toggle("overLimit", over);
+    });
+    // 初期状態
+    const n0 = _countChars(textarea.value);
+    prevOver = n0 > MAX_TEXT_CHARS;
+    textarea.classList.toggle("overLimit", prevOver);
+  }
+
+  function hasOverLimit(){
+    for(const p of state.pages){
+      for(const b of p.blocks){
+        if(_countChars(b.body) > MAX_TEXT_CHARS) return true;
+        if(_countChars(b.free2Text) > MAX_TEXT_CHARS) return true;
+      }
+    }
+    return false;
+  }
+
+  function save(){
+    try{
+      localStorage.setItem(KEY, JSON.stringify(state));
+    }catch(e){
+      alert("保存容量を超えました。ページ数や文章量が多い可能性があります。\n不要なページを削除して再度お試しください。");
+      console.error(e);
+    }
+    savedHint.textContent = "保存済み";
+    savedHint.style.opacity = "1";
+    setTimeout(()=>{ savedHint.style.opacity = "0.7"; }, 700);
+  }
+  function load(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(!raw) return defaultState();
+      const s = JSON.parse(raw);
+      // mild migration / validation
+      if(!s.pages || !Array.isArray(s.pages) || s.pages.length===0) return defaultState();
+      s.pages.forEach(p=>{
+        if(!p.blocks || !Array.isArray(p.blocks)) p.blocks = [defaultBlock(), defaultBlock(), defaultBlock(), defaultBlock()];
+        if(typeof p.commonTitle !== "string") p.commonTitle = "";
+        while(p.blocks.length<4) p.blocks.push(defaultBlock());
+        if(p.blocks.length>4) p.blocks = p.blocks.slice(0,4);
+        p.blocks = p.blocks.map(b => ({
+          ...defaultBlock(),
+          ...b,
+          free2Text: (typeof b.free2Text === "string") ? b.free2Text : "",
+          status: (b.status==="learned"||b.status==="mid"||b.status==="not") ? b.status : "not"
+        }));
+      });
+      if(typeof s.currentPage !== "number") s.currentPage = 0;
+      s.currentPage = Math.max(0, Math.min(s.currentPage, s.pages.length-1));
+      return s;
+    }catch(e){
+      return defaultState();
+    }
+  }
+  function statusLabel(st){
+    if(st==="learned") return {txt:"覚えた", cls:"ok"};
+    if(st==="mid") return {txt:"学習中", cls:"mid"};
+    return {txt:"まだ", cls:"ng"};
+  }
+  function setTitleVisibility(){ /* removed */ }
+
+  // Render page selector
+  function renderPageSelect(){
+    pageSelect.innerHTML = "";
+    // 2ページ単位（見開き）で選択：1-2, 3-4, ... / 末尾が奇数なら最後は単独
+    for(let i=0; i<state.pages.length; i+=2){
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      const hasRight = (i+1) < state.pages.length;
+      opt.textContent = hasRight ? `Page ${i+1}-${i+2}` : `Page ${i+1}`;
+      pageSelect.appendChild(opt);
+    }
+
+    // currentPage は常に「左ページ（0,2,4...）」として扱う
+    const sel = Math.max(0, Math.min(state.currentPage, state.pages.length-1));
+    const left = Math.floor(sel/2)*2;
+    state.currentPage = left;
+
+    pageSelect.value = String(left);
+    const hasRight = (left+1) < state.pages.length;
+    pageLabel.textContent = hasRight ? `Page ${left+1}-${left+2}` : `Page ${left+1}`;
+    delPageBtn.disabled = state.pages.length<=1;
+  }
+
+  // Image handling (resize to keep storage smaller)
+  function fileToDataURL(file){
+    return new Promise((resolve,reject)=>{
+      const fr = new FileReader();
+      fr.onload = ()=>resolve(fr.result);
+      fr.onerror = ()=>reject(fr.error);
+      fr.readAsDataURL(file);
+    });
+  }
+  async function downscaleDataURL(dataURL, maxSide=640, quality=0.75){
+    // keep png as png; for others use jpeg
+    return new Promise((resolve)=>{
+      const img = new Image();
+      img.onload = () => {
+        const w = img.naturalWidth, h = img.naturalHeight;
+        const scale = Math.min(1, maxSide / Math.max(w,h));
+        const nw = Math.round(w*scale), nh = Math.round(h*scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = nw; canvas.height = nh;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, nw, nh);
+
+        const isPng = /^data:image\/png/i.test(dataURL);
+        const out = isPng ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", quality);
+        resolve(out);
+      };
+      img.onerror = ()=>resolve(dataURL);
+      img.src = dataURL;
+    });
+  }
+
+  function makeBlockCard(pageIndex, blockIndex){
+    const page = state.pages[pageIndex];
+    const b = page.blocks[blockIndex];
+
+    const card = document.createElement("div");
+    card.className = "block";
+        card.setAttribute("data-page", String(pageIndex));
+        card.setAttribute("data-block", String(blockIndex));
+
+    const head = document.createElement("div");
+    head.className = "blockHead";
+    const left = document.createElement("div");
+    left.style.display="flex";
+    left.style.gap="8px";
+    left.style.alignItems="center";
+    const badge = document.createElement("span");
+    const st = statusLabel(b.status);
+    badge.className = `statusBadge ${st.cls}`;
+    badge.textContent = st.txt;
+    badge.setAttribute("data-page", String(pageIndex));
+    badge.setAttribute("data-block", String(blockIndex));
+    const small = document.createElement("span");
+    small.className = "note";
+    small.textContent = `Page ${pageIndex+1} / ブロック ${blockIndex+1}`;
+    left.appendChild(badge);
+    left.appendChild(small);
+
+    const right = document.createElement("div");
+    right.style.display="flex";
+    right.style.gap="8px";
+
+    // ブロック削除（選択）
+    const delWrap = document.createElement("label");
+    delWrap.className = "delChkWrap";
+    const delChk = document.createElement("input");
+    delChk.type = "checkbox";
+    delChk.className = "delChk";
+    delChk.setAttribute("data-page", String(pageIndex));
+    delChk.setAttribute("data-block", String(blockIndex));
+    const delTxt = document.createElement("span");
+    delTxt.textContent = "削除";
+    delWrap.appendChild(delChk);
+    delWrap.appendChild(delTxt);
+    right.appendChild(delWrap);
+
+    // 状態（まだ/学習中/覚えた）の変更はフラッシュ中に行う（編集画面には表示しない）
+
+    head.appendChild(left);
+    head.appendChild(right);
+
+    const sec = document.createElement("div");
+    sec.className = "section";
+
+    // 2段目タイトル（入力欄）※印刷時は非表示、印刷用は titleLine を使う
+    const titleEdit = document.createElement("input");
+    titleEdit.type = "text";
+    titleEdit.className = "titleEdit";
+    titleEdit.placeholder = "このブロックだけのタイトル（空欄なら共通タイトル）";
+    titleEdit.value = b.title || "";
+    titleEdit.setAttribute("data-page", String(pageIndex));
+    titleEdit.setAttribute("data-block", String(blockIndex));
+
+    const tline = document.createElement("p");
+    tline.className = "titleLine";
+        tline.setAttribute("data-page", String(pageIndex));
+        tline.setAttribute("data-block", String(blockIndex));
+
+    const syncTitleLine = () => {
+      const t = ((b.title || "").trim() || (page.commonTitle || "").trim());
+      tline.textContent = t;
+      tline.classList.toggle("hidden", t.length === 0);
+    };
+    syncTitleLine();
+
+const syncTitleEdit = () => {
+  const ct = (page.commonTitle || "").trim();
+  const it = (b.title || "").trim();
+  if(!it && ct){
+    // show common title as derived value (still linked)
+    titleEdit.value = ct;
+    titleEdit.classList.add("derived");
+    titleEdit.dataset.derived = "1";
+  }else{
+    titleEdit.value = b.title || "";
+    titleEdit.classList.remove("derived");
+    titleEdit.dataset.derived = "0";
+  }
+};
+syncTitleEdit();
+
+    
+titleEdit.addEventListener("input", () => {
+  b.title = titleEdit.value;
+  titleEdit.classList.remove("derived");
+  titleEdit.dataset.derived = "0";
+  syncTitleLine();
+  save();
+});
+
+titleEdit.addEventListener("blur", () => {
+  const ct = (page.commonTitle || "").trim();
+  const v = (titleEdit.value || "").trim();
+  // if user leaves it same as common, keep it linked (store empty)
+  if(ct && v === ct){
+    b.title = "";
+    titleEdit.classList.add("derived");
+    titleEdit.dataset.derived = "1";
+    titleEdit.value = ct;
+    syncTitleLine();
+    save();
+  }
+});
+
+    // 1) Kanji
+    const kanji = document.createElement("input");
+    kanji.type = "text";
+    kanji.inputMode = "text";
+    kanji.placeholder = "漢字";
+    kanji.maxLength = 2;
+    kanji.className = "kanjiInput";
+    kanji.value = b.kanji || "";
+    kanji.setAttribute("data-len", String((kanji.value||"").trim().length));
+    kanji.addEventListener("input", () => {
+      b.kanji = kanji.value;
+      kanji.setAttribute("data-len", String((kanji.value||"").trim().length));
+      save();
+      refreshTitleLinesOnly();
+    });
+
+    // 2) Body text (middle row)
+    const body = document.createElement("textarea");
+    body.className = "bodyArea";
+    body.placeholder = "2段目 本文（空欄OK）";
+    body.value = b.body || "";
+    body.addEventListener("input", () => {
+      b.body = body.value;
+      save();
+    });
+
+    const bodyWarn = document.createElement("div");
+    bodyWarn.className = "lenWarn";
+    _setLenWarn(bodyWarn, _countChars(body.value));
+    attachLimitAlert(body, bodyWarn, "2段目 本文");
+
+    // 3) Free text (bottom row)
+
+    const freeText = document.createElement("textarea");
+    freeText.className = "freeTextArea";
+    freeText.placeholder = "3段目 テキスト（空欄OK）";
+    freeText.value = b.free2Text || "";
+    freeText.addEventListener("input", ()=>{
+      b.free2Text = freeText.value;
+      save();
+    });
+
+    const freeWarn = document.createElement("div");
+    freeWarn.className = "lenWarn";
+    _setLenWarn(freeWarn, _countChars(freeText.value));
+    attachLimitAlert(freeText, freeWarn, "3段目 テキスト");
+
+    // --- 3 rows (cells) for print layout ---
+
+    sec.style.display = "flex";
+    sec.style.flexDirection = "column";
+
+    const cell1 = document.createElement("div");
+    cell1.className = "cell";
+    cell1.appendChild(kanji);
+
+    const cell2 = document.createElement("div");
+    cell2.className = "cell";
+    cell2.appendChild(titleEdit);
+    cell2.appendChild(tline);
+    cell2.appendChild(body);
+    cell2.appendChild(bodyWarn);
+
+    const cell3 = document.createElement("div");
+    cell3.className = "cell";
+    cell3.appendChild(freeText);
+    cell3.appendChild(freeWarn);
+sec.appendChild(cell1);
+    sec.appendChild(cell2);
+    sec.appendChild(cell3);
+
+    card.appendChild(head);
+    card.appendChild(sec);
+    return card;
+  }
+
+  function updateTitleLinesForPage(pageIndex){
+    const p = state.pages[pageIndex];
+    if(!p) return;
+    const ct = (p.commonTitle||"").trim();
+    // このページの各ブロックの titleLine を更新（個別タイトルがあればそれを優先）
+    document.querySelectorAll(`.titleLine[data-page="${pageIndex}"]`).forEach(el=>{
+      const bi = Number(el.getAttribute("data-block"))||0;
+      const b = (p.blocks && p.blocks[bi]) ? p.blocks[bi] : null;
+      if(!b) return;
+      const t = ((b.title||"").trim() || ct);
+      el.textContent = t;
+      el.classList.toggle("hidden", !t);
+    });
+  }
+
+
+function updateTitleEditsForPage(pageIndex){
+  const p = state.pages[pageIndex];
+  if(!p) return;
+  const ct = (p.commonTitle||"").trim();
+  document.querySelectorAll(`.titleEdit[data-page="${pageIndex}"]`).forEach(el=>{
+    const bi = Number(el.getAttribute("data-block"))||0;
+    const b = (p.blocks && p.blocks[bi]) ? p.blocks[bi] : null;
+    if(!b) return;
+    const it = ((b.title||"").trim());
+    if(!it && ct){
+      el.value = ct;
+      el.classList.add("derived");
+      el.dataset.derived = "1";
+    }else if(!it && !ct){
+      el.value = "";
+      el.classList.remove("derived");
+      el.dataset.derived = "0";
+    }
+    // if it exists, leave as-is (individual override)
+  });
+}
+
+  function updateStatusBadge(pageIndex, blockIndex){
+    const p = state.pages[pageIndex];
+    if(!p) return;
+    const b = p.blocks[blockIndex];
+    if(!b) return;
+    const st = statusLabel(b.status);
+    document.querySelectorAll(`.statusBadge[data-page="${pageIndex}"][data-block="${blockIndex}"]`).forEach(el=>{
+      el.className = `statusBadge ${st.cls}`;
+      el.textContent = st.txt;
+    });
+  }
+
+  function makePageCol(pi, tagText){
+    const col = document.createElement("div");
+    col.className = "pageCol";
+
+    const hdr = document.createElement("div");
+    hdr.className = "pageHdr";
+    const t = document.createElement("div");
+    t.className = "pTitle";
+    t.textContent = `Page ${pi+1}`;
+    const tag = document.createElement("div");
+    tag.className = "pSub";
+    tag.textContent = tagText;
+
+    hdr.appendChild(t);
+    hdr.appendChild(tag);
+
+    // 共通タイトル（このページの4ブロック共通。ブロック側で個別タイトルが入っていればそちらを優先）
+    const commonWrap = document.createElement("div");
+    commonWrap.style.marginTop = "8px";
+
+    const common = document.createElement("input");
+    common.type = "text";
+    common.className = "commonTitleEdit";
+    common.placeholder = "共通タイトル（例：例文 / 読み方 など）※空欄OK";
+    const page = state.pages[pi];
+    common.value = page.commonTitle || "";
+    common.addEventListener("input", ()=>{
+      page.commonTitle = common.value;
+      save();
+      // 入力中に全体refreshするとカーソルが飛ぶので、同ページのタイトル行だけ更新する
+      updateTitleLinesForPage(pi);
+      updateTitleEditsForPage(pi);
+    });
+
+    commonWrap.appendChild(common);
+
+    const pg = document.createElement("div");
+    pg.className = "pageGrid";
+    for(let bi=0; bi<4; bi++){
+      pg.appendChild(makeBlockCard(pi, bi));
+    }
+
+    col.appendChild(hdr);
+    col.appendChild(commonWrap);
+    col.appendChild(pg);
+    return col;
+  }
+
+  function refresh(){
+    renderPageSelect();
+
+    // 見開き：選択されたページを「左ページ（0,2,4...）」に丸める
+    const sel = Math.max(0, Math.min(state.currentPage, state.pages.length-1));
+    const left = Math.floor(sel/2)*2;
+    state.currentPage = left;
+
+    grid.innerHTML = "";
+    grid.appendChild(makePageCol(left, "左"));
+
+    const right = left + 1;
+    if(right < state.pages.length){
+      grid.appendChild(makePageCol(right, "右"));
+    }else{
+      // 右ページがまだない場合は、空のガイドだけ出す（見た目を詰めない）
+      const ph = document.createElement("div");
+      ph.className = "pageCol";
+      const hdr = document.createElement("div");
+      hdr.className = "pageHdr";
+      const t = document.createElement("div");
+      t.className = "pTitle";
+      t.textContent = "Page (追加できます)";
+      const tag = document.createElement("div");
+      tag.className = "pSub";
+      tag.textContent = "右";
+      hdr.appendChild(t); hdr.appendChild(tag);
+      ph.appendChild(hdr);
+      grid.appendChild(ph);
+    }
+
+    const labelRight = (right < state.pages.length) ? `–${right+1}` : "";
+    pageLabel.textContent = `Page ${left+1}${labelRight}`;
+  }
+
+
+  // Page controls
+  pageSelect.addEventListener("change", ()=>{
+    state.currentPage = Number(pageSelect.value) || 0;
+    save();
+    refresh();
+  });
+  addPageBtn.addEventListener("click", ()=>{
+    state.pages.push(defaultPage());
+    // 追加したら末尾ページを含む見開きへ移動（例：1-2, 3-4... / 奇数末尾なら単独）
+    const last = state.pages.length-1;
+    state.currentPage = Math.floor(last/2)*2;
+    save();
+    refresh();
+  });
+  delPageBtn.addEventListener("click", ()=>{
+    if(state.pages.length<=1) return;
+    const idx = state.currentPage;
+    state.pages.splice(idx,1);
+    state.currentPage = Math.max(0, Math.min(state.currentPage, state.pages.length-1));
+    save();
+    refresh();
+  });
+
+  delSelectedBtn?.addEventListener("click", ()=>{
+    const checked = Array.from(document.querySelectorAll(".delChk:checked"));
+    if(checked.length===0) return;
+    checked.forEach(chk=>{
+      const pi = Number(chk.getAttribute("data-page"));
+      const bi = Number(chk.getAttribute("data-block"));
+      const p = state.pages[pi];
+      if(!p) return;
+      const b = p.blocks[bi];
+      if(!b) return;
+      b.kanji = "";
+      b.title = "";
+      b.body = "";
+      b.free2Text = "";
+      b.status = "not";
+      chk.checked = false;
+    });
+    save();
+    refresh();
+  });
+  // --- CSV import / export (text only; images are not saved) ---
+  function csvEscape(s){
+    s = (s ?? "");
+    s = String(s);
+    if(/[",\n\r]/.test(s)){
+      return '"' + s.replace(/"/g,'""') + '"';
+    }
+    return s;
+  }
+
+  function toCSV(){
+    // header: page,block,kanji,body,free2Text,status
+    const lines = [];
+    lines.push(["page","block","commonTitle","blockTitle","kanji","body","free2Text","status"].join(","));
+    state.pages.forEach((p, pi)=>{
+      p.blocks.forEach((b, bi)=>{
+        lines.push([
+          pi+1,
+          bi+1,
+          csvEscape(p.commonTitle||""),
+          csvEscape(b.title||""),
+          csvEscape(b.kanji||""),
+          csvEscape(b.body||""),
+          csvEscape(b.free2Text||""),
+          csvEscape(b.status||"not")
+        ].join(","));
+      });
+    });
+    // UTF-8 BOM for Excel
+    return "\ufeff" + lines.join("\n");
+  }
+
+  function downloadText(filename, text){
+    const blob = new Blob([text], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  // Simple CSV parser (handles quotes/newlines)
+  function parseCSV(text){
+    text = text.replace(/^\ufeff/, "");
+    const rows = [];
+    let row = [];
+    let cur = "";
+    let i = 0;
+    let inQuotes = false;
+
+    while(i < text.length){
+      const ch = text[i];
+
+      if(inQuotes){
+        if(ch === '"'){
+          if(text[i+1] === '"'){ cur += '"'; i += 2; continue; }
+          inQuotes = false; i++; continue;
+        }
+        cur += ch; i++; continue;
+      }else{
+        if(ch === '"'){ inQuotes = true; i++; continue; }
+        if(ch === ","){ row.push(cur); cur=""; i++; continue; }
+        if(ch === "\n"){
+          row.push(cur); cur="";
+          // ignore completely empty trailing line
+          rows.push(row);
+          row = [];
+          i++; continue;
+        }
+        if(ch === "\r"){ i++; continue; }
+        cur += ch; i++; continue;
+      }
+    }
+    // last
+    row.push(cur);
+    rows.push(row);
+    return rows.filter(r => r.some(c => String(c).trim() !== ""));
+  }
+
+  function applyImportedRows(rows){
+    if(rows.length===0) return;
+    const header = rows[0].map(s=>String(s||"").trim().toLowerCase());
+    const hasHeader = header.includes("page") && header.includes("block");
+    const dataRows = hasHeader ? rows.slice(1) : rows;
+
+    // Build map
+    let maxPage = 1;
+    dataRows.forEach(r=>{
+      const page = Number(r[0])||1;
+      if(page>maxPage) maxPage=page;
+    });
+
+    // ensure pages
+    state.pages = [];
+    for(let pi=0; pi<maxPage; pi++){
+      state.pages.push(defaultPage());
+    }
+    state.currentPage = 0;
+
+    const idxPage = 0;
+    const idxBlock = 1;
+    const idxCommon = header.indexOf("commontitle");
+    const idxBlockTitle = header.indexOf("blocktitle");
+    const idxKanji = header.indexOf("kanji");
+    const idxTitle = header.indexOf("title"); // 旧title（ブロックタイトル）
+    const idxBody = header.indexOf("body");
+    const idxFree = header.indexOf("free2text");
+    const idxStatus = header.indexOf("status");
+
+    dataRows.forEach(r=>{
+      const pageNo = Math.max(1, Number(r[idxPage])||1);
+      const blockNo = Math.max(1, Math.min(4, Number(r[idxBlock])||1));
+      const p = state.pages[pageNo-1];
+      const b = p.blocks[blockNo-1];
+
+      if(idxCommon>=0){ p.commonTitle = (r[idxCommon] ?? ""); }
+
+      // 新形式：page,block,commonTitle,blockTitle,kanji,body,free2Text,status
+      if(idxBlockTitle>=0 && idxKanji>=0){
+        b.title = (r[idxBlockTitle] ?? "");
+        b.kanji = (r[idxKanji] ?? "");
+        b.body = (idxBody>=0 ? (r[idxBody] ?? "") : "");
+        b.free2Text = (idxFree>=0 ? (r[idxFree] ?? "") : "");
+      }else{
+        // 旧形式：page,block,kanji,title,body,free2Text,status もしくは page,block,kanji,body,free2Text,status
+        const hasTitleCol = idxTitle>=0;
+        b.kanji = (idxKanji>=0 ? (r[idxKanji] ?? "") : (r[2] ?? ""));
+        if(hasTitleCol){
+          b.title = (r[idxTitle] ?? "");
+          b.body = (r[4] ?? "");
+          b.free2Text = (r[5] ?? "");
+        }else{
+          b.title = b.title || "";
+          b.body = (r[3] ?? "");
+          b.free2Text = (r[4] ?? "");
+        }
+      }
+
+      const st = String((idxStatus>=0 ? (r[idxStatus] ?? "not") : "not"));
+      b.status = (st==="learned"||st==="mid"||st==="not") ? st : "not";
+    });
+
+    save();
+    refresh();
+  }
+
+  exportCsvBtn?.addEventListener("click", ()=>{
+    const csv = toCSV();
+    const dt = new Date();
+    const stamp = `${dt.getFullYear()}${String(dt.getMonth()+1).padStart(2,'0')}${String(dt.getDate()).padStart(2,'0')}_${String(dt.getHours()).padStart(2,'0')}${String(dt.getMinutes()).padStart(2,'0')}`;
+    downloadText(`kanji_cards_${stamp}.csv`, csv);
+  });
+
+  importCsvInput?.addEventListener("change", async (e)=>{
+    const file = e.target.files?.[0];
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const rows = parseCSV(text);
+      applyImportedRows(rows);
+    }catch(err){
+      console.error(err);
+      alert("CSVの読み込みに失敗しました。UTF-8のCSVでお試しください。");
+    }finally{
+      importCsvInput.value = "";
+    }
+  });
+
+
+
+
+  // --- Print all pages (continuous) ---
+  const printAll = document.getElementById("printAll");
+
+  function buildPrintAll(){
+    if(!printAll) return;
+    printAll.innerHTML = "";
+
+
+    for(let pi=0; pi<state.pages.length; pi++){
+      const p = state.pages[pi];
+
+      const pageGrid = document.createElement("div");
+      pageGrid.className = "grid printPage";
+
+      for(let bi=0; bi<4; bi++){
+        const b = p.blocks[bi];
+
+        const card = document.createElement("div");
+        card.className = "block";
+        card.setAttribute("data-page", String(pi));
+        card.setAttribute("data-block", String(bi));
+
+        const sec = document.createElement("div");
+        sec.className = "section";
+        sec.style.display = "flex";
+        sec.style.flexDirection = "column";
+
+        // cell 1: kanji
+        const cell1 = document.createElement("div");
+        cell1.className = "cell";
+        const kanji = document.createElement("input");
+        kanji.type = "text";
+        kanji.className = "kanjiInput";
+        kanji.maxLength = 2;
+        kanji.value = (b.kanji || "");
+        kanji.setAttribute("data-len", String((kanji.value||"").trim().length));
+        cell1.appendChild(kanji);
+
+        // cell 2: body
+        const cell2 = document.createElement("div");
+        cell2.className = "cell";
+
+        const tline = document.createElement("p");
+        tline.className = "titleLine";
+        tline.setAttribute("data-page", String(pi));
+        tline.setAttribute("data-block", String(bi));
+                const tt = ((b.title || "").trim() || (p.commonTitle || "").trim());
+        tline.textContent = tt;
+        if(!tt) tline.classList.add("hidden");
+        cell2.appendChild(tline);
+
+
+        const body = document.createElement("textarea");
+        body.className = "bodyArea";
+        body.value = (b.body || "");
+
+        cell2.appendChild(body);
+
+        // cell 3: free text
+        const cell3 = document.createElement("div");
+        cell3.className = "cell";
+
+        const freeText = document.createElement("textarea");
+        freeText.className = "freeTextArea";
+        freeText.value = (b.free2Text || "");
+        cell3.appendChild(freeText);
+
+        sec.appendChild(cell1);
+        sec.appendChild(cell2);
+        sec.appendChild(cell3);
+
+        card.appendChild(sec);
+        pageGrid.appendChild(card);
+      }
+
+      printAll.appendChild(pageGrid);
+    }
+  }
+
+  function clearPrintAll(){
+    if(printAll) printAll.innerHTML = "";
+  }
+
+  window.addEventListener("afterprint", ()=>{ clearPrintAll(); });
+
+  printBtn.addEventListener("click", ()=>{
+    try{
+      if(hasOverLimit()){
+        alert(`2段目/3段目が${MAX_TEXT_CHARS}文字を超えています。\n文字数を減らしてから印刷してください。`);
+        return;
+      }
+      // 印刷時は全ページを連続で出力
+      buildPrintAll();
+      window.print();
+    }catch(e){
+      console.error(e);
+      alert("印刷の準備でエラーが発生しました。ブラウザの更新（Ctrl+F5）をお試しください。");
+    }
+  });
+
+  // Flash mode（1ブロックずつ段階表示）
+  let flashItems = []; // [{pi, bi}]
+  let flashPos = 0;    // index in flashItems
+  let flashStep = 0;   // 0:kanji, 1:title+body, 2:free2
+  let flashFilter = "all";
+
+  function blockHasAny(b){
+    const hasBody = ((b.body||"").trim().length>0);
+    const hasFree2 = ((b.free2Text||"").trim().length>0);
+    return (b.kanji||"").trim().length>0 || hasBody || hasFree2;
+  }
+
+  function passesFilter(b){
+    if(flashFilter==="learned") return b.status==="learned";
+    if(flashFilter==="not") return b.status!=="learned";
+    return true;
+  }
+
+  function buildFlashItems(){
+    flashItems = [];
+    for(let pi=0; pi<state.pages.length; pi++){
+      const p = state.pages[pi];
+      for(let bi=0; bi<4; bi++){
+        const b = p.blocks[bi];
+        if(blockHasAny(b) && passesFilter(b)){
+          flashItems.push({pi, bi});
+        }
+      }
+    }
+  }
+
+  function stepLabel(step){
+    return step===0 ? "1/3（漢字）" : step===1 ? "2/3（2段目）" : "3/3（3段目）";
+  }
+
+  function getStepAvailability(b){
+    const has1 = ((b.title||"").trim().length>0) || ((b.body||"").trim().length>0);
+    const has2 = ((b.free2Text||"").trim().length>0);
+    return {has1, has2};
+  }
+
+  function renderFlash(){
+    if(flashItems.length===0){
+      flashBody.innerHTML = `<div class="note" style="padding:20px; font-weight:900;">
+        表示できるカードがありません（フィルタ条件を確認してください）
+      </div>`;
+      flashCount.textContent = `0 / 0`;
+      flashStepChip.textContent = stepLabel(flashStep);
+      const filterName = flashFilter==="all" ? "すべて" : (flashFilter==="not" ? "まだ" : "覚えた");
+      flashFilterChip.textContent = `フィルタ：${filterName}`;
+      return;
+    }
+
+    const {pi, bi} = flashItems[flashPos];
+    const p = state.pages[pi];
+    const b = p.blocks[bi];
+
+    flashBody.innerHTML = "";
+
+    const fc = document.createElement("div");
+    fc.className = "flashCard";
+
+    const pad = document.createElement("div");
+    pad.className = "pad";
+
+// Header info (status + location)
+const info = document.createElement("div");
+info.style.display = "flex";
+info.style.justifyContent = "space-between";
+info.style.alignItems = "center";
+info.style.gap = "10px";
+info.style.marginBottom = "10px";
+
+const stChip = document.createElement("span");
+const stInfo = statusLabel(b.status);
+stChip.className = `statusBadge ${stInfo.cls}`;
+stChip.textContent = stInfo.txt;
+
+const loc = document.createElement("span");
+loc.className = "note";
+loc.textContent = `Page ${pi+1} / ブロック ${bi+1}`;
+
+info.appendChild(stChip);
+info.appendChild(loc);
+pad.appendChild(info);
+
+// フラッシュ下部の状態ボタンの見た目を同期
+const setActive = (btn, on, kind) => {
+  if(!btn) return;
+  btn.classList.toggle("active", on);
+  btn.classList.remove("not","mid","learned");
+  if(on) btn.classList.add(kind);
+};
+setActive(flashStNot, b.status==="not", "not");
+setActive(flashStMid, b.status==="mid", "mid");
+setActive(flashStOk,  b.status==="learned", "learned");
+
+    // Kanji
+    const k = document.createElement("p");
+    k.className = "kFlash";
+    k.textContent = (b.kanji||"").trim() ? b.kanji.trim() : "　";
+    pad.appendChild(k);
+
+    // Step 1: title + body
+
+    const titleEl = document.createElement("div");
+    titleEl.className = "bFlash";
+    titleEl.style.fontWeight = "900";
+    titleEl.style.marginBottom = "8px";
+    titleEl.textContent = (((b.title||"").trim()) || ((p.commonTitle||"").trim()));
+    const bodyEl = document.createElement("div");
+    bodyEl.className = "bFlash";
+    bodyEl.textContent = (b.body||"").trim();
+
+    // Step 2: free2
+
+    let freeWrap = null;
+    if((b.free2Text||"").trim()){
+      freeWrap = document.createElement("div");
+      freeWrap.className = "free2FlashText";
+      freeWrap.textContent = (b.free2Text||"").trim();
+    }
+
+    const {has1, has2} = getStepAvailability(b);
+
+    if(flashStep >= 1 && has1){
+      if((((b.title||"").trim()) || ((p.commonTitle||"").trim()))) pad.appendChild(titleEl);
+      if((b.body||"").trim()) pad.appendChild(bodyEl);
+    }
+    if(flashStep >= 2 && has2 && freeWrap){
+      pad.appendChild(freeWrap);
+    }
+
+    // Meta & status
+    const meta = document.createElement("div");
+    meta.className = "flashMeta";
+    const hint = document.createElement("div");
+    hint.className = "tapHint";
+    hint.textContent = "下のボタンで状態を切替";
+
+    const marks = document.createElement("div");
+    marks.className = "markBtns";
+
+    const bNot = document.createElement("button");
+    bNot.textContent = "まだ";
+    bNot.className = "btnTiny";
+    bNot.onclick = () => { b.status="not"; save(); renderFlash(); };
+
+    const bMid = document.createElement("button");
+    bMid.textContent = "学習中";
+    bMid.className = "btnTiny";
+    bMid.onclick = () => { b.status="mid"; save(); renderFlash(); };
+
+    const bOk = document.createElement("button");
+    bOk.textContent = "覚えた";
+    bOk.className = "btnTiny";
+    bOk.onclick = () => { b.status="learned"; save(); renderFlash(); };
+
+    marks.appendChild(bNot);
+    marks.appendChild(bMid);
+    marks.appendChild(bOk);
+
+    meta.appendChild(hint);
+    meta.appendChild(marks);
+
+    pad.appendChild(meta);
+    fc.appendChild(pad);
+    flashBody.appendChild(fc);
+
+    flashCount.textContent = `${flashPos+1} / ${flashItems.length}`;
+    flashStepChip.textContent = stepLabel(flashStep);
+
+    const filterName = flashFilter==="all" ? "すべて" : (flashFilter==="not" ? "まだ" : "覚えた");
+    flashFilterChip.textContent = `フィルタ：${filterName}`;
+  }
+
+  function nextFlash(){
+    if(flashItems.length===0) return;
+
+    const {pi, bi} = flashItems[flashPos];
+    const b = state.pages[pi].blocks[bi];
+    const {has1, has2} = getStepAvailability(b);
+
+    // Advance step within block, skipping empties
+    if(flashStep===0){
+      if(has1){ flashStep=1; renderFlash(); return; }
+      if(has2){ flashStep=2; renderFlash(); return; }
+      // nothing else -> next block
+    }else if(flashStep===1){
+      if(has2){ flashStep=2; renderFlash(); return; }
+      // no step2 -> next block
+    }else{
+      // step2 -> next block
+    }
+
+    // Next block
+    flashStep = 0;
+    if(flashPos < flashItems.length-1){
+      flashPos++;
+      renderFlash();
+    }else{
+      // end -> stay at last
+      renderFlash();
+    }
+  }
+
+  function prevFlash(){
+    if(flashItems.length===0) return;
+
+    if(flashStep>0){
+      flashStep--;
+      // if step becomes 1 but step1 is empty, drop to 0
+      const {pi, bi} = flashItems[flashPos];
+      const b = state.pages[pi].blocks[bi];
+      const {has1} = getStepAvailability(b);
+      if(flashStep===1 && !has1) flashStep=0;
+      renderFlash();
+      return;
+    }
+
+    if(flashPos>0){
+      flashPos--;
+      const {pi, bi} = flashItems[flashPos];
+      const b = state.pages[pi].blocks[bi];
+      const {has1, has2} = getStepAvailability(b);
+      flashStep = has2 ? 2 : (has1 ? 1 : 0);
+      renderFlash();
+    }
+  }
+function setFlashStatus(newStatus){
+  if(flashItems.length===0) return;
+  const {pi, bi} = flashItems[flashPos];
+  const b = state.pages[pi].blocks[bi];
+  b.status = newStatus;
+  save();
+  // 編集画面の一覧バッジも即反映
+  updateStatusBadge(pi, bi);
+  // フィルタがかかっている場合、リストを作り直す（消える/出るがある）
+  const before = flashItems.length;
+  buildFlashItems();
+  if(flashItems.length===0){
+    flashPos = 0; flashStep = 0;
+  }else{
+    // できるだけ同じカード位置に留める（範囲外なら末尾）
+    flashPos = Math.min(flashPos, flashItems.length-1);
+  }
+  renderFlash();
+}
+
+
+  function openFlash(){
+    flashFilter = filterSelect.value || "all";
+    buildFlashItems();
+    flashPos = 0;
+    flashStep = 0;
+    renderFlash();
+    overlay.classList.add("show");
+  }
+
+  function closeFlash(){
+    overlay.classList.remove("show");
+  }
+
+  flashBtn.addEventListener("click", openFlash);
+  closeFlashBtn.addEventListener("click", closeFlash);
+
+  overlay.addEventListener("click", (e)=>{
+    if(e.target === overlay) closeFlash();
+  });
+
+  // Tap anywhere on flash area to advance (but ignore button clicks)
+  $(".flash").addEventListener("click", (e)=>{
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : "";
+    if(tag === "button" || tag === "select" || tag === "option" || tag === "input" || tag === "label") return;
+    nextFlash();
+  });
+
+  filterSelect.addEventListener("change", ()=>{
+    flashFilter = filterSelect.value || "all";
+    buildFlashItems();
+    flashPos = 0;
+    flashStep = 0;
+    renderFlash();
+  });
+
+  nextBtn.addEventListener("click", nextFlash);
+  prevBtn.addEventListener("click", prevFlash);
+
+  // Status (flash only)
+  flashStNot && flashStNot.addEventListener("click", ()=> setFlashStatus("not"));
+  flashStMid && flashStMid.addEventListener("click", ()=> setFlashStatus("mid"));
+  flashStOk  && flashStOk.addEventListener("click", ()=> setFlashStatus("learned"));
+
+  // Init
+  refresh();
+})();
+</script>
+</body>
+</html>
