@@ -664,6 +664,7 @@
       <div class="tapHint">タップで表示が進みます（段階表示 → 次のページ）</div>
       <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
         <div class="flashStatus">
+          <button id="flashShuffleBtn" class="stBtn">シャッフル</button>
           <button id="flashStNot" class="stBtn">まだ</button>
           <button id="flashStMid" class="stBtn">学習中</button>
           <button id="flashStOk" class="stBtn">覚えた</button>
@@ -1655,40 +1656,6 @@ setActive(flashStOk,  b.status==="learned", "learned");
     if(flashStep >= 2 && has2 && freeWrap){
       pad.appendChild(freeWrap);
     }
-
-    // Meta & status
-    const meta = document.createElement("div");
-    meta.className = "flashMeta";
-    const hint = document.createElement("div");
-    hint.className = "tapHint";
-    hint.textContent = "下のボタンで状態を切替";
-
-    const marks = document.createElement("div");
-    marks.className = "markBtns";
-
-    const bNot = document.createElement("button");
-    bNot.textContent = "まだ";
-    bNot.className = "btnTiny";
-    bNot.onclick = () => { b.status="not"; save(); renderFlash(); };
-
-    const bMid = document.createElement("button");
-    bMid.textContent = "学習中";
-    bMid.className = "btnTiny";
-    bMid.onclick = () => { b.status="mid"; save(); renderFlash(); };
-
-    const bOk = document.createElement("button");
-    bOk.textContent = "覚えた";
-    bOk.className = "btnTiny";
-    bOk.onclick = () => { b.status="learned"; save(); renderFlash(); };
-
-    marks.appendChild(bNot);
-    marks.appendChild(bMid);
-    marks.appendChild(bOk);
-
-    meta.appendChild(hint);
-    meta.appendChild(marks);
-
-    pad.appendChild(meta);
     fc.appendChild(pad);
     flashBody.appendChild(fc);
 
@@ -1773,9 +1740,19 @@ function setFlashStatus(newStatus){
 }
 
 
+
+  // --- Flash-only shuffle (Fisher–Yates) ---
+  function shuffleArray(arr){
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
   function openFlash(){
     flashFilter = filterSelect.value || "all";
     buildFlashItems();
+    shuffleArray(flashItems);
     flashPos = 0;
     flashStep = 0;
     renderFlash();
@@ -1803,6 +1780,7 @@ function setFlashStatus(newStatus){
   filterSelect.addEventListener("change", ()=>{
     flashFilter = filterSelect.value || "all";
     buildFlashItems();
+    shuffleArray(flashItems);
     flashPos = 0;
     flashStep = 0;
     renderFlash();
@@ -1815,6 +1793,15 @@ function setFlashStatus(newStatus){
   flashStNot && flashStNot.addEventListener("click", ()=> setFlashStatus("not"));
   flashStMid && flashStMid.addEventListener("click", ()=> setFlashStatus("mid"));
   flashStOk  && flashStOk.addEventListener("click", ()=> setFlashStatus("learned"));
+  const flashShuffleBtn = document.getElementById("flashShuffleBtn");
+  flashShuffleBtn && flashShuffleBtn.addEventListener("click", ()=>{
+    if(flashItems.length===0) return;
+    shuffleArray(flashItems);
+    flashPos = 0;
+    flashStep = 0;
+    renderFlash();
+  });
+
 
   // Init
   refresh();
