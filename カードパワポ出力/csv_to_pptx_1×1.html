@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>CSV→PowerPoint（1単語=1枚）</title>
+<style>
+  :root{
+    --bg:#f6f7fb;
+    --card:#ffffff;
+    --ink:#111827;
+    --sub:#6b7280;
+    --border:#e5e7eb;
+    --primary:#2563eb;
+    --primary2:#1d4ed8;
+    --danger:#dc2626;
+    --shadow:0 10px 24px rgba(0,0,0,.08);
+    --radius:16px;
+    --gap:12px;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans JP", sans-serif;
+  }
+  header{
+    padding:16px 16px 8px;
+    max-width:1100px; margin:0 auto;
+  }
+  h1{ margin:0 0 6px; font-size:18px; }
+  .sub{ color:var(--sub); font-size:13px; line-height:1.5; }
+  main{ max-width:1100px; margin:0 auto; padding:8px 16px 24px; display:grid; gap:var(--gap); }
+  .grid{ display:grid; grid-template-columns: 1.1fr .9fr; gap:var(--gap); }
+  @media (max-width: 920px){ .grid{ grid-template-columns: 1fr; } }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:14px;
+  }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  label{ font-size:12px; color:var(--sub); display:block; margin-bottom:4px; }
+  input[type="text"], input[type="number"], select, textarea{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px 12px;
+    font-size:14px;
+    outline:none;
+    background:#fff;
+  }
+  textarea{ min-height:240px; resize:vertical; }
+  .field{ flex:1; min-width:180px; }
+  .btn{
+    appearance:none; border:0;
+    border-radius:14px;
+    padding:10px 14px;
+    font-weight:700;
+    cursor:pointer;
+    background:var(--primary);
+    color:#fff;
+  }
+  .btn:hover{ background:var(--primary2); }
+  .btn.secondary{ background:#111827; }
+  .btn.ghost{
+    background:#fff; color:var(--ink);
+    border:1px solid var(--border);
+  }
+  .btn.danger{ background:var(--danger); }
+  .kpi{
+    display:grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap:10px;
+  }
+  .kpi .box{
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:10px 12px;
+    background:#fff;
+  }
+  .kpi .num{ font-size:18px; font-weight:800; }
+  .kpi .lbl{ font-size:12px; color:var(--sub); }
+
+  .previewWrap{ display:grid; gap:10px; }
+  .preview{
+    border:1px dashed var(--border);
+    border-radius:14px;
+    padding:12px;
+    background:#fff;
+  }
+  .slide{
+    width:100%; aspect-ratio: 16/9;
+    border:1px solid var(--border);
+    border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    background:#fff;
+  }
+  .word{
+    font-family: "UD デジタル 教科書体 NK-R", "UD Digi Kyokasho N", "UD デジタル教科書体N", "UD Digital Kyokasho N", "UDデジタル教科書体N", "UD Digital 教科書体 N", "UD Digi Kyokasho NK-R", "UD Digi Kyokasho NK", "UD Digi Kyokasho NP", "UD Digi Kyokasho N-R", "UD Digi Kyokasho N", system-ui, sans-serif;
+    font-size:100px;
+    font-weight:400;
+    line-height:1;
+    letter-spacing:0.02em;
+  }
+  .hint{ font-size:12px; color:var(--sub); line-height:1.6; }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; }
+  .err{ color:var(--danger); font-weight:700; }
+  .ok{ color:#16a34a; font-weight:700; }
+  .small{ font-size:12px; color:var(--sub); }
+  .hr{ height:1px; background:var(--border); margin:10px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>CSV → PowerPoint（1単語=1枚）</h1>
+  <div class="sub">
+    CSVのデータ（1列でも複数列でもOK）を取り込んで、PowerPoint（.pptx）を生成します。<br>
+    既定：フォント「UD デジタル 教科書体 NK-R」、文字サイズ100pt、スライド中央配置。サイズは変更できます。
+  </div>
+</header>
+
+<main class="grid">
+  <!-- 左：入力 -->
+  <section class="card">
+    <div class="row" style="justify-content:space-between;">
+      <div style="font-weight:800;">① CSV入力</div>
+      <div class="row">
+        <button class="btn ghost" id="btnSample">サンプルを入れる</button>
+        <button class="btn danger" id="btnClear">クリア</button>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="row">
+      <div class="field" style="min-width:260px;">
+        <label>CSVファイルを選択（任意）</label>
+        <input type="file" id="fileCsv" accept=".csv,text/csv" />
+        <div class="hint">※ファイルを選ばない場合は下のテキスト欄に貼り付けでもOK</div>
+      </div>
+      <div class="field">
+        <label>区切り（自動推定）</label>
+        <select id="delimiter">
+          <option value="auto" selected>自動（推奨）</option>
+          <option value=",">カンマ（,）</option>
+          <option value="\t">タブ</option>
+          <option value=";">セミコロン（;）</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>使う列（0始まり）</label>
+        <input type="number" id="colIndex" min="0" step="1" value="0" />
+        <div class="hint">複数列CSVのとき、どの列を「単語」として使うか</div>
+      </div>
+    </div>
+
+    <div style="margin-top:10px;">
+      <label>CSVテキスト（貼り付けOK）</label>
+      <textarea id="csvText" placeholder="例：&#10;きょうと&#10;しょうゆ&#10;..."></textarea>
+      <div class="hint">
+        ・行区切り／カンマ区切りどちらでもOK（「、」が混ざっていても自動で掃除します）<br>
+        ・空行は無視します
+      </div>
+    </div>
+
+    <div style="margin-top:12px;" class="row">
+      <button class="btn secondary" id="btnParse">② 取り込み（プレビュー更新）</button>
+      <div id="status" class="small"></div>
+    </div>
+
+    <div style="margin-top:12px;" class="kpi">
+      <div class="box">
+        <div class="num" id="kpiCount">0</div>
+        <div class="lbl">単語数</div>
+      </div>
+      <div class="box">
+        <div class="num" id="kpiSlides">0</div>
+        <div class="lbl">スライド数</div>
+      </div>
+      <div class="box">
+        <div class="num" id="kpiDup">0</div>
+        <div class="lbl">重複（同一文字列）</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 右：設定＆出力 -->
+  <section class="card">
+    <div style="font-weight:800;">③ PowerPoint出力設定</div>
+    <div class="hr"></div>
+
+    <div class="row">
+      <div class="field">
+        <label>フォント名（PPTXに指定する名前）</label>
+        <input type="text" id="fontName" value="UD デジタル 教科書体 NK-R" />
+        <div class="hint">※端末にフォントが無い場合、PowerPoint側で代替フォントになります</div>
+      </div>
+      <div class="field" style="max-width:220px;">
+        <label>文字サイズ（pt）</label>
+        <input type="number" id="fontSize" min="10" max="240" step="1" value="100" />
+      </div>
+      <div class="field" style="max-width:220px;">
+        <label>スライド比率</label>
+        <select id="layout">
+          <option value="LAYOUT_WIDE" selected>16:9（ワイド）</option>
+          <option value="LAYOUT_4X3">4:3（標準）</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:4px;">
+      <div class="field">
+        <label>出力ファイル名（.pptx）</label>
+        <input type="text" id="outName" value="words.pptx" />
+      </div>
+      <div class="field" style="max-width:220px;">
+        <label>スライド背景</label>
+        <select id="bg">
+          <option value="FFFFFF" selected>白</option>
+          <option value="F6F7FB">薄グレー</option>
+          <option value="000000">黒</option>
+        </select>
+      </div>
+      <div class="field" style="max-width:220px;">
+        <label>文字色</label>
+        <select id="fg">
+          <option value="000000" selected>黒</option>
+          <option value="111827">濃いグレー</option>
+          <option value="FFFFFF">白</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="previewWrap" style="margin-top:12px;">
+      <div style="font-weight:800;">プレビュー（1枚目）</div>
+      <div class="preview">
+        <div class="slide" id="slidePreview">
+          <div class="word" id="wordPreview">（未読み込み）</div>
+        </div>
+        <div class="hint" style="margin-top:8px;">
+          PowerPoint上では「テキストボックスをスライド中央」に配置します（横・縦とも中央）。
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;" class="row">
+      <button class="btn" id="btnBuild">④ PPTXを生成して保存</button>
+      <div class="small">
+        <span class="mono">※ブラウザ内で生成します（サーバー不要）</span>
+      </div>
+    </div>
+
+    <div id="buildLog" class="small" style="margin-top:10px;"></div>
+  </section>
+</main>
+
+<!-- PptxGenJS (browser build) -->
+<script src="https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+
+<script>
+/**
+ * CSV→単語リスト：ゆるく取り込み
+ * - delimiter=auto のとき、タブ/カンマ/セミコロンを推定
+ * - 「、」や全角空白、末尾のカンマなどを掃除
+ * - 複数列は colIndex を採用（無ければ1列目）
+ */
+const $ = (id)=>document.getElementById(id);
+
+let words = [];
+
+function setStatus(msg, ok=true){
+  const el = $("status");
+  el.textContent = msg;
+  el.className = ok ? "small ok" : "small err";
+}
+
+function normalizeCell(s){
+  if(s == null) return "";
+  // 余計な空白・全角空白
+  let t = String(s).replace(/\u3000/g, " ").trim();
+  // 末尾の読点/カンマ/句点などを除去（例: "きょうと、"）
+  t = t.replace(/[、,，。．]+$/g, "").trim();
+  // 先頭も一応
+  t = t.replace(/^[、,，。．]+/g, "").trim();
+  return t;
+}
+
+function guessDelimiter(text){
+  const sample = text.slice(0, 4000);
+  const counts = [
+    {d:"\t", c:(sample.match(/\t/g)||[]).length},
+    {d:",",  c:(sample.match(/,/g)||[]).length},
+    {d:";",  c:(sample.match(/;/g)||[]).length},
+  ].sort((a,b)=>b.c-a.c);
+  // どれも少なければ「行区切り」中心としてカンマを仮採用
+  return counts[0].c > 0 ? counts[0].d : ",";
+}
+
+function parseCSVLoose(text, delimiter, colIndex){
+  const dlm = (delimiter === "auto") ? guessDelimiter(text) : delimiter;
+
+  // 「カンマ区切りっぽいが、実際は改行＋末尾読点」も多いので
+  // まず改行で分けて、各行をさらにdelimiterで分割する
+  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+
+  const out = [];
+  for(const line0 of lines){
+    const line = line0.trim();
+    if(!line) continue;
+
+    // 行内に日本語の読点区切りがある場合も考慮（例: "A、B、C"）
+    // ただし本来のCSVの「,」とは別なので、まず「、」を「,」に寄せる
+    const unified = line.replace(/、/g, ",");
+
+    // delimiterで分割
+    const cells = unified.split(dlm).map(normalizeCell).filter(x=>x!=="");
+    if(cells.length === 0) continue;
+
+    const idx = Math.max(0, Number(colIndex)||0);
+    const pick = cells[idx] ?? cells[0];
+    const w = normalizeCell(pick);
+    if(w) out.push(w);
+  }
+  return out;
+}
+
+function refreshKPIs(list){
+  const count = list.length;
+  const dup = (()=>{
+    const m = new Map();
+    for(const w of list){ m.set(w, (m.get(w)||0)+1); }
+    let d = 0;
+    for(const v of m.values()){ if(v>1) d += (v-1); }
+    return d;
+  })();
+
+  $("kpiCount").textContent = String(count);
+  $("kpiSlides").textContent = String(count);
+  $("kpiDup").textContent = String(dup);
+}
+
+function refreshPreview(list){
+  const first = list[0] || "（未読み込み）";
+  $("wordPreview").textContent = first;
+
+  // フォントとサイズ反映（見た目プレビュー用）
+  const fontName = $("fontName").value.trim() || "UD デジタル 教科書体 NK-R";
+  const fontSize = Number($("fontSize").value) || 100;
+  const preview = $("wordPreview");
+  preview.style.fontFamily = `"${fontName}", "UD デジタル 教科書体 N", "UD Digi Kyokasho N", system-ui, sans-serif`;
+  preview.style.fontSize = fontSize + "px";
+}
+
+async function readFileAsText(file){
+  return new Promise((resolve, reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>resolve(fr.result);
+    fr.onerror = ()=>reject(fr.error);
+    fr.readAsText(file);
+  });
+}
+
+/** PPTX生成 */
+async function buildPPTX(list){
+  if(!window.PptxGenJS) throw new Error("PptxGenJS が読み込めませんでした。");
+
+  const pptx = new PptxGenJS();
+
+  // レイアウト
+  const layout = $("layout").value;
+  if(layout === "LAYOUT_4X3") pptx.layout = "LAYOUT_4X3";
+  else pptx.layout = "LAYOUT_WIDE";
+
+  // 1枚のサイズ（inch）は layout により変わるが、中央配置は getSlideSize() で計算
+  // PptxGenJS: wide=13.333x7.5, 4x3=10x7.5
+  const slideW = (pptx.layout === "LAYOUT_4X3") ? 10 : 13.333;
+  const slideH = 7.5;
+
+  const fontFace = $("fontName").value.trim() || "UD デジタル 教科書体 NK-R";
+  const fontSize = Math.max(10, Math.min(240, Number($("fontSize").value)||100));
+  const bg = $("bg").value;
+  const fg = $("fg").value;
+
+  for(const w0 of list){
+    const w = String(w0);
+    const slide = pptx.addSlide();
+    slide.background = { color: bg };
+
+    // ★中央配置：テキストボックスをスライド全体に置き、align/valignで中央へ
+    slide.addText(w, {
+      x: 0, y: 0, w: slideW, h: slideH,
+      fontFace,
+      fontSize,
+      color: fg,
+      align: "center",
+      valign: "mid",
+    });
+  }
+
+  const outName = ($("outName").value || "words.pptx").trim().endsWith(".pptx")
+    ? $("outName").value.trim()
+    : ($("outName").value.trim() + ".pptx");
+
+  await pptx.writeFile({ fileName: outName });
+}
+
+function parseAndUpdate(){
+  const text = $("csvText").value || "";
+  const delimiter = $("delimiter").value;
+  const colIndex = $("colIndex").value;
+
+  const list = parseCSVLoose(text, delimiter, colIndex);
+  words = list;
+
+  refreshKPIs(list);
+  refreshPreview(list);
+
+  if(list.length === 0){
+    setStatus("単語が見つかりませんでした（空行/区切り/列番号を確認してください）", false);
+  }else{
+    setStatus(`取り込みOK：${list.length}語`, true);
+  }
+}
+
+$("btnParse").addEventListener("click", parseAndUpdate);
+
+$("btnClear").addEventListener("click", ()=>{
+  $("csvText").value = "";
+  words = [];
+  refreshKPIs(words);
+  refreshPreview(words);
+  setStatus("クリアしました", true);
+});
+
+$("btnSample").addEventListener("click", ()=>{
+  $("csvText").value =
+`きょうと、
+しょうゆ、
+ちょうり、
+ぎょうじ、
+じょうろ
+びょうぶ
+ひょうし
+りょうり
+きゅうり
+しゅうじ
+ちゅうい
+ぎゅうにく
+じゅうい
+にゅうし
+
+ちゃっと
+ちょっと
+ぎょっと
+ひょっとこ
+きゅっと
+しゅっと
+ぎゅっと
+にゅっと
+りゅっく`;
+  parseAndUpdate();
+});
+
+$("fontName").addEventListener("input", ()=>refreshPreview(words));
+$("fontSize").addEventListener("input", ()=>refreshPreview(words));
+
+$("fileCsv").addEventListener("change", async (e)=>{
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  try{
+    const t = await readFileAsText(f);
+    $("csvText").value = t;
+    parseAndUpdate();
+    setStatus(`ファイル読込OK：${f.name}`, true);
+  }catch(err){
+    console.error(err);
+    setStatus("ファイルの読み込みに失敗しました", false);
+  }
+});
+
+$("btnBuild").addEventListener("click", async ()=>{
+  $("buildLog").textContent = "";
+  try{
+    if(!words || words.length === 0){
+      parseAndUpdate();
+    }
+    if(!words || words.length === 0){
+      $("buildLog").innerHTML = `<span class="err">単語が0件です。先に取り込みしてください。</span>`;
+      return;
+    }
+    $("buildLog").innerHTML = `<span class="mono">PPTX生成中…</span>`;
+    await buildPPTX(words);
+    $("buildLog").innerHTML = `<span class="ok">保存が始まりました（ブラウザのダウンロードを確認してください）</span>`;
+  }catch(err){
+    console.error(err);
+    $("buildLog").innerHTML = `<span class="err">生成に失敗しました：</span> <span class="mono">${String(err.message||err)}</span>`;
+  }
+});
+
+// 初期プレビュー
+refreshPreview([]);
+</script>
+</body>
+</html>
+
