@@ -341,6 +341,38 @@
     display:flex;
     flex-direction:column;
   }
+.flashCard.jumpPulse{
+  box-shadow: 0 0 0 4px var(--primarySoft), 0 20px 60px rgba(0,0,0,.25);
+  animation: jumpPulse .9s ease-out 1;
+}
+@keyframes jumpPulse{
+  0%{ transform: scale(1); }
+  35%{ transform: scale(1.01); }
+  100%{ transform: scale(1); }
+}
+.flashSearch{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.flashSearch input{
+  width: 160px;
+  max-width: 40vw;
+  padding:8px 10px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  font-weight:800;
+}
+.flashSearch .miniBtn{
+  padding:8px 10px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#fff;
+  font-weight:900;
+  cursor:pointer;
+}
+.flashSearch .miniBtn:active{ transform: translateY(1px); }
   .flashCard .pad{ padding:12px; display:flex; flex-direction:column; gap:10px; height:100%; }
   .kFlash{
     font-size:86px;
@@ -622,6 +654,13 @@
       </div>
       <div class="ctrl">
         <button id="printBtn" class="soft">印刷</button>
+
+        <span class="small" style="align-self:center; margin-left:4px;">印刷フィルタ</span>
+        <select id="printFilterSelect" class="soft" style="padding:10px 12px;">
+          <option value="all">すべて</option>
+          <option value="not">まだ／学習中</option>
+          <option value="learned">覚えた</option>
+        </select>
         <button id="exportCsvBtn" class="soft">CSV出力</button>
         <label class="fileBtn soft">CSV読み込み<input id="importCsvInput" type="file" accept=".csv,text/csv" style="display:none"></label>
         <button id="flashBtn" class="primary">フラッシュカード</button>
@@ -654,17 +693,27 @@
         <span class="chip" id="flashFilterChip">フィルタ：すべて</span>
         <span class="chip" id="flashStepChip">表示：1/3</span>
       </div>
-      <div class="right">
-        <label style="display:flex; align-items:center; gap:8px; font-weight:900; color:var(--sub);">
-          フィルタ
-          <select id="filterSelect">
-            <option value="all">すべて</option>
-            <option value="not">まだ（未学習/学習中）</option>
-            <option value="learned">覚えた</option>
-          </select>
-        </label>
-        <button id="closeFlashBtn">閉じる</button>
-      </div>
+            <div class="right">
+              <label style="display:flex; align-items:center; gap:8px; font-weight:900; color:var(--sub);">
+                フィルタ
+                <select id="filterSelect">
+                  <option value="all">すべて</option>
+                  <option value="not">まだ（未学習/学習中）</option>
+                  <option value="learned">覚えた</option>
+                </select>
+              </label>
+
+              <div class="flashSearch" aria-label="検索">
+                <span class="small" style="font-weight:900; color:var(--sub);">検索</span>
+                <input id="flashSearchInput" type="text" inputmode="text" autocomplete="off" placeholder="漢字で検索" />
+                <span class="count" id="flashSearchCount">一致：0件</span>
+                <button id="flashSearchPrev" class="miniBtn" type="button">前へ</button>
+                <button id="flashSearchNext" class="miniBtn" type="button">次へ</button>
+                <button id="flashSearchClear" class="miniBtn" type="button">クリア</button>
+              </div>
+
+              <button id="closeFlashBtn">閉じる</button>
+            </div>
     </div>
     <div class="flashBody" id="flashBody"></div>
     <div style="padding:12px 14px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -726,10 +775,17 @@
   const flashStNot = $("#flashStNot");
   const flashStMid = $("#flashStMid");
   const flashStOk = $("#flashStOk");
+  const flashSearchInput = $("#flashSearchInput");
+  const flashSearchCount = $("#flashSearchCount");
+  const flashSearchPrev = $("#flashSearchPrev");
+  const flashSearchNext = $("#flashSearchNext");
+  const flashSearchClear = $("#flashSearchClear");
 
   const closeFlashBtn = $("#closeFlashBtn");
   const flashBtn = $("#flashBtn");
   const printBtn = $("#printBtn");
+  const printFilterSelect = $("#printFilterSelect");
+  let printFilter = null; // 印刷時に使うフィルタ（nullならフラッシュ側に追従）
   const addPageBtn = $("#addPageBtn");
   const delPageBtn = $("#delPageBtn");
   const delSelectedBtn = $("#delSelectedBtn");
@@ -1439,14 +1495,105 @@ function updateTitleEditsForPage(pageIndex){
     if(!printAll) return;
     printAll.innerHTML = "";
 
+    // フラッシュカードのフィルタ状態に合わせて印刷対象を絞り込み（B：詰めて印刷）
+    const useFilter = (typeof printFilter === "string" ? printFilter : (typeof flashFilter === "string" ? flashFilter : "all"));
+    const items = [];
 
-    for(let pi=0; pi<state.pages.length; pi++){
-      const p = state.pages[pi];
+    if(useFilter==="all"){
+      // 既存どおり：全ページをそのまま印刷（ページ単位）
+      for(let pi=0; pi<state.pages.length; pi++){
+        const p = state.pages[pi];
+        for(let bi=0; bi<4; bi++){
+          items.push({pi, bi});
+        }
+      }
+    }else{
+      // フィルタ適用：入力があるブロックだけ集めて詰める
+      for(let pi=0; pi<state.pages.length; pi++){
+        const p = state.pages[pi];
+        for(let bi=0; bi<4; bi++){
+          const b = p.blocks[bi];
+          if(blockHasAny(b) && passesFilterBy(b, useFilter)){
+            items.push({pi, bi});
+          }
+        }
+      }
+    }
 
+    // 4枚ずつ 2x2 のページに詰める（不足分は空で埋めてレイアウト維持）
+    for(let i=0; i<items.length; i+=4){
       const pageGrid = document.createElement("div");
       pageGrid.className = "grid printPage";
 
-      for(let bi=0; bi<4; bi++){
+      for(let k=0; k<4; k++){
+        const it = items[i+k];
+
+        // 空き枠
+        if(!it){
+          const emptyCard = document.createElement("div");
+          emptyCard.className = "block";
+          const sec = document.createElement("div");
+          sec.className = "section";
+          sec.style.display = "flex";
+          sec.style.flexDirection = "column";
+
+          const cell1 = document.createElement("div");
+          cell1.className = "cell";
+          const kanji = document.createElement("input");
+          kanji.type = "text";
+          kanji.className = "kanjiInput";
+          kanji.maxLength = 2;
+          kanji.value = "";
+          kanji.setAttribute("data-len","0");
+          cell1.appendChild(kanji);
+
+          const cell2 = document.createElement("div");
+          cell2.className = "cell";
+          const tline = document.createElement("p");
+          tline.className = "titleLine hidden";
+          tline.textContent = "";
+          cell2.appendChild(tline);
+          const body = document.createElement("textarea");
+          body.className = "bodyArea";
+          body.value = "";
+          cell2.appendChild(body);
+          const bodyWarn = document.createElement("div");
+          bodyWarn.className = "lenWarn";
+          _setLenWarn(bodyWarn, 0);
+          cell2.appendChild(bodyWarn);
+          const bodyGuide = document.createElement("div");
+          bodyGuide.className = "guideNote";
+          bodyGuide.textContent = "3行まで推奨";
+          cell2.appendChild(bodyGuide);
+          cell2.appendChild(bodyGuide);
+
+          const cell3 = document.createElement("div");
+          cell3.className = "cell";
+          const freeText = document.createElement("textarea");
+          freeText.className = "freeTextArea";
+          freeText.value = "";
+          cell3.appendChild(freeText);
+          const freeWarn = document.createElement("div");
+          freeWarn.className = "lenWarn";
+          _setLenWarn(freeWarn, 0, FREE2_MAX_TEXT_CHARS);
+          cell3.appendChild(freeWarn);
+          const freeGuide = document.createElement("div");
+          freeGuide.className = "guideNote";
+          freeGuide.textContent = "4行まで推奨";
+          cell3.appendChild(freeGuide);
+          cell3.appendChild(freeGuide);
+
+          sec.appendChild(cell1);
+          sec.appendChild(cell2);
+          sec.appendChild(cell3);
+          emptyCard.appendChild(sec);
+
+          pageGrid.appendChild(emptyCard);
+          continue;
+        }
+
+        const {pi, bi} = it;
+        const p = state.pages[pi];
         const b = p.blocks[bi];
 
         const card = document.createElement("div");
@@ -1478,16 +1625,14 @@ function updateTitleEditsForPage(pageIndex){
         tline.className = "titleLine";
         tline.setAttribute("data-page", String(pi));
         tline.setAttribute("data-block", String(bi));
-                const tt = ((b.title || "").trim() || (p.commonTitle || "").trim());
+        const tt = ((b.title || "").trim() || (p.commonTitle || "").trim());
         tline.textContent = tt;
         if(!tt) tline.classList.add("hidden");
         cell2.appendChild(tline);
 
-
         const body = document.createElement("textarea");
         body.className = "bodyArea";
         body.value = (b.body || "");
-
         cell2.appendChild(body);
         // 2段目の文字数警告（印刷プレビュー用）
         const bodyWarn = document.createElement("div");
@@ -1499,7 +1644,7 @@ function updateTitleEditsForPage(pageIndex){
         bodyGuide.className = "guideNote";
         bodyGuide.textContent = "3行まで推奨";
         cell2.appendChild(bodyGuide);
-    cell2.appendChild(bodyGuide);
+        cell2.appendChild(bodyGuide);
 
         // cell 3: free text
         const cell3 = document.createElement("div");
@@ -1519,7 +1664,7 @@ function updateTitleEditsForPage(pageIndex){
         freeGuide.className = "guideNote";
         freeGuide.textContent = "4行まで推奨";
         cell3.appendChild(freeGuide);
-    cell3.appendChild(freeGuide);
+        cell3.appendChild(freeGuide);
 
         sec.appendChild(cell1);
         sec.appendChild(cell2);
@@ -1570,7 +1715,90 @@ function updateTitleEditsForPage(pageIndex){
   let flashItems = []; // [{pi, bi}]
   let flashPos = 0;    // index in flashItems
   let flashStep = 0;   // 0:kanji, 1:title+body, 2:free2
+// Flash search (kanji-only, partial match)
+let flashSearchHits = [];
+let flashSearchCursor = -1;
+let flashJumpPulse = false;
+
+const norm = (s) => (s||"").toString().trim();
+
+function updateFlashSearchCount(){
+  if(!flashSearchCount) return;
+  const q = norm(flashSearchInput?.value);
+  if(!q){
+    flashSearchCount.textContent = "一致：0件";
+    return;
+  }
+  if(flashSearchHits.length===0){
+    flashSearchCount.textContent = "一致：0件";
+    return;
+  }
+  flashSearchCount.textContent = `一致：${flashSearchHits.length}件（${flashSearchCursor+1}/${flashSearchHits.length}）`;
+}
+
+function rebuildFlashSearch({jumpIfPossible=false} = {}){
+  const q = norm(flashSearchInput?.value);
+  flashSearchHits = [];
+  flashSearchCursor = -1;
+
+  if(!q){
+    updateFlashSearchCount();
+    return;
+  }
+
+  // Search within current flashItems (already status-filtered)
+  for(let i=0; i<flashItems.length; i++){
+    const {pi, bi} = flashItems[i];
+    const b = state.pages[pi].blocks[bi];
+    if(norm(b.kanji).includes(q)){
+      flashSearchHits.push(i);
+    }
+  }
+
+  if(flashSearchHits.length>0){
+    // Keep cursor on current card if it matches; otherwise move to first match
+    const idxInHits = flashSearchHits.indexOf(flashPos);
+    flashSearchCursor = (idxInHits>=0) ? idxInHits : 0;
+
+    if(jumpIfPossible){
+      flashPos = flashSearchHits[flashSearchCursor];
+      flashStep = 0;
+      flashJumpPulse = true;
+    }
+  }
+
+  updateFlashSearchCount();
+}
+
+function jumpFlashHit(dir){
+  if(flashSearchHits.length===0) return;
+  flashSearchCursor = (flashSearchCursor + dir + flashSearchHits.length) % flashSearchHits.length;
+  flashPos = flashSearchHits[flashSearchCursor];
+  flashStep = 0;
+  flashJumpPulse = true;
+  updateFlashSearchCount();
+  renderFlash();
+}
+
+function clearFlashSearch(){
+  if(!flashSearchInput) return;
+  flashSearchInput.value = "";
+  flashSearchHits = [];
+  flashSearchCursor = -1;
+  updateFlashSearchCount();
+}
+
   let flashFilter = "all";
+  // 印刷フィルタ（UI）初期化：デフォルトはフラッシュカードの状態に合わせる
+  if(printFilterSelect){
+    printFilterSelect.value = flashFilter;
+    printFilterSelect.addEventListener("change", ()=>{
+      printFilter = (printFilterSelect.value || "all");
+    });
+    // 起動直後はフラッシュに追従
+    printFilter = flashFilter;
+  }
+
 
   function blockHasAny(b){
     const hasBody = ((b.body||"").trim().length>0);
@@ -1578,10 +1806,14 @@ function updateTitleEditsForPage(pageIndex){
     return (b.kanji||"").trim().length>0 || hasBody || hasFree2;
   }
 
-  function passesFilter(b){
-    if(flashFilter==="learned") return b.status==="learned";
-    if(flashFilter==="not") return b.status!=="learned";
+  function passesFilterBy(b, filter){
+    if(filter==="learned") return b.status==="learned";
+    if(filter==="not") return b.status!=="learned";
     return true;
+  }
+
+  function passesFilter(b){
+    return passesFilterBy(b, flashFilter);
   }
 
   function buildFlashItems(){
@@ -1700,6 +1932,12 @@ setActive(flashStOk,  b.status==="learned", "learned");
     }
     fc.appendChild(pad);
     flashBody.appendChild(fc);
+// Highlight on search-jump
+if(flashJumpPulse){
+  fc.classList.add("jumpPulse");
+  setTimeout(()=>fc.classList.remove("jumpPulse"), 900);
+  flashJumpPulse = false;
+}
 
     flashCount.textContent = `${flashPos+1} / ${flashItems.length}`;
     flashStepChip.textContent = stepLabel(flashStep);
@@ -1797,6 +2035,7 @@ function setFlashStatus(newStatus){
     shuffleArray(flashItems);
     flashPos = 0;
     flashStep = 0;
+    rebuildFlashSearch({jumpIfPossible:false});
     renderFlash();
     overlay.classList.add("show");
   }
@@ -1825,10 +2064,33 @@ function setFlashStatus(newStatus){
     shuffleArray(flashItems);
     flashPos = 0;
     flashStep = 0;
+    rebuildFlashSearch(); // keep current search (if any) within new list
     renderFlash();
   });
 
-  nextBtn.addEventListener("click", nextFlash);
+  // Flash search UI
+  if(flashSearchInput){
+    flashSearchInput.addEventListener("input", ()=>{
+      rebuildFlashSearch({jumpIfPossible:true});
+      if(flashSearchHits.length>0){
+        renderFlash();
+      }
+    });
+    flashSearchInput.addEventListener("keydown", (e)=>{
+      if(e.key==="Enter"){
+        e.preventDefault();
+        jumpFlashHit(+1);
+      }
+    });
+  }
+  if(flashSearchPrev) flashSearchPrev.addEventListener("click", ()=>jumpFlashHit(-1));
+  if(flashSearchNext) flashSearchNext.addEventListener("click", ()=>jumpFlashHit(+1));
+  if(flashSearchClear) flashSearchClear.addEventListener("click", ()=>{
+    clearFlashSearch();
+    // keep current card as-is, just update counter
+  });
+
+nextBtn.addEventListener("click", nextFlash);
   prevBtn.addEventListener("click", prevFlash);
 
   // Status (flash only)
