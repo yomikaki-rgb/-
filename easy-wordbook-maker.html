@@ -235,9 +235,10 @@
     line-height:1.45;
   
       padding-right: 4mm !important; /* avoid punch hole */
-      padding-top: 8mm !important; /* avoid punch hole at top-right */
+      padding-top: 2mm !important; /* tightened for editor */
     }
   .lenWarn{ font-size:12px; color:#b91c1c; margin-top:4px; display:none; font-weight:900; }
+  .guideNote{ font-size:12px; color:#dc2626; font-weight:900; margin-top:4px; }
   .overLimit{ border-color:#dc2626 !important; box-shadow:0 0 0 3px rgba(220,38,38,.12) !important; }
   .lenWarn.show{ display:block; }
 
@@ -418,6 +419,9 @@
 .stBtn.active.mid{ background:#fde68a; }
 .stBtn.active.learned{ background:#bbf7d0; }
 @media print{
+    /* guideNote (editor-only) */
+    .guideNote{ display:none !important; }
+
     #grid{ display:none !important; }
     .printAll{ display:block !important; }
     .printPage{ page-break-after: always; }
@@ -526,7 +530,7 @@
       background:transparent !important;
       resize:none !important;
       min-height:0 !important;
-      font-size: 13pt !important;
+      font-size: 14pt !important;
       line-height:1.45 !important;
       width:100% !important;
       overflow:hidden !important;
@@ -544,7 +548,7 @@
       background:transparent !important;
       resize:none !important;
       min-height:0 !important;
-      font-size: 13pt !important;
+      font-size: 14pt !important;
       line-height:1.45 !important;
       width:100% !important;
       overflow:hidden !important;
@@ -598,7 +602,10 @@
 .ctrl{ flex-wrap:wrap; }
 .ctrl button, .ctrl .fileBtn{ padding:14px 18px; border-radius:16px; font-size:18px; min-width:110px; }
 .ctrl .fileBtn{ display:inline-flex; align-items:center; justify-content:center; }
-@media print{ .titleEdit{ display:none !important; } }
+@media print{
+    /* guideNote (editor-only) */
+    .guideNote{ display:none !important; }
+ .titleEdit{ display:none !important; } }
 
 </style>
 </head>
@@ -680,6 +687,7 @@
 (() => {
   const KEY = "kanji_4block_cards_v1";
   const MAX_TEXT_CHARS = 45;
+  const FREE2_MAX_TEXT_CHARS = 60;
   const $ = (sel, root=document) => root.querySelector(sel);
 
   const defaultBlock = () => ({
@@ -735,10 +743,10 @@
   function _countChars(s){
     return (s||"").replace(/\r/g,"").length;
   }
-  function _setLenWarn(warnEl, n){
+  function _setLenWarn(warnEl, n, max=MAX_TEXT_CHARS){
     if(!warnEl) return;
-    if(n > MAX_TEXT_CHARS){
-      warnEl.textContent = `※ ${MAX_TEXT_CHARS}文字を超えています（${n}文字）`;
+    if(n > max){
+      warnEl.textContent = `※ ${max}文字を超えています（${n}文字）`;
       warnEl.classList.add("show");
     }else{
       warnEl.textContent = "";
@@ -747,22 +755,22 @@
   }
 
   // 入力中に「上限超え」になった瞬間だけ、1回だけアラートを出す（やかましくしないため）
-  function attachLimitAlert(textarea, warnEl, label){
+  function attachLimitAlert(textarea, warnEl, label, max=MAX_TEXT_CHARS){
     if(!textarea) return;
     let prevOver = false;
     textarea.addEventListener("input", ()=>{
       const n = _countChars(textarea.value);
-      _setLenWarn(warnEl, n);
-      const over = n > MAX_TEXT_CHARS;
+      _setLenWarn(warnEl, n, max);
+      const over = n > max;
       if(over && !prevOver){
-        alert(`${label} が ${MAX_TEXT_CHARS}文字を超えました（${n}文字）。\n${MAX_TEXT_CHARS}文字以内にしてください。`);
+        alert(`${label} が ${max}文字を超えました（${n}文字）。\n${max}文字以内にしてください。`);
       }
       prevOver = over;
       textarea.classList.toggle("overLimit", over);
     });
     // 初期状態
     const n0 = _countChars(textarea.value);
-    prevOver = n0 > MAX_TEXT_CHARS;
+    prevOver = n0 > max;
     textarea.classList.toggle("overLimit", prevOver);
   }
 
@@ -770,7 +778,7 @@
     for(const p of state.pages){
       for(const b of p.blocks){
         if(_countChars(b.body) > MAX_TEXT_CHARS) return true;
-        if(_countChars(b.free2Text) > MAX_TEXT_CHARS) return true;
+        if(_countChars(b.free2Text) > FREE2_MAX_TEXT_CHARS) return true;
       }
     }
     return false;
@@ -1018,6 +1026,10 @@ titleEdit.addEventListener("blur", () => {
     _setLenWarn(bodyWarn, _countChars(body.value));
     attachLimitAlert(body, bodyWarn, "2段目 本文");
 
+    const bodyGuide = document.createElement("div");
+    bodyGuide.className = "guideNote";
+    bodyGuide.textContent = "3行まで推奨";
+
     // 3) Free text (bottom row)
 
     const freeText = document.createElement("textarea");
@@ -1031,8 +1043,12 @@ titleEdit.addEventListener("blur", () => {
 
     const freeWarn = document.createElement("div");
     freeWarn.className = "lenWarn";
-    _setLenWarn(freeWarn, _countChars(freeText.value));
-    attachLimitAlert(freeText, freeWarn, "3段目 テキスト");
+    _setLenWarn(freeWarn, _countChars(freeText.value), FREE2_MAX_TEXT_CHARS);
+    attachLimitAlert(freeText, freeWarn, "3段目 テキスト", FREE2_MAX_TEXT_CHARS);
+
+    const freeGuide = document.createElement("div");
+    freeGuide.className = "guideNote";
+    freeGuide.textContent = "4行まで推奨";
 
     // --- 3 rows (cells) for print layout ---
 
@@ -1049,11 +1065,13 @@ titleEdit.addEventListener("blur", () => {
     cell2.appendChild(tline);
     cell2.appendChild(body);
     cell2.appendChild(bodyWarn);
+    cell2.appendChild(bodyGuide);
 
     const cell3 = document.createElement("div");
     cell3.className = "cell";
     cell3.appendChild(freeText);
     cell3.appendChild(freeWarn);
+    cell3.appendChild(freeGuide);
 sec.appendChild(cell1);
     sec.appendChild(cell2);
     sec.appendChild(cell3);
@@ -1476,6 +1494,12 @@ function updateTitleEditsForPage(pageIndex){
         bodyWarn.className = "lenWarn";
         _setLenWarn(bodyWarn, _countChars(body.value));
         cell2.appendChild(bodyWarn);
+        // 編集画面用の行数目安（印刷には出さない）
+        const bodyGuide = document.createElement("div");
+        bodyGuide.className = "guideNote";
+        bodyGuide.textContent = "3行まで推奨";
+        cell2.appendChild(bodyGuide);
+    cell2.appendChild(bodyGuide);
 
         // cell 3: free text
         const cell3 = document.createElement("div");
@@ -1488,8 +1512,14 @@ function updateTitleEditsForPage(pageIndex){
         // 3段目の文字数警告（印刷プレビュー用）
         const freeWarn = document.createElement("div");
         freeWarn.className = "lenWarn";
-        _setLenWarn(freeWarn, _countChars(freeText.value));
+        _setLenWarn(freeWarn, _countChars(freeText.value), FREE2_MAX_TEXT_CHARS);
         cell3.appendChild(freeWarn);
+        // 編集画面用の行数目安（印刷には出さない）
+        const freeGuide = document.createElement("div");
+        freeGuide.className = "guideNote";
+        freeGuide.textContent = "4行まで推奨";
+        cell3.appendChild(freeGuide);
+    cell3.appendChild(freeGuide);
 
         sec.appendChild(cell1);
         sec.appendChild(cell2);
@@ -1510,17 +1540,29 @@ function updateTitleEditsForPage(pageIndex){
   window.addEventListener("afterprint", ()=>{ clearPrintAll(); });
 
   printBtn.addEventListener("click", ()=>{
+    // クリック直後はDOM反映が間に合わないことがあるので、
+    // いったん印刷DOMを作ってから 2フレーム待って印刷します（表示と印刷のズレ対策）
     try{
       if(hasOverLimit()){
         alert(`2段目/3段目が${MAX_TEXT_CHARS}文字を超えています。\n文字数を減らしてから印刷してください。`);
         return;
       }
-      // 印刷時は全ページを連続で出力
+      clearPrintAll();
       buildPrintAll();
-      window.print();
+
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          try{
+            window.print();
+          }catch(err){
+            console.error(err);
+            alert("印刷の呼び出しに失敗しました。別のブラウザでお試しください。\n\n" + (err?.message || err));
+          }
+        });
+      });
     }catch(e){
       console.error(e);
-      alert("印刷の準備でエラーが発生しました。ブラウザの更新（Ctrl+F5）をお試しください。");
+      alert("印刷の準備でエラーが発生しました。\n\n" + (e?.message || e));
     }
   });
 
