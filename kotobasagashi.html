@@ -13,7 +13,7 @@
     margin:0;
     background:#f3f4f6;
     color:#111;
-    font-family: "UD デジタル 教科書体 N-R","UD デジタル 教科書体 N","UD デジタル 教科書体 NP",
+    font-family: "UD デジタル 教科書体 N-R","UD デジタル 教科書体",
                  "BIZ UDゴシック","BIZ UDPゴシック","Noto Sans JP",
                  "Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
   }
@@ -411,8 +411,8 @@
       // ★モードに応じて「順番」と「表示」を切替
       let words;
       if(currentMode === MODE.CONFIRM){
-        // 入力順に整列（①〜⑩とターゲット語の順番を対応させる）
-        words = sortByInputOrder(picked.slice(), baseWords);
+        // 確認モード：表示あり＋ランダム（①〜⑩と表示リストを対応させる）
+        words = shuffleArray(picked.slice());
       }else{
         // ランダム（練習/チャレンジ）
         words = shuffleArray(picked.slice());
@@ -474,5 +474,3 @@
 </script>
 </body>
 </html>
-
-
