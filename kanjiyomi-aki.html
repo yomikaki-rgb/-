@@ -804,6 +804,88 @@ canvas#shooterCanvas{
   pointer-events:none;
 }
 
+
+  /* ===== Flashcard minimal UI ===== */
+  .modeBtn{
+    border:2px solid #c7c3f4;
+    background:#ede9fe; /* light purple base */
+    border-radius:999px;
+    padding:10px 12px;
+    font-weight:900;
+    font-size:14px;
+    color:#4c1d95;
+    box-shadow: 0 6px 16px rgba(0,0,0,.06);
+    white-space:nowrap;
+  }
+  /* 入力モード（active時） */
+  #modeInputBtn.active{
+    background:#7C3AED;
+    border-color:#7C3AED;
+    color:#ffffff;
+  }
+  /* カードモード（active時） */
+  #modeFlashBtn.active{
+    background:#0EA5E9;
+    border-color:#0EA5E9;
+    color:#ffffff;
+  }
+  .flashBar{
+    display:flex;
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px dashed var(--border);
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:flex-start;
+  }
+  .flashBar .select{
+    padding:10px 12px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:#fff;
+    font-weight:900;
+    color:#374151;
+  }
+  .flashStatus{
+    font-weight:900;
+    color:var(--sub);
+    margin-left:6px;
+  }
+
+  /* Flashcard: status button contrast (active state) */
+  #markLearningBtn, #markMasteredBtn{
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  #markLearningBtn:not(.flashActive),
+  #markMasteredBtn:not(.flashActive){
+    background:#fff;
+    color:#374151;
+    border-color: var(--border);
+  }
+  #markLearningBtn.flashActive{
+    background:#F59E0B;
+    color:#FFFFFF;
+    border-color:#F59E0B;
+  }
+  #markMasteredBtn.flashActive{
+    background:#16A34A;
+    color:#FFFFFF;
+    border-color:#16A34A;
+  }
+
+  .flashCounts{
+    font-weight:900;
+    font-size:13px;
+    color:#111827;
+    padding:6px 10px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    background:#fff;
+    box-shadow: 0 6px 16px rgba(0,0,0,.06);
+    white-space:nowrap;
+  }
+
 </style>
 
 </style>
@@ -823,10 +905,14 @@ canvas#shooterCanvas{
 
     <div class="badge" id="progressBadge">もんだい 1 / 1</div>
     <div class="badge" id="scoreBadge">せいかい 0</div>
-  </div>
+  
+    <button class="modeBtn active" id="modeInputBtn" type="button">入力</button>
+    <button class="modeBtn" id="modeFlashBtn" type="button">カード</button>
+
+</div>
 
   <div class="card">
-    <div class="qtitle">漢字の「よみ」を ひらがなで いれてね</div>
+    <div class="qtitle" style="display:none"></div>
     <div class="kanji" id="prompt">—</div>
 
   <div class="inputBox">
@@ -841,8 +927,23 @@ canvas#shooterCanvas{
         <button class="ghost" id="hintBtn">ヒント</button>
         <!-- ★「せいかいを見る」ボタン削除 -->
         <button class="primary" id="checkBtn">できた</button>
-        <button class="ghost" id="nextBtn" disabled>つぎへ</button>
+        <button class="ghost" id="flipBtn" type="button">めくる</button>
+        <button class="ghost" id="nextBtn" disabled style="background:#2563EB;color:#FFFFFF;border-color:#2563EB;">つぎへ</button>
       </div>
+
+      <div class="flashBar" id="flashBar" aria-label="フラッシュカード操作">
+        <select class="select" id="flashFilter" aria-label="フィルター">
+          <option value="all">ぜんぶ</option>
+          <option value="learning">まだだけ</option>
+          <option value="mastered">覚えただけ</option>
+        </select>
+        <button class="ghost" id="shuffleFlashBtn" type="button">シャッフル</button>
+        <button class="ghost" id="clearFlashBtn" type="button">記録クリア</button>
+                <button class="ghost" id="markLearningBtn" type="button">まだ</button>
+        <button class="ghost" id="markMasteredBtn" type="button">おぼえた</button>
+        <span class="flashCounts" id="flashCounts"></span>
+</div>
+
     </div>
 
     <div class="underInputRow">
@@ -1024,12 +1125,6 @@ const WORDS_TEXT_DEFAULT = `
 早ちょう そう
 先 さき
 文字 もじ
-土　つち
-村　むら
-町　まち
-入る　はい
-立つ　た
-見学　けんがく
 `;
 
 /* ========= WORDS_TEXT → ITEMS に変換（他は変えない） ========= */
@@ -1090,6 +1185,30 @@ let hintCount = 0;
 let score = 0;
 /* ★showAnswer削除のため：概念は残すが常に false（点数ルールの他への影響を避ける） */
 let revealedAnswer = false;
+
+/* ===== Flashcard minimal state ===== */
+const LS_FLASH_STATUS = "kanji_flash_status_v1";
+let studyMode = "input"; // "input" | "flash"
+let flashIsBack = false;
+let flashFilter = "all"; // all | learning | mastered
+let statusMap = {};
+
+function loadStatusMap(){
+  try{ statusMap = JSON.parse(localStorage.getItem(LS_FLASH_STATUS) || "{}") || {}; }
+  catch(e){ statusMap = {}; }
+}
+function saveStatusMap(){
+  try{ localStorage.setItem(LS_FLASH_STATUS, JSON.stringify(statusMap)); }catch(e){}
+}
+function getCardStatus(prompt){
+  const s = statusMap[prompt];
+  return (s === "mastered" || s === "learning") ? s : "learning";
+}
+function setCardStatus(prompt, s){
+  statusMap[prompt] = (s === "mastered") ? "mastered" : "learning";
+  saveStatusMap();
+}
+
 
 /* ===== ごほうび状態（5回正解で1回） ===== */
 let rewardCounter = 0;
@@ -1333,6 +1452,21 @@ const hintBtn = document.getElementById("hintBtn");
 const checkBtn = document.getElementById("checkBtn");
 const nextBtn = document.getElementById("nextBtn");
 
+// ===== Flashcard UI refs =====
+const modeInputBtn = document.getElementById("modeInputBtn");
+const modeFlashBtn = document.getElementById("modeFlashBtn");
+const flashBar = document.getElementById("flashBar");
+const flashFilterSel = document.getElementById("flashFilter");
+const shuffleFlashBtn = document.getElementById("shuffleFlashBtn");
+const clearFlashBtn = document.getElementById("clearFlashBtn");
+const flipBtn = document.getElementById("flipBtn");
+const markLearningBtn = document.getElementById("markLearningBtn");
+const markMasteredBtn = document.getElementById("markMasteredBtn");
+const flashCounts = document.getElementById("flashCounts");
+const kbdEl = document.querySelector(".kbd");
+const underRowEl = document.querySelector(".underInputRow");
+const nativeInputEl = document.getElementById("nativeInput");
+
 const baseGrid = document.getElementById("baseGrid");
 const dakutenGrid = document.getElementById("dakutenGrid");
 const youonGrid = document.getElementById("youonGrid");
@@ -1477,6 +1611,161 @@ function shuffle(arr){
   }
   return arr;
 }
+
+/* ===== Flashcard minimal functions ===== */
+function applyModeUI(){
+  const isFlash = (studyMode === "flash");
+  modeInputBtn.classList.toggle("active", !isFlash);
+  modeFlashBtn.classList.toggle("active", isFlash);
+
+  if(kbdEl) kbdEl.style.display = isFlash ? "none" : "";
+  if(underRowEl) underRowEl.style.display = isFlash ? "none" : "";
+  if(nativeInputEl) nativeInputEl.style.display = isFlash ? "none" : "";
+
+  hintBtn.style.display = isFlash ? "none" : "";
+  checkBtn.style.display = isFlash ? "none" : "";
+
+  flashBar.style.display = "flex";
+  if(flipBtn) flipBtn.style.display = isFlash ? "" : "none";
+
+  // in input mode, show only filter & shuffle (and hide flash-only controls)
+  if(shuffleFlashBtn) shuffleFlashBtn.style.display = "";
+  if(clearFlashBtn) clearFlashBtn.style.display = isFlash ? "" : "none";
+  if(markLearningBtn) markLearningBtn.style.display = isFlash ? "" : "none";
+  if(markMasteredBtn) markMasteredBtn.style.display = isFlash ? "" : "none";
+  if(flashCounts) flashCounts.style.display = isFlash ? "" : "none";
+
+
+  // hide top progress/score/reward-points badges in flash mode
+  const rewardPtsEl = document.getElementById("rewardPtsBadge");
+  const progressEl = document.getElementById("progressBadge");
+  const scoreEl = document.getElementById("scoreBadge");
+  if(rewardPtsEl) rewardPtsEl.style.display = isFlash ? "none" : "";
+  if(progressEl) progressEl.style.display = isFlash ? "none" : "";
+
+  // hide top-left tools (やりなおし / ほぞん / きろくを見る / 問題管理) in flash mode
+  const topLeftToolsEl = document.querySelector(".topLeftTools");
+  if(topLeftToolsEl) topLeftToolsEl.style.display = isFlash ? "none" : "";
+
+  if(scoreEl) scoreEl.style.display = "none";
+
+  // hide reward area in flash mode
+  const rewardEl = document.getElementById("rewardArea") || document.querySelector(".rewardWrap") || document.querySelector(".reward");
+  if(rewardEl) rewardEl.style.display = isFlash ? "none" : "";
+
+}
+
+function buildDeckFromFilter(){
+  loadStatusMap();
+  const list = [];
+  for(let i=0;i<ITEMS.length;i++){
+    const p = ITEMS[i].prompt;
+    const s = getCardStatus(p);
+    if(flashFilter === "all") list.push(i);
+    else if(flashFilter === "learning" && s !== "mastered") list.push(i);
+    else if(flashFilter === "mastered" && s === "mastered") list.push(i);
+  }
+  order = list;
+  idx = 0;
+  flashIsBack = false;
+  updateFlashCounts();
+}
+
+
+function updateFlashToggle(){
+  if(studyMode !== "flash") return;
+  const item = ITEMS[order[idx]];
+  if(!item) return;
+  const s = getCardStatus(item.prompt);
+  markMasteredBtn.classList.toggle("flashActive", s === "mastered");
+  markLearningBtn.classList.toggle("flashActive", s !== "mastered");
+  updateFlashCounts();
+}
+
+
+function updateFlashCounts(){
+  if(!flashCounts) return;
+  loadStatusMap();
+  let mastered = 0;
+  let learning = 0;
+  for(let i=0;i<ITEMS.length;i++){
+    const s = getCardStatus(ITEMS[i].prompt);
+    if(s === "mastered") mastered++;
+    else learning++;
+  }
+    const total = order.length;
+  const cur = total ? (idx + 1) : 0;
+  const label = (flashFilter === "learning") ? "まだ" : (flashFilter === "mastered") ? "おぼえた" : "ぜんぶ";
+  const prog = total ? `${label} ${cur}/${total}` : `${label} 0/0`;
+  flashCounts.textContent = `${prog}　（まだ：${learning}／おぼえた：${mastered}）`;
+}
+
+function showFlashFace(){
+  const item = ITEMS[order[idx]];
+  if(!item){
+    promptEl.textContent = "—";
+    answerView.textContent = "";
+    msgEl.textContent = "カードがありません。フィルターを変えてね。";
+    msgEl.className = "msg ng";
+    nextBtn.disabled = true;
+    flipBtn.disabled = true;
+    markLearningBtn.disabled = true;
+    markMasteredBtn.disabled = true;
+    shuffleFlashBtn.disabled = true;
+    if(studyMode !== "flash") updateBadges();
+    updateFlashToggle();
+    return;
+  }
+
+  nextBtn.disabled = false;
+  flipBtn.disabled = false;
+  markLearningBtn.disabled = false;
+  markMasteredBtn.disabled = false;
+  shuffleFlashBtn.disabled = false;
+
+  promptEl.textContent = item.prompt;
+  msgEl.textContent = "";
+  msgEl.className = "msg";
+  hintLineEl.textContent = "";
+  answerView.className = "answer";
+
+  if(!flashIsBack){
+    answerView.textContent = "";
+  }else{
+    const main = (item.answers && item.answers.length) ? item.answers[0] : "";
+    answerView.textContent = main;
+  }
+
+  if(studyMode !== "flash") updateBadges();
+  updateFlashToggle();
+}
+
+function loadFlashCard(){
+  typed = "";
+  revealedAnswer = false;
+  nextBtn.disabled = false;
+  checkBtn.disabled = true;
+  showFlashFace();
+}
+
+function setStudyMode(mode){
+  studyMode = (mode === "flash") ? "flash" : "input";
+  applyModeUI();
+// ensure filter bar is visible on initial load (input mode as well)
+if(typeof flashBar !== "undefined" && flashBar){
+  flashBar.style.display = "flex";
+}
+
+  if(studyMode === "flash"){
+    flashFilter = flashFilterSel.value || "all";
+    buildDeckFromFilter();
+    updateFlashCounts();
+    showFlashFace();
+  }else{
+    loadQuestion();
+  }
+}
+
 function start(){
   order = shuffle([...Array(ITEMS.length).keys()]);
   idx = 0;
@@ -1492,11 +1781,22 @@ function start(){
   rewardPoints = 0;
   updateRewardPointsUI();
 
-  updateBadges();
+  if(studyMode !== "flash") updateBadges();
   updateRewardUI();
   loadQuestion();
 }
 function loadQuestion(){
+  if(studyMode === "flash"){ loadFlashCard(); return; }
+  if(order.length === 0){
+    promptEl.textContent = "—";
+    answerView.textContent = "";
+    msgEl.textContent = "このフィルターでは問題がありません。フィルターを変えてね。";
+    msgEl.className = "msg ng";
+    nextBtn.disabled = true;
+    checkBtn.disabled = true;
+    hintBtn.disabled = true;
+    return;
+  }
   typed = "";
   hintCount = 0;
   revealedAnswer = false;
@@ -1518,12 +1818,20 @@ function loadQuestion(){
   nextBtn.disabled = true;
   checkBtn.disabled = false;
 
-  updateBadges();
+  if(studyMode !== "flash") updateBadges();
   renderAnswer();
 }
+
 function updateBadges(){
-  progressBadge.textContent = `もんだい ${idx+1} / ${ITEMS.length}`;
-  scoreBadge.textContent = `せいかい ${score}`;
+  // progress uses current deck (order), so it matches input/card filtering
+  const total = Array.isArray(order) ? order.length : 0;
+  const cur = total ? (idx + 1) : 0;
+  if(progressBadge){
+    progressBadge.textContent = `もんだい ${cur} / ${total}`;
+  }
+  if(scoreBadge){
+    scoreBadge.textContent = `せいかい ${score}`;
+  }
 }
 function renderAnswer(){
   answerView.textContent = normalize(typed);
@@ -1628,7 +1936,7 @@ function check(){
     nextBtn.disabled = rewardReady ? true : false;
 
     checkBtn.disabled = true;
-    updateBadges();
+    if(studyMode !== "flash") updateBadges();
   }else{
     /* ★間違いログ：1問につき1回だけ */
     if(!wrongLoggedThisQ){
@@ -1643,6 +1951,14 @@ function check(){
   }
 }
 function next(){
+  if(studyMode === "flash"){
+    if(order.length === 0){ showFlashFace(); return; }
+    idx = (idx + 1) % order.length;
+    flashIsBack = false;
+    updateFlashCounts();
+    showFlashFace();
+    return;
+  }
   if(rewardReady && !rewardPlayedThisCharge){
     msgEl.textContent = "ごほうびで あそんでから つぎへ！";
     msgEl.className = "msg ng";
@@ -2101,6 +2417,54 @@ hintBtn.addEventListener("click", showHint);
 checkBtn.addEventListener("click", check);
 nextBtn.addEventListener("click", next);
 
+// ===== Flashcard listeners =====
+modeInputBtn.addEventListener("click", ()=> setStudyMode("input"));
+modeFlashBtn.addEventListener("click", ()=> setStudyMode("flash"));
+flashFilterSel.addEventListener("change", ()=>{
+  flashFilter = flashFilterSel.value || "all";
+  buildDeckFromFilter();
+  if(studyMode === "flash"){
+    updateFlashCounts();
+    showFlashFace();
+  }else{
+    // 入力モードでもフィルター即反映
+    loadQuestion();
+    updateBadges();
+  }
+});
+shuffleFlashBtn.addEventListener("click", ()=>{
+  if(order.length > 1){ shuffle(order); }
+  idx = 0;
+  flashIsBack = false;
+  updateFlashCounts();
+  showFlashFace();
+});
+clearFlashBtn.addEventListener("click", ()=>{
+  const ok = confirm("フラッシュカードの『まだ／おぼえた』記録をぜんぶ消します。よろしいですか？");
+  if(!ok) return;
+  try{ localStorage.removeItem(LS_FLASH_STATUS); }catch(e){}
+  statusMap = {};
+  buildDeckFromFilter();
+  updateFlashCounts();
+  showFlashFace();
+});
+flipBtn.addEventListener("click", ()=>{
+  flashIsBack = !flashIsBack;
+  showFlashFace();
+});
+markLearningBtn.addEventListener("click", ()=>{
+  const item = ITEMS[order[idx]];
+  if(!item) return;
+  setCardStatus(item.prompt, "learning");
+  updateFlashToggle();
+});
+markMasteredBtn.addEventListener("click", ()=>{
+  const item = ITEMS[order[idx]];
+  if(!item) return;
+  setCardStatus(item.prompt, "mastered");
+  updateFlashToggle();
+});
+
 smallKey.addEventListener("click", toggleSmallMode);
 dakutenKey.addEventListener("click", addDakuten);
 handakutenKey.addEventListener("click", addHandakuten);
@@ -2182,7 +2546,11 @@ if(restartBtn){
   restartBtn.addEventListener("click", () => {
     try{ window.speechSynthesis && window.speechSynthesis.cancel(); }catch(e){}
     if(kusudamaOverlayEl) kusudamaOverlayEl.style.display = "none";
-    start();
+    loadStatusMap();
+flashFilter = flashFilterSel.value || flashFilter || "all";
+buildDeckFromFilter();
+applyModeUI();
+start();
   });
 }
 
