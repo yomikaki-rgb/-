@@ -142,8 +142,7 @@
     color:var(--sub);
   }
   .statusBadge.ok{ color:var(--ok); border-color:#bbf7d0; }
-  .statusBadge.mid{ color:#b45309; border-color:#fde68a; }
-  .statusBadge.ng{ color:var(--ng); border-color:#fecaca; }
+    .statusBadge.ng{ color:var(--ng); border-color:#fecaca; }
 
   .section{ padding:10px; display:flex; flex-direction:column; gap:8px; }
   .cell{ }
@@ -448,8 +447,8 @@
 }
 .stBtn.active{ border-color: transparent; color:#111; }
 .stBtn.active.not{ background:#e0e7ff; }
-.stBtn.active.mid{ background:#fde68a; }
 .stBtn.active.learned{ background:#bbf7d0; }
+.stBtn.danger{ color:var(--ng); border-color:#fecaca; background:#fff; }
 @media print{
     /* guideNote (editor-only) */
     .guideNote{ display:none !important; }
@@ -658,7 +657,7 @@
         <span class="small" style="align-self:center; margin-left:4px;">印刷フィルタ</span>
         <select id="printFilterSelect" class="soft" style="padding:10px 12px;">
           <option value="all">すべて</option>
-          <option value="not">まだ／学習中</option>
+          <option value="not">まだ</option>
           <option value="learned">覚えた</option>
         </select>
         <button id="exportCsvBtn" class="soft">CSV出力</button>
@@ -698,7 +697,7 @@
                 フィルタ
                 <select id="filterSelect">
                   <option value="all">すべて</option>
-                  <option value="not">まだ（未学習/学習中）</option>
+                  <option value="not">まだ</option>
                   <option value="learned">覚えた</option>
                 </select>
               </label>
@@ -721,9 +720,9 @@
       <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
         <div class="flashStatus">
           <button id="flashShuffleBtn" class="stBtn">シャッフル</button>
+          <button id="flashResetStatusBtn" class="stBtn danger">状態リセット</button>
           <button id="flashStNot" class="stBtn">まだ</button>
-          <button id="flashStMid" class="stBtn">学習中</button>
-          <button id="flashStOk" class="stBtn">覚えた</button>
+<button id="flashStOk" class="stBtn">覚えた</button>
         </div>
         <button id="prevBtn">もどる</button>
         <button id="nextBtn" class="primary">つぎ</button>
@@ -744,7 +743,7 @@
     title: "",
     body: "",
     free2Text: "",
-    status: "not" // "not" | "mid" | "learned"
+    status: "not" // "not" | "learned"
   });
 
   const defaultPage = () => ({
@@ -773,8 +772,7 @@
   const flashFilterChip = $("#flashFilterChip");
   const flashStepChip = $("#flashStepChip");
   const flashStNot = $("#flashStNot");
-  const flashStMid = $("#flashStMid");
-  const flashStOk = $("#flashStOk");
+const flashStOk = $("#flashStOk");
   const flashSearchInput = $("#flashSearchInput");
   const flashSearchCount = $("#flashSearchCount");
   const flashSearchPrev = $("#flashSearchPrev");
@@ -867,7 +865,7 @@
           ...defaultBlock(),
           ...b,
           free2Text: (typeof b.free2Text === "string") ? b.free2Text : "",
-          status: (b.status==="learned"||b.status==="mid"||b.status==="not") ? b.status : "not"
+          status: (b.status==="learned"||b.status==="not") ? b.status : "not"
         }));
       });
       if(typeof s.currentPage !== "number") s.currentPage = 0;
@@ -879,7 +877,6 @@
   }
   function statusLabel(st){
     if(st==="learned") return {txt:"覚えた", cls:"ok"};
-    if(st==="mid") return {txt:"学習中", cls:"mid"};
     return {txt:"まだ", cls:"ng"};
   }
   function setTitleVisibility(){ /* removed */ }
@@ -983,7 +980,7 @@
     delWrap.appendChild(delTxt);
     right.appendChild(delWrap);
 
-    // 状態（まだ/学習中/覚えた）の変更はフラッシュ中に行う（編集画面には表示しない）
+    // 状態（まだ/覚えた）の変更はフラッシュ中に行う（編集画面には表示しない）
 
     head.appendChild(left);
     head.appendChild(right);
@@ -1456,7 +1453,7 @@ function updateTitleEditsForPage(pageIndex){
       }
 
       const st = String((idxStatus>=0 ? (r[idxStatus] ?? "not") : "not"));
-      b.status = (st==="learned"||st==="mid"||st==="not") ? st : "not";
+      b.status = (st==="learned"||st==="not") ? st : "not";
     });
 
     save();
@@ -1888,11 +1885,10 @@ pad.appendChild(info);
 const setActive = (btn, on, kind) => {
   if(!btn) return;
   btn.classList.toggle("active", on);
-  btn.classList.remove("not","mid","learned");
+  btn.classList.remove("not","learned");
   if(on) btn.classList.add(kind);
 };
 setActive(flashStNot, b.status==="not", "not");
-setActive(flashStMid, b.status==="mid", "mid");
 setActive(flashStOk,  b.status==="learned", "learned");
 
     // Kanji
@@ -2003,25 +1999,49 @@ function setFlashStatus(newStatus){
   if(flashItems.length===0) return;
   const {pi, bi} = flashItems[flashPos];
   const b = state.pages[pi].blocks[bi];
+
   b.status = newStatus;
   save();
+
   // 編集画面の一覧バッジも即反映
   updateStatusBadge(pi, bi);
-  // フィルタがかかっている場合、リストを作り直す（消える/出るがある）
-  const before = flashItems.length;
+
+  // ※フィルタ中でも「すべて」と同じ挙動にする：
+  //   状態を変えた瞬間にカードが消えたり、位置が飛んだりしないように、ここでは一覧を作り直さない。
+  //  （次へ/戻る/フィルタ変更時に必要に応じて再構築されます）
+  renderFlash();
+}
+
+function resetAllStatuses(){
+  const ok = confirm("すべてのカードの状態を「まだ」に戻します。よろしいですか？");
+  if(!ok) return;
+
+  for(let pi=0; pi<state.pages.length; pi++){
+    const p = state.pages[pi];
+    for(let bi=0; bi<4; bi++){
+      const b = p.blocks[bi];
+      b.status = "not";
+      updateStatusBadge(pi, bi);
+    }
+  }
+  save();
+
+  // フラッシュ表示中なら、現在のフィルタに合わせて一覧を作り直す
   buildFlashItems();
   if(flashItems.length===0){
-    flashPos = 0; flashStep = 0;
+    flashPos = 0;
+    flashStep = 0;
   }else{
-    // できるだけ同じカード位置に留める（範囲外なら末尾）
     flashPos = Math.min(flashPos, flashItems.length-1);
+    flashStep = 0;
   }
+  rebuildFlashSearch({jumpIfPossible:false});
   renderFlash();
 }
 
 
 
-  // --- Flash-only shuffle (Fisher–Yates) ---
+  // --- Flash-only shuffle (Fisher–Yates) --- (Fisher–Yates) ---
   function shuffleArray(arr){
     for(let i = arr.length - 1; i > 0; i--){
       const j = Math.floor(Math.random() * (i + 1));
@@ -2095,9 +2115,9 @@ nextBtn.addEventListener("click", nextFlash);
 
   // Status (flash only)
   flashStNot && flashStNot.addEventListener("click", ()=> setFlashStatus("not"));
-  flashStMid && flashStMid.addEventListener("click", ()=> setFlashStatus("mid"));
-  flashStOk  && flashStOk.addEventListener("click", ()=> setFlashStatus("learned"));
+flashStOk  && flashStOk.addEventListener("click", ()=> setFlashStatus("learned"));
   const flashShuffleBtn = document.getElementById("flashShuffleBtn");
+  const flashResetStatusBtn = document.getElementById("flashResetStatusBtn");
   flashShuffleBtn && flashShuffleBtn.addEventListener("click", ()=>{
     if(flashItems.length===0) return;
     shuffleArray(flashItems);
@@ -2105,6 +2125,8 @@ nextBtn.addEventListener("click", nextFlash);
     flashStep = 0;
     renderFlash();
   });
+
+  flashResetStatusBtn && flashResetStatusBtn.addEventListener("click", resetAllStatuses);
 
 
   // Init
