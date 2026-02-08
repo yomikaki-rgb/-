@@ -1,0 +1,1123 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>かん字ゴロカード</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --ink:#111827;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --accent:#3B2C5A;
+      --good:#16a34a;
+      --warn:#2563eb;
+      --shadow: 0 12px 30px rgba(17,24,39,.10);
+      --radius:18px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: "Noto Sans JP", system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Yu Gothic", sans-serif;
+      color:var(--ink);
+      background:linear-gradient(180deg,#fafbff 0%, var(--bg) 60%, #fff 120%);
+    }
+    header{
+      position:sticky; top:0;
+      background:rgba(250,251,255,.9);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+      z-index:10;
+    }
+    .wrap{ max-width:980px; margin:0 auto; padding:14px 16px; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .spacer{ flex:1; min-width:12px; }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight:800; letter-spacing:.02em;
+    }
+    .pill{
+      font-size:12px;
+      padding:6px 10px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background:#fff;
+      color:var(--muted);
+    }
+    main .wrap{ padding:22px 16px 40px; }
+    .panel{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+    }
+    @media (min-width: 860px){
+      .grid{ grid-template-columns: 2fr 1fr; }
+    }
+
+    /* Card */
+    .flash{ padding:16px; }
+    .flashTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .progress{
+      font-weight:700;
+      color:var(--accent);
+      letter-spacing:.03em;
+    }
+    .small{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .cardBox{
+      border:1px solid var(--border);
+      border-radius:22px;
+      background:linear-gradient(180deg,#ffffff 0%, #fbfbff 100%);
+      box-shadow: 0 18px 50px rgba(17,24,39,.08);
+      min-height: 280px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:22px;
+      position:relative;
+      overflow:hidden;
+    }
+    .stageLabel{
+      position:absolute;
+      top:14px; left:14px;
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(59,44,90,.08);
+      color:var(--accent);
+      border:1px solid rgba(59,44,90,.18);
+    }
+    .cardText{
+      text-align:center;
+      line-height:1.3;
+      word-break: break-word;
+    }
+    .frontText{ font-size: clamp(28px, 4vw, 52px); font-weight:900; }
+    .mnemonicText{ font-size: clamp(22px, 3.2vw, 40px); font-weight:800; }
+    .answerText{ font-size: clamp(90px, 10vw, 150px); font-weight:900; letter-spacing:.05em; }
+
+    .hintBox{
+      margin-top:12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .hintText{
+      font-weight:800;
+      color:var(--accent);
+      background:rgba(59,44,90,.08);
+      border:1px solid rgba(59,44,90,.18);
+      padding:10px 12px;
+      border-radius:14px;
+      min-width: 160px;
+      text-align:center;
+    }
+
+    /* Controls */
+    .controls{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+      align-items:center;
+    }
+    button, select, input, textarea{ font: inherit; }
+    button{
+      border:1px solid var(--border);
+      background:#fff;
+      color:var(--ink);
+      border-radius:14px;
+      padding:10px 12px;
+      font-weight:800;
+      cursor:pointer;
+      box-shadow: 0 6px 16px rgba(17,24,39,.06);
+    }
+    button:hover{ transform: translateY(-1px); }
+    button:active{ transform: translateY(0); }
+    .btnAccent{
+      border-color: rgba(59,44,90,.35);
+      background: var(--accent);
+      color:#fff;
+    }
+    .btnGhost{ background:transparent; box-shadow:none; }
+    .btnGood{
+      border-color: rgba(22,163,74,.35);
+      background: rgba(22,163,74,.10);
+      color: var(--good);
+    }
+    .btnWarn{
+      border-color: rgba(37,99,235,.35);
+      background: rgba(37,99,235,.10);
+      color: var(--warn);
+    }
+    .btnGood.active{ background: var(--good); color:#fff; }
+    .btnWarn.active{ background: var(--warn); color:#fff; }
+    .kbd{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid var(--border);
+      background:#fff;
+      border-bottom-width:2px;
+      padding:2px 6px;
+      border-radius:8px;
+      font-weight:700;
+    }
+
+    /* Sidebar */
+    .side h3{
+      margin:0 0 10px;
+      font-size:14px;
+      color:#111827;
+      letter-spacing:.02em;
+    }
+    select{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px 12px;
+      background:#fff;
+      font-weight:700;
+      min-width: 180px;
+    }
+    .side .mini{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+    .list{
+      margin-top:12px;
+      border-top:1px dashed var(--border);
+      padding-top:12px;
+      max-height: 280px;
+      overflow:auto;
+    }
+    .item{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      padding:10px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#fff;
+      margin-bottom:10px;
+      cursor:pointer;
+    }
+    .badge{
+      font-size:11px;
+      font-weight:900;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .badge.good{ border-color: rgba(22,163,74,.35); color: var(--good); background: rgba(22,163,74,.08); }
+    .badge.warn{ border-color: rgba(37,99,235,.35); color: var(--warn); background: rgba(37,99,235,.08); }
+    .itemTitle{ font-weight:900; }
+    .itemSub{ font-size:12px; color:var(--muted); margin-top:2px; }
+
+    /* Modal */
+    dialog{
+      border:none;
+      border-radius: 18px;
+      padding:0;
+      width:min(820px, calc(100vw - 24px));
+      box-shadow: 0 30px 90px rgba(17,24,39,.25);
+    }
+    .modalHead{
+      padding:14px 16px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:#fff;
+    }
+    .modalHead b{ font-size:14px; }
+    .modalBody{
+      padding:14px 16px;
+      background:#fff;
+    }
+    .modalBody label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin:10px 0 6px;
+      font-weight:800;
+    }
+    input[type="text"], textarea{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:700;
+      outline:none;
+    }
+    textarea{ min-height: 90px; resize: vertical; }
+    .modalFoot{
+      padding:14px 16px;
+      border-top:1px solid var(--border);
+      background:#fff;
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+    .danger{
+      border-color: rgba(220,38,38,.35);
+      background: rgba(220,38,38,.10);
+      color:#b91c1c;
+    }
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      background:#111827;
+      color:#fff;
+      padding:10px 12px;
+      border-radius:999px;
+      font-weight:800
+      font-size:13px;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease;
+      z-index:99;
+    }
+    .toast.show{ opacity: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="row">
+        <div class="brand">
+          <span style="display:inline-flex;width:34px;height:34px;border-radius:12px;background:rgba(59,44,90,.10);border:1px solid rgba(59,44,90,.18);align-items:center;justify-content:center;font-weight:900;color:var(--accent);">字</span>
+          <span>かん字ゴロカード</span>
+        </div>
+        <div class="spacer"></div>
+        
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="grid">
+        <!-- Flash panel -->
+        <section class="panel flash" aria-label="フラッシュカード">
+          <div class="flashTop">
+            <div>
+              <div class="progress" id="progressText">0 / 0</div>
+              <div class="small" id="filterNote">フィルター：すべて</div>
+            </div>
+          </div>
+
+          <div class="cardBox" id="cardBox">
+            <div class="stageLabel" id="stageLabel">表</div>
+            <div class="cardText" id="cardText">
+              <div class="frontText">カードを追加してください</div>
+            </div>
+          </div>
+
+          <div class="hintBox">
+            <button id="hintBtn" class="btnWarn">ヒント</button>
+            <div class="hintText" id="hintText">（ヒントはここに出ます）</div>
+          </div>
+
+          <div class="controls">
+            <button id="flipBtn" class="btnAccent">めくる</button>
+            <button id="markNotBtn" class="btnWarn">まだ</button>
+            <button id="markLearnedBtn" class="btnGood">おぼえた</button>
+            <button id="resetStageBtn">このカードをさいしょから</button>
+            <div class="row" style="gap:14px; justify-content:center; width:100%; margin-top:6px;">
+              <button id="prevBtn" class="btnAccent" style="background:#6b4eff;">← まえ</button>
+              <button id="nextBtn" class="btnWarn" style="background:#fb923c;color:#111;">つぎ →</button>
+            </div>
+
+          </div>
+
+           </section>
+
+        <!-- Sidebar -->
+        <aside class="panel side" aria-label="設定とカード一覧">
+          <h3>フィルタ</h3>
+          <div class="row">
+            <select id="filterSelect">
+              <option value="all">すべて</option>
+              <option value="not">まだ（not）</option>
+              <option value="learned">おぼえた（learned）</option>
+            </select>
+          </div>
+
+          <h3 style="margin-top:16px;">カード管理</h3>
+          <div class="row">
+            <button id="addBtn" class="btnAccent">＋ 追加/編集</button>
+          </div>
+
+          <div class="row" style="margin-top:10px; gap:8px;">
+            <select id="ioType" title="形式を選ぶ">
+              <option value="json">JSON</option>
+              <option value="csv">CSV</option>
+            </select>
+            <button id="exportBtn">エクスポート</button>
+            <button id="importBtn">インポート</button>
+          </div>
+
+        
+          <div class="list" id="cardList"></div>
+
+          <div class="row" style="margin-top:10px;">
+            <button id="resetAllBtn" class="danger">状態を全リセット（全部not）</button>
+            <button id="wipeBtn" class="danger">全データ削除</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <dialog id="editor">
+    <div class="modalHead">
+      <b>カードの追加 / 編集</b>
+      <button class="btnGhost" id="closeEditorBtn">閉じる</button>
+    </div>
+    <div class="modalBody">
+      <div class="small">「表面のヒント」→「ゴロ」→「正しい漢字」の順に出ます。</div>
+
+      <label for="fPrompt">表面（prompt）</label>
+      <input id="fPrompt" type="text" placeholder="例：ノウ業のノウ" />
+
+      <label for="fMnemonic">ゴロ（mnemonic）</label>
+      <textarea id="fMnemonic" placeholder="例：まがった滑り台にレンコンがとおる"></textarea>
+
+      <label for="fAnswer">正しい漢字（answer）</label>
+      <input id="fAnswer" type="text" placeholder="例：農" />
+
+      <div class="row" style="margin-top:10px;">
+        <button id="saveCardBtn" class="btnAccent">保存</button>
+        <button id="newCardBtn">新規にする</button>
+        <div class="spacer"></div>
+        <button id="deleteCardBtn" class="danger">このカードを削除</button>
+      </div>
+
+      <div class="small" style="margin-top:10px;">
+        ※削除は取り消せません（必要なら先にエクスポートしてください）
+      </div>
+    </div>
+    <div class="modalFoot">
+      <button id="seedBtn">例のカードを追加（農）</button>
+      <button id="closeEditorBtn2">閉じる</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast">保存しました</div>
+
+<script>
+(() => {
+  const LS_KEY = "kanji_mnemonic_cards_v1"; // keep key; migrate statuses
+
+  // status: "not" | "learned"
+  // CSV columns: prompt,mnemonic,answer,status (not/learned)
+
+  const $ = (id) => document.getElementById(id);
+
+  const els = {
+    progressText: $("progressText"),
+    filterNote: $("filterNote"),
+    stageLabel: $("stageLabel"),
+    cardText: $("cardText"),
+    hintBtn: $("hintBtn"),
+    hintText: $("hintText"),
+    flipBtn: $("flipBtn"),
+    prevBtn: $("prevBtn"),
+    nextBtn: $("nextBtn"),
+    resetStageBtn: $("resetStageBtn"),
+    markNotBtn: $("markNotBtn"),
+    markLearnedBtn: $("markLearnedBtn"),
+
+    filterSelect: $("filterSelect"),
+    cardList: $("cardList"),
+
+    addBtn: $("addBtn"),
+    ioType: $("ioType"),
+    exportBtn: $("exportBtn"),
+    importBtn: $("importBtn"),
+
+    resetAllBtn: $("resetAllBtn"),
+    wipeBtn: $("wipeBtn"),
+
+    editor: $("editor"),
+    closeEditorBtn: $("closeEditorBtn"),
+    closeEditorBtn2: $("closeEditorBtn2"),
+    fPrompt: $("fPrompt"),
+    fMnemonic: $("fMnemonic"),
+    fAnswer: $("fAnswer"),
+    saveCardBtn: $("saveCardBtn"),
+    newCardBtn: $("newCardBtn"),
+    deleteCardBtn: $("deleteCardBtn"),
+    seedBtn: $("seedBtn"),
+    toast: $("toast"),
+  };
+
+  let cards = loadCards(); // includes migration
+  let deck = [];          // current filtered ids (computed)
+  let idx = 0;
+  let stage = 0;          // 0 front, 1 mnemonic, 2 answer
+
+  function uid(){
+    return Math.random().toString(36).slice(2, 10) + "_" + Date.now().toString(36);
+  }
+
+  function toast(msg){
+    els.toast.textContent = msg;
+    els.toast.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => els.toast.classList.remove("show"), 1200);
+  }
+
+  function normalizeStatus(s){
+    const v = String(s || "").trim().toLowerCase();
+    if(v === "learned") return "learned";
+    if(v === "not") return "not";
+    // backward compat
+    if(v === "still") return "not";
+    return "not";
+  }
+
+  function loadCards(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw) return [];
+      const arr = JSON.parse(raw);
+      if(!Array.isArray(arr)) return [];
+      const migrated = arr.map(c => ({
+        id: String(c.id ?? uid()),
+        prompt: String(c.prompt ?? ""),
+        mnemonic: String(c.mnemonic ?? ""),
+        answer: String(c.answer ?? ""),
+        status: normalizeStatus(c.status),
+        updatedAt: Number(c.updatedAt ?? Date.now())
+      })).filter(c => (c.prompt || c.mnemonic || c.answer));
+      localStorage.setItem(LS_KEY, JSON.stringify(migrated));
+      return migrated;
+    }catch(e){
+      console.warn(e);
+      return [];
+    }
+  }
+
+  function saveCards(){
+    localStorage.setItem(LS_KEY, JSON.stringify(cards));
+  }
+
+  function getCardById(id){
+    return cards.find(c => c.id === id) || null;
+  }
+
+  function currentFilter(){
+    return els.filterSelect.value;
+  }
+
+  function makeDeck(filter){
+    return cards
+      .filter(c => (filter === "all") ? true : c.status === filter)
+      .sort((a,b) => (b.updatedAt - a.updatedAt))
+      .map(c => c.id);
+  }
+
+  function rebuildDeck(keepCurrentId){
+    const filter = currentFilter();
+    const prevId = keepCurrentId ? deck[idx] : null;
+
+    deck = makeDeck(filter);
+
+    if(deck.length === 0){
+      idx = 0;
+      stage = 0;
+      els.hintText.textContent = "（ヒントはここに出ます）";
+      render();
+      return;
+    }
+
+    if(prevId){
+      const pos = deck.indexOf(prevId);
+      if(pos >= 0){
+        idx = pos;
+      } else {
+        // A方式：消えたなら「同じ位置の次」へ（= idx維持）、ただし範囲内に収める
+        if(idx >= deck.length) idx = deck.length - 1;
+      }
+    } else {
+      idx = 0;
+    }
+
+    stage = 0;
+    els.hintText.textContent = "（ヒントはここに出ます）";
+    render();
+  }
+
+  function clampIndex(){
+    if(deck.length === 0){
+      idx = 0;
+      return;
+    }
+    if(idx < 0) idx = 0;
+    if(idx >= deck.length) idx = deck.length - 1;
+  }
+
+  function currentCard(){
+    if(deck.length === 0) return null;
+    clampIndex();
+    return getCardById(deck[idx]);
+  }
+
+  function setStage(newStage){
+    stage = Math.max(0, Math.min(2, newStage));
+    els.hintText.textContent = "（ヒントはここに出ます）";
+    renderCard();
+  }
+
+  function stageName(){
+    if(stage === 0) return "表";
+    if(stage === 1) return "ゴロ";
+    return "漢字";
+  }
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function filterLabel(filter){
+    if(filter === "all") return "すべて";
+    if(filter === "not") return "まだ（not）";
+    return "おぼえた（learned）";
+  }
+
+  function render(){
+    renderList();
+    renderCard();
+  }
+
+  function renderCard(){
+    const filter = currentFilter();
+    els.filterNote.textContent = `フィルター：${filterLabel(filter)}`;
+
+    const c = currentCard();
+    els.progressText.textContent = deck.length ? `${idx+1} / ${deck.length}` : `0 / 0`;
+    els.stageLabel.textContent = stageName();
+
+    els.prevBtn.disabled = (deck.length === 0 || idx === 0);
+    els.nextBtn.disabled = (deck.length === 0 || idx === deck.length - 1);
+
+    els.markNotBtn.classList.toggle("active", c?.status === "not");
+    els.markLearnedBtn.classList.toggle("active", c?.status === "learned");
+
+    if(!c){
+      els.cardText.innerHTML = `
+        <div class="cardText">
+          <div class="frontText">カードがありません</div>
+          <div class="small" style="margin-top:10px;">「＋ 追加/編集」またはインポートでカードを追加してください。</div>
+        </div>
+      `;
+      els.flipBtn.disabled = true;
+      els.hintBtn.disabled = true;
+      els.markNotBtn.disabled = true;
+      els.markLearnedBtn.disabled = true;
+      els.resetStageBtn.disabled = true;
+      els.hintText.textContent = "（ヒントはここに出ます）";
+      return;
+    }
+
+    els.flipBtn.disabled = false;
+    els.hintBtn.disabled = false;
+    els.markNotBtn.disabled = false;
+    els.markLearnedBtn.disabled = false;
+    els.resetStageBtn.disabled = false;
+
+    if(stage === 0){
+      els.cardText.innerHTML = `
+        <div class="cardText">
+          <div class="frontText">${escapeHtml(c.prompt) || "（表面）"}</div>
+        </div>
+      `;
+    } else if(stage === 1){
+      els.cardText.innerHTML = `
+        <div class="cardText">
+          <div class="mnemonicText">${escapeHtml(c.mnemonic) || "（ゴロ）"}</div>
+        </div>
+      `;
+    } else {
+      els.cardText.innerHTML = `
+        <div class="cardText">
+          <div class="answerText">${escapeHtml(c.answer) || "（答え）"}</div>
+        </div>
+      `;
+    }
+  }
+
+  function renderList(){
+    const sorted = [...cards].sort((a,b) => (b.updatedAt - a.updatedAt));
+    els.cardList.innerHTML = "";
+    if(sorted.length === 0){
+      const div = document.createElement("div");
+      div.className = "small";
+      div.textContent = "まだカードがありません。右上の「＋ 追加/編集」から作れます。";
+      els.cardList.appendChild(div);
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    sorted.forEach((c) => {
+      const item = document.createElement("div");
+      item.className = "item";
+      item.dataset.id = c.id;
+
+      const badge = document.createElement("div");
+      badge.className = "badge " + (c.status === "learned" ? "good" : "warn");
+      badge.textContent = (c.status === "learned") ? "learned" : "not";
+
+      const body = document.createElement("div");
+      const title = document.createElement("div");
+      title.className = "itemTitle";
+      title.textContent = c.prompt || "（表面なし）";
+      const sub = document.createElement("div");
+      sub.className = "itemSub";
+      sub.textContent = `ゴロ：${(c.mnemonic || "").slice(0, 18)}${(c.mnemonic || "").length > 18 ? "…" : ""} ／ 漢字：${c.answer || "—"}`;
+
+      body.appendChild(title);
+      body.appendChild(sub);
+
+      item.appendChild(badge);
+      item.appendChild(body);
+
+      item.addEventListener("click", () => {
+        // jump within current filter by switching filter if needed
+        const filter = currentFilter();
+        const wouldBeInDeck = (filter === "all") || (c.status === filter);
+        if(!wouldBeInDeck){
+          els.filterSelect.value = "all";
+          rebuildDeck(false);
+        } else {
+          rebuildDeck(false);
+        }
+        const pos = deck.indexOf(c.id);
+        if(pos >= 0){
+          idx = pos;
+          setStage(0);
+          toast("移動しました");
+        }
+      });
+
+      frag.appendChild(item);
+    });
+
+    els.cardList.appendChild(frag);
+  }
+
+  function showHint(){
+    const c = currentCard();
+    if(!c) return;
+    const t = (c.mnemonic || "").trim();
+    if(!t){
+      els.hintText.textContent = "（ゴロが未入力です）";
+      return;
+    }
+    const hint = t.slice(0, 3);
+    els.hintText.textContent = hint + (t.length > 3 ? "…" : "");
+  }
+
+  function flipNextStage(){
+    if(deck.length === 0) return;
+    setStage(stage < 2 ? stage + 1 : 0);
+  }
+
+  function move(delta){
+    if(deck.length === 0) return;
+    idx += delta;
+    clampIndex();
+    setStage(0);
+    render();
+  }
+
+  function setStatus(status){
+    const c = currentCard();
+    if(!c) return;
+
+    c.status = normalizeStatus(status);
+    c.updatedAt = Date.now();
+    saveCards();
+
+    // A方式：フィルター条件に合わなくなったら、その場で消す
+    rebuildDeck(true);
+  }
+
+  // Editor state
+  let editingId = null;
+
+  function openEditorFor(id){
+    const c = id ? getCardById(id) : null;
+    editingId = c ? c.id : null;
+    els.fPrompt.value = c?.prompt || "";
+    els.fMnemonic.value = c?.mnemonic || "";
+    els.fAnswer.value = c?.answer || "";
+    els.deleteCardBtn.disabled = !c;
+    els.editor.showModal();
+  }
+
+  function closeEditor(){
+    if(els.editor.open) els.editor.close();
+  }
+
+  function saveEditor(){
+    const prompt = els.fPrompt.value.trim();
+    const mnemonic = els.fMnemonic.value.trim();
+    const answer = els.fAnswer.value.trim();
+
+    if(!prompt && !mnemonic && !answer){
+      toast("空のカードは保存できません");
+      return;
+    }
+
+    if(editingId){
+      const c = getCardById(editingId);
+      if(!c){
+        toast("編集対象が見つかりません");
+        return;
+      }
+      c.prompt = prompt;
+      c.mnemonic = mnemonic;
+      c.answer = answer;
+      c.updatedAt = Date.now();
+    } else {
+      cards.push({
+        id: uid(),
+        prompt, mnemonic, answer,
+        status: "not",
+        updatedAt: Date.now()
+      });
+    }
+
+    saveCards();
+    toast("保存しました");
+    rebuildDeck(false);
+  }
+
+  function deleteEditingCard(){
+    if(!editingId) return;
+    const ok = confirm("このカードを削除します。よろしいですか？");
+    if(!ok) return;
+
+    cards = cards.filter(x => x.id !== editingId);
+    saveCards();
+    editingId = null;
+    toast("削除しました");
+    rebuildDeck(false);
+    closeEditor();
+  }
+
+  function exportJson(){
+    const data = {
+      version: 3,
+      exportedAt: new Date().toISOString(),
+      cards
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "kanji_flashcards_backup.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function importJson(){
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "application/json";
+    inp.onchange = async () => {
+      const file = inp.files?.[0];
+      if(!file) return;
+      try{
+        const text = await file.text();
+        const obj = JSON.parse(text);
+        const incoming = Array.isArray(obj) ? obj : (obj.cards || []);
+        if(!Array.isArray(incoming)) throw new Error("形式が違います");
+
+        const cleaned = incoming.map(c => ({
+          id: String(c.id ?? uid()),
+          prompt: String(c.prompt ?? ""),
+          mnemonic: String(c.mnemonic ?? ""),
+          answer: String(c.answer ?? ""),
+          status: normalizeStatus(c.status),
+          updatedAt: Number(c.updatedAt ?? Date.now())
+        })).filter(c => (c.prompt || c.mnemonic || c.answer));
+
+        const ok = confirm(`インポートすると、今のカードに「追加」されます（${cleaned.length}枚）。よろしいですか？`);
+        if(!ok) return;
+
+        const map = new Map(cards.map(c => [c.id, c]));
+        cleaned.forEach(c => map.set(c.id, c));
+        cards = Array.from(map.values());
+        saveCards();
+        toast("インポートしました");
+        rebuildDeck(false);
+      }catch(e){
+        alert("インポートに失敗しました： " + e.message);
+      }
+    };
+    inp.click();
+  }
+
+  // --- CSV helpers (quotes + commas supported)
+  function parseCsv(text){
+    const rows = [];
+    let i = 0, field = "", row = [], inQuotes = false;
+    const pushField = () => { row.push(field); field = ""; };
+    const pushRow = () => { rows.push(row); row = []; };
+
+    if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+    while(i < text.length){
+      const ch = text[i];
+
+      if(inQuotes){
+        if(ch === '"'){
+          if(text[i+1] === '"'){ field += '"'; i += 2; continue; }
+          inQuotes = false; i++; continue;
+        }
+        field += ch; i++; continue;
+      } else {
+        if(ch === '"'){ inQuotes = true; i++; continue; }
+        if(ch === ','){ pushField(); i++; continue; }
+        if(ch === '\r'){ i++; continue; }
+        if(ch === '\n'){ pushField(); pushRow(); i++; continue; }
+        field += ch; i++; continue;
+      }
+    }
+    pushField();
+    const isAllEmpty = row.every(v => String(v ?? "").trim() === "");
+    if(!isAllEmpty) pushRow();
+    return rows;
+  }
+
+  function toCsvValue(s){
+    const v = String(s ?? "");
+    if(v.includes('"') || v.includes(",") || v.includes("\n") || v.includes("\r")){
+      return '"' + v.replaceAll('"','""') + '"';
+    }
+    return v;
+  }
+
+  function exportCsv(){
+    const header = ["prompt","mnemonic","answer","status"];
+    const lines = [header.join(",")];
+    const sorted = [...cards].sort((a,b) => (b.updatedAt - a.updatedAt));
+    sorted.forEach(c => {
+      lines.push([
+        toCsvValue(c.prompt),
+        toCsvValue(c.mnemonic),
+        toCsvValue(c.answer),
+        toCsvValue(normalizeStatus(c.status))
+      ].join(","));
+    });
+    const csvText = "\uFEFF" + lines.join("\n"); // BOM for Excel
+    const blob = new Blob([csvText], {type:"text/csv;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "kanji_flashcards.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function importCsv(){
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = ".csv,text/csv";
+    inp.onchange = async () => {
+      const file = inp.files?.[0];
+      if(!file) return;
+      try{
+        const text = await file.text();
+        const rows = parseCsv(text);
+        if(rows.length === 0) throw new Error("CSVが空です");
+
+        const header = rows[0].map(h => String(h || "").trim().toLowerCase());
+        const idxPrompt = header.indexOf("prompt");
+        const idxMnemonic = header.indexOf("mnemonic");
+        const idxAnswer = header.indexOf("answer");
+        const idxStatus = header.indexOf("status");
+
+        if(idxPrompt < 0 || idxMnemonic < 0 || idxAnswer < 0){
+          throw new Error("ヘッダ行に prompt,mnemonic,answer が必要です");
+        }
+
+        const cleaned = [];
+        for(let r=1; r<rows.length; r++){
+          const row = rows[r];
+          const prompt = String(row[idxPrompt] ?? "").trim();
+          const mnemonic = String(row[idxMnemonic] ?? "").trim();
+          const answer = String(row[idxAnswer] ?? "").trim();
+          const status = normalizeStatus(idxStatus >= 0 ? row[idxStatus] : "not");
+
+          if(!prompt && !mnemonic && !answer) continue;
+          cleaned.push({
+            id: uid(),
+            prompt, mnemonic, answer,
+            status,
+            updatedAt: Date.now()
+          });
+        }
+
+        const ok = confirm(`CSVをインポートすると、今のカードに「追加」されます（${cleaned.length}枚）。よろしいですか？`);
+        if(!ok) return;
+
+        cards = cards.concat(cleaned);
+        saveCards();
+        toast("CSVをインポートしました");
+        rebuildDeck(false);
+      }catch(e){
+        alert("CSVインポートに失敗しました： " + e.message);
+      }
+    };
+    inp.click();
+  }
+
+  function seedExample(){
+    const exists = cards.some(c => c.answer === "農" || (c.prompt || "").includes("ノウ"));
+    if(exists){
+      toast("すでに例が入っているかもしれません");
+      return;
+    }
+    cards.push({
+      id: uid(),
+      prompt: "ノウ業のノウ",
+      mnemonic: "まがった滑り台にレンコンがとおる",
+      answer: "農",
+      status: "not",
+      updatedAt: Date.now()
+    });
+    saveCards();
+    toast("例を追加しました");
+    rebuildDeck(false);
+  }
+
+  function resetAllStatuses(){
+    const ok = confirm("すべてのカードの状態を not に戻します。よろしいですか？");
+    if(!ok) return;
+    cards.forEach(c => { c.status = "not"; c.updatedAt = Date.now(); });
+    saveCards();
+    toast("リセットしました");
+    rebuildDeck(false);
+  }
+
+  function wipeAll(){
+    const ok = confirm("全データを削除します（取り消し不可）。よろしいですか？");
+    if(!ok) return;
+    cards = [];
+    localStorage.removeItem(LS_KEY);
+    deck = [];
+    idx = 0;
+    stage = 0;
+    toast("削除しました");
+    render();
+  }
+
+  function doExport(){
+    const t = els.ioType.value;
+    if(t === "csv") exportCsv();
+    else exportJson();
+  }
+
+  function doImport(){
+    const t = els.ioType.value;
+    if(t === "csv") importCsv();
+    else importJson();
+  }
+
+  // --- Events
+  els.hintBtn.addEventListener("click", showHint);
+  els.flipBtn.addEventListener("click", flipNextStage);
+  els.prevBtn.addEventListener("click", () => move(-1));
+  els.nextBtn.addEventListener("click", () => move(1));
+  els.resetStageBtn.addEventListener("click", () => setStage(0));
+
+  els.markNotBtn.addEventListener("click", () => setStatus("not"));
+  els.markLearnedBtn.addEventListener("click", () => setStatus("learned"));
+
+  els.filterSelect.addEventListener("change", () => {
+    idx = 0;
+    stage = 0;
+    rebuildDeck(false);
+  });
+
+  els.addBtn.addEventListener("click", () => openEditorFor(currentCard()?.id || null));
+
+  els.exportBtn.addEventListener("click", doExport);
+  els.importBtn.addEventListener("click", doImport);
+
+  els.resetAllBtn.addEventListener("click", resetAllStatuses);
+  els.wipeBtn.addEventListener("click", wipeAll);
+
+  els.closeEditorBtn.addEventListener("click", closeEditor);
+  els.closeEditorBtn2.addEventListener("click", closeEditor);
+  els.saveCardBtn.addEventListener("click", saveEditor);
+  els.newCardBtn.addEventListener("click", () => openEditorFor(null));
+  els.deleteCardBtn.addEventListener("click", deleteEditingCard);
+  els.seedBtn.addEventListener("click", seedExample);
+
+  // Keyboard shortcuts
+  document.addEventListener("keydown", (e) => {
+    if(els.editor.open) return;
+    const key = e.key.toLowerCase();
+    if(key === " "){
+      e.preventDefault();
+      flipNextStage();
+    } else if(key === "h"){
+      showHint();
+    } else if(key === "j"){
+      setStatus("not");
+    } else if(key === "k"){
+      setStatus("learned");
+    } else if(key === "arrowright"){
+      move(1);
+    } else if(key === "arrowleft"){
+      move(-1);
+    }
+  });
+
+  // initial
+  els.filterSelect.value = "all";
+  rebuildDeck(false);
+
+  // add a quick seed button only via editor footer (kept)
+  // if you want an immediate sample without opening editor, uncomment:
+  // seedExample();
+
+})();
+</script>
+</body>
+</html>
