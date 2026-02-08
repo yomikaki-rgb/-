@@ -233,7 +233,7 @@
     .badge.good{ border-color: rgba(22,163,74,.35); color: var(--good); background: rgba(22,163,74,.08); }
     .badge.warn{ border-color: rgba(37,99,235,.35); color: var(--warn); background: rgba(37,99,235,.08); }
     .itemTitle{ font-weight:900; }
-    .itemSub{ font-size:12px; color:var(--muted); margin-top:2px; }
+    .itemSub{ font-size:12px; color:var(--muted); margin-top:2px; display:none; }
 
     /* Modal */
     dialog{
@@ -330,6 +330,7 @@
               <div class="progress" id="progressText">0 / 0</div>
               <div class="small" id="filterNote">フィルター：すべて</div>
             </div>
+            <button id="shuffleBtn" class="btnGhost" style="font-weight:900;">🔀 シャッフル</button>
           </div>
 
           <div class="cardBox" id="cardBox">
@@ -489,11 +490,13 @@
     deleteCardBtn: $("deleteCardBtn"),
     seedBtn: $("seedBtn"),
     toast: $("toast"),
+    shuffleBtn: $("shuffleBtn"),
   };
   let cards = []; // STUDENT MODE: will be overwritten from CSV every startup
   let deck = [];          // current filtered ids (computed)
   let idx = 0;
   let stage = 0;          // 0 front, 1 mnemonic, 2 answer
+  let pendingRebuild = false; // when status change makes card outside current filter
 
   function uid(){
     return Math.random().toString(36).slice(2, 10) + "_" + Date.now().toString(36);
@@ -774,22 +777,58 @@
 
   function move(delta){
     if(deck.length === 0) return;
+
+    if(pendingRebuild){
+      // Apply filter cleanup now (the changed card may drop out of the deck).
+      // After rebuildDeck(true), the "next" card (same index) will be shown automatically.
+      pendingRebuild = false;
+      rebuildDeck(true);
+
+      // If user pressed "next", rebuild already moved off the filtered-out card -> done.
+      if(delta > 0) return;
+
+      // If user pressed "prev", go one step back from the new current card.
+      idx -= 1;
+      clampIndex();
+      setStage(0);
+      render();
+      return;
+    }
+
     idx += delta;
     clampIndex();
     setStage(0);
     render();
   }
 
+
+  function shuffleDeck(){
+    if(deck.length <= 1) return;
+    for(let i = deck.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    idx = 0;
+    stage = 0;
+    render();
+    toast("シャッフルしました");
+  }
+
   function setStatus(status){
     const c = currentCard();
     if(!c) return;
+
+    const filter = currentFilter();
 
     c.status = normalizeStatus(status);
     c.updatedAt = Date.now();
     saveCards();
 
-    // A方式：フィルター条件に合わなくなったら、その場で消す
-    rebuildDeck(true);
+    // IMPORTANT: Do NOT auto-advance. Keep showing the same card until user presses next/prev.
+    // If this card becomes outside the current filter, we defer deck rebuild until navigation.
+    pendingRebuild = (filter !== "all" && c.status !== filter);
+
+    render(); // update button colors + list badges without changing idx/deck
   }
 
   // Editor state
@@ -1080,6 +1119,7 @@
   els.prevBtn.addEventListener("click", () => move(-1));
   els.nextBtn.addEventListener("click", () => move(1));
   els.resetStageBtn.addEventListener("click", () => setStage(0));
+  els.shuffleBtn.addEventListener("click", shuffleDeck);
 
   els.markNotBtn.addEventListener("click", () => setStatus("not"));
   els.markLearnedBtn.addEventListener("click", () => setStatus("learned"));
