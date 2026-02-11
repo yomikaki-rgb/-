@@ -192,7 +192,8 @@
             <select id="modeSel" style="width:100%;" disabled>
               <option value="on">（音読み）</option>
               <option value="kun">（訓読み）</option>
-            </select>
+                          <option value="both">（音→訓）</option>
+</select>
           </div>
           <div style="flex:1 1 140px;">
             <label class="small">読み札の表示</label><br>
@@ -203,7 +204,16 @@
           </div>
         </div>
 
+        
+
         <div class="row">
+          <div style="flex:1 1 220px;">
+            <label class="small">音→訓 読み上げ待ち時間</label><br>
+            <input id="delaySec" type="range" min="1" max="5" step="1" value="3" disabled style="width:100%;">
+          </div>
+          <div class="pill" id="delayPill">3秒</div>
+        </div>
+<div class="row">
           <div style="flex:1 1 160px;">
             <label class="small">文字サイズ</label><br>
             <input id="fontSize" type="range" min="40" max="140" value="84" disabled style="width:100%;">
@@ -331,14 +341,20 @@
   // =========================
   // Speech
   // =========================
+  let pendingTimeout = null;
+
   function stopSpeak(){
     try{ speechSynthesis.cancel(); }catch(e){}
+    if(pendingTimeout){
+      try{ clearTimeout(pendingTimeout); }catch(e){}
+      pendingTimeout = null;
+    }
   }
 
-  function speakText(text){
+  function speakText(text, {cancel=true} = {}){
     text = trimOrEmpty(text);
     if(!text) return; // silent if empty
-    stopSpeak();
+    if(cancel) stopSpeak();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "ja-JP";
     speechSynthesis.speak(u);
@@ -352,6 +368,9 @@
   const showSel = $("showSel");
   const fontSize = $("fontSize");
 
+
+  const delaySec = $("delaySec");
+  const delayPill = $("delayPill");
   const gradeChecks = $("gradeChecks");
   const noChecks = $("noChecks");
 
@@ -387,6 +406,8 @@
     showSel.disabled = false;
     fontSize.disabled = false;
 
+
+    delaySec.disabled = false;
     gradeAllBtn.disabled = false;
     gradeNoneBtn.disabled = false;
     noAllBtn.disabled = false;
@@ -511,6 +532,29 @@
     fontPill.textContent = `${v}pt`;
   }
 
+
+
+  const LS_DELAY_KEY = "karuta_delay_sec";
+
+  function applyDelay(){
+    const v = Number(delaySec.value || 3);
+    delayPill.textContent = `${v}秒`;
+    try{ localStorage.setItem(LS_DELAY_KEY, String(v)); }catch(e){}
+  }
+
+  function updateDelayUI(){
+    // Only meaningful in "both" mode; keep visible but disable when not used
+    const mode = modeSel.value;
+    const on = (mode === "both");
+    delaySec.disabled = !on;
+    delayPill.style.opacity = on ? "1" : ".55";
+  }
+
+  function getDelayMs(){
+    const v = Number(delaySec.value || 3);
+    return Math.max(1, v) * 1000;
+  }
+
   function updateDisplay(){
     // 「1つもどる」は idx>0 のときだけ有効
     prevBtn.disabled = !(deckReady && idx > 0 && current);
@@ -519,7 +563,7 @@
       displayText.textContent = deckReady ? "つぎを押してください" : "山札を作ってください";
       return;
     }
-    const mode = modeSel.value; // 'on' or 'kun'
+    const mode = modeSel.value; // 'on' or 'kun' or 'both'
     const show = showSel.value; // 'on' or 'off'
 
     if(show === "off"){
@@ -528,7 +572,7 @@
       return;
     }
     // show card text based on mode
-    displayText.textContent = (mode === "on") ? (current.onCard || "") : (current.kunCard || "");
+    displayText.textContent = (mode === "kun") ? (current.kunCard || "") : (current.onCard || "");
   }
 
   // =========================
@@ -575,22 +619,37 @@
   // =========================
   // Read / Hint behavior
   // =========================
+  
   function readMain(){
     if(!current) return;
     const mode = modeSel.value;
-    if(mode === "on"){
-      const t = trimOrEmpty(current.onSpeak) || trimOrEmpty(current.onCard);
-      speakText(t);
-    }else{
+
+    if(mode === "kun"){
       const t = trimOrEmpty(current.kunSpeak) || trimOrEmpty(current.kunCard);
       speakText(t);
+      return;
+    }
+
+    // on / both
+    const onT = trimOrEmpty(current.onSpeak) || trimOrEmpty(current.onCard);
+    speakText(onT);
+
+    if(mode === "both"){
+      const kunT = trimOrEmpty(current.kunSpeak) || trimOrEmpty(current.kunCard);
+      if(!kunT) return; // silent if no kun
+      const wait = getDelayMs();
+      pendingTimeout = setTimeout(()=>{
+        // queue without canceling the current speech
+        speakText(kunT, {cancel:false});
+        pendingTimeout = null;
+      }, wait);
     }
   }
 
   function readHint(){
     if(!current) return;
     const mode = modeSel.value;
-    if(mode === "on"){
+    if(mode === "on" || mode === "both"){
       // hint: opposite = F (kunSpeak). If empty -> silent
       const t = trimOrEmpty(current.kunSpeak);
       if(!t) return; // silent
@@ -631,10 +690,10 @@
   // Events
   // =========================
 
-  modeSel.addEventListener("change", ()=> invalidateDeck("モード変更"));
+  modeSel.addEventListener("change", ()=> { invalidateDeck("モード変更"); updateDisplay(); updateDelayUI(); });
   showSel.addEventListener("change", ()=> updateDisplay());
   fontSize.addEventListener("input", ()=> { applyFont(); });
-
+  delaySec.addEventListener("input", ()=> { applyDelay(); });
   gradeAllBtn.addEventListener("click", ()=> { setAll(gradeChecks, selectedGrades, true); rebuildNoChecklist(); });
   gradeNoneBtn.addEventListener("click", ()=> { setAll(gradeChecks, selectedGrades, false); rebuildNoChecklist(); });
   noAllBtn.addEventListener("click", ()=> setAll(noChecks, selectedNos, true));
@@ -689,6 +748,14 @@
 
   // initial font
   applyFont();
+
+  // init delay from localStorage (fixed until changed by slider)
+  try{
+    const saved = localStorage.getItem(LS_DELAY_KEY);
+    if(saved != null && saved !== "") delaySec.value = saved;
+  }catch(e){}
+  applyDelay();
+  updateDelayUI();
 
   // init with embedded data
   initFromEmbedded();
