@@ -113,6 +113,11 @@ button{ padding:8px 14px; font-size:14px; cursor:pointer; }
 .hide-holiday-color .is-holiday .hname{ color:#000; }
 
 ruby rt{ font-size:60%; }
+
+@media print{
+  body.hira-mode .hname{ font-size:7pt !important; }
+}
+
 </style>
 </head>
 <body>
@@ -129,6 +134,13 @@ ruby rt{ font-size:60%; }
   <div class="field">
     <label><input id="toggleHolidays" type="checkbox" checked> 祝日を表示</label>
     <label style="margin-left:12px;"><input id="toggleHolidayNames" type="checkbox" checked> 祝日名を表示</label>
+    <span style="margin-left:12px;">
+      祝日名の表記：
+      <select id="holidayNameStyle" aria-label="祝日名の表記">
+        <option value="kanji">漢字</option>
+        <option value="hira">ひらがな</option>
+      </select>
+    </span>
   </div>
 
   <div class="field">
@@ -165,6 +177,7 @@ ruby rt{ font-size:60%; }
   const elBottom = document.getElementById("bottomComment");
   const elToggleH = document.getElementById("toggleHolidays");
   const elToggleHN = document.getElementById("toggleHolidayNames");
+  const elHolidayNameStyle = document.getElementById("holidayNameStyle");
   const elPrint = document.getElementById("print");
   const btnUpdate = document.getElementById("btnUpdate");
   const btnPrint = document.getElementById("btnPrint");
@@ -222,27 +235,27 @@ ruby rt{ font-size:60%; }
   }
   function computeHolidaysJP(year){
     const hol = {};
-    function set(d,name){ hol[ymd(d)] = name; }
+    function set(d, kanji, hira){ hol[ymd(d)] = {kanji: kanji, hira: hira}; }
     function has(d){ return Object.prototype.hasOwnProperty.call(hol, ymd(d)); }
 
-    set(new Date(year,0,1), "元日");
-    set(new Date(year,1,11), "建国記念の日");
-    set(new Date(year,1,23), "天皇誕生日");
-    set(new Date(year,3,29), "昭和の日");
-    set(new Date(year,4,3), "憲法記念日");
-    set(new Date(year,4,4), "みどりの日");
-    set(new Date(year,4,5), "こどもの日");
-    set(new Date(year,7,11), "山の日");
-    set(new Date(year,10,3), "文化の日");
-    set(new Date(year,10,23), "勤労感謝の日");
+    set(new Date(year,0,1),  "元日", "がんじつ");
+    set(new Date(year,1,11), "建国記念の日", "けんこくきねんび");
+    set(new Date(year,1,23), "天皇誕生日", "てんのうたんじょうび");
+    set(new Date(year,3,29), "昭和の日", "しょうわのひ");
+    set(new Date(year,4,3),  "憲法記念日", "けんぽうきねんび");
+    set(new Date(year,4,4),  "みどりの日", "みどりのひ");
+    set(new Date(year,4,5),  "こどもの日", "こどものひ");
+    set(new Date(year,7,11), "山の日", "やまのひ");
+    set(new Date(year,10,3), "文化の日", "ぶんかのひ");
+    set(new Date(year,10,23),"勤労感謝の日", "きんろうかんしゃのひ");
 
-    set(nthMonday(year,0,2), "成人の日");
-    set(nthMonday(year,6,3), "海の日");
-    set(nthMonday(year,8,3), "敬老の日");
-    set(nthMonday(year,9,2), "スポーツの日");
+    set(nthMonday(year,0,2), "成人の日", "せいじんのひ");
+    set(nthMonday(year,6,3), "海の日", "うみのひ");
+    set(nthMonday(year,8,3), "敬老の日", "けいろうのひ");
+    set(nthMonday(year,9,2), "スポーツの日", "すぽーつのひ");
 
-    set(new Date(year,2,springEquinoxDay(year)), "春分の日");
-    set(new Date(year,8,autumnEquinoxDay(year)), "秋分の日");
+    set(new Date(year,2,springEquinoxDay(year)), "春分の日", "しゅんぶんのひ");
+    set(new Date(year,8,autumnEquinoxDay(year)), "秋分の日", "しゅうぶんのひ");
 
     // 振替休日
     const keys = Object.keys(hol).sort();
@@ -251,9 +264,10 @@ ruby rt{ font-size:60%; }
       if(d.getDay() === 0){
         let sub = new Date(d); sub.setDate(sub.getDate()+1);
         while(has(sub)){ sub.setDate(sub.getDate()+1); }
-        hol[ymd(sub)] = "振替休日";
+        hol[ymd(sub)] = {kanji:"振替休日", hira:"ふりかえきゅうじつ"};
       }
     }
+
     // 国民の休日（祝日に挟まれた平日）
     const start = new Date(year,0,1);
     const end = new Date(year,11,31);
@@ -262,7 +276,7 @@ ruby rt{ font-size:60%; }
       if(Object.prototype.hasOwnProperty.call(hol,key)) continue;
       const prev = new Date(d); prev.setDate(prev.getDate()-1);
       const next = new Date(d); next.setDate(next.getDate()+1);
-      if(has(prev) && has(next)) hol[key] = "国民の休日";
+      if(has(prev) && has(next)) hol[key] = {kanji:"国民の休日", hira:"こくみんのきゅうじつ"};
     }
     return hol;
   }
@@ -311,7 +325,7 @@ ruby rt{ font-size:60%; }
     return tr;
   }
 
-  function buildMonthTable(year, monthIndex, holidays, dayRowsTotalMm){
+  function buildMonthTable(year, monthIndex, holidays, holidayNameStyle, dayRowsTotalMm){
     const table = document.createElement("table");
     table.className = "cal";
 
@@ -339,18 +353,18 @@ ruby rt{ font-size:60%; }
         if(dayNum >= 1 && dayNum <= days){
           const d = new Date(year, monthIndex, dayNum);
           const key = ymd(d);
-          const hname = holidays[key];
+          const hobj = holidays[key];
 
           const dn = document.createElement("div");
           dn.className = "daynum";
           dn.textContent = String(dayNum);
           td.appendChild(dn);
 
-          if(hname){
+          if(hobj){
             td.classList.add("is-holiday");
             const hn = document.createElement("div");
             hn.className = "hname";
-            hn.textContent = hname;
+            hn.textContent = (holidayNameStyle === "hira" ? hobj.hira : hobj.kanji);
             td.appendChild(hn);
           }
         }else{
@@ -389,6 +403,7 @@ ruby rt{ font-size:60%; }
         if(typeof o.bottom === "string") elBottom.value = o.bottom;
         if(typeof o.showH === "boolean") elToggleH.checked = o.showH;
         if(typeof o.showHN === "boolean") elToggleHN.checked = o.showHN;
+        if(o.holidayNameStyle && elHolidayNameStyle) elHolidayNameStyle.value = o.holidayNameStyle;
       }
     }catch(e){}
   }
@@ -397,9 +412,13 @@ ruby rt{ font-size:60%; }
     if(!elStartMonth.value){
       elStartMonth.value = "2026-01";
     }
+    if(elHolidayNameStyle && !elHolidayNameStyle.value){
+      elHolidayNameStyle.value = "hira";
+    }
 
     const showH = !!elToggleH.checked;
     const showHN = !!elToggleHN.checked;
+    const holidayNameStyle = (elHolidayNameStyle && elHolidayNameStyle.value) ? elHolidayNameStyle.value : "kanji";
 
     const [yStr, mStr] = elStartMonth.value.split("-");
     const y1 = Number(yStr);
@@ -432,7 +451,8 @@ ruby rt{ font-size:60%; }
         top: elTop.value,
         bottom: elBottom.value,
         showH: showH,
-        showHN: showHN
+        showHN: showHN,
+        holidayNameStyle: holidayNameStyle
       }));
     }catch(e){}
 
@@ -451,14 +471,14 @@ ruby rt{ font-size:60%; }
     t1.className = "month-title";
     t1.textContent = monthTitleText(y1, m1);
     page.appendChild(t1);
-    page.appendChild(buildMonthTable(y1, m1, holidays, perMonthDayRows));
+    page.appendChild(buildMonthTable(y1, m1, holidays, holidayNameStyle, perMonthDayRows));
     page.appendChild(makeSpacer());
 
     const t2 = document.createElement("div");
     t2.className = "month-title";
     t2.textContent = monthTitleText(y2, mo2);
     page.appendChild(t2);
-    page.appendChild(buildMonthTable(y2, mo2, holidays, perMonthDayRows));
+    page.appendChild(buildMonthTable(y2, mo2, holidays, holidayNameStyle, perMonthDayRows));
     page.appendChild(makeSpacer());
 
     const bottom = document.createElement("div");
@@ -473,6 +493,7 @@ ruby rt{ font-size:60%; }
   btnUpdate.addEventListener("click", function(){ render(); });
   elToggleH.addEventListener("change", function(){ render(); });
   elToggleHN.addEventListener("change", function(){ render(); });
+  if(elHolidayNameStyle) elHolidayNameStyle.addEventListener("change", function(){ render(); });
   btnPrint.addEventListener("click", function(){ render().then(function(){ window.print(); }); });
 
   populateMonthOptions();
@@ -481,8 +502,41 @@ ruby rt{ font-size:60%; }
   if(!elStartMonth.value){
     elStartMonth.value = "2026-01";
   }
+  if(elHolidayNameStyle && !elHolidayNameStyle.value){
+    elHolidayNameStyle.value = "hira";
+  }
   render();
 })();
 </script>
+
+<script>
+(function(){
+  const selects = document.querySelectorAll("select");
+  if(!selects.length) return;
+
+  function isHiragana(val){
+    return val === "hiragana" || val === "hira" || val === "ひらがな";
+  }
+
+  function applyMode(){
+    let hira = false;
+    selects.forEach(sel=>{
+      if(isHiragana(sel.value)) hira = true;
+    });
+    if(hira){
+      document.body.classList.add("hira-mode");
+    }else{
+      document.body.classList.remove("hira-mode");
+    }
+  }
+
+  selects.forEach(sel=>{
+    sel.addEventListener("change", applyMode);
+  });
+
+  applyMode();
+})();
+</script>
+
 </body>
 </html>
