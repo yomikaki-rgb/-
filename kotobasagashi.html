@@ -9,6 +9,9 @@
     size: A4 landscape;
     margin: 12.7mm;
   }
+  /* 印刷/表示の文字サイズ（pt）を変数で管理 */
+  :root{ --hiraPt: 26pt; }
+
   body{
     margin:0;
     background:#f3f4f6;
@@ -43,7 +46,7 @@
   }
   .row{
     display:grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
     gap: 10px;
   }
   .btns{
@@ -193,7 +196,8 @@
     flex:0 0 auto;
   }
   .hiragana{
-    font-size:34px;
+    font-size: var(--hiraPt);
+    flex:1;
     letter-spacing:.05em;
     line-height:1.2;
     white-space:nowrap;
@@ -212,10 +216,13 @@
     .sheet{
       border:none;
       border-radius:0;
-      padding:0;
-      width:auto;
+      /* 印刷時の左右切れ防止：安全余白を付け、印刷領域幅に固定 */
+      box-sizing:border-box;
+      width:271.6mm; /* 297mm - 12.7mm*2 */
+      padding:0 6mm;
       page-break-after: always;
       break-after: page;
+
     }
     .sheet:last-child{
       page-break-after:auto;
@@ -235,8 +242,12 @@
         <input id="lineCount" type="number" value="10">
       </div>
       <div>
-        <label>1行の文字数</label>
-        <input id="lineLen" type="number" value="26">
+        <label>1行の文字数（自動）</label>
+        <input id="lineLen" type="number" value="26" disabled>
+      </div>
+      <div>
+        <label>文字サイズ（印刷pt：14〜26）</label>
+        <input id="fontPt" type="number" min="14" max="26" value="26">
       </div>
       <div>
         <label>ページ数</label>
@@ -286,7 +297,8 @@
 
     <div class="hint">
       ・入力は10語以上OK。<b>毎ページ10語をランダムに選び、さらに順番もランダム</b>にして10行へ入れます。<br>
-      ・各行の左右のひらがな（埋め込み位置）もページごとに変わります。
+      ・各行の左右のひらがな（埋め込み位置）もページごとに変わります。<br>
+      ・文字サイズ（pt）を小さくすると、1行に入る文字数は自動で増えます。
     </div>
   </div>
 
@@ -305,6 +317,65 @@
   ];
   const CIRC = ["1","2","3","4","5","6","7","8","9","10"];
   const PAGE_COUNT = 10;
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+  // A4横（@page margin 12.7mm）に合わせた印刷領域・安全余白
+  const PAGE_W_MM = 297;
+  const PAGE_MARGIN_MM = 12.7;
+  const PRINT_SAFE_PAD_MM = 3;// 左右の安全余白（切れ防止） // 左右の安全余白（切れ防止）
+  const PRINT_CONTENT_W_MM = PAGE_W_MM - (PAGE_MARGIN_MM * 2);
+
+  // ★追加：文字サイズ(pt)に合わせて「1行の文字数」を実測で自動計算
+  function calcAutoLineLen(fontPt){
+    // 既存レイアウトに合わせた測定用DOMを一度だけ作成
+    let wrap = document.getElementById("measureWrap");
+    if(!wrap){
+      wrap = document.createElement("div");
+      wrap.id = "measureWrap";
+      wrap.style.position = "absolute";
+      wrap.style.left = "-99999px";
+      wrap.style.top = "0";
+      wrap.style.visibility = "hidden";
+      wrap.style.pointerEvents = "none";
+      wrap.innerHTML = `
+        <div class="sheet" style="box-sizing:border-box; width:${PRINT_CONTENT_W_MM}mm; padding:0 ${PRINT_SAFE_PAD_MM}mm;">
+          <div class="line">
+            <div class="circ">1</div>
+            <div class="hiragana" id="measureHira"></div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(wrap);
+    }
+
+    // まずCSS変数を更新（測定は現在のフォント/サイズを反映）
+    document.documentElement.style.setProperty("--hiraPt", fontPt + "pt");
+
+    const hiraBox = document.getElementById("measureHira");
+    // flex:1 で残り幅になるので、その幅を利用
+    const available = hiraBox.getBoundingClientRect().width || 0;
+
+    // 1文字分の実幅を測る（同じクラス/letter-spacingで測定）
+    const probe = document.createElement("span");
+    probe.style.display = "inline-block";
+    probe.style.whiteSpace = "nowrap";
+    probe.className = "hiragana";
+    const N = 20;
+    probe.textContent = "あ".repeat(N);
+    hiraBox.innerHTML = "";
+    hiraBox.appendChild(probe);
+
+    const w = probe.getBoundingClientRect().width || 0;
+    const charW = w / N || 1;
+
+    // 余裕を少し持たせる（端で折れ/はみ出し防止）
+    const safety = 0.97;
+    const len = Math.floor((available * safety) / charW);
+
+    // 実用範囲にクランプ
+    return clamp(len, 10, 80);
+  }
+
 
   const $ = id => document.getElementById(id);
 
@@ -399,7 +470,10 @@
 
     const baseWords = normalizeWords($("wordsInput").value);
     const lineCount = +$("lineCount").value || 10;
-    const lineLen = +$("lineLen").value || 26;
+    const fontPt = clamp(+$("fontPt").value || 26, 14, 26);
+    $("fontPt").value = fontPt;
+    const lineLen = calcAutoLineLen(fontPt);
+    $("lineLen").value = lineLen;
 
     const sheets = $("sheets");
     sheets.innerHTML = "";
@@ -457,6 +531,10 @@
   $("genBtn").onclick = render;
   $("shuffleBtn").onclick = render;
   $("printBtn").onclick = () => window.print();
+
+  // ★追加：文字サイズ変更で自動再計算
+  $("fontPt").onchange = render;
+  $("fontPt").oninput = () => { /* 入力中は軽く更新 */ render(); };
 
   /* ★ここだけ修正：赤字ON/OFFで問題が変わらないようにする */
   $("redToggle").onchange = () => {
