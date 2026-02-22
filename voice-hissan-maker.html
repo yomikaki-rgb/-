@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>音声→筆算プリント（MVP 手入力版）</title>
+  <title>音声で作る筆算プリント</title>
   <style>
     :root{
       --paper-w: 210mm;
@@ -565,8 +565,7 @@
     <section class="panel" id="inputPanel">
       <header>
         <div>
-          <h1>計算の問題をつくる（手入力MVP）</h1>
-          <div class="sub">音声入力は後で追加できます。まずは問題→プリント作成を安定させます。</div>
+          <h1>計算の問題をつくる</h1>
         </div>
       </header>
 
@@ -579,7 +578,7 @@
             <button class="btn" id="btnConvert" title="よみ（ひらがな/漢字）を数字に変換">変換</button>
             <button class="btn primary" id="btnAdd">追加</button>
           </div>
-          <div class="hint">※MVP：整数のみ／演算子は1つだけ（+ - × ÷ または x * /）</div>
+          <div class="hint">※整数のみ／演算子は1つだけ（+ - × ÷ または x * /）</div>
         </div>
 
         <div style="height:12px"></div>
@@ -606,7 +605,6 @@
       <header>
         <div>
           <h1>プリントのかたちをえらぶ（A4）</h1>
-          <div class="sub">プレビュー＝印刷結果。マス目／縦しまで桁ずれを防ぎます。</div>
         </div>
       </header>
 
@@ -667,7 +665,6 @@
             <div class="paper" id="paper">
               <div class="grid" id="paperGrid"></div>
             </div>
-            <div class="hint">※印刷時はブラウザの印刷画面で「背景のグラフィック」をONにすると、縦しまが確実に印刷されます。</div>
           </div>
         </div>
       </div>
