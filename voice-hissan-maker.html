@@ -315,7 +315,7 @@
 .bg.stripe_lines{ background:none !important; }
 /* Hissan layout */
     .hissan{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", "BIZ UDGothic", monospace;
+        font-family: "BIZ UDGothic Mono","BIZ UDGothic","Noto Sans Mono",ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: var(--font-size);
       line-height: 1.05;
       display: grid;
@@ -554,6 +554,15 @@
 
   /* 改ページ：各 .paper の後に改ページ、ただし最後だけしない（白紙ページ防止） */
   .paper{ page-break-after: always; break-after: page; }
+  .paper.lastPaper{ page-break-after: auto !important; break-after: auto !important; }
+}
+
+
+/* ===== Final override: prevent extra blank last page ===== */
+@media print{
+  /* Always break after each sheet... */
+  .paper{ page-break-after: always !important; break-after: page !important; }
+  /* ...except the last generated paper (JS adds .lastPaper) */
   .paper.lastPaper{ page-break-after: auto !important; break-after: auto !important; }
 }
 
@@ -1161,13 +1170,32 @@
     let showDotA = false;
     let showDotB = false;
 
+    // Add/Sub decimal alignment helpers (used by placeDot)
+    let maxIntLen = 0;
+    let fracLenAligned = 0;
+
     if(problem.op === "+" || problem.op === "-"){
-      // Align decimal point by padding fractional digits (BUT dot does not consume a cell)
-      const fracLen = Math.max(A.frac.length, B.frac.length);
-      aDigits = (A.int + A.frac.padEnd(fracLen, "0"));
-      bDigits = (B.int + B.frac.padEnd(fracLen, "0"));
-      // If any side has decimals, show dot on BOTH rows at their aligned position
-      const anyDecimal = fracLen > 0;
+      // 小数点位置をそろえる（表示上はゼロを足さない）
+      // 右側の不足分は「空欄」で埋め、点の位置（整数部の終わり）は maxIntLen に固定する
+      fracLenAligned = Math.max(A.frac.length, B.frac.length);
+      maxIntLen = Math.max(A.int.length, B.int.length);
+
+      function buildAligned(intStr, fracStr){
+        const leftPad = Math.max(0, maxIntLen - intStr.length);
+        const rightPad = Math.max(0, fracLenAligned - fracStr.length);
+        const arr = [];
+        for(let i=0;i<leftPad;i++) arr.push("");
+        for(const ch of intStr) arr.push(ch);
+        for(const ch of fracStr) arr.push(ch);
+        for(let i=0;i<rightPad;i++) arr.push("");
+        return arr;
+      }
+
+      aDigits = buildAligned(A.int, A.frac);
+      bDigits = buildAligned(B.int, B.frac);
+
+      // dot is drawn separately; show dot on BOTH rows when any decimals exist
+      const anyDecimal = fracLenAligned > 0;
       showDotA = anyDecimal;
       showDotB = anyDecimal;
     } else if(problem.op === "×"){
@@ -1203,12 +1231,12 @@
     svg.style.display = "block";
 
     const g = document.createElementNS(ns, "g");
-    g.setAttribute("font-family", 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", "BIZ UDGothic", monospace');
+    g.setAttribute("font-family","BIZ UDGothic Mono,BIZ UDGothic,Noto Sans Mono,monospace");
     g.setAttribute("font-size", String(cellPx * 0.75 * state.settings.textScale));
     g.setAttribute("fill", "rgba(0,0,0,0.95)");
 
     function placeNumber(digitsStr, rowIndex, withOp){
-      const str = String(digitsStr);
+      const arr = Array.isArray(digitsStr) ? digitsStr : String(digitsStr).split("");
       const baseCol = extraLeft;
       const y = rowIndex * cellPx + cellPx / 2;
 
@@ -1224,8 +1252,8 @@
       }
 
       // Right-align digits (ones place aligned) within the maxDigits area
-      const pad = maxDigits - str.length;
-      for(let i=0;i<str.length;i++){
+      const pad = maxDigits - arr.length;
+      for(let i=0;i<arr.length;i++){
         const col = baseCol + 1 + pad + i;
         const x = (col + 0.5) * cellPx;
         const t = document.createElementNS(ns, "text");
@@ -1233,7 +1261,7 @@
         t.setAttribute("y", String(y));
         t.setAttribute("text-anchor", "middle");
         t.setAttribute("dominant-baseline", "middle");
-        t.textContent = str[i];
+        t.textContent = arr[i] || "";
         g.appendChild(t);
       }
       return { pad };
@@ -1246,7 +1274,9 @@
       const startCol = baseCol + 1 + pad;
 
       // boundary column (between int and frac)
-      const boundaryCol = startCol + intLen;
+      const boundaryCol = ((problem.op === "+" || problem.op === "-") && (showDotA || showDotB))
+        ? (baseCol + 1 + maxIntLen)
+        : (startCol + intLen);
 
       // Position: on the boundary, slightly shifted to avoid grid line overlap
       const shiftX = cellPx * 0.06;
@@ -1364,7 +1394,7 @@
 
     // ===== 数字 =====
     const g = document.createElementNS(ns, "g");
-    g.setAttribute("font-family", 'ui-monospace, SFMono-Regular, Menlo, Consolas, "BIZ UDGothic", monospace');
+    g.setAttribute("font-family","BIZ UDGothic Mono,BIZ UDGothic,Noto Sans Mono,monospace");
     g.setAttribute("font-size", String(cellPx * 0.75 * state.settings.textScale));
     g.setAttribute("fill", "black");
 
