@@ -16,6 +16,8 @@
       --text: #1b1f28;
       --muted: #5b6575;せ
 
+      --stripe-fill: rgba(0,0,0,0.06);
+
       --cell-mm: 7mm; /* default; overridden via inline style on preview root */
       --cell: 10mm;
       --line: rgba(0,0,0,0.12);
@@ -549,7 +551,7 @@
   }
   /* 縦しま（stripe_lines）の塗りも薄め */
   #paperGrid .problem .bg svg rect{
-    fill: rgba(0,0,0,0.07) !important;
+    fill: var(--stripe-fill, rgba(0,0,0,0.07)) !important;
   }
 
   /* 改ページ：各 .paper の後に改ページ、ただし最後だけしない（白紙ページ防止） */
@@ -646,6 +648,18 @@
               </div>
             </div>
 
+            <div class="settingBlock" id="stripeColorBlock">
+              <div class="settingTitle">縦しまの色</div>
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <input id="stripeColorHex" type="color" value="#000000" aria-label="stripe color" style="width:44px; height:34px; padding:0; border:1px solid var(--border); border-radius:10px; background:#fff;" />
+                <label style="display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px;">
+                  濃さ
+                  <input id="stripeAlpha" type="range" min="1" max="20" step="1" value="6" />
+                  <span id="stripeAlphaLabel" style="min-width:52px; text-align:right;">6%</span>
+                </label>
+              </div>
+            </div>
+
             <div class="settingBlock" id="cellSizeBlock">
               <div class="settingTitle">マスめサイズ（＝文字サイズも連動）</div>
               <div class="pillset" role="group" aria-label="cell size">
@@ -698,6 +712,8 @@
       itemsPerPage: 6,
       gridMode: "on", // "none" | "on"
       gridStyle: "lines", // "lines" | "stripe_lines"
+      stripeColorHex: "#000000",
+      stripeAlpha: 0.06,
       cellMm: 10, // 5/7/10
       textScale: 1.0 // 0.9/1.0/1.1
     }
@@ -706,6 +722,22 @@
   /** -----------------------
    * Helpers
    * ----------------------*/
+
+  function hexToRgb(hex){
+    const h = String(hex || "").trim().replace(/^#/, "");
+    if(!/^[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(h)) return { r:0, g:0, b:0 };
+    const full = h.length === 3 ? h.split("").map(ch => ch + ch).join("") : h;
+    const n = parseInt(full, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+
+  function applyStripeCssVars(){
+    const hex = state.settings.stripeColorHex || "#000000";
+    const a = Number(state.settings.stripeAlpha ?? 0.06);
+    const { r, g, b } = hexToRgb(hex);
+    document.documentElement.style.setProperty("--stripe-fill", `rgba(${r},${g},${b},${a})`);
+  }
+
   function uid(){
     return "p-" + Math.random().toString(16).slice(2, 10);
   }
@@ -961,6 +993,10 @@
   const paperGrid = $("#paperGrid");
   const gridStyleBlock = $("#gridStyleBlock");
   const cellSizeBlock = $("#cellSizeBlock");
+  const stripeColorBlock = $("#stripeColorBlock");
+  const stripeColorHex = $("#stripeColorHex");
+  const stripeAlpha = $("#stripeAlpha");
+  const stripeAlphaLabel = $("#stripeAlphaLabel");
 
   /** -----------------------
    * Rendering: List
@@ -1091,9 +1127,24 @@
     setPillPressed("cellMm", state.settings.cellMm);
     setPillPressed("textScale", state.settings.textScale.toFixed(1));
 
+    // Stripe controls
+    if(stripeColorHex){
+      stripeColorHex.value = state.settings.stripeColorHex || "#000000";
+    }
+    if(stripeAlpha){
+      const a = Number(state.settings.stripeAlpha ?? 0.06);
+      stripeAlpha.value = String(Math.round(a * 100));
+    }
+    if(stripeAlphaLabel){
+      const pct = Math.round((state.settings.stripeAlpha ?? 0.06) * 100);
+      stripeAlphaLabel.textContent = `${pct}%`;
+    }
+
     const gridOn = state.settings.gridMode === "on";
     gridStyleBlock.style.display = gridOn ? "grid" : "none";
     cellSizeBlock.style.display = gridOn ? "grid" : "none";
+    stripeColorBlock.style.display = (gridOn && state.settings.gridStyle === "stripe_lines") ? "grid" : "none";
+
   }
 
   function gridDims(items){
@@ -1513,7 +1564,9 @@
     // optional stripes (every other column)
     if(style === "stripe_lines"){
       const stripe = document.createElementNS(ns, "g");
-      const stripeAlpha = 0.06;
+      const stripeAlpha = Number(state.settings.stripeAlpha ?? 0.06);
+      const stripeHex = state.settings.stripeColorHex || "#000000";
+      const { r:sr, g:sg, b:sb } = hexToRgb(stripeHex);
       for(let x=0, col=0; x < w + 0.5; x += cellPx, col++){
         if(col % 2 === 1){
           const r = document.createElementNS(ns, "rect");
@@ -1521,7 +1574,7 @@
           r.setAttribute("y", 0);
           r.setAttribute("width", cellPx);
           r.setAttribute("height", h);
-          r.setAttribute("fill", `rgba(0,0,0,${stripeAlpha})`);
+          r.setAttribute("fill", `rgba(${sr},${sg},${sb},${stripeAlpha})`);
           stripe.appendChild(r);
         }
       }
@@ -1609,6 +1662,7 @@ function applyGridBackgrounds(){
   function renderPreview(){
     ensureSettingsUI();
     applyPaperVars();
+    applyStripeCssVars();
 
     const { cols, rows } = gridDims(state.settings.itemsPerPage);
 
@@ -1830,6 +1884,23 @@ function applyGridBackgrounds(){
    * ----------------------*/
   // iPad-first: hide mic button to avoid browser microphone permission prompts
   btnMic.style.display = "none";
+
+    // Stripe controls
+    if(stripeColorHex){
+      stripeColorHex.addEventListener("input", () => {
+        state.settings.stripeColorHex = stripeColorHex.value;
+        renderPreview();
+      });
+    }
+    if(stripeAlpha){
+      stripeAlpha.addEventListener("input", () => {
+        state.settings.stripeAlpha = Number(stripeAlpha.value) / 100;
+        if(stripeAlphaLabel){
+          stripeAlphaLabel.textContent = `${Math.round(state.settings.stripeAlpha * 100)}%`;
+        }
+        renderPreview();
+      });
+    }
 
     hookSettingButtons();
   renderList();
