@@ -1,0 +1,1912 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>音声で作る筆算プリント</title>
+  <style>
+    :root{
+      --paper-w: 210mm;
+      --paper-h: 297mm;
+      --page-margin: 10mm;
+
+      --ui-bg: #f6f7f9;
+      --card-bg: #ffffff;
+      --border: #d7dbe2;
+      --text: #1b1f28;
+      --muted: #5b6575;せ
+
+      --stripe-fill: rgba(0,0,0,0.06);
+
+      --cell-mm: 7mm; /* default; overridden via inline style on preview root */
+      --cell: 10mm;
+      --line: rgba(0,0,0,0.12);
+      --stripe: rgba(0,0,0,0.04);
+      --font-mm: calc(var(--cell) * 0.8);
+      --font-scale: 1.0; /* 0.9 / 1.0 / 1.1 */
+      --font-size: calc(var(--font-mm) * var(--font-scale));
+      --small-size: calc(var(--font-size) * 0.45);
+      --op-size: calc(var(--font-size) * 0.95);
+
+      --problem-gap: 4mm;
+      --problem-pad: 3mm;
+      --problem-border: rgba(0,0,0,0.20);
+    }
+
+    *{ box-sizing: border-box; }
+    html, body{
+      overflow-x: auto;
+ height: 100%; }
+    body{
+      overflow-x: auto;
+
+      margin: 0;
+      color: var(--text);
+      background: var(--ui-bg);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    }
+
+    .app{
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 12px;
+      padding: 12px;
+      height: 100%;
+    }
+
+    .panel{
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 0;
+    }
+
+    header{
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    header h1{
+      font-size: 16px;
+      margin: 0;
+      letter-spacing: 0.02em;
+    }
+
+    .sub{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .content{
+      padding: 12px 14px;
+      overflow: auto;
+      min-height: 0;
+    
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+
+    /* Input panel: stack blocks vertically (problem list under Add button) */
+    #inputPanel .content{
+      display: block;
+    }
+
+    .footer{
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .row{ display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .col{ display: grid; gap: 8px; }
+    .field{
+      display: grid;
+      gap: 6px;
+    }
+    label{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    input[type="text"]{
+      width: 100%;
+      padding: 10px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+    }
+    input[type="text"]:focus{
+      border-color: #9fb2ff;
+      box-shadow: 0 0 0 3px rgba(79, 110, 255, 0.12);
+    }
+
+    .btn{
+      appearance: none;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      line-height: 1;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .btn.primary{
+      background: #2f5bff;
+      border-color: #2f5bff;
+      color: #fff;
+    }
+    .btn.danger{
+      background: #fff;
+      border-color: #ffb4b4;
+      color: #b00020;
+    }
+    .btn:disabled{
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pillset{
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .pill{
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-size: 13px;
+      color: var(--text);
+      background: #fff;
+      cursor: pointer;
+      user-select: none;
+    }
+    .pill[aria-pressed="true"]{
+      background: rgba(47,91,255,0.10);
+      border-color: rgba(47,91,255,0.35);
+    }
+
+    .list{
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .item{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .item .left{
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+    .item .meta{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .item .edit{
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+    }
+    .item .edit input{
+      font-size: 14px;
+    }
+    .item .actions{
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .icon{
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 10px;
+    }
+
+    /* Preview area */
+    .previewWrap{
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .settings{
+      display: grid;
+      gap: 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    .settingBlock{
+      display: grid;
+      gap: 6px;
+    }
+    .settingTitle{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .paperFrame{
+      background: #e9ecf2;
+      border: 1px dashed rgba(0,0,0,0.15);
+      border-radius: 12px;
+      padding: 10px;
+      overflow: auto;
+    
+      min-width: 0;
+    }
+
+    .paper{
+      width: var(--paper-w);
+      height: var(--paper-h);
+      background: #fff;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+      margin: 0 auto;
+      position: relative;
+      padding: var(--page-margin);
+      display: grid;
+      grid-template-rows: 1fr;
+    }
+
+    .grid{
+      display: grid;
+      gap: var(--problem-gap);
+      width: 100%;
+      height: 100%;
+    }
+
+    .problem{
+      border: 1px solid var(--problem-border);
+      border-radius: 10px;
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      place-items: start;
+    }
+
+    .problem .bg{
+      position: absolute;
+      inset: var(--problem-pad);
+      z-index: 0;
+      background: none;
+      pointer-events: none;
+    }
+    .problem .bg svg{ position:absolute; inset:0; width:100%; height:100%; }
+
+    .problem .content{
+      position: relative;
+      z-index: 1;
+      padding: var(--problem-pad);
+      overflow: visible;
+      justify-self: start;
+      align-self: start;
+    }
+
+    /* grid backgrounds */
+    .bg.lines{ background:none !important; }
+.bg.stripe_lines{ background:none !important; }
+/* Hissan layout */
+    .hissan{
+        font-family: "BIZ UDGothic Mono","BIZ UDGothic","Noto Sans Mono",ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: var(--font-size);
+      line-height: 1.05;
+      display: grid;
+      gap: calc(var(--cell) * 0.15);
+      width: fit-content;
+      justify-self: start;
+    }
+
+    .rowDigits{
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: end;
+      align-items: center;
+      gap: 0;
+    }
+
+    .cell{
+      width: var(--cell);
+      height: var(--cell);
+      display: grid;
+      place-items: start;
+    }
+
+    .cell.op{
+      font-size: var(--op-size);
+    }
+
+    .lineRow{
+      height: 0;
+      border-top: 2px solid rgba(0,0,0,0.75);
+      margin-top: 0;
+    }
+
+    .answerRow{
+      height: var(--cell);
+      border-bottom: 2px solid rgba(0,0,0,0.65);
+      width: 100%;
+      margin-top: 0;
+    }
+
+    /* Division frame (snap to cell grid) */
+    .divFrame{
+      display: grid;
+      grid-template-columns: auto auto;
+      align-items: start;
+      gap: 0;
+      width: fit-content;
+      max-width: 100%;
+    }
+    .divisor{
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-end;
+      padding-top: 0;
+      margin-top: var(--cell);
+      margin-right: 0;
+    }
+    .divRight{
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      width: fit-content;
+      min-width: 0;
+      padding-left: 0;
+    }
+    .quotientBlank{
+      height: var(--cell);
+      border-bottom: 2px solid rgba(0,0,0,0.65);
+      margin: 0;
+      width: calc(var(--cell) * 4);
+    }
+    .dividendBar{
+      display: grid;
+      grid-template-columns: var(--cell) auto;
+      align-items: start;
+      gap: 0;
+      width: fit-content;
+      min-width: 0;
+    }
+    .bracket{
+      width: var(--cell);
+      height: calc(var(--cell) * 2);
+      margin: 0;
+      align-self: start;
+      display: block;
+    }
+    .dividendDigits{
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: start;
+      align-items: center;
+      gap: 0;
+      min-width: 0;
+    }
+    .workspace{
+      height: 100%;
+      min-height: calc(var(--cell) * 4);
+    }
+
+    .hint{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+
+    .problem .content.align-right{
+      justify-self: stretch;
+      width: 100%;
+      align-self: start;
+    }
+    .problem .content.align-right svg{
+      display: block;
+    }
+
+
+    /* Print styles */
+    @page{
+      size: A4 portrait;
+      margin: 0;
+    }
+    @media print{
+      html, body{ height:auto !important; }
+      body{ overflow: visible !important; background: #fff; margin:0 !important; }
+
+      .app{ display: block; padding: 0 !important; }
+
+      /* Keep ONLY the print panel */
+      .panel{ border: none; border-radius: 0; display: block !important; overflow: visible !important; margin:0 !important; }
+      .panel:not(.printPanel){ display: none !important; }
+      .printPanel{ display: block !important; }
+
+      /* Do NOT print UI controls */
+      .printPanel > header,
+      .printPanel > .footer,
+      .settings,
+      #btnBack, #btnBack2, #btnPrint, #btnPrint2{
+        display: none !important;
+      }
+
+      /* Avoid flex/grid pagination issues */
+      .previewWrap{ display: block !important; }
+      .content{ display: block !important; overflow: visible !important; }
+
+      /* Let pages flow normally */
+      .paperFrame{ display:block !important; height:auto !important; overflow: visible !important; background: transparent !important; border: none !important; padding: 0 !important; margin:0 !important; }
+      .hint{ display: none !important; }
+
+      /* Page breaks per sheet */
+      .paper{
+        box-shadow: none !important;
+        margin: 0 !important;
+        /* 末尾の白紙を防ぐため、after ではなく before で改ページする */
+        page-break-after: auto;
+        break-after: auto;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .paper.lastPaper{ page-break-after: auto; break-after: auto; }
+
+      /* Ensure subsequent pages start at the top of a new printed page */
+      .paper.autoPage{ page-break-before: always; break-before: page; }
+
+      *{
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  
+@media print {
+  .grid, .grid td, .grid th,
+  .cell, .cell-border {
+    border-color: rgba(0,0,0,0.18) !important;
+  }
+}
+
+
+
+@media print{
+  /* 筆算の棒線（計算の区切り線）を印刷時だけ濃くする */
+  .lineRow{
+    border-top: 3px solid rgba(0,0,0,0.90) !important;
+    border-bottom: 3px solid rgba(0,0,0,0.85) !important;
+  }
+}
+
+
+@media print{
+  /* 筆算の棒線（SVGの横線）を印刷時に確実に出す＆濃くする */
+  #paperGrid .problem svg line{
+    stroke: rgba(0,0,0,0.90) !important;
+    stroke-width: 2.4 !important;
+    shape-rendering: crispEdges !important;
+  }
+  /* 印刷で色が薄くされないように */
+  #paperGrid .problem svg{
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+
+@media print{
+  /* 経線（縦の罫線）だけをさらに薄くする（印刷用） */
+  #paperGrid svg line.vertical{
+    stroke: rgba(0,0,0,0.15) !important;
+    stroke-width: 0.6 !important;
+  }
+}
+
+
+@media print{
+  .paper{
+    page-break-after: always;
+    break-after: page;
+  }
+  .paper:last-of-type{
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+}
+
+
+/* ===== Print hotfix (only) ===== */
+@media print{
+  /* マス目の罫線（SVG）を全体的に薄くする */
+  #paperGrid .problem .bg svg line{
+    stroke: rgba(0,0,0,0.25) !important;
+    stroke-width: 1.2 !important;
+    shape-rendering: crispEdges !important;
+  }
+  /* 縦しま（stripe_lines）の塗りも薄め */
+  #paperGrid .problem .bg svg rect{
+    fill: var(--stripe-fill, rgba(0,0,0,0.07)) !important;
+  }
+
+  /* 改ページ：各 .paper の後に改ページ、ただし最後だけしない（白紙ページ防止） */
+  .paper{ page-break-after: always; break-after: page; }
+  .paper.lastPaper{ page-break-after: auto !important; break-after: auto !important; }
+}
+
+
+/* ===== Final override: prevent extra blank last page ===== */
+@media print{
+  /* Always break after each sheet... */
+  .paper{ page-break-after: always !important; break-after: page !important; }
+  /* ...except the last generated paper (JS adds .lastPaper) */
+  .paper.lastPaper{ page-break-after: auto !important; break-after: auto !important; }
+}
+
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- Input Panel -->
+    <section class="panel" id="inputPanel">
+      <header>
+        <div>
+          <h1>計算の問題をつくる</h1>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="field">
+          <label for="expr">式（例：123 + 45 / 36×24 / 492÷12）</label>
+          <div class="row">
+            <input id="expr" type="text" inputmode="text" placeholder="123 + 45" />
+            <button class="btn" id="btnMic" title="音声入力（対応ブラウザのみ）">🎤 音声</button>
+            <button class="btn" id="btnConvert" title="よみ（ひらがな/漢字）を数字に変換">変換</button>
+            <button class="btn primary" id="btnAdd">追加</button>
+          </div>
+          <div class="hint">※演算子は1つだけ（+ - × ÷ または x * /）</div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="row" style="justify-content: space-between;">
+          <div>
+            <div style="font-size:12px;color:var(--muted)">もんだいリスト</div>
+          </div>
+          <div class="row">
+            <button class="btn" id="btnClear">すべて消す</button>
+          </div>
+        </div>
+
+        <div class="list" id="list"></div>
+      </div>
+
+      <div class="footer">
+        <button class="btn primary" id="btnToPreview" disabled>プリントをつくる ▶</button>
+      </div>
+    </section>
+
+    <!-- Preview/Print Panel -->
+    <section class="panel printPanel" id="previewPanel">
+      <header>
+        <div>
+          <h1>プリントのかたちをえらぶ（A4）</h1>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="previewWrap">
+          <div class="settings" aria-label="settings">
+            <div class="settingBlock">
+              <div class="settingTitle">もんだいのかず（1ページ）</div>
+              <div class="pillset" role="group" aria-label="items per page">
+                <button class="pill" data-set="items" data-value="2" aria-pressed="false">2</button>
+                <button class="pill" data-set="items" data-value="4" aria-pressed="false">4</button>
+                <button class="pill" data-set="items" data-value="6" aria-pressed="true">6</button>
+                <button class="pill" data-set="items" data-value="8" aria-pressed="false">8</button>
+              </div>
+            </div>
+
+            <div class="settingBlock">
+              <div class="settingTitle">マスめ</div>
+              <div class="pillset" role="group" aria-label="grid on off">
+                <button class="pill" data-set="gridMode" data-value="none" aria-pressed="false">なし</button>
+                <button class="pill" data-set="gridMode" data-value="on" aria-pressed="true">あり</button>
+              </div>
+            </div>
+
+            <div class="settingBlock" id="gridStyleBlock">
+              <div class="settingTitle">マスめスタイル</div>
+              <div class="pillset" role="group" aria-label="grid style">
+                <button class="pill" data-set="gridStyle" data-value="lines" aria-pressed="true">罫線</button>
+                <button class="pill" data-set="gridStyle" data-value="stripe_lines" aria-pressed="false">縦しま＋罫線</button>
+              </div>
+            </div>
+
+            <div class="settingBlock" id="stripeColorBlock">
+              <div class="settingTitle">縦しまの色</div>
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <input id="stripeColorHex" type="color" value="#000000" aria-label="stripe color" style="width:44px; height:34px; padding:0; border:1px solid var(--border); border-radius:10px; background:#fff;" />
+                <label style="display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px;">
+                  濃さ
+                  <input id="stripeAlpha" type="range" min="1" max="20" step="1" value="6" />
+                  <span id="stripeAlphaLabel" style="min-width:52px; text-align:right;">6%</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settingBlock" id="cellSizeBlock">
+              <div class="settingTitle">マスめサイズ（＝文字サイズも連動）</div>
+              <div class="pillset" role="group" aria-label="cell size">
+                <button class="pill" data-set="cellMm" data-value="7" aria-pressed="false">7mm</button>
+                <button class="pill" data-set="cellMm" data-value="10" aria-pressed="true">1cm</button>
+                <button class="pill" data-set="cellMm" data-value="15" aria-pressed="false">1.5cm</button>
+              </div>
+            </div>
+
+            <div class="settingBlock">
+              <div class="settingTitle">もじの微調整</div>
+              <div class="pillset" role="group" aria-label="text scale">
+                <button class="pill" data-set="textScale" data-value="0.9" aria-pressed="false">90%</button>
+                <button class="pill" data-set="textScale" data-value="1.0" aria-pressed="true">100%</button>
+                <button class="pill" data-set="textScale" data-value="1.1" aria-pressed="false">110%</button>
+              </div>
+            </div>
+
+            <div class="row" style="justify-content:flex-end;">
+              <button class="btn" id="btnBack">もどる</button>
+              <button class="btn primary" id="btnPrint">印刷する</button>
+            </div>
+          </div>
+
+          <div class="paperFrame">
+            <div class="paper" id="paper">
+              <div class="grid" id="paperGrid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <button class="btn" id="btnBack2">もどる</button>
+        <button class="btn primary" id="btnPrint2">印刷する</button>
+      </div>
+    </section>
+  </div>
+
+<script>
+(function(){
+  /** -----------------------
+   * State
+   * ----------------------*/
+  const state = {
+    version: 1,
+    problems: [],
+    overflow: {},
+    settings: {
+      itemsPerPage: 6,
+      gridMode: "on", // "none" | "on"
+      gridStyle: "lines", // "lines" | "stripe_lines"
+      stripeColorHex: "#000000",
+      stripeAlpha: 0.06,
+      cellMm: 10, // 5/7/10
+      textScale: 1.0 // 0.9/1.0/1.1
+    }
+  };
+
+  /** -----------------------
+   * Helpers
+   * ----------------------*/
+
+  function hexToRgb(hex){
+    const h = String(hex || "").trim().replace(/^#/, "");
+    if(!/^[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(h)) return { r:0, g:0, b:0 };
+    const full = h.length === 3 ? h.split("").map(ch => ch + ch).join("") : h;
+    const n = parseInt(full, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+
+  function applyStripeCssVars(){
+    const hex = state.settings.stripeColorHex || "#000000";
+    const a = Number(state.settings.stripeAlpha ?? 0.06);
+    const { r, g, b } = hexToRgb(hex);
+    document.documentElement.style.setProperty("--stripe-fill", `rgba(${r},${g},${b},${a})`);
+  }
+
+  function uid(){
+    return "p-" + Math.random().toString(16).slice(2, 10);
+  }
+
+  function normalizeOp(op){
+    if(op === "x" || op === "X" || op === "*" || op === "×") return "×";
+    if(op === "/" || op === "／" || op === "÷") return "÷";
+    if(op === "+" ) return "+";
+    if(op === "-" || op === "−" ) return "-";
+    return null;
+  }
+
+  // MVP parser: "123 + 45" / "36×24" / "492/12"
+  function parseExpression(input){
+    // Normalize: fullwidth->halfwidth, remove spaces
+    let s = String(input || "").normalize("NFKC").replace(/\s+/g, "");
+    if(!s) return { ok:false, error:"式が空です" };
+
+    // Allow Japanese words (from voice input)
+    s = s.replace(/たす|プラス/gi, "+");
+    s = s.replace(/ひく|マイナス/gi, "-");
+    s = s.replace(/かける|かけ/gi, "×");
+    s = s.replace(/わる|割る/gi, "÷");
+
+    // Accept common operator variants
+    s = s.replace(/[xX\*＊]/g, "×");
+    s = s.replace(/[\/／]/g, "÷");
+    s = s.replace(/[＋]/g, "+");
+    s = s.replace(/[－−]/g, "-");
+
+    // Parse: (digits(.digits)?) op (digits(.digits)?)
+    const m = s.match(/^(\d+(?:\.\d+)?)([+\-×÷])(\d+(?:\.\d+)?)$/);
+    if(!m) return { ok:false, error:"形式が認識できません（例：123+45 / 12.3+4.56 / 36×24）" };
+
+    const aStr = m[1];
+    const op = m[2];
+    const bStr = m[3];
+
+    const a = Number(aStr);
+    const b = Number(bStr);
+
+    if(!Number.isFinite(a) || !Number.isFinite(b)) return { ok:false, error:"数が正しくありません" };
+    if(op === "÷" && b === 0) return { ok:false, error:"0では割れません" };
+
+    const display = `${aStr}${op}${bStr}`;
+    return { ok:true, value:{ a, b, aStr, bStr, op, display } };
+  }
+
+
+  /** -----------------------
+   * Voice-friendly normalize: Japanese number reading -> digits (0..99999)
+   * ----------------------*/
+  function kataToHira(s){
+    // convert Katakana to Hiragana
+    return s.replace(/[\u30a1-\u30f6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+  }
+
+  function normalizeJpNumberString(s){
+    let t = String(s || "").normalize("NFKC");
+    t = kataToHira(t);
+    // remove common fillers and punctuation/spaces
+    // NOTE: 小数点「.」は消さない（小数対応）
+    t = t.replace(/[()（）［］\[\]{}<>「」『』、，,。．・\s]/g, "");
+    // normalize sound-change variants
+    t = t.replace(/びゃく|ぴゃく/g, "ひゃく");
+    t = t.replace(/ぜん/g, "せん");
+    // small-tsu variants before ひゃく/せん
+    t = t.replace(/ろっひゃく/g, "ろくひゃく");
+    t = t.replace(/はっひゃく/g, "はちひゃく");
+    t = t.replace(/ろっせん/g, "ろくせん");
+    t = t.replace(/はっせん/g, "はちせん");
+    return t;
+  }
+
+  function jpDigit(token){
+    const m = {
+      "ぜろ":0,"れい":0,"零":0,"0":0,
+      "いち":1,"一":1,"1":1,
+      "に":2,"二":2,"2":2,
+      "さん":3,"三":3,"3":3,
+      "よん":4,"四":4,"し":4,"4":4,
+      "ご":5,"五":5,"5":5,
+      "ろく":6,"六":6,"6":6,
+      "なな":7,"七":7,"しち":7,"7":7,
+      "はち":8,"八":8,"8":8,
+      "きゅう":9,"九":9,"く":9,"9":9
+    };
+    return (token in m) ? m[token] : null;
+  }
+
+  function parseUnder10000(raw){
+    let s = normalizeJpNumberString(raw);
+    if(!s) return 0;
+
+    // If already digits
+    if(/^\d+$/.test(s)) return Number(s);
+
+    // Kanji numeric (very simple: allow 〇一二三四五六七八九)
+    if(/^[〇一二三四五六七八九]+$/.test(s)){
+      const map = { "〇":"0","一":"1","二":"2","三":"3","四":"4","五":"5","六":"6","七":"7","八":"8","九":"9" };
+      return Number(s.split("").map(ch => map[ch]).join(""));
+    }
+
+    let total = 0;
+
+    function takeUnit(unitWord, unitVal){
+      const i = s.indexOf(unitWord);
+      if(i === -1) return;
+      const left = s.slice(0, i);
+      const right = s.slice(i + unitWord.length);
+      let n;
+      if(left === ""){
+        n = 1;
+      } else {
+        // left should be a single digit reading
+        n = jpDigit(left);
+        if(n === null){
+          // fallback: try numeric
+          n = /^\d+$/.test(left) ? Number(left) : null;
+        }
+        if(n === null) return;
+      }
+      total += n * unitVal;
+      s = right;
+    }
+
+    takeUnit("せん", 1000);
+    takeUnit("千", 1000);
+    takeUnit("ひゃく", 100);
+    takeUnit("百", 100);
+    takeUnit("じゅう", 10);
+    takeUnit("十", 10);
+
+    if(s){
+      // remaining should be a single digit
+      const d = jpDigit(s);
+      if(d !== null) total += d;
+      else if(/^\d+$/.test(s)) total += Number(s);
+      else if(/^[〇一二三四五六七八九]+$/.test(s)){
+        const map = { "〇":"0","一":"1","二":"2","三":"3","四":"4","五":"5","六":"6","七":"7","八":"8","九":"9" };
+        total += Number(s.split("").map(ch => map[ch]).join(""));
+      } else {
+        return null;
+      }
+    }
+    return total;
+  }
+
+  function jpToNumber(raw){
+    if(raw == null) return null;
+    let s = normalizeJpNumberString(raw);
+    if(!s) return null;
+
+    // already digits (int or decimal)
+    if(/^\d+(?:\.\d+)?$/.test(s)) return Number(s);
+
+    // split by 万 / まん (0..9万 + remainder)
+    let total = 0;
+    const manIdx = s.indexOf("まん");
+    const manIdxKanji = s.indexOf("万");
+    let idxMan = manIdx !== -1 ? manIdx : manIdxKanji;
+
+    if(idxMan !== -1){
+      const left = s.slice(0, idxMan);
+      const right = s.slice(idxMan + (s[idxMan] === "万" ? 1 : 2));
+      const manPart = left === "" ? 1 : parseUnder10000(left);
+      if(manPart == null) return null;
+      total += manPart * 10000;
+      const rest = parseUnder10000(right);
+      if(rest == null) return null;
+      total += rest;
+      return total;
+    }
+
+    const n = parseUnder10000(s);
+    return (n == null) ? null : n;
+  }
+
+  function normalizeVoiceExpr(input){
+    let s = String(input || "").normalize("NFKC");
+    s = kataToHira(s);
+    // decimal point words
+    s = s.replace(/てん|点/g, ".");
+    // Remove brackets/spaces/punct
+    // NOTE: 小数点「.」は消さない（小数対応）
+    s = s.replace(/[()（）［］\[\]{}<>「」『』、，,。．・\s]/g, "");
+    // operator words (hiragana/katakana/kanji)
+    s = s.replace(/たす|ぷらす|プラス|足す/g, "+");
+    s = s.replace(/ひく|まいなす|マイナス|引く/g, "-");
+    s = s.replace(/かける|かけ|掛ける|掛け/g, "×");
+    s = s.replace(/わる|わりる|割る/g, "÷");
+    // Common math-words
+    s = s.replace(/たしざん|足し算/g, "+");
+    s = s.replace(/ひきざん|引き算/g, "-");
+    s = s.replace(/かけざん|掛け算/g, "×");
+    s = s.replace(/わりざん|割り算/g, "÷");
+
+    // operator symbols variants
+    s = s.replace(/[xX\*＊]/g, "×");
+    s = s.replace(/[\/／]/g, "÷");
+
+    const m = s.match(/^(.+?)([+\-×÷])(.+)$/);
+    if(!m) return { ok:false, error:"演算子（たす/ひく/かける/わる）が見つかりません" };
+
+    const leftRaw = m[1];
+    const op = m[2];
+    const rightRaw = m[3];
+
+    const a = jpToNumber(leftRaw);
+    const b = jpToNumber(rightRaw);
+
+    if(a == null || b == null) return { ok:false, error:"数の読み取りに失敗しました（0〜99999の範囲・言い方を確認してください）" };
+    if(a < 0 || a > 99999 || b < 0 || b > 99999) return { ok:false, error:"0〜99999の範囲で入力してください" };
+    if(op === "÷" && b === 0) return { ok:false, error:"0では割れません" };
+
+    return { ok:true, value:`${a}${op}${b}` };
+  }
+
+  function tryConvertIntoExpr(){
+    const r = normalizeVoiceExpr(expr.value);
+    if(!r.ok){
+      // Do not popup every time; just leave the input as-is.
+      return false;
+    }
+    expr.value = r.value;
+    return true;
+  }
+
+
+  function clamp(n, lo, hi){
+    return Math.max(lo, Math.min(hi, n));
+  }
+
+  /** -----------------------
+   * DOM
+   * ----------------------*/
+  const $ = (sel) => document.querySelector(sel);
+  const expr = $("#expr");
+  const list = $("#list");
+  const btnAdd = $("#btnAdd");
+  const btnMic = $("#btnMic");
+  const btnConvert = $("#btnConvert");
+  const btnClear = $("#btnClear");
+  const btnToPreview = $("#btnToPreview");
+
+  const previewPanel = $("#previewPanel");
+  const inputPanel = $("#inputPanel");
+  const btnBack = $("#btnBack");
+  const btnBack2 = $("#btnBack2");
+  const btnPrint = $("#btnPrint");
+  const btnPrint2 = $("#btnPrint2");
+  const paper = $("#paper");
+  const paperGrid = $("#paperGrid");
+  const gridStyleBlock = $("#gridStyleBlock");
+  const cellSizeBlock = $("#cellSizeBlock");
+  const stripeColorBlock = $("#stripeColorBlock");
+  const stripeColorHex = $("#stripeColorHex");
+  const stripeAlpha = $("#stripeAlpha");
+  const stripeAlphaLabel = $("#stripeAlphaLabel");
+
+  /** -----------------------
+   * Rendering: List
+   * ----------------------*/
+  function renderList(){
+    list.innerHTML = "";
+    if(state.problems.length === 0){
+      const empty = document.createElement("div");
+      empty.style.color = "var(--muted)";
+      empty.style.fontSize = "13px";
+      empty.style.padding = "10px";
+      empty.textContent = "まだ問題がありません。上の入力欄から追加してください。";
+      list.appendChild(empty);
+      btnToPreview.disabled = true;
+      return;
+    }
+    btnToPreview.disabled = false;
+
+    state.problems.forEach((p, idx) => {
+      const item = document.createElement("div");
+      item.className = "item";
+      if(state.overflow[p.id]){ item.style.borderColor = "#ffb4b4"; item.style.boxShadow = "0 0 0 3px rgba(255,0,0,0.06)"; }
+
+      const left = document.createElement("div");
+      left.className = "left";
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = `${idx + 1}）`;
+
+      const editWrap = document.createElement("div");
+      editWrap.className = "edit";
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = p.display;
+      input.setAttribute("aria-label", `problem-${idx+1}`);
+      input.addEventListener("change", () => {
+        const parsed = parseExpression(input.value);
+        if(!parsed.ok){
+          alert(parsed.error);
+          input.value = p.display;
+          return;
+        }
+        p.op = parsed.value.op;
+        p.a = parsed.value.a;
+        p.b = parsed.value.b;
+        p.aStr = parsed.value.aStr;
+        p.bStr = parsed.value.bStr;
+        p.display = parsed.value.display;
+    document.documentElement.style.setProperty('--cell', `${state.settings.cellMm}mm`);
+    renderPreview();
+      });
+
+      editWrap.appendChild(input);
+
+      const warnInline = document.createElement("div");
+      warnInline.className = "meta";
+      warnInline.style.color = "#b00020";
+      warnInline.textContent = state.overflow[p.id] ? "⚠ 桁数が多くてマス目に収まりません" : "";
+      if(state.overflow[p.id]) editWrap.appendChild(warnInline);
+
+      left.appendChild(meta);
+      left.appendChild(editWrap);
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const up = document.createElement("button");
+      up.className = "btn icon";
+      up.innerHTML = "▲";
+      up.title = "上へ";
+      up.disabled = idx === 0;
+      up.addEventListener("click", () => {
+        const tmp = state.problems[idx-1];
+        state.problems[idx-1] = state.problems[idx];
+        state.problems[idx] = tmp;
+        renderList();
+        renderPreview();
+      });
+
+      const down = document.createElement("button");
+      down.className = "btn icon";
+      down.innerHTML = "▼";
+      down.title = "下へ";
+      down.disabled = idx === state.problems.length - 1;
+      down.addEventListener("click", () => {
+        const tmp = state.problems[idx+1];
+        state.problems[idx+1] = state.problems[idx];
+        state.problems[idx] = tmp;
+        renderList();
+        renderPreview();
+      });
+
+      const del = document.createElement("button");
+      del.className = "btn danger icon";
+      del.innerHTML = "🗑";
+      del.title = "削除";
+      del.addEventListener("click", () => {
+        state.problems.splice(idx, 1);
+        renderList();
+        renderPreview();
+      });
+
+      actions.appendChild(up);
+      actions.appendChild(down);
+      actions.appendChild(del);
+
+      item.appendChild(left);
+      item.appendChild(actions);
+      list.appendChild(item);
+    });
+  }
+
+  /** -----------------------
+   * Rendering: Paper Preview
+   * ----------------------*/
+  function setPillPressed(groupName, value){
+    document.querySelectorAll(`[data-set="${groupName}"]`).forEach(btn => {
+      btn.setAttribute("aria-pressed", btn.dataset.value === String(value) ? "true" : "false");
+    });
+  }
+
+  function ensureSettingsUI(){
+    setPillPressed("items", state.settings.itemsPerPage);
+    setPillPressed("gridMode", state.settings.gridMode);
+    setPillPressed("gridStyle", state.settings.gridStyle);
+    setPillPressed("cellMm", state.settings.cellMm);
+    setPillPressed("textScale", state.settings.textScale.toFixed(1));
+
+    // Stripe controls
+    if(stripeColorHex){
+      stripeColorHex.value = state.settings.stripeColorHex || "#000000";
+    }
+    if(stripeAlpha){
+      const a = Number(state.settings.stripeAlpha ?? 0.06);
+      stripeAlpha.value = String(Math.round(a * 100));
+    }
+    if(stripeAlphaLabel){
+      const pct = Math.round((state.settings.stripeAlpha ?? 0.06) * 100);
+      stripeAlphaLabel.textContent = `${pct}%`;
+    }
+
+    const gridOn = state.settings.gridMode === "on";
+    gridStyleBlock.style.display = gridOn ? "grid" : "none";
+    cellSizeBlock.style.display = gridOn ? "grid" : "none";
+    stripeColorBlock.style.display = (gridOn && state.settings.gridStyle === "stripe_lines") ? "grid" : "none";
+
+  }
+
+  function gridDims(items){
+    if(items === 2) return { cols: 1, rows: 2 };
+    if(items === 4) return { cols: 2, rows: 2 };
+    if(items === 6) return { cols: 2, rows: 3 };
+    if(items === 8) return { cols: 2, rows: 4 };
+    return { cols: 2, rows: 3 };
+  }
+
+  function applyPaperVars(){
+    document.querySelectorAll(".paper").forEach(p => {
+      p.style.setProperty("--cell", `${state.settings.cellMm}mm`);
+      p.style.setProperty("--font-scale", String(state.settings.textScale));
+    });
+  }
+
+  function makeDigitsRow(strDigits, maxDigits, withOp=null){
+    // returns a div representing a row of cells right-aligned to maxDigits, optionally includes op cell to the left.
+    const row = document.createElement("div");
+    row.className = "rowDigits";
+
+    const digits = String(strDigits);
+    const pad = Math.max(0, maxDigits - digits.length);
+
+    // Optional op column counts as 1 cell; we will render op cell and then digits cells
+    if(withOp){
+      const opCell = document.createElement("div");
+      opCell.className = "cell op";
+      opCell.textContent = withOp;
+      row.appendChild(opCell);
+    } else {
+      // empty cell to align with op column for consistent width
+      const blank = document.createElement("div");
+      blank.className = "cell";
+      blank.textContent = "";
+      row.appendChild(blank);
+    }
+
+    for(let i=0;i<pad;i++){
+      const c = document.createElement("div");
+      c.className = "cell";
+      c.textContent = "";
+      row.appendChild(c);
+    }
+    for(const ch of digits){
+      const c = document.createElement("div");
+      c.className = "cell";
+      c.textContent = ch;
+      row.appendChild(c);
+    }
+    return row;
+  }
+
+  function renderAddSubMul(problem){
+    const rawA = String(problem.aStr ?? problem.a);
+    const rawB = String(problem.bStr ?? problem.b);
+
+    function splitDecimal(s){
+      const t = String(s);
+      if(!t.includes(".")) return { int:t, frac:"" };
+      const parts = t.split(".");
+      return { int: parts[0] || "0", frac: parts[1] || "" };
+    }
+
+    const A = splitDecimal(rawA);
+    const B = splitDecimal(rawB);
+
+    let aDigits = "";
+    let bDigits = "";
+    let aIntLen = A.int.length;
+    let bIntLen = B.int.length;
+
+    let showDotA = false;
+    let showDotB = false;
+
+    // Add/Sub decimal alignment helpers (used by placeDot)
+    let maxIntLen = 0;
+    let fracLenAligned = 0;
+
+    if(problem.op === "+" || problem.op === "-"){
+      // 小数点位置をそろえる（表示上はゼロを足さない）
+      // 右側の不足分は「空欄」で埋め、点の位置（整数部の終わり）は maxIntLen に固定する
+      fracLenAligned = Math.max(A.frac.length, B.frac.length);
+      maxIntLen = Math.max(A.int.length, B.int.length);
+
+      function buildAligned(intStr, fracStr){
+        const leftPad = Math.max(0, maxIntLen - intStr.length);
+        const rightPad = Math.max(0, fracLenAligned - fracStr.length);
+        const arr = [];
+        for(let i=0;i<leftPad;i++) arr.push("");
+        for(const ch of intStr) arr.push(ch);
+        for(const ch of fracStr) arr.push(ch);
+        for(let i=0;i<rightPad;i++) arr.push("");
+        return arr;
+      }
+
+      aDigits = buildAligned(A.int, A.frac);
+      bDigits = buildAligned(B.int, B.frac);
+
+      // dot is drawn separately; show dot on BOTH rows when any decimals exist
+      // show dot only on rows that actually have decimals
+      showDotA = A.frac.length > 0;
+      showDotB = B.frac.length > 0;
+    } else if(problem.op === "×"){
+      // Right-align digits; dot is drawn separately per row (no need to align dots)
+      aDigits = (A.int + A.frac);
+      bDigits = (B.int + B.frac);
+      showDotA = A.frac.length > 0;
+      showDotB = B.frac.length > 0;
+    } else {
+      // Fallback: treat as integers
+      aDigits = String(problem.a);
+      bDigits = String(problem.b);
+    }
+
+    const maxDigits = Math.max(aDigits.length, bDigits.length);
+
+    // For multiplication, give extra left space for partial products (as user requested)
+    const extraLeft = (problem.op === "×") ? Math.max(2, bDigits.length) : 0;
+
+    const cols = extraLeft + 1 + maxDigits; // extra + op/blank + digits
+    const rows = 4; // a, b(op), line, answer line
+
+    const cellPx = pxPerCell();
+    const w = cols * cellPx;
+    const h = rows * cellPx;
+
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("width", String(w));
+    svg.setAttribute("height", String(h));
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+    svg.style.display = "block";
+
+    const g = document.createElementNS(ns, "g");
+    g.setAttribute("font-family","BIZ UDGothic Mono,BIZ UDGothic,Noto Sans Mono,monospace");
+    g.setAttribute("font-size", String(cellPx * 0.75 * state.settings.textScale));
+    g.setAttribute("fill", "rgba(0,0,0,0.95)");
+
+    function placeNumber(digitsStr, rowIndex, withOp){
+      const arr = Array.isArray(digitsStr) ? digitsStr : String(digitsStr).split("");
+      const baseCol = extraLeft;
+      const y = rowIndex * cellPx + cellPx / 2;
+
+      if(withOp){
+        const opX = (baseCol + 0.5) * cellPx;
+        const t = document.createElementNS(ns, "text");
+        t.setAttribute("x", String(opX));
+        t.setAttribute("y", String(y));
+        t.setAttribute("text-anchor", "middle");
+        t.setAttribute("dominant-baseline", "middle");
+        t.textContent = withOp;
+        g.appendChild(t);
+      }
+
+      // Right-align digits (ones place aligned) within the maxDigits area
+      const pad = maxDigits - arr.length;
+      for(let i=0;i<arr.length;i++){
+        const col = baseCol + 1 + pad + i;
+        const x = (col + 0.5) * cellPx;
+        const t = document.createElementNS(ns, "text");
+        t.setAttribute("x", String(x));
+        t.setAttribute("y", String(y));
+        t.setAttribute("text-anchor", "middle");
+        t.setAttribute("dominant-baseline", "middle");
+        t.textContent = arr[i] || "";
+        g.appendChild(t);
+      }
+      return { pad };
+    }
+
+    function placeDot(rowIndex, intLen, digitsLen){
+      // Dot does NOT consume a cell: draw a small point near the bottom of the row.
+      const baseCol = extraLeft;
+      const pad = maxDigits - digitsLen;
+      const startCol = baseCol + 1 + pad;
+
+      // boundary column (between int and frac)
+      const boundaryCol = ((problem.op === "+" || problem.op === "-") && (showDotA || showDotB))
+        ? (baseCol + 1 + maxIntLen)
+        : (startCol + intLen);
+
+      // Position: on the boundary, slightly shifted to avoid grid line overlap
+      const shiftX = cellPx * 0.06;
+      const x = boundaryCol * cellPx + shiftX;
+
+      // "罫線の上あたり" = slightly above the bottom of the cell
+      const y = rowIndex * cellPx + cellPx * 0.72;
+
+      const r = Math.max(1.1, cellPx * 0.06);
+
+      const c = document.createElementNS(ns, "circle");
+      c.setAttribute("cx", String(x));
+      c.setAttribute("cy", String(y));
+      c.setAttribute("r", String(r));
+      c.setAttribute("fill", "rgba(0,0,0,0.90)");
+      svg.appendChild(c);
+    }
+
+    // Place digits and dots
+    placeNumber(aDigits, 0, null);
+    placeNumber(bDigits, 1, problem.op === "×" ? "×" : problem.op);
+
+    if(showDotA) placeDot(0, aIntLen, aDigits.length);
+    if(showDotB) placeDot(1, bIntLen, bDigits.length);
+
+    // line under the second row (fit to the actual digits area)
+    const line1 = document.createElementNS(ns, "line");
+    const contentLeft = extraLeft * cellPx;                // starts at op column
+    const contentRight = (extraLeft + 1 + maxDigits) * cellPx; // ends after last digit column
+    line1.setAttribute("x1", String(Math.round(contentLeft)+0.5));
+    line1.setAttribute("x2", String(Math.round(contentRight)+0.5));
+    line1.setAttribute("y1", String(Math.round(2*cellPx)+0.5));
+    line1.setAttribute("y2", String(Math.round(2*cellPx)+0.5));
+    line1.setAttribute("stroke", "rgba(0,0,0,0.80)");
+    line1.setAttribute("stroke-width", "2");
+    line1.setAttribute("shape-rendering", "crispEdges");
+
+    svg.dataset.colsNeeded = String(cols);
+    svg.appendChild(line1);
+    svg.appendChild(g);
+    return svg;
+  }
+
+  function renderDivisionFrame(problem){
+    // NOTE: 小数点は1マスとして数えず、入力どおりの位置に「点」を重ね描きする
+    const divisorRaw = String((problem && (problem.bStr ?? problem.b)) ?? "");
+    const dividendRaw = String((problem && (problem.aStr ?? problem.a)) ?? "");
+
+    const cellPx = pxPerCell();
+    const ns = "http://www.w3.org/2000/svg";
+
+    function splitDec(s){
+      const i = s.indexOf(".");
+      if(i === -1) return { int:s, frac:"", hasDot:false };
+      return { int:s.slice(0,i), frac:s.slice(i+1), hasDot:true };
+    }
+    function digitsOnly(s){
+      return String(s).replace(".", "");
+    }
+
+    const ds = splitDec(divisorRaw);
+    const vs = splitDec(dividendRaw);
+
+    const divisorDigits = digitsOnly(divisorRaw);
+    const dividendDigits = digitsOnly(dividendRaw);
+
+    // 左：割る数 / 右：割られる数（境界に括弧）
+    const leftCols = Math.max(2, divisorDigits.length);
+    const rightCols = Math.max(3, dividendDigits.length);
+    const cols = leftCols + rightCols;
+    const rows = 6;
+
+    const w = cols * cellPx;
+    const h = rows * cellPx;
+
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("width", String(w));
+    svg.setAttribute("height", String(h));
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+    svg.style.display = "block";
+
+    // ===== 割り算の括弧（上の横線＋「)」カーブ） =====
+    const bx = leftCols * cellPx;   // boundary x
+    const by = 1 * cellPx;          // top bar y
+    const barLen = rightCols * cellPx;
+
+    const sw = 3;
+    const bulge = cellPx * 0.25;
+
+    const x = Math.round(bx) + 0.5;
+    const y = Math.round(by) + 0.5;
+    const y2 = Math.round(by + cellPx) + 0.5;
+    const x2 = Math.round(bx + barLen) + 0.5;
+
+    const topLine = document.createElementNS(ns, "line");
+    topLine.setAttribute("x1", String(x));
+    topLine.setAttribute("y1", String(y));
+    topLine.setAttribute("x2", String(x2));
+    topLine.setAttribute("y2", String(y));
+    topLine.setAttribute("stroke", "rgba(0,0,0,0.95)");
+    topLine.setAttribute("stroke-width", String(sw));
+    topLine.setAttribute("shape-rendering", "crispEdges");
+    topLine.setAttribute("stroke-linecap", "square");
+    svg.appendChild(topLine);
+
+    const curve = document.createElementNS(ns, "path");
+    curve.setAttribute("d", `M ${x} ${y} C ${x + bulge} ${y} ${x + bulge} ${y2} ${x} ${y2}`);
+    curve.setAttribute("fill", "none");
+    curve.setAttribute("stroke", "rgba(0,0,0,0.85)");
+    curve.setAttribute("stroke-width", String(sw));
+    curve.setAttribute("stroke-linecap", "round");
+    curve.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(curve);
+
+    // ===== 数字 =====
+    const g = document.createElementNS(ns, "g");
+    g.setAttribute("font-family","BIZ UDGothic Mono,BIZ UDGothic,Noto Sans Mono,monospace");
+    g.setAttribute("font-size", String(cellPx * 0.75 * state.settings.textScale));
+    g.setAttribute("fill", "black");
+
+    const yDigits = 1 * cellPx + cellPx / 2;
+
+    // 割る数（左から開始）— 小数点は数えず、数字だけ配置
+    const startDivCol = Math.max(0, leftCols - divisorDigits.length);
+    for(let i=0;i<divisorDigits.length;i++){
+      const col = startDivCol + i;
+      const t = document.createElementNS(ns, "text");
+      t.setAttribute("x", (col + 0.5) * cellPx);
+      t.setAttribute("y", yDigits);
+      t.setAttribute("text-anchor", "middle");
+      t.setAttribute("dominant-baseline", "middle");
+      t.textContent = divisorDigits[i];
+      g.appendChild(t);
+    }
+
+    // 割られる数（すぐ右：余計な1マスなし）— 小数点は数えず、数字だけ配置
+    for(let i=0;i<dividendDigits.length;i++){
+      const col = leftCols + i;
+      const t = document.createElementNS(ns, "text");
+      t.setAttribute("x", (col + 0.5) * cellPx);
+      t.setAttribute("y", yDigits);
+      t.setAttribute("text-anchor", "middle");
+      t.setAttribute("dominant-baseline", "middle");
+      t.textContent = dividendDigits[i];
+      g.appendChild(t);
+    }
+
+    // ===== 小数点（点）を入力どおりに重ね描き =====
+    function addDot(startCol, intLen){
+      // 点の位置：整数部の右端と小数部の左端の間（セル境界上）
+      const cx = (startCol + intLen) * cellPx;
+      const cy = 1 * cellPx + cellPx * 0.72; // 罫線の上あたり（行の下寄り）
+      const r = Math.max(1.2, cellPx * 0.08);
+
+      const c = document.createElementNS(ns, "circle");
+      c.setAttribute("cx", String(cx));
+      c.setAttribute("cy", String(cy));
+      c.setAttribute("r", String(r));
+      c.setAttribute("fill", "rgba(0,0,0,0.95)");
+      svg.appendChild(c);
+    }
+
+    if(ds.hasDot){
+      addDot(startDivCol, ds.int.length);
+    }
+    if(vs.hasDot){
+      addDot(leftCols, vs.int.length);
+    }
+
+    svg.dataset.colsNeeded = String(cols);
+    svg.appendChild(g);
+    return svg;
+  }
+
+
+  function problemToElement(problem){
+
+    const container = document.createElement("div");
+    container.className = "problem";
+
+    const bg = document.createElement("div");
+    bg.className = "bg";
+
+    if(state.settings.gridMode === "on"){
+      bg.classList.add(state.settings.gridStyle);
+    }
+
+    container.appendChild(bg);
+
+    const content = document.createElement("div");
+    content.className = "content";
+    // Alignment: × is right-aligned; others start from the leftmost grid
+    content.classList.add(problem.op === "×" ? "align-right" : "align-left");
+
+    let block;
+    if(problem.op === "÷"){
+      block = renderDivisionFrame(problem);
+    } else {
+      block = renderAddSubMul(problem);
+    }
+
+    block.dataset.pid = problem.id;
+    block.dataset.op = problem.op;
+    content.appendChild(block);
+    container.appendChild(content);
+
+    return container;
+  }
+
+  
+  function pxPerCell(){
+    // Create (or reuse) a hidden probe to convert CSS --cell to px
+    let probe = document.getElementById("__cellProbe");
+    if(!probe){
+      probe = document.createElement("div");
+      probe.id = "__cellProbe";
+      probe.style.position = "absolute";
+      probe.style.left = "-9999px";
+      probe.style.top = "-9999px";
+      probe.style.width = "var(--cell)";
+      probe.style.height = "var(--cell)";
+      document.body.appendChild(probe);
+    }
+    return probe.getBoundingClientRect().width;
+  }
+
+  function buildGridSVG(w, h, cellPx, style){
+    // SVG with crisp lines aligned to whole pixels
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+
+    // optional stripes (every other column)
+    if(style === "stripe_lines"){
+      const stripe = document.createElementNS(ns, "g");
+      const stripeAlpha = Number(state.settings.stripeAlpha ?? 0.06);
+      const stripeHex = state.settings.stripeColorHex || "#000000";
+      const { r:sr, g:sg, b:sb } = hexToRgb(stripeHex);
+      for(let x=0, col=0; x < w + 0.5; x += cellPx, col++){
+        if(col % 2 === 1){
+          const r = document.createElementNS(ns, "rect");
+          r.setAttribute("x", x);
+          r.setAttribute("y", 0);
+          r.setAttribute("width", cellPx);
+          r.setAttribute("height", h);
+          r.setAttribute("fill", `rgba(${sr},${sg},${sb},${stripeAlpha})`);
+          stripe.appendChild(r);
+        }
+      }
+      svg.appendChild(stripe);
+    }
+
+    const lines = document.createElementNS(ns, "g");
+    lines.setAttribute("shape-rendering", "crispEdges");
+
+    const stroke = "rgba(0,0,0,0.14)";
+    // vertical lines
+    for(let x=0; x <= w + 0.5; x += cellPx){
+      const lx = x;
+      const l = document.createElementNS(ns, "line");
+      l.setAttribute("x1", lx);
+      l.setAttribute("y1", 0);
+      l.setAttribute("x2", lx);
+      l.setAttribute("y2", h);
+      l.setAttribute("stroke", stroke);
+      l.setAttribute("stroke-width", "1");
+      lines.appendChild(l);
+    }
+    // horizontal lines
+    for(let y=0; y <= h + 0.5; y += cellPx){
+      const ly = y;
+      const l = document.createElementNS(ns, "line");
+      l.setAttribute("x1", 0);
+      l.setAttribute("y1", ly);
+      l.setAttribute("x2", w);
+      l.setAttribute("y2", ly);
+      l.setAttribute("stroke", stroke);
+      l.setAttribute("stroke-width", "1");
+      lines.appendChild(l);
+    }
+    svg.appendChild(lines);
+    return svg;
+  }
+
+  
+  function alignBlocksToGrid(){
+    const cellPx = pxPerCell();
+    document.querySelectorAll(".problem").forEach(el => {
+      const svg = el.querySelector("svg");
+      const bg  = el.querySelector(".bg");
+      if(!svg || !bg) return;
+
+      const needCols = Number(svg.dataset.colsNeeded || "0");
+      if(!needCols) return;
+
+      const bgW = bg.getBoundingClientRect().width;
+      // Use rounding (not floor) to avoid off-by-one from sub-pixel widths
+      const availCols = Math.max(0, Math.round(bgW / cellPx));
+
+      let offsetCols = 0;
+      if(svg.dataset.op === "×"){
+        offsetCols = Math.max(0, availCols - needCols);
+      }
+
+      // Apply snapping via transform to avoid layout interactions with margins
+      const offsetPx = offsetCols * cellPx;
+      svg.style.marginLeft = "0px";
+      svg.style.transform = `translateX(${offsetPx}px)`;
+      svg.style.transformOrigin = "left top";
+    });
+  }
+
+
+function applyGridBackgrounds(){
+    if(state.settings.gridMode !== "on") return;
+
+    const cellPx = pxPerCell();
+    document.querySelectorAll(".problem .bg").forEach(bg => {
+      bg.innerHTML = "";
+      const rect = bg.getBoundingClientRect();
+      const w = Math.max(0, rect.width);
+      const h = Math.max(0, rect.height);
+      if(w === 0 || h === 0) return;
+      const svg = buildGridSVG(w, h, cellPx, state.settings.gridStyle);
+      bg.appendChild(svg);
+    });
+  }
+
+  function injectDivisionBrackets(){ /* bracket now drawn inside SVG content */ }
+
+  function renderPreview(){
+    ensureSettingsUI();
+    applyPaperVars();
+    applyStripeCssVars();
+
+    const { cols, rows } = gridDims(state.settings.itemsPerPage);
+
+    // --- Multi-page: build as many sheets as needed ---
+    const n = state.settings.itemsPerPage;
+    const totalProblems = state.problems.length;
+    const pages = Math.max(1, Math.ceil(totalProblems / n));
+
+    // paperFrame contains the first #paper; we will reuse it as page 1 and add/remove extra pages as needed
+    const paperFrame = paper.parentElement;
+
+    // Remove any previously auto-added pages
+    paperFrame.querySelectorAll(".paper.autoPage").forEach(p => p.remove());
+
+    // Helper to get/create a grid element inside a paper
+    function ensurePaperGrid(paperEl){
+      let g = paperEl.querySelector(".grid");
+      if(!g){
+        g = document.createElement("div");
+        g.className = "grid";
+        paperEl.appendChild(g);
+      }
+      return g;
+    }
+
+    // Configure each page
+    for(let pageIndex=0; pageIndex<pages; pageIndex++){
+      const isFirst = pageIndex === 0;
+      const paperEl = isFirst ? paper : (() => {
+        const p = document.createElement("div");
+        p.className = "paper autoPage";
+        // Inherit same padding/size via CSS variables from :root; nothing else needed
+        // Insert after the first paper, before the hint
+        const hintEl = paperFrame.querySelector(".hint");
+        paperFrame.insertBefore(p, hintEl || null);
+        return p;
+      })();
+
+      const gridEl = isFirst ? paperGrid : ensurePaperGrid(paperEl);
+      gridEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+      gridEl.innerHTML = "";
+
+      // Clear any previous SVG grids when turning off
+      if(state.settings.gridMode !== "on"){
+        // handled below by applyGridBackgrounds query across all pages
+      }
+
+      const startIdx = pageIndex * n;
+      const slice = state.problems.slice(startIdx, startIdx + n);
+
+      // Fill with blank problems if fewer
+      for(let i=0;i<n;i++){
+        const p = slice[i] ?? null;
+        if(!p){
+          const blank = document.createElement("div");
+          blank.className = "problem";
+          const bg = document.createElement("div");
+          bg.className = "bg";
+          if(state.settings.gridMode === "on"){
+            bg.classList.add(state.settings.gridStyle);
+          }
+          blank.appendChild(bg);
+          gridEl.appendChild(blank);
+          continue;
+        }
+        gridEl.appendChild(problemToElement(p));
+      }
+    }
+    // --- 印刷の最終ページだけ改ページしない（白紙ページ防止） ---
+    paperFrame.querySelectorAll(".paper.lastPaper").forEach(p => p.classList.remove("lastPaper"));
+    const allPapers = Array.from(paperFrame.querySelectorAll(".paper"));
+    if(allPapers.length){
+      allPapers[allPapers.length - 1].classList.add("lastPaper");
+    }
+
+
+    // When grid is off, ensure backgrounds cleared
+    if(state.settings.gridMode !== "on"){
+      document.querySelectorAll(".problem .bg").forEach(bg => bg.innerHTML = "");
+    }
+    // After DOM is updated, draw grid/brackets aligned in px
+    requestAnimationFrame(() => {
+      applyGridBackgrounds();
+      injectDivisionBrackets();
+
+      alignBlocksToGrid();
+
+      // --- Overflow check (digits not fitting into grid width) ---
+      state.overflow = {};
+      const problemsEls = Array.from(paperGrid.querySelectorAll(".problem"));
+      const cellPx = pxPerCell();
+      for(const el of problemsEls){
+        const svg = el.querySelector("svg");
+        const bg = el.querySelector(".bg");
+        if(!svg || !bg) continue;
+        const pid = svg.dataset.pid;
+        if(!pid) continue;
+
+        const needCols = Number(svg.dataset.colsNeeded || "0");
+        if(!needCols){ state.overflow[pid] = false; continue; }
+
+        const needW = needCols * cellPx;
+        const bgW  = bg.getBoundingClientRect().width;
+        const isOverflow = needW > (bgW + 0.5);
+        state.overflow[pid] = isOverflow;
+      }
+      renderList();
+    });
+  }
+
+  /** -----------------------
+   * Events
+   * ----------------------*/
+  btnAdd.addEventListener("click", () => {
+    let parsed = parseExpression(expr.value);
+    if(!parsed.ok){
+      // Try voice-style conversion (e.g., さんぜん...×さんびゃく...)
+      if(tryConvertIntoExpr()){
+        parsed = parseExpression(expr.value);
+      }
+    }
+    if(!parsed.ok){
+      alert(parsed.error);
+      return;
+    }
+    const p = {
+      id: uid(),
+      op: parsed.value.op,
+      a: parsed.value.a,
+      b: parsed.value.b,
+      aStr: parsed.value.aStr,
+      bStr: parsed.value.bStr,
+      display: parsed.value.display
+    };
+    state.problems.push(p);
+    expr.value = "";
+    renderList();
+    renderPreview();
+    expr.focus();
+  });
+
+
+  // Convert button: Japanese reading -> digits
+  btnConvert.addEventListener("click", () => {
+    tryConvertIntoExpr();
+    expr.focus();
+  });
+
+  // Mic button: intentionally disabled to avoid browser microphone permission prompts (use iPad keyboard dictation + 変換)
+  btnMic.addEventListener("click", () => {
+    // no-op
+    return;
+  });
+
+  expr.addEventListener("keydown", (e) => {
+    if(e.key === "Enter"){
+      e.preventDefault();
+      btnAdd.click();
+    }
+  });
+
+  btnClear.addEventListener("click", () => {
+    if(!confirm("すべての問題を消しますか？")) return;
+    state.problems = [];
+    renderList();
+    renderPreview();
+  });
+
+  btnToPreview.addEventListener("click", () => {
+    // keep both panels visible in app layout; just scroll to preview panel on small screens
+    previewPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  function hookSettingButtons(){
+    document.querySelectorAll(".pill").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const set = btn.dataset.set;
+        const value = btn.dataset.value;
+
+        if(set === "items"){
+          state.settings.itemsPerPage = Number(value);
+        }
+        if(set === "gridMode"){
+          state.settings.gridMode = value;
+        }
+        if(set === "gridStyle"){
+          state.settings.gridStyle = value;
+        }
+        if(set === "cellMm"){
+          state.settings.cellMm = Number(value);
+          document.documentElement.style.setProperty('--cell', `${state.settings.cellMm}mm`);
+        }
+        if(set === "textScale"){
+          state.settings.textScale = Number(value);
+        }
+        renderPreview();
+      });
+    });
+  }
+
+  btnBack.addEventListener("click", () => inputPanel.scrollIntoView({ behavior:"smooth", block:"start" }));
+  btnBack2.addEventListener("click", () => inputPanel.scrollIntoView({ behavior:"smooth", block:"start" }));
+
+  function doPrint(){
+    // Ensure latest render before printing (multi-page needs layout + rAF)
+    renderPreview();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+      });
+    });
+  }
+  btnPrint.addEventListener("click", doPrint);
+  btnPrint2.addEventListener("click", doPrint);
+
+  /** -----------------------
+   * Init
+   * ----------------------*/
+  // iPad-first: hide mic button to avoid browser microphone permission prompts
+  btnMic.style.display = "none";
+
+    // Stripe controls
+    if(stripeColorHex){
+      stripeColorHex.addEventListener("input", () => {
+        state.settings.stripeColorHex = stripeColorHex.value;
+        renderPreview();
+      });
+    }
+    if(stripeAlpha){
+      stripeAlpha.addEventListener("input", () => {
+        state.settings.stripeAlpha = Number(stripeAlpha.value) / 100;
+        if(stripeAlphaLabel){
+          stripeAlphaLabel.textContent = `${Math.round(state.settings.stripeAlpha * 100)}%`;
+        }
+        renderPreview();
+      });
+    }
+
+    hookSettingButtons();
+  renderList();
+  renderPreview();
+})();
+</script>
+</body>
+</html>
