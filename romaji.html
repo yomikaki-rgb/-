@@ -77,6 +77,7 @@
       border:1px solid var(--border); background:#fff;
       border-radius:14px; box-shadow:0 2px 8px #00000012;
       cursor:pointer;
+      white-space: nowrap; /* ★ 選択肢を1行表示に固定 */
     }
     .opt:active{ transform:scale(0.99); }
     .opt.reveal{
@@ -405,8 +406,39 @@
 
         <button class="btn line-mode" data-line="or" data-color="color">お〜ろ（色付き）</button>
         <button class="btn line-mode" data-line="or" data-color="mono">お〜ろ（色なし）</button>
+<!-- 子音クイズ（お〜ろ（色付き）の下） -->
+<div class="mt-2" style="grid-column:1 / span 1;">
+  <div class="muted" style="margin-bottom:6px;">子音クイズ</div>
+  <select id="consonantSelect" class="btn" style="width:100%; text-align:left;">
+    <option value="">（えらぶ）</option>
+    <option value="kst">子音ｋ、ｓ、ｔ</option>
+    <option value="nhm">子音ｎ、ｈ、ｍ</option>
+    <option value="yrw">子音ｙ、ｒ、ｗ</option>
+    <option value="kstnhm">子音ｋ、ｓ、ｔ、ｎ、ｈ、ｍ</option>
+    <option value="all">子音ｋ、ｓ、ｔ、ｎ、ｈ、ｍ、ｙ、ｒ、ｗ</option>
+  </select>
+</div>
+<div style="grid-column:2 / span 1;"></div>
+
       </div>
     </div>
+<!-- 子音クイズ設定（子音プルダウン選択時のみ表示） -->
+<div id="consonantSetup" class="card mt-4" style="display:none;">
+  <div class="muted">子音クイズ（まぜる：両方向）</div>
+
+  <div class="mt-4 muted">出題セット</div>
+  <div id="consonantSetLabel" class="mt-2" style="font-weight:900;">—</div>
+
+  <div class="mt-4 muted">出題数（10〜30）</div>
+  <div class="range-row">
+    <input id="cTotalRange" type="range" min="10" max="30" step="1" value="10">
+    <div id="cTotalBadge" class="badge">10</div>
+  </div>
+
+  <button id="cStartBtn" class="btn primary block mt-4">スタート</button>
+  <button id="cBackBtn" class="btn block mt-2" type="button">トップにもどる</button>
+</div>
+
 
     <!-- 設定画面 -->
     <div id="setup" class="card mt-4">
@@ -634,6 +666,31 @@
         hira:["お","こ","そ","と","の","ほ","も","よ","ろ"]
       }
     };
+/* ========= 子音クイズデータ ========= */
+const CONSONANT_MAP = {
+  k:{ c:"k", label:"クッ（か行）" },
+  s:{ c:"s", label:"スッ（さ行）" },
+  t:{ c:"t", label:"トゥ（た行）" },
+  n:{ c:"n", label:"ンヌ（な行）" },
+  h:{ c:"h", label:"フ（は行）" },
+  m:{ c:"m", label:"ム（ま行）" },
+  y:{ c:"y", label:"ィユ（や行）" },
+  r:{ c:"r", label:"ゥル（ら行）" },
+  w:{ c:"w", label:"ゥワ（わ行）" }
+};
+
+const CONSONANT_SETS = {
+  kst:    { label:"子音ｋ、ｓ、ｔ", keys:["k","s","t"] },
+  nhm:    { label:"子音ｎ、ｈ、ｍ", keys:["n","h","m"] },
+  yrw:    { label:"子音ｙ、ｒ、ｗ", keys:["y","r","w"] },
+  kstnhm: { label:"子音ｋ、ｓ、ｔ、ｎ、ｈ、ｍ", keys:["k","s","t","n","h","m"] },
+  all:    { label:"子音ｋ、ｓ、ｔ、ｎ、ｈ、ｍ、ｙ、ｒ、ｗ", keys:["k","s","t","n","h","m","y","r","w"] }
+};
+
+let quizKind = "line"; // "line" | "cons"
+let consonantSetKey = "";
+let consonantKeys = [];
+
 
     let currentLineKey = "a";
     let useColor = true;
@@ -726,7 +783,7 @@
       return coloredRoma(roma);
     }
 
-    let mode="mixed", total=10, questions=[], qIndex=0, score=0, locked=false;
+    let mode="mixed", total=10, cTotal=10, questions=[], qIndex=0, score=0, locked=false;
     let bonusTotal = 0;
     let kusudamaMaxLevelShown = 0;
 
@@ -734,6 +791,13 @@
 
     const setup=$("#setup"), quiz=$("#quiz"), result=$("#result");
     const topMenu=$("#topMenu");
+    const consonantSetup=$("#consonantSetup");
+    const consonantSelect=$("#consonantSelect");
+    const consonantSetLabel=$("#consonantSetLabel");
+    const cTotalRange=$("#cTotalRange");
+    const cTotalBadge=$("#cTotalBadge");
+    const cStartBtn=$("#cStartBtn");
+    const cBackBtn=$("#cBackBtn");
     const totalRange=$("#totalRange"), totalBadge=$("#totalBadge"), startBtn=$("#startBtn");
     const bar=$("#bar"), count=$("#count"), totalSpan=$("#total"), scoreSpan=$("#score");
     const bonusSpan=$("#bonusScore"), bonusBadge=$("#bonusBadge");
@@ -762,6 +826,74 @@
       });
     });
 
+// 子音クイズプルダウン
+function setConsonantSet(key){
+  consonantSetKey = key || "";
+  const def = CONSONANT_SETS[consonantSetKey];
+  consonantKeys = def ? def.keys.slice() : [];
+  if(consonantSetLabel){
+    consonantSetLabel.textContent = def ? def.label : "—";
+  }
+}
+
+function enterConsonantSetup(){
+  quizKind = "cons";
+  // 行クイズUIを完全に隠す
+  topMenu.style.display = "none";
+  setup.style.display = "none";
+  result.style.display = "none";
+  quiz.style.display = "none";
+  // 子音クイズ設定を表示
+  consonantSetup.style.display = "";
+  const titleHeading = document.querySelector('#titleHeading');
+  if(titleHeading){
+    titleHeading.textContent = "子音クイズ";
+  }
+}
+
+function exitConsonantToTop(){
+  quizKind = "line";
+  consonantSetKey = "";
+  consonantKeys = [];
+  if(consonantSelect) consonantSelect.value = "";
+  consonantSetup.style.display = "none";
+  quiz.style.display = "none";
+  result.style.display = "none";
+  topMenu.style.display = "";
+  setup.style.display = "";
+  // 行クイズ側の出題数表示をもとに戻す
+  total = parseInt(totalRange.value,10);
+  totalBadge.textContent = String(total);
+  applyLine(currentLineKey);
+  updateOrderUI();
+}
+
+if(consonantSelect){
+  consonantSelect.addEventListener('change', ()=>{
+    const v = consonantSelect.value;
+    if(!v){
+      // 未選択へ戻す（トップ表示のまま）
+      consonantSetup.style.display = "none";
+      quizKind = "line";
+      consonantSetKey = "";
+      consonantKeys = [];
+      applyLine(currentLineKey);
+      updateOrderUI();
+      return;
+    }
+    setConsonantSet(v);
+    // 出題数の初期表示を合わせる
+    cTotal = parseInt(cTotalRange.value,10);
+    cTotalBadge.textContent = String(cTotal);
+    enterConsonantSetup();
+  });
+}
+
+if(cBackBtn){
+  cBackBtn.addEventListener('click', exitConsonantToTop);
+}
+
+
     // 出題モードボタン
     document.querySelectorAll('.btn.mode').forEach(btn=>{
       btn.addEventListener('click',()=>{
@@ -787,30 +919,62 @@
       return shuffle(list);
     }
 
-    function makeQuestion(){
-      let t=mode;
-      if(mode==="mixed") t=Math.random()<0.5?"roma2hira":"hira2roma";
+    function makeLineQuestion(){
+  let t=mode;
+  if(mode==="mixed") t=Math.random()<0.5?"roma2hira":"hira2roma";
 
-      if(t==="roma2hira"){
-        const r = ROMA[Math.floor(Math.random()*ROMA.length)];
-        return {
-          type:"roma2hira",
-          promptRoma:r,
-          answer:R2H[r],
-          options:maybeOrderedOptions(HIRA)
-        };
-      }else{
-        const h = HIRA[Math.floor(Math.random()*HIRA.length)];
-        return {
-          type:"hira2roma",
-          promptHira:h,
-          answer:H2R[h],
-          options:maybeOrderedOptions(ROMA)
-        };
-      }
-    }
+  if(t==="roma2hira"){
+    const r = ROMA[Math.floor(Math.random()*ROMA.length)];
+    return {
+      type:"roma2hira",
+      promptRoma:r,
+      answer:R2H[r],
+      options:maybeOrderedOptions(HIRA)
+    };
+  }else{
+    const h = HIRA[Math.floor(Math.random()*HIRA.length)];
+    return {
+      type:"hira2roma",
+      promptHira:h,
+      answer:H2R[h],
+      options:maybeOrderedOptions(ROMA)
+    };
+  }
+}
+
+function makeConsonantQuestion(){
+  // 子音クイズは常に「まぜる（両方向）」
+  const t = Math.random() < 0.5 ? "cons2label" : "label2cons";
+  if(t === "cons2label"){
+    const c = consonantKeys[Math.floor(Math.random()*consonantKeys.length)];
+    const ans = CONSONANT_MAP[c].label;
+    return {
+      type:"cons2label",
+      promptCons:c,
+      answer:ans,
+      options:shuffle(consonantKeys).map(k=>CONSONANT_MAP[k].label)
+    };
+  }else{
+    const c = consonantKeys[Math.floor(Math.random()*consonantKeys.length)];
+    const ans = c;
+    return {
+      type:"label2cons",
+      promptLabel:CONSONANT_MAP[c].label,
+      answer:ans,
+      options:shuffle(consonantKeys).slice()
+    };
+  }
+}
+
+function makeQuestion(){
+  if(quizKind === "cons"){
+    return makeConsonantQuestion();
+  }
+  return makeLineQuestion();
+}
 
     function build(){
+
       questions=[];
       for(let i=0;i<total;i++) questions.push(makeQuestion());
       qIndex=0; score=0; locked=false; bonusTotal=0;
@@ -822,6 +986,11 @@
     totalRange.addEventListener('input', e=>{
       total=parseInt(e.target.value,10);
       totalBadge.textContent=String(total);
+    });
+
+    cTotalRange.addEventListener('input', e=>{
+      cTotal=parseInt(e.target.value,10);
+      cTotalBadge.textContent=String(cTotal);
     });
 
     startBtn.addEventListener('click',()=>{
@@ -844,6 +1013,18 @@
       render();
     });
 
+    cStartBtn.addEventListener('click',()=>{
+      if(!consonantSetKey || consonantKeys.length===0) return;
+      quizKind = 'cons';
+      total = cTotal;
+      totalSpan.textContent=String(total);
+      build();
+      consonantSetup.style.display='none';
+      result.style.display='none';
+      quiz.style.display='';
+      render();
+    });
+
     function render(){
       locked=false;
       const q=questions[qIndex];
@@ -853,31 +1034,55 @@
       bar.style.width=Math.round((qIndex/total)*100)+"%";
 
       if(q.type==="roma2hira"){
-        promptBox.innerHTML = renderRoma(q.promptRoma);
-      }else{
-        promptBox.textContent = q.promptHira;
-      }
+  promptBox.innerHTML = renderRoma(q.promptRoma);
+}else if(q.type==="hira2roma"){
+  promptBox.textContent = q.promptHira;
+}else if(q.type==="cons2label"){
+  promptBox.textContent = q.promptCons;
+}else{
+  // label2cons
+  promptBox.textContent = q.promptLabel;
+}
 
       opts.innerHTML="";
-      if(q.type==="roma2hira"){
-        q.options.forEach(ch=>{
-          const b=document.createElement('button');
-          b.className="opt";
-          b.textContent=ch;
-          if(ch===q.answer) b.dataset.correct="1";
-          b.onclick=()=>onChoose(ch);
-          opts.appendChild(b);
-        });
-      }else{
-        q.options.forEach(r=>{
-          const b=document.createElement('button');
-          b.className="opt";
-          b.innerHTML=renderRoma(r);
-          if(r===q.answer) b.dataset.correct="1";
-          b.onclick=()=>onChoose(r);
-          opts.appendChild(b);
-        });
-      }
+if(q.type==="roma2hira"){
+  q.options.forEach(ch=>{
+    const b=document.createElement('button');
+    b.className="opt";
+    b.textContent=ch;
+    if(ch===q.answer) b.dataset.correct="1";
+    b.onclick=()=>onChoose(ch);
+    opts.appendChild(b);
+  });
+}else if(q.type==="hira2roma"){
+  q.options.forEach(r=>{
+    const b=document.createElement('button');
+    b.className="opt";
+    b.innerHTML=renderRoma(r);
+    if(r===q.answer) b.dataset.correct="1";
+    b.onclick=()=>onChoose(r);
+    opts.appendChild(b);
+  });
+}else if(q.type==="cons2label"){
+  q.options.forEach(lbl=>{
+    const b=document.createElement('button');
+    b.className="opt";
+    b.textContent=lbl;
+    if(lbl===q.answer) b.dataset.correct="1";
+    b.onclick=()=>onChoose(lbl);
+    opts.appendChild(b);
+  });
+}else{
+  // label2cons
+  q.options.forEach(c=>{
+    const b=document.createElement('button');
+    b.className="opt";
+    b.textContent=c;
+    if(c===q.answer) b.dataset.correct="1";
+    b.onclick=()=>onChoose(c);
+    opts.appendChild(b);
+  });
+}
     }
 
     function nextOrFinish(){
@@ -929,26 +1134,38 @@
       result.style.display='none'; quiz.style.display=''; render();
     };
     backBtn.onclick=()=>{
-      result.style.display='none';
-      quiz.style.display='none';
-      topMenu.style.display='';
-      setup.style.display='';
-      updateOrderUI();
-    };
+  result.style.display='none';
+  quiz.style.display='none';
+  if(quizKind === "cons"){
+    consonantSetup.style.display='';
+  }else{
+    topMenu.style.display='';
+    setup.style.display='';
+    updateOrderUI();
+  }
+};
     topBtn.onclick=()=>{
-      result.style.display='none';
-      quiz.style.display='none';
-      topMenu.style.display='';
-      setup.style.display='';
-      updateOrderUI();
-    };
+  if(quizKind === "cons"){
+    exitConsonantToTop();
+    return;
+  }
+  result.style.display='none';
+  quiz.style.display='none';
+  topMenu.style.display='';
+  setup.style.display='';
+  updateOrderUI();
+};
     quitBtn.onclick=()=>{
-      result.style.display='none';
-      quiz.style.display='none';
-      topMenu.style.display='';
-      setup.style.display='';
-      updateOrderUI();
-    };
+  if(quizKind === "cons"){
+    exitConsonantToTop();
+    return;
+  }
+  result.style.display='none';
+  quiz.style.display='none';
+  topMenu.style.display='';
+  setup.style.display='';
+  updateOrderUI();
+};
 
     /* ========= ごほうび仕掛け ========= */
 
