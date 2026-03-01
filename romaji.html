@@ -14,10 +14,8 @@
     *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     body{
       margin:0; padding:16px; min-height:100vh;
-      background:linear-gradient(135deg,var(--bg1),var(--bg2));
-      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,
-        'Hiragino Kaku Gothic ProN','ヒラギノ角ゴ ProN',
-        'Yu Gothic UI','游ゴシック',Meiryo,sans-serif;
+      background:linear-gradient(135deg, var(--bg1), var(--bg2));
+      font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN', 'Yu Gothic UI', '游ゴシック', Meiryo, sans-serif;
       color:var(--ink); letter-spacing:.02em;
     }
     .container{ max-width:960px; margin:0 auto; }
@@ -25,7 +23,7 @@
       display:flex; justify-content:space-between;
       align-items:center; gap:12px; flex-wrap:wrap;
     }
-    h1{ font-size:clamp(22px,4vw,28px); margin:0; font-weight:800; }
+    h1{ font-size:clamp(22px, 4vw, 28px); margin:0; font-weight:800; }
     .mt-2{ margin-top:8px; }
     .mt-4{ margin-top:16px; } .mt-6{ margin-top:24px; }
     .card{
@@ -44,8 +42,7 @@
     }
     .btn.block{ width:100%; }
     .btn:active{ transform:scale(0.99); }
-    .btn.mode.on,
-    .btn.line-mode.on{
+    .btn.mode.on, .btn.line-mode.on{
       border-color:var(--primary); background:var(--primary-weak);
     }
     .range-row{ display:flex; align-items:center; gap:12px; }
@@ -63,14 +60,14 @@
       display:inline-block; border:1px solid var(--border);
       background:#fff; border-radius:16px;
       font-weight:900; letter-spacing:.1em;
-      padding:20px 24px; font-size:clamp(40px,8vw,64px);
+      padding:20px 24px; font-size:clamp(40px, 8vw, 64px);
     }
     .prompt.ng{ background:#fff5f5; border-color:#fecaca; }
     .grid{
-      display:grid; grid-template-columns:repeat(2,1fr); gap:12px;
+      display:grid; grid-template-columns:repeat(2, 1fr); gap:12px;
     }
     @media (min-width:680px){
-      .grid{ grid-template-columns:repeat(5,1fr); }
+      .grid{ grid-template-columns:repeat(5, 1fr); }
     }
     .opt{
       padding:16px; font-size:28px; font-weight:800;
@@ -87,8 +84,8 @@
       animation:correctGlow 600ms ease-out;
     }
     @keyframes correctGlow{
-      0%{ box-shadow:0 0 0 8px rgba(16,185,129,0.35);}
-      100%{ box-shadow:0 0 0 0 rgba(16,185,129,0);}
+      0%{ box-shadow:0 0 0 8px rgba(16, 185, 129, 0.35);}
+      100%{ box-shadow:0 0 0 0 rgba(16, 185, 129, 0);}
     }
     .center{ text-align:center; }
     .muted{ color:var(--ink-sub); font-size:14px; }
@@ -104,7 +101,7 @@
     /* 行＆色モード選択のグリッド（10行×2） */
     .line-grid{
       display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
+      grid-template-columns:repeat(2, minmax(0, 1fr));
       gap:8px;
       margin-top:8px;
     }
@@ -119,7 +116,7 @@
     .bonus-display{
       padding:4px 12px;
       border-radius:999px;
-      background:linear-gradient(90deg,#fef3c7,#fffbeb);
+      background:linear-gradient(90deg, #fef3c7, #fffbeb);
       border:2px solid #facc15;
       font-size:15px;
       font-weight:900;
@@ -127,7 +124,7 @@
       display:flex;
       align-items:center;
       gap:4px;
-      box-shadow:0 0 0 3px rgba(250,204,21,0.35);
+      box-shadow:0 0 0 3px rgba(250, 204, 21, 0.35);
     }
     .bonus-display span{
       font-size:22px;
@@ -140,16 +137,16 @@
       animation:bonusPop 450ms ease-out;
     }
     @keyframes bonusPop{
-      0%{ transform:scale(1); box-shadow:0 0 0 3px rgba(250,204,21,0.35); }
-      40%{ transform:scale(1.12); box-shadow:0 0 0 6px rgba(250,204,21,0.2); }
-      100%{ transform:scale(1); box-shadow:0 0 0 3px rgba(250,204,21,0.35); }
+      0%{ transform:scale(1); box-shadow:0 0 0 3px rgba(250, 204, 21, 0.35); }
+      40%{ transform:scale(1.12); box-shadow:0 0 0 6px rgba(250, 204, 21, 0.2); }
+      100%{ transform:scale(1); box-shadow:0 0 0 3px rgba(250, 204, 21, 0.35); }
     }
 
     /* ★ ごほうびオーバーレイ ★ */
     .overlay{
       position:fixed;
       inset:0;
-      background:rgba(15,23,42,0.45);
+      background:rgba(15, 23, 42, 0.45);
       display:flex;
       justify-content:center;
       align-items:center;
@@ -161,7 +158,7 @@
       max-width:420px;
       background:#f9fafb;
       border-radius:20px;
-      box-shadow:0 20px 40px rgba(0,0,0,.35);
+      box-shadow:0 20px 40px rgba(0, 0, 0, .35);
       padding:18px 16px 14px;
     }
     .reward-inner{
@@ -212,7 +209,7 @@
       height:100px;
       border-radius:14px;
       background:#111827;
-      box-shadow:0 8px 16px rgba(0,0,0,.35) inset;
+      box-shadow:0 8px 16px rgba(0, 0, 0, .35) inset;
       display:flex;
       justify-content:center;
       align-items:center;
@@ -225,7 +222,7 @@
       font-size:44px;
       color:#f9fafb;
       font-weight:700;
-      text-shadow:0 0 8px rgba(15,23,42,.8);
+      text-shadow:0 0 8px rgba(15, 23, 42, .8);
       transition:transform .12s ease-out, opacity .12s ease-out;
     }
     .slot-box.spinning .slot-num{
@@ -233,7 +230,7 @@
       transform:translateY(2px);
     }
     .slot-box.stopped{
-      box-shadow:0 0 0 rgba(0,0,0,0) inset;
+      box-shadow:0 0 0 rgba(0, 0, 0, 0) inset;
     }
 
     /* ルーレット */
@@ -246,7 +243,7 @@
       align-items:center;
       position:relative;
       background:#ffffff;
-      box-shadow:0 10px 20px rgba(15,23,42,.25);
+      box-shadow:0 10px 20px rgba(15, 23, 42, .25);
       margin-top:4px;
       cursor:pointer;
     }
@@ -276,7 +273,7 @@
       font-weight:800;
       cursor:pointer;
       position:relative;
-      box-shadow:0 8px 16px rgba(0,0,0,.35);
+      box-shadow:0 8px 16px rgba(0, 0, 0, .35);
     }
     .draw-card.revealed{
       background:#ffffff;
@@ -303,7 +300,7 @@
       max-width:420px;
       background:#fff7ed;
       border-radius:24px;
-      box-shadow:0 20px 40px rgba(0,0,0,.35);
+      box-shadow:0 20px 40px rgba(0, 0, 0, .35);
       padding:22px 18px 18px;
       text-align:center;
       position:relative;
@@ -336,9 +333,7 @@
       inset:0;
       pointer-events:none;
       background-image:
-        radial-gradient(circle at 10% 20%, rgba(248,113,113,0.9) 0, rgba(248,113,113,0) 40%),
-        radial-gradient(circle at 80% 30%, rgba(52,211,153,0.9) 0, rgba(52,211,153,0) 40%),
-        radial-gradient(circle at 30% 80%, rgba(59,130,246,0.9) 0, rgba(59,130,246,0) 40%);
+        radial-gradient(circle at 10% 20%, rgba(248, 113, 113, 0.9) 0, rgba(248, 113, 113, 0) 40%), radial-gradient(circle at 80% 30%, rgba(52, 211, 153, 0.9) 0, rgba(52, 211, 153, 0) 40%), radial-gradient(circle at 30% 80%, rgba(59, 130, 246, 0.9) 0, rgba(59, 130, 246, 0) 40%);
       background-size:160% 160%;
       animation:confettiMove 1100ms ease-out forwards;
       opacity:0.9;
@@ -348,7 +343,13 @@
       100%{ background-position:50% 110%; opacity:0; }
     }
 
-  </style>
+  
+    /* 子音クイズ表記を必ず大文字表示（表示のみ・動作非影響） */
+    #consonantSelect option, #consonantSetLabel {
+      text-transform: uppercase;
+    }
+
+</style>
 </head>
 <body>
 
@@ -411,11 +412,11 @@
   <div class="muted" style="margin-bottom:6px;">子音クイズ</div>
   <select id="consonantSelect" class="btn" style="width:100%; text-align:left;">
     <option value="">（えらぶ）</option>
-    <option value="kst">子音ｋ、ｓ、ｔ</option>
-    <option value="nhm">子音ｎ、ｈ、ｍ</option>
-    <option value="yrw">子音ｙ、ｒ、ｗ</option>
-    <option value="kstnhm">子音ｋ、ｓ、ｔ、ｎ、ｈ、ｍ</option>
-    <option value="all">子音ｋ、ｓ、ｔ、ｎ、ｈ、ｍ、ｙ、ｒ、ｗ</option>
+    <option value="kst">子音K, S, T</option>
+    <option value="nhm">子音N, H, M</option>
+    <option value="yrw">子音Y, R, W</option>
+    <option value="kstnhm">子音K, S, T, ｎ, ｈ, ｍ</option>
+    <option value="all">子音K, S, T, ｎ, ｈ, ｍ, ｙ, ｒ, ｗ</option>
   </select>
 </div>
 <div style="grid-column:2 / span 1;"></div>
@@ -574,117 +575,45 @@
     /* ========= 行データ ========= */
     const LINES = {
       a: {
-        key:"a",
-        label:"あ行",
-        roma:["A","I","U","E","O"],
-        hira:["あ","い","う","え","お"]
-      },
-      ka: {
-        key:"ka",
-        label:"か行",
-        roma:["KA","KI","KU","KE","KO"],
-        hira:["か","き","く","け","こ"]
-      },
-      sa: {
-        key:"sa",
-        label:"さ行",
-        roma:["SA","SI","SU","SE","SO"],
-        hira:["さ","し","す","せ","そ"]
-      },
-      ta: {
-        key:"ta",
-        label:"た行",
-        roma:["TA","TI","TU","TE","TO"],
-        hira:["た","ち","つ","て","と"]
-      },
-      na: {
-        key:"na",
-        label:"な行",
-        roma:["NA","NI","NU","NE","NO"],
-        hira:["な","に","ぬ","ね","の"]
-      },
-      ha: {
-        key:"ha",
-        label:"は行",
-        roma:["HA","HI","HU","HE","HO"],
-        hira:["は","ひ","ふ","へ","ほ"]
-      },
-      ma: {
-        key:"ma",
-        label:"ま行",
-        roma:["MA","MI","MU","ME","MO"],
-        hira:["ま","み","む","め","も"]
-      },
-      ya: {
-        key:"ya",
-        label:"や行",
-        roma:["YA","YU","YO"],
-        hira:["や","ゆ","よ"]
-      },
-      ra: {
-        key:"ra",
-        label:"ら行",
-        roma:["RA","RI","RU","RE","RO"],
-        hira:["ら","り","る","れ","ろ"]
-      },
-      wa: {
-        key:"wa",
-        label:"わ行",
-        roma:["WA","WO","NN"],
-        hira:["わ","を","ん"]
-      },
-
-      /* あ〜わ／い〜り／う〜る／え〜れ／お〜ろ */
+        key:"a", label:"あ行", roma:["A", "I", "U", "E", "O"], hira:["あ", "い", "う", "え", "お"]
+      }, ka: {
+        key:"ka", label:"か行", roma:["KA", "KI", "KU", "KE", "KO"], hira:["か", "き", "く", "け", "こ"]
+      }, sa: {
+        key:"sa", label:"さ行", roma:["SA", "SI", "SU", "SE", "SO"], hira:["さ", "し", "す", "せ", "そ"]
+      }, ta: {
+        key:"ta", label:"た行", roma:["TA", "TI", "TU", "TE", "TO"], hira:["た", "ち", "つ", "て", "と"]
+      }, na: {
+        key:"na", label:"な行", roma:["NA", "NI", "NU", "NE", "NO"], hira:["な", "に", "ぬ", "ね", "の"]
+      }, ha: {
+        key:"ha", label:"は行", roma:["HA", "HI", "HU", "HE", "HO"], hira:["は", "ひ", "ふ", "へ", "ほ"]
+      }, ma: {
+        key:"ma", label:"ま行", roma:["MA", "MI", "MU", "ME", "MO"], hira:["ま", "み", "む", "め", "も"]
+      }, ya: {
+        key:"ya", label:"や行", roma:["YA", "YU", "YO"], hira:["や", "ゆ", "よ"]
+      }, ra: {
+        key:"ra", label:"ら行", roma:["RA", "RI", "RU", "RE", "RO"], hira:["ら", "り", "る", "れ", "ろ"]
+      }, wa: {
+        key:"wa", label:"わ行", roma:["WA", "WO", "NN"], hira:["わ", "を", "ん"]
+      }, /* あ〜わ／い〜り／う〜る／え〜れ／お〜ろ */
       aw: {
-        key:"aw",
-        label:"あ〜わ",
-        roma:["A","KA","SA","TA","NA","HA","MA","YA","RA","WA"],
-        hira:["あ","か","さ","た","な","は","ま","や","ら","わ"]
-      },
-      ir: {
-        key:"ir",
-        label:"い〜り",
-        roma:["I","KI","SI","TI","NI","HI","MI","RI"],
-        hira:["い","き","し","ち","に","ひ","み","り"]
-      },
-      ur: {
-        key:"ur",
-        label:"う〜る",
-        roma:["U","KU","SU","TU","NU","HU","MU","YU","RU"],
-        hira:["う","く","す","つ","ぬ","ふ","む","ゆ","る"]
-      },
-      er: {
-        key:"er",
-        label:"え〜れ",
-        roma:["E","KE","SE","TE","NE","HE","ME","RE"],
-        hira:["え","け","せ","て","ね","へ","め","れ"]
-      },
-      or: {
-        key:"or",
-        label:"お〜ろ",
-        roma:["O","KO","SO","TO","NO","HO","MO","YO","RO"],
-        hira:["お","こ","そ","と","の","ほ","も","よ","ろ"]
+        key:"aw", label:"あ〜わ", roma:["A", "KA", "SA", "TA", "NA", "HA", "MA", "YA", "RA", "WA"], hira:["あ", "か", "さ", "た", "な", "は", "ま", "や", "ら", "わ"]
+      }, ir: {
+        key:"ir", label:"い〜り", roma:["I", "KI", "SI", "TI", "NI", "HI", "MI", "RI"], hira:["い", "き", "し", "ち", "に", "ひ", "み", "り"]
+      }, ur: {
+        key:"ur", label:"う〜る", roma:["U", "KU", "SU", "TU", "NU", "HU", "MU", "YU", "RU"], hira:["う", "く", "す", "つ", "ぬ", "ふ", "む", "ゆ", "る"]
+      }, er: {
+        key:"er", label:"え〜れ", roma:["E", "KE", "SE", "TE", "NE", "HE", "ME", "RE"], hira:["え", "け", "せ", "て", "ね", "へ", "め", "れ"]
+      }, or: {
+        key:"or", label:"お〜ろ", roma:["O", "KO", "SO", "TO", "NO", "HO", "MO", "YO", "RO"], hira:["お", "こ", "そ", "と", "の", "ほ", "も", "よ", "ろ"]
       }
     };
 /* ========= 子音クイズデータ ========= */
 const CONSONANT_MAP = {
-  k:{ c:"k", label:"クッ（か行）" },
-  s:{ c:"s", label:"スッ（さ行）" },
-  t:{ c:"t", label:"トゥ（た行）" },
-  n:{ c:"n", label:"ンヌ（な行）" },
-  h:{ c:"h", label:"フ（は行）" },
-  m:{ c:"m", label:"ム（ま行）" },
-  y:{ c:"y", label:"ィユ（や行）" },
-  r:{ c:"r", label:"ゥル（ら行）" },
-  w:{ c:"w", label:"ゥワ（わ行）" }
+  k:{ c:"k", label:"クッ（か行）" }, s:{ c:"s", label:"スッ（さ行）" }, t:{ c:"t", label:"トゥ（た行）" }, n:{ c:"n", label:"ンヌ（な行）" }, h:{ c:"h", label:"フ（は行）" }, m:{ c:"m", label:"ム（ま行）" }, y:{ c:"y", label:"ィユ（や行）" }, r:{ c:"r", label:"ゥル（ら行）" }, w:{ c:"w", label:"ゥワ（わ行）" }
 };
 
 const CONSONANT_SETS = {
-  kst:    { label:"子音ｋ、ｓ、ｔ", keys:["k","s","t"] },
-  nhm:    { label:"子音ｎ、ｈ、ｍ", keys:["n","h","m"] },
-  yrw:    { label:"子音ｙ、ｒ、ｗ", keys:["y","r","w"] },
-  kstnhm: { label:"子音ｋ、ｓ、ｔ、ｎ、ｈ、ｍ", keys:["k","s","t","n","h","m"] },
-  all:    { label:"子音ｋ、ｓ、ｔ、ｎ、ｈ、ｍ、ｙ、ｒ、ｗ", keys:["k","s","t","n","h","m","y","r","w"] }
+  kst:    { label:"子音K, S, T", keys:["k", "s", "t"] }, nhm:    { label:"子音N, H, M", keys:["n", "h", "m"] }, yrw:    { label:"子音Y, R, W", keys:["y", "r", "w"] }, kstnhm: { label:"子音K, S, T, N, H, M", keys:["k", "s", "t", "n", "h", "m"] }, all:    { label:"子音K, S, T, N, H, M, Y, R, W", keys:["k", "s", "t", "n", "h", "m", "y", "r", "w"] }
 };
 
 let quizKind = "line"; // "line" | "cons"
@@ -701,7 +630,7 @@ let consonantKeys = [];
     let H2R = {};
 
     /* ★ あ〜わ以降のみ：選択肢の並び順 ON/OFF ★ */
-    const ORDER_KEYS = new Set(["aw","ir","ur","er","or"]);
+    const ORDER_KEYS = new Set(["aw", "ir", "ur", "er", "or"]);
     let orderOn = false;
 
     function isOrderTargetLine(){
@@ -751,7 +680,7 @@ let consonantKeys = [];
 
     // 色つきローマ字
     function coloredRoma(roma){
-      // 1文字（A,I,U,E,O）
+      // 1文字（A, I, U, E, O）
       if(roma.length === 1){
         const v = roma;
         let span = v;
@@ -765,7 +694,7 @@ let consonantKeys = [];
       // 2文字以上（KA, YA, NN など）
       const c = roma[0];
       const rest = roma.slice(1);
-      // 2文字だと仮定して、2文字目が母音なら色分け
+      // 2文字だと仮定して, 2文字目が母音なら色分け
       const v = rest[0];
       let vPart = rest;
       if(rest.length === 1){
@@ -816,7 +745,7 @@ let consonantKeys = [];
 
     // 行＆色モードボタン
     document.querySelectorAll('.btn.line-mode').forEach(btn=>{
-      btn.addEventListener('click',()=>{
+      btn.addEventListener('click', ()=>{
         document.querySelectorAll('.btn.line-mode').forEach(b=>b.classList.remove('on'));
         btn.classList.add('on');
         const line = btn.dataset.line;
@@ -862,7 +791,7 @@ function exitConsonantToTop(){
   topMenu.style.display = "";
   setup.style.display = "";
   // 行クイズ側の出題数表示をもとに戻す
-  total = parseInt(totalRange.value,10);
+  total = parseInt(totalRange.value, 10);
   totalBadge.textContent = String(total);
   applyLine(currentLineKey);
   updateOrderUI();
@@ -883,7 +812,7 @@ if(consonantSelect){
     }
     setConsonantSet(v);
     // 出題数の初期表示を合わせる
-    cTotal = parseInt(cTotalRange.value,10);
+    cTotal = parseInt(cTotalRange.value, 10);
     cTotalBadge.textContent = String(cTotal);
     enterConsonantSetup();
   });
@@ -896,7 +825,7 @@ if(cBackBtn){
 
     // 出題モードボタン
     document.querySelectorAll('.btn.mode').forEach(btn=>{
-      btn.addEventListener('click',()=>{
+      btn.addEventListener('click', ()=>{
         document.querySelectorAll('.btn.mode').forEach(b=>b.classList.remove('on'));
         btn.classList.add('on');
         mode=btn.dataset.mode;
@@ -907,7 +836,7 @@ if(cBackBtn){
       const x=a.slice();
       for(let i=x.length-1;i>0;i--){
         const j=Math.floor(Math.random()*(i+1));
-        [x[i],x[j]]=[x[j],x[i]];
+        [x[i], x[j]]=[x[j], x[i]];
       }
       return x;
     }
@@ -926,18 +855,12 @@ if(cBackBtn){
   if(t==="roma2hira"){
     const r = ROMA[Math.floor(Math.random()*ROMA.length)];
     return {
-      type:"roma2hira",
-      promptRoma:r,
-      answer:R2H[r],
-      options:maybeOrderedOptions(HIRA)
+      type:"roma2hira", promptRoma:r, answer:R2H[r], options:maybeOrderedOptions(HIRA)
     };
   }else{
     const h = HIRA[Math.floor(Math.random()*HIRA.length)];
     return {
-      type:"hira2roma",
-      promptHira:h,
-      answer:H2R[h],
-      options:maybeOrderedOptions(ROMA)
+      type:"hira2roma", promptHira:h, answer:H2R[h], options:maybeOrderedOptions(ROMA)
     };
   }
 }
@@ -949,19 +872,13 @@ function makeConsonantQuestion(){
     const c = consonantKeys[Math.floor(Math.random()*consonantKeys.length)];
     const ans = CONSONANT_MAP[c].label;
     return {
-      type:"cons2label",
-      promptCons:c,
-      answer:ans,
-      options:shuffle(consonantKeys).map(k=>CONSONANT_MAP[k].label)
+      type:"cons2label", promptCons:c, answer:ans, options:shuffle(consonantKeys).map(k=>CONSONANT_MAP[k].label)
     };
   }else{
     const c = consonantKeys[Math.floor(Math.random()*consonantKeys.length)];
-    const ans = c;
+    const ans = c.toUpperCase();
     return {
-      type:"label2cons",
-      promptLabel:CONSONANT_MAP[c].label,
-      answer:ans,
-      options:shuffle(consonantKeys).slice()
+      type:"label2cons", promptLabel:CONSONANT_MAP[c].label, answer:ans, options:shuffle(consonantKeys).slice().map(k=>k.toUpperCase())
     };
   }
 }
@@ -984,16 +901,16 @@ function makeQuestion(){
     }
 
     totalRange.addEventListener('input', e=>{
-      total=parseInt(e.target.value,10);
+      total=parseInt(e.target.value, 10);
       totalBadge.textContent=String(total);
     });
 
     cTotalRange.addEventListener('input', e=>{
-      cTotal=parseInt(e.target.value,10);
+      cTotal=parseInt(e.target.value, 10);
       cTotalBadge.textContent=String(cTotal);
     });
 
-    startBtn.addEventListener('click',()=>{
+    startBtn.addEventListener('click', ()=>{
       const activeLineBtn = document.querySelector('.btn.line-mode.on');
       if(activeLineBtn){
         const line = activeLineBtn.dataset.line;
@@ -1013,7 +930,7 @@ function makeQuestion(){
       render();
     });
 
-    cStartBtn.addEventListener('click',()=>{
+    cStartBtn.addEventListener('click', ()=>{
       if(!consonantSetKey || consonantKeys.length===0) return;
       quizKind = 'cons';
       total = cTotal;
@@ -1038,7 +955,7 @@ function makeQuestion(){
 }else if(q.type==="hira2roma"){
   promptBox.textContent = q.promptHira;
 }else if(q.type==="cons2label"){
-  promptBox.textContent = q.promptCons;
+  promptBox.textContent = q.promptCons.toUpperCase();
 }else{
   // label2cons
   promptBox.textContent = q.promptLabel;
@@ -1077,7 +994,7 @@ if(q.type==="roma2hira"){
   q.options.forEach(c=>{
     const b=document.createElement('button');
     b.className="opt";
-    b.textContent=c;
+    b.textContent=c.toUpperCase();
     if(c===q.answer) b.dataset.correct="1";
     b.onclick=()=>onChoose(c);
     opts.appendChild(b);
@@ -1111,21 +1028,21 @@ if(q.type==="roma2hira"){
           locked = true;
           startReward();
         }else{
-          setTimeout(nextOrFinish,120);
+          setTimeout(nextOrFinish, 120);
         }
         return;
       }
 
       promptBox.classList.add('ng');
-      setTimeout(()=>promptBox.classList.remove('ng'),280);
+      setTimeout(()=>promptBox.classList.remove('ng'), 280);
 
       locked=true;
       const correctBtn=opts.querySelector('[data-correct]');
       if(correctBtn){
-        correctBtn.classList.add('reveal','flash');
-        correctBtn.addEventListener('click',()=>{
+        correctBtn.classList.add('reveal', 'flash');
+        correctBtn.addEventListener('click', ()=>{
           locked=false; nextOrFinish();
-        },{once:true});
+        }, {once:true});
       }
     }
 
@@ -1180,9 +1097,9 @@ if(q.type==="roma2hira"){
     const rewardCards = $("#rewardCards");
 
     const slotBoxes = document.querySelectorAll(".slot-box");
-    let slotValues = [7,7,7];
-    let slotTimers = [null,null,null];
-    let slotSpinning = [false,false,false];
+    let slotValues = [7, 7, 7];
+    let slotTimers = [null, null, null];
+    let slotSpinning = [false, false, false];
     let slotGameRunning = false;
     const slotHint = $("#slotHint");
     const MIN_NUM = 1;
@@ -1227,9 +1144,7 @@ if(q.type==="roma2hira"){
     function slotStartGame(){
       slotClearAll();
       slotValues = [
-        Math.floor(Math.random()*(MAX_NUM - MIN_NUM + 1)) + MIN_NUM,
-        Math.floor(Math.random()*(MAX_NUM - MIN_NUM + 1)) + MIN_NUM,
-        Math.floor(Math.random()*(MAX_NUM - MIN_NUM + 1)) + MIN_NUM
+        Math.floor(Math.random()*(MAX_NUM - MIN_NUM + 1)) + MIN_NUM, Math.floor(Math.random()*(MAX_NUM - MIN_NUM + 1)) + MIN_NUM, Math.floor(Math.random()*(MAX_NUM - MIN_NUM + 1)) + MIN_NUM
       ];
       for (let i=0;i<3;i++){
         slotUpdateView(i);
@@ -1241,7 +1156,7 @@ if(q.type==="roma2hira"){
     }
     function slotFinish(){
       slotGameRunning = false;
-      const [a,b,c] = slotValues;
+      const [a, b, c] = slotValues;
       const allEqual = (a===b && b===c);
       let text = `出た数字：${slotValues.join(" ・ ")}`;
       let points = 0;
@@ -1289,7 +1204,7 @@ if(q.type==="roma2hira"){
         rouletteCurrent++;
         if(rouletteCurrent>10) rouletteCurrent = 1;
         rouletteNumEl.textContent = rouletteCurrent;
-      },140);
+      }, 140);
 
       const stop = ()=>{
         if(!rouletteRunning) return;
@@ -1350,13 +1265,13 @@ if(q.type==="roma2hira"){
       rewardRoulette.style.display = "none";
       rewardCards.style.display = "none";
 
-      const types = ["slot","roulette","cards"];
+      const types = ["slot", "roulette", "cards"];
       const type = types[Math.floor(Math.random()*types.length)];
 
       if(type==="slot"){
         rewardSlot.style.display = "";
         slotClearAll();
-        slotValues = [7,7,7];
+        slotValues = [7, 7, 7];
         for(let i=0;i<3;i++){
           slotBoxes[i].classList.remove("spinning");
           slotBoxes[i].classList.add("stopped");
