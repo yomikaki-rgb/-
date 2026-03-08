@@ -430,7 +430,7 @@
         btn.className = 'speak-btn';
         btn.setAttribute('aria-label', `本文 ${buildPassageLabel(item)} を読み上げ`);
         btn.textContent = '🔊';
-        btn.addEventListener('click', () => speak(item.text, key));
+        btn.addEventListener('click', () => speak(`本文${buildPassageLabel(item)}。${item.text}`, key));
 
         row.append(left, btn);
         return row;
