@@ -295,19 +295,29 @@
         row.push(field);
         if (row.some(v => String(v).trim() !== '')) rows.push(row);
 
-        return rows.map(r => ({
-          a: (r[0] ?? '').trim(),
-          b: (r[1] ?? '').trim(),
-          c: (r[2] ?? '').trim(),
-          text: (r[3] ?? '').trim(),
-          type: normalizeType((r[4] ?? '').trim()),
-        })).filter(r => r.text);
+        return rows.map(r => {
+          const item = {
+            a: (r[0] ?? '').trim(),
+            b: (r[1] ?? '').trim(),
+            c: (r[2] ?? '').trim(),
+            text: (r[3] ?? '').trim(),
+          };
+          item.type = normalizeType((r[4] ?? '').trim(), item);
+          return item;
+        }).filter(r => r.text);
       }
 
-      function normalizeType(type) {
+      function normalizeType(type, raw = {}) {
         const t = String(type).trim();
         if (t === '本文' || t.toLowerCase() === 'passage') return '本文';
         if (t === '問題' || t.toLowerCase() === 'question') return '問題';
+
+        const hasA = String(raw.a ?? '').trim() !== '';
+        const hasB = String(raw.b ?? '').trim() !== '';
+        const hasC = String(raw.c ?? '').trim() !== '';
+        const hasText = String(raw.text ?? '').trim() !== '';
+
+        if (hasText && (hasA || hasB || hasC)) return '問題';
         return t;
       }
 
@@ -321,6 +331,12 @@
 
       function buildQuestionLabel(item) {
         return [item.a, item.b, item.c].filter(Boolean).join('-');
+      }
+
+      function buildQuestionSpeechPrefix(item) {
+        const parts = [item.a, item.b, item.c].filter(Boolean);
+        if (!parts.length) return '問題';
+        return '問題' + parts.join('の');
       }
 
       function buildPassageLabel(item) {
@@ -440,7 +456,7 @@
         btn.className = 'speak-btn';
         btn.setAttribute('aria-label', `問題 ${buildQuestionLabel(item)} を読み上げ`);
         btn.textContent = '🔊';
-        btn.addEventListener('click', () => speak(item.text, key));
+        btn.addEventListener('click', () => speak(`${buildQuestionSpeechPrefix(item)}。${item.text}`, key));
 
         row.append(left, btn);
         return row;
