@@ -1,0 +1,1811 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>漢字フラッシュ単語帳</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --panel:#ffffff;
+    --panel2:#f5f6f8;
+    --text:#111111;
+    --muted:#555555;
+    --accent:#3B2C5A;
+    --line:#dddddd;
+    --danger:#d14b4b;
+    --ok:#2f8f5f;
+  }
+  *{box-sizing:border-box}
+  body { margin:0; font-family:"UDデジタル教科書体N","UD デジタル 教科書体 N","UDデジタル教科書体N-R","UD デジタル 教科書体 N-R","UDデジタル教科書体NK","UD デジタル 教科書体 NK","UDデジタル教科書体NK-R","UD デジタル 教科書体 NK-R","UDデジタル教科書体NP","UD デジタル 教科書体 NP", system-ui, -apple-system, "Noto Sans JP", "BIZ UDゴシック", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+      /* FONT_FORCE_PRINT */
+      html, body, .page, .grid, .card, .label, .main, .sub, .exampleSub, .no-print { font-family: "UDデジタル教科書体N","UD デジタル 教科書体 N","UDデジタル教科書体N-R","UD デジタル 教科書体 N-R","UDデジタル教科書体NK","UD デジタル 教科書体 NK","UDデジタル教科書体NK-R","UD デジタル 教科書体 NK-R","UDデジタル教科書体NP","UD デジタル 教科書体 NP", system-ui, -apple-system, "Noto Sans JP", "BIZ UDゴシック", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif !important; }
+
+    background:var(--bg);
+    color:var(--text);
+  }
+  header{
+    position:sticky; top:0;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:saturate(1.2) blur(10px);
+    border-bottom:1px solid var(--line);
+    z-index:20;
+  }
+  .wrap{max-width:1200px;margin:0 auto;padding:16px}
+  .topbar{
+    display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    font-weight:700;
+    letter-spacing:.02em;
+  }
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(59,44,90,.25)}
+  .spacer{flex:1}
+  button, .btn{
+    appearance:none; border:1px solid var(--line); background:var(--panel2);
+    color:var(--text); padding:10px 12px; border-radius:12px;
+    cursor:pointer; font-weight:600;
+  }
+  button:hover{filter:brightness(1.05)}
+  button:active{transform:translateY(1px)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#ffffff}
+  button.danger{background:#d14b4b;border-color:#d14b4b;color:#ffffff}
+  button.ok{background:#2f8f5f;border-color:#2f8f5f;color:#ffffff}
+  button.ghost{background:#ffffff;color:#111;border:1px solid #bbb}
+  button:disabled{opacity:.55; cursor:not-allowed; transform:none}
+  .main{
+    display:grid;
+    grid-template-columns: 1.2fr .8fr;
+    gap:16px;
+    align-items:start;
+    padding:16px;
+  }
+  @media (max-width:980px){
+    .main{grid-template-columns:1fr}
+  }
+  .card{
+    background:#ffffff;
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:0 14px 35px rgba(0,0,0,.25);
+    overflow:hidden;
+  }
+  .card h2{
+    margin:0;
+    padding:14px 16px;
+    border-bottom:1px solid var(--line);
+    font-size:14px;
+    color:var(--muted);
+    letter-spacing:.04em;
+  }
+  .card .body{padding:14px 16px}
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .row + .row{margin-top:10px}
+  label{font-size:12px;color:var(--muted)}
+  input[type="text"], textarea, select{
+    width:100%;
+    padding:10px 12px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:#ffffff;
+    color:var(--text);
+    outline:none;
+  }
+  textarea{min-height:64px; resize:vertical}
+  .grid2{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+  @media (max-width:600px){ .grid2{grid-template-columns:1fr} }
+  .pill{color:#111;
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#ffffff;
+    color:var(--muted);
+    font-size:12px;
+  }
+  .toggle{
+    position:relative; width:44px; height:24px; border-radius:999px;
+    background:#e9eaee; border:1px solid var(--line);
+    cursor:pointer; flex:0 0 auto;
+  }
+  .toggle::after{
+    content:""; position:absolute; top:2px; left:2px;
+    width:18px; height:18px; border-radius:50%;
+    background:#7f8899;
+    transition:.15s ease;
+  }
+  .toggle.on{background:rgba(58,166,107,.22); border-color:rgba(58,166,107,.35)}
+  .toggle.on::after{left:22px; background:#93e2b6}
+  .small{font-size:12px;color:var(--muted)}
+  .list{
+    display:flex; flex-direction:column; gap:10px;
+    max-height:60vh; overflow:auto; padding-right:4px;
+  }
+  .item{
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:#ffffff;
+    padding:10px 10px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .item .k{font-weight:800;font-size:18px; letter-spacing:.06em}
+  .item .meta{display:flex; gap:8px; flex-wrap:wrap}
+  .badge{
+    font-size:11px; padding:4px 8px; border-radius:999px;
+    border:1px solid var(--line); color:var(--muted);
+    background:rgba(255,255,255,.02);
+  }
+  .badge.ok{border-color:rgba(58,166,107,.35); color:#c7ffe2; background:rgba(58,166,107,.14)}
+  .badge.no{border-color:rgba(209,75,75,.35); color:#ffd7d7; background:rgba(209,75,75,.12)}
+  .item .actions{margin-left:auto; display:flex; gap:8px}
+  .divider{height:1px; background:var(--line); margin:10px 0}
+  .readingBlock{
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:#ffffff;
+    padding:10px;
+  }
+  .readingHeader{
+    display:flex; align-items:center; gap:10px; justify-content:space-between; margin-bottom:8px
+  }
+  .readingHeader .left{
+    display:flex; align-items:center; gap:10px; flex:1
+  }
+  .readingHeader .title{
+    font-size:12px; color:var(--muted);
+    min-width:52px;
+  }
+  .readingHeader .onLabel{font-size:12px;color:var(--muted)}
+  .readingHeader .remove{padding:8px 10px;border-radius:12px}
+  .readingGrid{display:grid; grid-template-columns: 1fr; gap:8px}
+  .modal{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.55);
+    display:none; align-items:center; justify-content:center;
+    z-index:50;
+    padding:16px;
+  }
+  .modal.open{display:flex}
+  .modal .dialog{
+    width:min(820px, 96vw);
+    background:#ffffff;
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:0 18px 60px rgba(0,0,0,.4);
+    overflow:hidden;
+  }
+  .dialog header{
+    position:unset; background:transparent; border-bottom:1px solid var(--line);
+  }
+  .dialog .content{padding:14px 16px}
+  .dialog .footer{
+    display:flex; gap:10px; justify-content:flex-end; padding:12px 16px;
+    border-top:1px solid var(--line);
+  }
+
+  /* Flashcards */
+  .flashWrap{
+    display:none;
+    position:fixed; inset:0;
+    background:#ffffff;
+    z-index:80;
+    padding:16px;
+  }
+  .flashWrap.open{display:block}
+  .flashTop{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    max-width:900px; margin:0 auto;
+  }
+  .flashStage{
+    margin-left:auto;
+    font-size:12px;
+    color:var(--muted);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 10px;
+    background:#ffffff;
+  }
+  .flashCard{
+    max-width:900px;
+    margin:16px auto 0;
+    border:1px solid var(--line);
+    background:#ffffff;
+    border-radius:22px;
+    box-shadow:0 18px 60px rgba(0,0,0,.45);
+    padding:18px;
+  }
+  .kanjiBig{
+    font-size:72px; font-weight:900; letter-spacing:.08em;
+    text-align:center; margin:8px 0 6px;
+  }
+  .prompt{
+    text-align:center; color:var(--text);
+    font-size:24px; margin:0 0 12px;
+    font-weight:900;
+    letter-spacing:.02em;
+  }
+  .hintBox{
+    border:1px dashed rgba(0,0,0,.22);
+    border-radius:16px;
+    padding:12px;
+    background:rgba(0,0,0,.03);
+    color:#e9edf5;
+    display:none;
+    white-space:pre-wrap;
+    line-height:1.55;
+  }
+  .hintBox.show{display:block}
+  .flashBtns{
+    display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+    margin-top:14px;
+  }
+  .progress{
+    max-width:900px; margin:10px auto 0;
+    display:flex; justify-content:space-between; color:var(--muted); font-size:12px;
+  }
+
+  /* Print area (shown in new window) */
+  /* (main app doesn't use @media print; print uses separate HTML window) */
+
+  .toast{
+    position:fixed;
+    left:50%; bottom:20px;
+    transform:translateX(-50%);
+    background:#ffffff;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:10px 12px;
+    color:var(--text);
+    box-shadow:0 14px 35px rgba(0,0,0,.35);
+    display:none;
+    z-index:100;
+    max-width:min(680px, 92vw);
+    font-size:13px;
+  }
+  .toast.show{display:block}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+
+/* --- Contrast overrides (light theme readability) --- */
+button, .btn{
+  background:#111111 !important;
+  color:#ffffff !important;
+  border-color:#111111 !important;
+}
+button:hover{filter:brightness(1.08)}
+button.ghost{
+  background:#ffffff !important;
+  color:#111111 !important;
+  border-color:#444444 !important;
+}
+button.primary{
+  background:var(--accent) !important;
+  border-color:var(--accent) !important;
+  color:#ffffff !important;
+}
+button.ok{
+  background:#1f7a4b !important;
+  border-color:#1f7a4b !important;
+  color:#ffffff !important;
+}
+button.danger{
+  background:#c83737 !important;
+  border-color:#c83737 !important;
+  color:#ffffff !important;
+}
+.pill{
+  background:#f0f0f0 !important;
+  border-color:#cccccc !important;
+  color:#111111 !important;
+}
+.badge{
+  background:#f3f3f3 !important;
+  border-color:#cccccc !important;
+  color:#111111 !important;
+}
+.badge.ok{
+  background:#e7f6ee !important;
+  border-color:#1f7a4b !important;
+  color:#0b3a22 !important;
+}
+.badge.no{
+  background:#fdecec !important;
+  border-color:#c83737 !important;
+  color:#6b0f0f !important;
+}
+.small{ color:#333333 !important; }
+label{ color:#333333 !important; }
+.flashStage{
+  background:#f0f0f0 !important;
+  color:#111111 !important;
+  border-color:#cccccc !important;
+}
+
+/* === Answer / Reading Contrast Fix === */
+.hintBox{
+  background:#ffffff !important;
+  color:#000000 !important;
+  border:2px solid #000000 !important;
+  font-weight:700 !important;
+}
+#flashAnswer{
+  background:#ffffff !important;
+  color:#000000 !important;
+  border:3px solid #000000 !important;
+  font-size:20px !important;
+}
+.example{
+  color:#000000 !important;
+}
+.reading{
+  color:#000000 !important;
+}
+.kanjiBig{
+  color:#000000 !important;
+}
+
+/* === Flash top row layout (Kanji + side buttons) === */
+.flashTopRow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  margin:8px 0 6px;
+}
+.sideBtns{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  align-items:stretch;
+}
+.sideBtns button{
+  min-width:110px;
+}
+
+/* Ensure prompt/labels are crisp on white */
+.prompt{ color:#000 !important; }
+
+/* === Flash buttons always enabled === */
+#flashNotYetBtn, #flashMemBtn{
+  opacity:1 !important;
+  pointer-events:auto !important;
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span><span>漢字フラッシュ単語帳</span></div>
+      <span class="pill">保存：このブラウザ内（ローカル）</span>
+      <div class="spacer"></div>
+            <button id="btnExport" title="CSVで書き出し">エクスポート</button>
+      <button id="btnImport">インポート</button>
+      <button id="btnResetStatus" class="danger" title="全カードを「まだ」に戻します">状態リセット</button>
+      <button id="btnPrint">印刷</button>
+      <button class="primary" id="btnStartFlash">フラッシュカード</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="main">
+    <!-- List -->
+    <section class="card">
+      <h2>カード一覧</h2>
+      <div class="body">
+        <div class="row">
+          <div style="flex:1;min-width:220px">
+            <label>検索（漢字）</label>
+            <input id="search" type="text" placeholder="例：書 / 学 / 海…" />
+          </div>
+          <div style="min-width:170px">
+            <label>フィルター</label>
+            <select id="filter">
+              <option value="all">全部</option>
+              <option value="notYet">まだ</option>
+              <option value="memorized">おぼえた</option>
+            </select>
+          </div>
+          <div style="min-width:170px">
+            <label>並び替え</label>
+            <select id="sort">
+              <option value="updatedDesc">更新：新しい順</option>
+              <option value="createdDesc">作成：新しい順</option>
+              <option value="kanjiAsc">漢字：昇順</option>
+            </select>
+          </div>
+          <button class="primary" id="btnNew">新規</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="list" id="list"></div>
+        <div class="small" id="listHint"></div>
+      </div>
+    </section>
+
+    <!-- Editor -->
+    <section class="card">
+      <h2>編集</h2>
+      <div class="body">
+        <div class="row">
+          <div style="flex:1">
+            <label>漢字（必須）</label>
+            <input id="kanji" type="text" placeholder="例：書" />
+          </div>
+          <div style="min-width:160px">
+            <label>状態</label>
+            <select id="memorized">
+              <option value="false">まだ</option>
+              <option value="true">おぼえた</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div style="font-weight:800">音読み（トグルで有効/無効）</div>
+       
+          </div>
+          <button id="addOn">＋音読みを追加</button>
+        </div>
+        <div id="onList" class="row" style="flex-direction:column;align-items:stretch;gap:10px"></div>
+
+        <div class="divider"></div>
+
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div style="font-weight:800">訓読み（トグルで有効/無効）</div>
+          
+          </div>
+          <button id="addKun">＋訓読みを追加</button>
+        </div>
+        <div id="kunList" class="row" style="flex-direction:column;align-items:stretch;gap:10px"></div>
+
+        <div class="divider"></div>
+
+        <div class="row" style="justify-content:flex-end">
+          <button class="danger" id="btnDelete" disabled>削除</button>
+          <button class="primary" id="btnSave" disabled>保存</button>
+        </div>
+
+
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Import modal -->
+<div class="modal" id="importModal" role="dialog" aria-modal="true">
+  <div class="dialog">
+    <header><div class="wrap"><div class="topbar"><div class="brand"><span class="dot"></span><span>インポート（CSV）</span></div><div class="spacer"></div><button class="ghost" data-close>閉じる</button></div></div></header>
+    <div class="content">
+      <div class="small">エクスポートしたCSVファイルを選んでください（カードを追加します）。</div>
+      <div style="margin-top:10px">
+        <input type="file" id="importFile" accept=".csv,text/csv" />
+      </div>
+    </div>
+    <div class="footer">
+      <button data-close>キャンセル</button>
+      <button class="primary" id="doImport">インポート</button>
+    </div>
+  </div>
+</div>
+
+<!-- Print modal -->
+<div class="modal" id="printModal" role="dialog" aria-modal="true">
+  <div class="dialog">
+    <header><div class="wrap"><div class="topbar"><div class="brand"><span class="dot"></span><span>印刷</span></div><div class="spacer"></div><button class="ghost" data-close>閉じる</button></div></div></header>
+    <div class="content">
+   
+      <div class="row" style="margin-top:12px">
+        <div style="min-width:170px">
+          <label>対象フィルタ</label>
+          <select id="printFilter">
+            <option value="all">全部</option>
+            <option value="notYet">まだ</option>
+            <option value="memorized">おぼえた</option>
+          </select>
+        </div>
+        <div class="pill">A4 / 10分割（2列×5行）</div>
+      </div>
+      <div class="small" id="printCount" style="margin-top:10px"></div>
+    </div>
+    <div class="footer">
+      <button data-close>キャンセル</button>
+      <button class="primary" id="doPrint">印刷プレビューを開く</button>
+    </div>
+  </div>
+</div>
+
+<!-- Flash UI -->
+<div class="flashWrap" id="flash">
+  <div class="flashTop">
+    <button class="ghost" id="flashClose">終了</button>
+    <button id="flashShuffleBtn">シャッフル</button>
+    <div class="pill">フィルタ</div>
+    <select id="flashFilter" style="width:auto;min-width:140px">
+      <option value="all">全部</option>
+      <option value="notYet">まだ</option>
+      <option value="memorized">おぼえた</option>
+    </select>
+    
+  </div>
+
+  <div class="flashCard">
+    <div class="flashTopRow">
+    <div class="kanjiBig" id="flashKanji">—</div>
+    <div class="sideBtns">
+      <button id="flashHintBtn">ヒント</button>
+      <button id="flashAnswerBtn">答え</button>
+    </div>
+  </div>
+    <div class="prompt" id="flashPrompt">—</div>
+    <div class="hintBox" id="flashHint"></div>
+    <div class="hintBox" id="flashAnswer"></div>
+    <div class="flashBtns">
+      <button id="flashBackBtn">もどる</button>
+      <button class="primary" id="flashNextBtn">つぎへ</button>
+      <button class="danger" id="flashNotYetBtn">まだ</button>
+      <button class="ok" id="flashMemBtn">おぼえた</button>
+    </div>
+  </div>
+
+  <div class="progress">
+    <div id="flashPos">0 / 0</div>
+    
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const STORAGE_KEY = "kanji_flash_vocab_v1";
+  const ALWAYS_STUDENT_MODE = true;
+  const DEFAULT_STUDENT_CSV = "student-001.csv";
+
+  /** @type {Array<Card>} */
+  let cards = [];
+  let selectedId = null;
+
+  /** @typedef {{ id:string, text:string, example:string, enabled:boolean, memorized:boolean }} Reading */
+  /** @typedef {{ id:string, kanji:string, onyomi:Reading[], kunyomi:Reading[], memorized:boolean, onMemorized:boolean, kunMemorized:boolean, createdAt:number, updatedAt:number }} Card */
+
+  // Helpers
+  const $ = (id) => document.getElementById(id);
+  const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+  const now = () => Date.now();
+
+  function toast(msg){
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>el.classList.remove("show"), 2400);
+  }
+
+  function saveStore(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({cards}));
+  }
+  function loadStore(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return;
+      const obj = JSON.parse(raw);
+      if(obj && Array.isArray(obj.cards)) cards = obj.cards;
+    }catch(e){
+      console.warn(e);
+    }
+  }
+
+  function getReadingsByType(c, type){
+    return type === "on" ? (c.onyomi || []) : (c.kunyomi || []);
+  }
+
+  function getActiveReadingsByType(c, type){
+    return getReadingsByType(c, type).filter(r => r.enabled && (r.text || "").trim().length);
+  }
+
+  function getTypeMemorized(c, type){
+    const active = getActiveReadingsByType(c, type);
+    if(!active.length) return false;
+    return active.every(r => !!r.memorized);
+  }
+
+  function syncCardMemorized(c){
+    c.onMemorized = getTypeMemorized(c, "on");
+    c.kunMemorized = getTypeMemorized(c, "kun");
+    c.memorized = !!(c.onMemorized && c.kunMemorized);
+    return c;
+  }
+
+  function normalizeCard(c){
+    c.kanji = (c.kanji == null ? "" : c.kanji).trim();
+    c.memorized = !!c.memorized;
+    c.onMemorized = (typeof c.onMemorized === "boolean") ? c.onMemorized : !!c.memorized;
+    c.kunMemorized = (typeof c.kunMemorized === "boolean") ? c.kunMemorized : !!c.memorized;
+    c.onyomi = Array.isArray(c.onyomi) ? c.onyomi : [];
+    c.kunyomi = Array.isArray(c.kunyomi) ? c.kunyomi : [];
+    for(const r of c.onyomi){
+      r.text = (r.text == null ? "" : r.text).trim();
+      r.example = (r.example == null ? "" : r.example).trim();
+      r.enabled = !!r.enabled;
+      r.memorized = (typeof r.memorized === "boolean") ? r.memorized : !!c.onMemorized;
+      r.id = r.id || uid();
+    }
+    for(const r of c.kunyomi){
+      r.text = (r.text == null ? "" : r.text).trim();
+      r.example = (r.example == null ? "" : r.example).trim();
+      r.enabled = !!r.enabled;
+      r.memorized = (typeof r.memorized === "boolean") ? r.memorized : !!c.kunMemorized;
+      r.id = r.id || uid();
+    }
+    syncCardMemorized(c);
+    c.createdAt = c.createdAt || now();
+    c.updatedAt = c.updatedAt || now();
+    c.id = c.id || uid();
+    return c;
+  }
+
+  function filteredCards(filter, q){
+    const query = (q || "").trim();
+    return cards.filter(c => {
+      syncCardMemorized(c);
+      if(query && !c.kanji.includes(query)) return false;
+      if(filter === "memorized") return !!c.memorized;
+      if(filter === "notYet") return !c.memorized;
+      return true;
+    });
+  }
+
+  function sortedCards(list, sort){
+    const arr = [...list];
+    if(sort === "updatedDesc") arr.sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
+    if(sort === "createdDesc") arr.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
+    if(sort === "kanjiAsc") arr.sort((a,b)=> (a.kanji||"").localeCompare(b.kanji||"", "ja"));
+    return arr;
+  }
+
+  function renderList(){
+    const q = $("search").value;
+    const f = $("filter").value;
+    const s = $("sort").value;
+
+    const listEl = $("list");
+    listEl.innerHTML = "";
+
+    const arr = sortedCards(filteredCards(f, q), s);
+    $("listHint").textContent = arr.length ? `表示：${arr.length}件` : "カードがありません。右上の「新規」で追加できます。";
+
+    for(const c of arr){
+      syncCardMemorized(c);
+      const item = document.createElement("div");
+      item.className = "item";
+      item.tabIndex = 0;
+
+      const k = document.createElement("div");
+      k.className = "k";
+      k.textContent = c.kanji || "（未入力）";
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      
+      const b1 = document.createElement("span");
+      b1.className = "badge " + (c.memorized ? "ok":"no");
+      b1.textContent = c.memorized ? "覚えた" : "まだ";
+
+      const onActive = getActiveReadingsByType(c, "on");
+      const kunActive = getActiveReadingsByType(c, "kun");
+
+      if(onActive.length){
+        onActive.forEach((r, idx) => {
+          const b = document.createElement("span");
+          b.className = "badge " + (r.memorized ? "ok":"no");
+          b.textContent = `音${onActive.length > 1 ? idx + 1 : ""}:` + (r.memorized ? "覚えた" : "まだ");
+          meta.appendChild(b);
+        });
+      }else{
+        const b = document.createElement("span");
+        b.className = "badge no";
+        b.textContent = "音:なし";
+        meta.appendChild(b);
+      }
+
+      if(kunActive.length){
+        kunActive.forEach((r, idx) => {
+          const b = document.createElement("span");
+          b.className = "badge " + (r.memorized ? "ok":"no");
+          b.textContent = `訓${kunActive.length > 1 ? idx + 1 : ""}:` + (r.memorized ? "覚えた" : "まだ");
+          meta.appendChild(b);
+        });
+      }else{
+        const b = document.createElement("span");
+        b.className = "badge no";
+        b.textContent = "訓:なし";
+        meta.appendChild(b);
+      }
+
+      meta.prepend(b1);
+
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "編集";
+      editBtn.onclick = (e)=>{ e.stopPropagation(); selectCard(c.id); };
+
+      actions.appendChild(editBtn);
+
+      item.onclick = ()=>selectCard(c.id);
+      item.onkeydown = (e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); selectCard(c.id);} };
+
+      item.append(k, meta, actions);
+      listEl.appendChild(item);
+    }
+  }
+
+  function ensureReading(){
+    return { id: uid(), text:"", example:"", enabled:true, memorized:false };
+  }
+
+  function renderEditor(){
+    const c = cards.find(x=>x.id===selectedId);
+    const has = !!c;
+
+    $("btnSave").disabled = !has;
+    $("btnDelete").disabled = !has;
+
+    if(!has){
+      $("kanji").value = "";
+      $("memorized").value = "false";
+      $("onList").innerHTML = "";
+      $("kunList").innerHTML = "";
+      return;
+    }
+
+    syncCardMemorized(c);
+    $("kanji").value = c.kanji || "";
+    $("memorized").value = String(!!c.memorized);
+
+    const onList = $("onList");
+    const kunList = $("kunList");
+    onList.innerHTML = "";
+    kunList.innerHTML = "";
+
+    const makeBlock = (type, r) => {
+      const wrap = document.createElement("div");
+      wrap.className = "readingBlock";
+
+      const header = document.createElement("div");
+      header.className = "readingHeader";
+
+      const left = document.createElement("div");
+      left.className = "left";
+
+      const title = document.createElement("div");
+      title.className = "title";
+      title.textContent = type === "on" ? "音読み" : "訓読み";
+
+      const toggle = document.createElement("div");
+      toggle.className = "toggle" + (r.enabled ? " on":"");
+      toggle.title = "ON/OFF";
+      toggle.onclick = () => {
+        r.enabled = !r.enabled;
+        syncCardMemorized(c);
+        c.updatedAt = now();
+        saveStore();
+        renderEditor();
+        renderList();
+      };
+
+      const onLabel = document.createElement("div");
+      onLabel.className = "onLabel";
+      onLabel.textContent = r.enabled ? "ON（出題/印刷）" : "OFF（対象外）";
+
+      left.append(title, toggle, onLabel);
+
+      const remove = document.createElement("button");
+      remove.className = "danger remove";
+      remove.textContent = "削除";
+      remove.onclick = () => {
+        const arr = type === "on" ? c.onyomi : c.kunyomi;
+        const idx = arr.findIndex(x=>x.id===r.id);
+        if(idx>=0) arr.splice(idx,1);
+        c.updatedAt = now();
+        saveStore();
+        renderEditor();
+        renderList();
+      };
+
+      header.append(left, remove);
+
+      const grid = document.createElement("div");
+      grid.className = "readingGrid";
+
+      const t1 = document.createElement("div");
+      const lab1 = document.createElement("label");
+      lab1.textContent = type === "on" ? "音読み" : "訓読み";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = r.text || "";
+      input.placeholder = type === "on" ? "例：ショ" : "例：か(く)";
+      input.oninput = () => { r.text = input.value; c.updatedAt = now(); saveStore(); renderList(); };
+      t1.append(lab1, input);
+
+      const t2 = document.createElement("div");
+      const lab2 = document.createElement("label");
+      lab2.textContent = "例文（ヒント）";
+      const ta = document.createElement("textarea");
+      ta.value = r.example || "";
+      ta.placeholder = "例：本を かく。";
+      ta.oninput = () => { r.example = ta.value; c.updatedAt = now(); saveStore(); };
+      t2.append(lab2, ta);
+
+      grid.append(t1, t2);
+      wrap.append(header, grid);
+      return wrap;
+    };
+
+    for(const r of (c.onyomi || [])){
+      onList.appendChild(makeBlock("on", r));
+    }
+    for(const r of (c.kunyomi || [])){
+      kunList.appendChild(makeBlock("kun", r));
+    }
+
+    if((c.onyomi||[]).length === 0){
+      const hint = document.createElement("div");
+      hint.className = "small";
+      hint.textContent = "音読みがありません。「＋音読みを追加」してください。";
+      onList.appendChild(hint);
+    }
+    if((c.kunyomi||[]).length === 0){
+      const hint = document.createElement("div");
+      hint.className = "small";
+      hint.textContent = "訓読みがありません。「＋訓読みを追加」してください。";
+      kunList.appendChild(hint);
+    }
+  }
+
+  function selectCard(id){
+    selectedId = id;
+    renderEditor();
+  }
+
+  function newCard(){
+    const c = normalizeCard({
+      id: uid(),
+      kanji:"",
+      onyomi:[ensureReading()],
+      kunyomi:[ensureReading()],
+      memorized:false,
+      onMemorized:false,
+      kunMemorized:false,
+      createdAt: now(),
+      updatedAt: now()
+    });
+    cards.unshift(c);
+    saveStore();
+    renderList();
+    selectCard(c.id);
+    toast("新規カードを作成しました");
+  }
+
+  function deleteSelected(){
+    const idx = cards.findIndex(c=>c.id===selectedId);
+    if(idx<0) return;
+    const name = cards[idx].kanji || "（未入力）";
+    if(!confirm(`「${name}」を削除しますか？`)) return;
+    cards.splice(idx,1);
+    selectedId = null;
+    saveStore();
+    renderList();
+    renderEditor();
+    toast("削除しました");
+  }
+
+  function saveSelected(){
+    const c = cards.find(x=>x.id===selectedId);
+    if(!c) return;
+
+    c.kanji = $("kanji").value.trim();
+    c.memorized = $("memorized").value === "true";
+    for(const r of (c.onyomi || [])) r.memorized = c.memorized;
+    for(const r of (c.kunyomi || [])) r.memorized = c.memorized;
+    syncCardMemorized(c);
+    c.updatedAt = now();
+
+    // Light validation
+    if(!c.kanji){
+      toast("漢字は必須です");
+      return;
+    }
+    saveStore();
+    renderList();
+    toast("保存しました");
+  }
+
+  function addReading(type){
+    const c = cards.find(x=>x.id===selectedId);
+    if(!c){ toast("先にカードを選択してください"); return; }
+    const r = ensureReading();
+    if(type==="on") c.onyomi.push(r);
+    else c.kunyomi.push(r);
+    c.updatedAt = now();
+    saveStore();
+    renderEditor();
+    renderList();
+  }
+  // Export / Import (CSV)
+  function csvEscape(val){
+    const s = String(val == null ? "" : val);
+    if(/[",\n\r]/.test(s)){
+      return '"' + s.replaceAll('"','""') + '"';
+    }
+    return s;
+  }
+
+  function buildCSV(){
+    let maxOn = 0, maxKun = 0;
+    for(const c of cards){
+      maxOn = Math.max(maxOn, (c.onyomi||[]).length);
+      maxKun = Math.max(maxKun, (c.kunyomi||[]).length);
+    }
+    const header = ["kanji","memorized","onyomi_memorized","kunyomi_memorized"];
+    for(let i=1;i<=maxOn;i++){
+      header.push(`onyomi_${i}`, `onyomi_ex_${i}`, `onyomi_on_${i}`, `onyomi_mem_${i}`);
+    }
+    for(let i=1;i<=maxKun;i++){
+      header.push(`kunyomi_${i}`, `kunyomi_ex_${i}`, `kunyomi_on_${i}`, `kunyomi_mem_${i}`);
+    }
+
+    const lines = [];
+    lines.push(header.map(csvEscape).join(","));
+
+    for(const c of cards){
+      const row = [];
+      row.push(c.kanji == null ? "" : c.kanji);
+      row.push(c.memorized ? "1":"0");
+      row.push(c.onMemorized ? "1":"0");
+      row.push(c.kunMemorized ? "1":"0");
+
+      const on = c.onyomi || [];
+      for(let i=0;i<maxOn;i++){
+        const r = on[i] || null;
+        row.push(r && r.text ? r.text : "");
+        row.push(r && r.example ? r.example : "");
+        row.push(r ? (r.enabled ? "1":"0") : "");
+        row.push(r ? (r.memorized ? "1":"0") : "");
+      }
+
+      const kun = c.kunyomi || [];
+      for(let i=0;i<maxKun;i++){
+        const r = kun[i] || null;
+        row.push(r && r.text ? r.text : "");
+        row.push(r && r.example ? r.example : "");
+        row.push(r ? (r.enabled ? "1":"0") : "");
+        row.push(r ? (r.memorized ? "1":"0") : "");
+      }
+
+      lines.push(row.map(csvEscape).join(","));
+    }
+    return lines.join("\n");
+  }
+
+  function exportCSV(){
+    const csv = buildCSV();
+    const blob = new Blob(["\ufeff"+csv], {type:"text/csv;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `kanji-flash-export-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("エクスポートしました");
+  }
+
+  function parseCardsFromCSVText(text){
+    const rows = parseCSV(text);
+    if(!rows.length) throw new Error("CSVが空です");
+
+    const header = rows[0].map(h => (h||"").trim());
+    const idx = (name) => header.indexOf(name);
+
+    const iKanji = idx("kanji");
+    if(iKanji < 0) throw new Error("ヘッダーに kanji がありません");
+    const iMem = idx("memorized");
+    const iOnMem = idx("onyomi_memorized");
+    const iKunMem = idx("kunyomi_memorized");
+
+    const onCols = [];
+    const kunCols = [];
+    for(let n=1;;n++){
+      const a = idx(`onyomi_${n}`);
+      const b = idx(`onyomi_ex_${n}`);
+      const c = idx(`onyomi_on_${n}`);
+      const d = idx(`onyomi_mem_${n}`);
+      if(a<0 && b<0 && c<0 && d<0) break;
+      onCols.push({a,b,c,d});
+    }
+    for(let n=1;;n++){
+      const a = idx(`kunyomi_${n}`);
+      const b = idx(`kunyomi_ex_${n}`);
+      const c = idx(`kunyomi_on_${n}`);
+      const d = idx(`kunyomi_mem_${n}`);
+      if(a<0 && b<0 && c<0 && d<0) break;
+      kunCols.push({a,b,c,d});
+    }
+
+    const parsed = [];
+    for(let r=1;r<rows.length;r++){
+      const row = rows[r];
+      const kanji = String(((row[iKanji] == null) ? "" : row[iKanji])).trim();
+      if(!kanji) continue;
+
+      const mem = truthy1(iMem>=0 ? row[iMem] : "0", false);
+      const onMem = truthy1(iOnMem>=0 ? row[iOnMem] : row[iMem], mem);
+      const kunMem = truthy1(iKunMem>=0 ? row[iKunMem] : row[iMem], mem);
+
+      const onyomi = [];
+      for(const col of onCols){
+        const textv = col.a>=0 ? String(((row[col.a] == null) ? "" : row[col.a])).trim() : "";
+        const exv = col.b>=0 ? String(((row[col.b] == null) ? "" : row[col.b])).trim() : "";
+        const onv = col.c>=0 ? row[col.c] : "";
+        const memv = col.d>=0 ? row[col.d] : "";
+        if(!textv && !exv && String(onv == null ? "" : onv).trim()==="" && String(memv == null ? "" : memv).trim()==="") continue;
+        onyomi.push({ id: uid(), text: textv, example: exv, enabled: truthy1(onv, true), memorized: truthy1(memv, onMem) });
+      }
+
+      const kunyomi = [];
+      for(const col of kunCols){
+        const textv = col.a>=0 ? String(((row[col.a] == null) ? "" : row[col.a])).trim() : "";
+        const exv = col.b>=0 ? String(((row[col.b] == null) ? "" : row[col.b])).trim() : "";
+        const onv = col.c>=0 ? row[col.c] : "";
+        const memv = col.d>=0 ? row[col.d] : "";
+        if(!textv && !exv && String(onv == null ? "" : onv).trim()==="" && String(memv == null ? "" : memv).trim()==="") continue;
+        kunyomi.push({ id: uid(), text: textv, example: exv, enabled: truthy1(onv, true), memorized: truthy1(memv, kunMem) });
+      }
+
+      parsed.push(normalizeCard({
+        id: uid(),
+        kanji,
+        memorized: (onMem && kunMem),
+        onMemorized: onMem,
+        kunMemorized: kunMem,
+        onyomi: onyomi.length ? onyomi : [ensureReading()],
+        kunyomi: kunyomi.length ? kunyomi : [ensureReading()],
+        createdAt: now(),
+        updatedAt: now()
+      }));
+    }
+    return parsed;
+  }
+
+  function getStudentCsvUrl(){
+    const params = new URLSearchParams(location.search);
+    const csv = (params.get("csv") || "").trim() || DEFAULT_STUDENT_CSV;
+    return csv;
+  }
+
+  async function syncFromStudentCsvOnStartup(){
+    const csvUrl = getStudentCsvUrl();
+    const res = await fetch(csvUrl, { cache: "no-store" });
+    if(!res.ok) throw new Error(`CSVの取得に失敗しました: ${res.status}`);
+    const text = await res.text();
+    const parsed = parseCardsFromCSVText(text);
+    cards = parsed;
+    selectedId = cards[0] ? cards[0].id : null;
+    saveStore();
+    return { csvUrl, count: cards.length };
+  }
+
+  function parseCSV(text){
+    const rows = [];
+    let row = [];
+    let cur = "";
+    let i = 0;
+    let inQuotes = false;
+
+    const pushCell = () => { row.push(cur); cur = ""; };
+    const pushRow = () => { rows.push(row); row = []; };
+
+    while(i < text.length){
+      const ch = text[i];
+
+      if(inQuotes){
+        if(ch === '"'){
+          if(text[i+1] === '"'){ cur += '"'; i += 2; continue; }
+          inQuotes = false; i++; continue;
+        }
+        cur += ch; i++; continue;
+      }
+
+      if(ch === '"'){ inQuotes = true; i++; continue; }
+      if(ch === ','){ pushCell(); i++; continue; }
+      if(ch === '\r'){ i++; continue; }
+      if(ch === '\n'){ pushCell(); pushRow(); i++; continue; }
+      cur += ch; i++;
+    }
+
+    pushCell();
+    if(row.length > 1 || (row.length===1 && row[0] !== "")){
+      pushRow();
+    }
+    return rows;
+  }
+
+  function truthy1(v, defaultVal=false){
+    const s = String(v == null ? "" : v).trim().toLowerCase();
+    if(s === "") return defaultVal;
+    return (s === "1" || s === "true" || s === "on" || s === "yes" || s === "はい");
+  }
+
+  function importCSV(file){
+    return new Promise((resolve,reject)=>{
+      const fr = new FileReader();
+      fr.onerror = () => reject(new Error("読み込み失敗"));
+      fr.onload = () => {
+        try{
+          const text = String(fr.result||"");
+          const parsed = parseCardsFromCSVText(text);
+          let added = 0;
+          for(const c of parsed){
+            c.id = uid();
+            cards.push(c);
+            added++;
+          }
+          saveStore();
+          renderList();
+          renderEditor();
+          toast(`インポート：${added}件`);
+          resolve();
+        }catch(e){
+          reject(e);
+        }
+      };
+      fr.readAsText(file, "utf-8");
+    });
+  }
+
+
+
+  // Flashcards
+
+
+  // Flashcards
+  let flashQueue = [];
+  let flashIndex = 0;
+  let flashStage = "on"; // "on" | "kun"
+  let flashPicked = { on:null, kun:null };
+  let flashCursor = { on:0, kun:0 };
+
+  function pickEnabled(list){
+    const enabled = (list||[]).filter(r => r.enabled && (r.text||"").trim().length);
+    if(!enabled.length) return null;
+    return enabled[Math.floor(Math.random()*enabled.length)];
+  }
+
+  
+  function shuffleFlashQueue(){
+    if(!flashQueue.length) return;
+    for(let i=flashQueue.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [flashQueue[i], flashQueue[j]] = [flashQueue[j], flashQueue[i]];
+    }
+    flashIndex = 0;
+    startFlashCard();
+  }
+
+function buildFlashQueue(){
+
+    const f = $("flashFilter").value;
+    const q = cards
+      .filter(c => (c.kanji||"").trim().length)
+      .filter(c => {
+        const query = ($("search").value || "").trim();
+        return !query || c.kanji.includes(query);
+      })
+      .map(c => {
+        const onAllowed = (c.onyomi || []).filter(r => {
+          if(!(r.enabled && (r.text||"").trim().length)) return false;
+          if(f === "memorized") return !!r.memorized;
+          if(f === "notYet") return !r.memorized;
+          return true;
+        });
+        const kunAllowed = (c.kunyomi || []).filter(r => {
+          if(!(r.enabled && (r.text||"").trim().length)) return false;
+          if(f === "memorized") return !!r.memorized;
+          if(f === "notYet") return !r.memorized;
+          return true;
+        });
+        return {
+          ...c,
+          onyomi: onAllowed,
+          kunyomi: kunAllowed
+        };
+      })
+      .filter(c => c.onyomi.length || c.kunyomi.length);
+    for(let i=q.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [q[i],q[j]] = [q[j],q[i]];
+    }
+    flashQueue = q;
+    flashIndex = 0;
+  }
+
+  function openFlash(){
+    $("flash").classList.add("open");
+
+    // Reset UI state every time (prevents 2nd run lock-ups)
+    flashStage = "on";
+    flashIndex = 0;
+    $("flashHint").classList.remove("show");
+    $("flashHint").textContent = "";
+    $("flashAnswer").classList.remove("show");
+    $("flashAnswer").textContent = "";
+    $("flashKanji").textContent = "—";
+    $("flashPrompt").textContent = "—";
+    // $("flashStage").textContent = "—";
+
+    $("flashNextBtn").disabled = false;
+    $("flashHintBtn").disabled = false;
+    if($("flashAnswerBtn")) $("flashAnswerBtn").disabled = false;
+    $("flashNotYetBtn").disabled = false;
+    $("flashMemBtn").disabled = false;
+
+    flashQueue = [];
+    flashPicked = { on:null, kun:null };
+    flashCursor = { on:0, kun:0 };
+
+    // Re-bind handlers (in case the DOM was recreated / browser quirks)
+    $("flashHintBtn").onclick = showHint;
+    if($("flashAnswerBtn")) $("flashAnswerBtn").onclick = showAnswer;
+    $("flashNextBtn").onclick = nextStage;
+  $("flashBackBtn").onclick = backStage;
+    $("flashNotYetBtn").onclick = ()=>{ setMemorized(false); };
+    $("flashMemBtn").onclick = ()=>{ setMemorized(true); };
+
+    buildFlashQueue();
+    if(!flashQueue.length){
+      toast("出題できるカードがありません（フィルタや入力を確認してください）");
+      $("flash").classList.remove("open");
+      return;
+    }
+    startFlashCard();
+  }
+
+  function closeFlash(){
+    $("flashHint").classList.remove("show");
+    $("flashAnswer").classList.remove("show");
+    $("flashHint").textContent = "";
+    $("flashAnswer").textContent = "";
+    $("flash").classList.remove("open");
+  }
+
+  function startFlashCard(){
+    flashStage = "on";
+    flashCursor = { on:0, kun:0 };
+    $("flashHint").classList.remove("show");
+    $("flashHint").textContent = "";
+    $("flashAnswer").classList.remove("show");
+    $("flashAnswer").textContent = "";
+    $("flashAnswer").classList.remove("show");
+    $("flashAnswer").textContent = "";
+
+    let c = flashQueue[flashIndex];
+    while(c){
+      const onList = (c.onyomi || []).filter(r => r.enabled && (r.text||"").trim().length);
+      const kunList = (c.kunyomi || []).filter(r => r.enabled && (r.text||"").trim().length);
+      flashPicked.on = onList[0] || null;
+      flashPicked.kun = kunList[0] || null;
+      if(flashPicked.on || flashPicked.kun) break;
+      flashIndex++;
+      c = flashQueue[flashIndex];
+    }
+
+    if(!c){
+      $("flashKanji").textContent = "終了";
+      $("flashPrompt").textContent = "おつかれさまでした";
+      // $("flashStage").textContent = "完了";
+      $("flashNextBtn").disabled = true;
+      $("flashHintBtn").disabled = true;
+      if($("flashAnswerBtn")) $("flashAnswerBtn").disabled = true;
+$("flashPos").textContent = `${flashQueue.length} / ${flashQueue.length}`;
+      return;
+    }
+
+    $("flashKanji").textContent = c.kanji;
+    $("flashNextBtn").disabled = false;
+    $("flashHintBtn").disabled = false;
+    if($("flashAnswerBtn")) $("flashAnswerBtn").disabled = false;
+
+    // Memorize buttons are used for the current stage (音読み / 訓読み)
+$("flashPos").textContent = `${flashIndex+1} / ${flashQueue.length}`;
+
+    if(flashPicked.on){
+      flashStage = "on";
+      $("flashPrompt").textContent = "音読みは？";
+    }else{
+      flashStage = "kun";
+      $("flashPrompt").textContent = "訓読みは？";
+    }
+  }
+
+  function showHint(){
+    const c = flashQueue[flashIndex];
+    if(!c) return;
+    let ex = "";
+    if(flashStage==="on"){
+      ex = (flashPicked.on && flashPicked.on.example) || "";
+      if(!ex) ex = "（音読みの例文が未入力です）";
+    }else{
+      ex = (flashPicked.kun && flashPicked.kun.example) || "";
+      if(!ex) ex = "（訓読みの例文が未入力です）";
+    }
+    $("flashHint").textContent = ex;
+    $("flashHint").classList.add("show");
+  }
+
+  function showAnswer(){
+    const c = flashQueue[flashIndex];
+    if(!c) return;
+    let ans = "";
+    if(flashStage==="on"){
+      ans = (flashPicked.on && flashPicked.on.text) || "";
+      if(!ans) ans = "音読みなし";
+      $("flashAnswer").textContent = "答え（音読み）： " + ans;
+    }else{
+      ans = (flashPicked.kun && flashPicked.kun.text) || "";
+      if(!ans) ans = "訓読みなし";
+      $("flashAnswer").textContent = "答え（訓読み）： " + ans;
+    }
+    $("flashAnswer").classList.add("show");
+  }
+
+  
+  function backStage(){
+    const c = flashQueue[flashIndex];
+    if(!c){
+      if(flashIndex > 0){
+        flashIndex--;
+        startFlashCard();
+      }
+      return;
+    }
+
+    const onList = (c.onyomi || []).filter(r => r.enabled && (r.text||"").trim().length);
+    const kunList = (c.kunyomi || []).filter(r => r.enabled && (r.text||"").trim().length);
+
+    if(flashStage === "kun"){
+      if(flashCursor.kun > 0){
+        flashCursor.kun--;
+        flashPicked.kun = kunList[flashCursor.kun] || null;
+        $("flashPrompt").textContent = "訓読みは？";
+        return;
+      }
+      if(onList.length){
+        flashStage = "on";
+        flashCursor.on = Math.max(0, onList.length - 1);
+        flashPicked.on = onList[flashCursor.on] || null;
+        $("flashPrompt").textContent = "音読みは？";
+        return;
+      }
+    }
+
+    if(flashStage === "on" && flashCursor.on > 0){
+      flashCursor.on--;
+      flashPicked.on = onList[flashCursor.on] || null;
+      $("flashPrompt").textContent = "音読みは？";
+      return;
+    }
+
+    if(flashIndex > 0){
+      flashIndex--;
+      startFlashCard();
+      const prev = flashQueue[flashIndex];
+      if(prev){
+        const prevOn = (prev.onyomi || []).filter(r => r.enabled && (r.text||"").trim().length);
+        const prevKun = (prev.kunyomi || []).filter(r => r.enabled && (r.text||"").trim().length);
+        if(prevKun.length){
+          flashStage = "kun";
+          flashCursor.kun = prevKun.length - 1;
+          flashPicked.kun = prevKun[flashCursor.kun] || null;
+          $("flashPrompt").textContent = "訓読みは？";
+        }else if(prevOn.length){
+          flashStage = "on";
+          flashCursor.on = prevOn.length - 1;
+          flashPicked.on = prevOn[flashCursor.on] || null;
+          $("flashPrompt").textContent = "音読みは？";
+        }
+      }
+    }
+  }
+
+function nextStage(){
+    $("flashHint").classList.remove("show");
+    $("flashHint").textContent = "";
+    $("flashAnswer").classList.remove("show");
+    $("flashAnswer").textContent = "";
+
+    const c = flashQueue[flashIndex];
+    if(!c) return;
+
+    const onList = (c.onyomi || []).filter(r => r.enabled && (r.text||"").trim().length);
+    const kunList = (c.kunyomi || []).filter(r => r.enabled && (r.text||"").trim().length);
+
+    if(flashStage==="on"){
+      if(flashCursor.on + 1 < onList.length){
+        flashCursor.on++;
+        flashPicked.on = onList[flashCursor.on] || null;
+        $("flashPrompt").textContent = "音読みは？";
+        return;
+      }
+      if(kunList.length){
+        flashStage = "kun";
+        flashCursor.kun = 0;
+        flashPicked.kun = kunList[0] || null;
+        $("flashPrompt").textContent = "訓読みは？";
+        return;
+      }
+      flashIndex++;
+      startFlashCard();
+      return;
+    }
+
+    if(flashCursor.kun + 1 < kunList.length){
+      flashCursor.kun++;
+      flashPicked.kun = kunList[flashCursor.kun] || null;
+      $("flashPrompt").textContent = "訓読みは？";
+      return;
+    }
+
+    // from kunyomi -> next card
+    flashIndex++;
+    startFlashCard();
+  }
+
+  function setMemorized(flag){
+    const c = flashQueue[flashIndex];
+    if(!c) return;
+    // update original
+    const real = cards.find(x=>x.id===c.id);
+    if(real){
+      if(flashStage === "on" && flashPicked.on){
+        const rr = (real.onyomi || []).find(r => r.id === flashPicked.on.id);
+        if(rr) rr.memorized = !!flag;
+      }else if(flashStage === "kun" && flashPicked.kun){
+        const rr = (real.kunyomi || []).find(r => r.id === flashPicked.kun.id);
+        if(rr) rr.memorized = !!flag;
+      }
+      syncCardMemorized(real);
+      real.updatedAt = now();
+      saveStore();
+    }
+    renderList();
+    renderEditor();
+    // move next
+    nextStage();
+  }
+
+  // Printing
+  function getPrintTargets(filter){
+    const base = cards.filter(c => (c.kanji||"").trim().length);
+    const expanded = [];
+    for(const c of base){
+      const ons = (c.onyomi||[]).filter(r=>{
+        if(!(r.enabled && (r.text||"").trim().length)) return false;
+        if(filter === "memorized") return !!r.memorized;
+        if(filter === "notYet") return !r.memorized;
+        return true;
+      });
+      for(const r of ons){
+        expanded.push({ card:c, type:"on", reading:r });
+      }
+      const kuns = (c.kunyomi||[]).filter(r=>{
+        if(!(r.enabled && (r.text||"").trim().length)) return false;
+        if(filter === "memorized") return !!r.memorized;
+        if(filter === "notYet") return !r.memorized;
+        return true;
+      });
+      for(const r of kuns){
+        expanded.push({ card:c, type:"kun", reading:r });
+      }
+    }
+    return expanded;
+  }
+
+  function updatePrintCount(){
+    const f = $("printFilter").value;
+    const items = getPrintTargets(f);
+    const uniq = new Set(items.map(it=>it.card.id));
+    const cardCount = uniq.size * 1 + items.length * 2;
+    const pages = Math.ceil(cardCount / 10) || 0;
+    $("printCount").textContent = `印刷枚数：${cardCount}枚（A4 ${pages}ページ / 10面付け）`;
+  }
+
+  function openPrintModal(){
+    $("printFilter").value = $("filter").value; // sync from list filter
+    updatePrintCount();
+    openModal("printModal");
+  }
+
+  function escapeHTML(s){
+    return String(s||"")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#39;");
+  }
+
+  function printPreview(){
+    const f = $("printFilter").value;
+    const items = getPrintTargets(f);
+
+    if(!items.length){
+      toast("印刷対象がありません（音読み/訓読みのONが必要です）");
+      return;
+    }
+
+    // Build print cards in order:
+    // Kanji (once per card) -> Onyomi/ Kunyomi -> Example (for each enabled reading)
+    const printCards = [];
+    const printedKanji = new Set();
+
+    for(const it of items){
+      const k = it.card.kanji;
+      const rtxt = it.reading.text || "";
+      const ex = it.reading.example || "（例文未入力）";
+
+      if(!printedKanji.has(it.card.id)){
+        printCards.push({type:"kanji", title:"漢字", main:k, sub:""});
+        printedKanji.add(it.card.id);
+      }
+
+      if(it.type === "on"){
+        printCards.push({type:"reading", title:"音読み", main:rtxt, sub:k});
+        printCards.push({type:"example", title:"音読みの例文", main:ex, sub:""});
+      }else{
+        printCards.push({type:"reading", title:"訓読み", main:rtxt, sub:k});
+        printCards.push({type:"example", title:"訓読みの例文", main:ex, sub:""});
+      }
+    }
+
+    const pages = [];
+
+
+    for(let i=0;i<printCards.length;i+=10){
+      pages.push(printCards.slice(i,i+10));
+    }
+
+    const appFontFamily = getComputedStyle(document.body).fontFamily || "";
+    const css = `
+      @page { size: A4 portrait; margin: 10mm; }
+      * { box-sizing: border-box; }
+      html, body { height:100%; }
+      body { overflow:auto; }
+      body { margin:0; font-family:${appFontFamily}; }
+      /* PRINT_FONT_LOCK */
+      html, body, .page, .grid, .card, .label, .main, .sub, .exampleSub, .no-print { font-family:${appFontFamily} !important; }
+      .page { width: 190mm; page-break-after: always; padding: 0; }
+      .page:last-child { page-break-after: auto; }
+            .grid { display:grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, 1fr); gap: 4mm; height: 277mm; }
+      .card { border: 0.5mm solid #111; border-radius: 4mm; padding: 5mm 15mm 5mm 5mm; position: relative; overflow:hidden; }
+      .cut { position:absolute; inset: 2mm; border: 0.4mm dashed rgba(0,0,0,.25); border-radius: 3mm; }
+      .label { font-size: 10pt; color:#333; letter-spacing:.05em; margin: 0 0 3mm 0; }
+      .main { font-weight: 800; text-align:center; white-space:pre-wrap; word-break:break-word; }
+      .sub { font-size: 9.5pt; color:#444; margin-top: 3mm; white-space:pre-wrap; word-break:break-word; }
+      .kanji { font-size: 60pt; letter-spacing: .08em; line-height: 1.05; }
+      .reading { font-size: 34pt; letter-spacing: .06em; line-height: 1.1; }
+      .example { font-size: 18pt; line-height: 1.35; text-align:left; font-weight:700; }
+      .exampleSub { font-size: 10pt; color:#444; margin-top: 3mm; }
+      .footerNote { position: fixed; left: 10mm; right: 10mm; bottom: 6mm; font-size: 9pt; color:#666; }
+      @media print { .no-print { display:none !important; } }
+      @media screen { .page { margin: 0 auto 8mm; } }
+    
+      .card { break-inside: avoid; page-break-inside: avoid; }
+
+      .main, .label, .sub, .exampleSub { color:#000; }
+`;
+
+    let body = "";
+    pages.forEach((pg,pi)=>{
+      body += `<div class="page"><div class="grid">`;
+      pg.forEach(c=>{
+        if(c.type==="kanji"){
+          body += `
+            <div class="card">
+              <div class="cut"></div>
+              <div class="label">${escapeHTML(c.title)}</div>
+              <div class="main kanji">${escapeHTML(c.main)}</div>
+            </div>`;
+        }else if(c.type==="reading"){
+          body += `
+            <div class="card">
+              <div class="cut"></div>
+              <div class="label">${escapeHTML(c.title)}</div>
+              <div class="main reading">${escapeHTML(c.main)}</div>
+              <div class="sub">${escapeHTML(c.sub)}</div>
+            </div>`;
+        }else{
+          body += `
+            <div class="card">
+              <div class="cut"></div>
+              <div class="label">${escapeHTML(c.title)}</div>
+              <div class="main example">${escapeHTML(c.main)}</div>
+              <div class="exampleSub">${escapeHTML(c.sub)}</div>
+            </div>`;
+        }
+      });
+      // Fill empty slots
+      for(let k=pg.length;k<10;k++){
+        body += `<div class="card" style="border:0.2mm solid rgba(0,0,0,.15)"><div class="cut"></div></div>`;
+      }
+      body += `</div></div>`;
+    });
+
+    const html = `
+      <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>印刷プレビュー</title>
+      <style>${css}</style></head><body>
+        <div class="no-print" style="padding:10px 10px; font-size:12px; color:#333; font-family: system-ui;">
+          印刷設定：A4 / 余白あり / 倍率100%推奨。<span style="margin-left:10px">（生成：${printCards.length}枚 / ${pages.length}ページ）</span><button onclick="window.print()" style="margin-left:10px;padding:8px 10px">印刷</button>
+        </div>
+        ${body}
+      </body></html>
+    `;
+
+    const w = window.open("", "_blank");
+    if(!w){ toast("ポップアップがブロックされました"); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    closeModal("printModal");
+  }
+
+  // Modals
+  function openModal(id){ $(id).classList.add("open"); }
+  function closeModal(id){ $(id).classList.remove("open"); }
+  document.querySelectorAll("[data-close]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const modal = btn.closest(".modal");
+      if(modal) modal.classList.remove("open");
+    });
+  });
+  document.querySelectorAll(".modal").forEach(m=>{
+    m.addEventListener("click", (e)=>{
+      if(e.target === m) m.classList.remove("open");
+    });
+  });
+
+  // Events
+  $("btnNew").onclick = newCard;
+  $("btnDelete").onclick = deleteSelected;
+  $("btnSave").onclick = saveSelected;
+
+  $("addOn").onclick = ()=>addReading("on");
+  $("addKun").onclick = ()=>addReading("kun");
+
+  $("search").oninput = renderList;
+  $("filter").onchange = renderList;
+  $("sort").onchange = renderList;
+
+  $("kanji").oninput = () => {
+    const c = cards.find(x=>x.id===selectedId);
+    if(!c) return;
+    c.kanji = $("kanji").value;
+    c.updatedAt = now();
+    saveStore();
+    renderList();
+  };
+  $("memorized").onchange = () => {
+    const c = cards.find(x=>x.id===selectedId);
+    if(!c) return;
+    c.memorized = $("memorized").value === "true";
+    for(const r of (c.onyomi || [])) r.memorized = c.memorized;
+    for(const r of (c.kunyomi || [])) r.memorized = c.memorized;
+    syncCardMemorized(c);
+    c.updatedAt = now();
+    saveStore();
+    renderList();
+  };
+
+    $("btnExport").onclick = exportCSV;
+  $("btnImport").onclick = ()=>openModal("importModal");
+  $("btnResetStatus").onclick = ()=>{
+    if(!confirm("すべてのカードの状態を「まだ」にリセットしますか？")) return;
+    for(const c of cards){
+      c.memorized = false;
+      c.onMemorized = false;
+      c.kunMemorized = false;
+      for(const r of (c.onyomi || [])) r.memorized = false;
+      for(const r of (c.kunyomi || [])) r.memorized = false;
+      syncCardMemorized(c);
+      c.updatedAt = now();
+    }
+    saveStore();
+    renderList();
+    toast("状態をリセットしました");
+  };
+  $("doImport").onclick = async ()=>{
+    const files = $("importFile").files; const f = (files && files[0]) ? files[0] : null;
+    if(!f){ toast("ファイルを選択してください"); return; }
+    try{
+      await importCSV(f);
+      closeModal("importModal");
+    }catch(e){
+      toast("インポート失敗： " + ((e && e.message) || e));
+    }
+  };
+
+  $("btnPrint").onclick = openPrintModal;
+  $("printFilter").onchange = updatePrintCount;
+  $("doPrint").onclick = printPreview;
+
+  $("btnStartFlash").onclick = openFlash;
+  $("flashClose").onclick = closeFlash;
+  $("flashShuffleBtn").onclick = shuffleFlashQueue;
+  $("flashFilter").onchange = () => { buildFlashQueue(); startFlashCard(); };
+
+  $("flashHintBtn").onclick = showHint;
+  if($("flashAnswerBtn")) $("flashAnswerBtn").onclick = showAnswer;
+  $("flashNextBtn").onclick = nextStage;
+  $("flashBackBtn").onclick = backStage;
+  $("flashNotYetBtn").onclick = ()=>{ setMemorized(false); };
+  $("flashMemBtn").onclick = ()=>{ setMemorized(true); };
+
+  // Init
+  (async () => {
+    loadStore();
+
+    if(ALWAYS_STUDENT_MODE){
+      try{
+        const synced = await syncFromStudentCsvOnStartup();
+        if(synced && synced.csvUrl){
+          const pill = document.querySelector(".pill");
+          if(pill) pill.textContent = `生徒モード： ${synced.csvUrl} を起動時に同期`;
+        }
+      }catch(e){
+        console.error(e);
+        toast("CSV同期に失敗： " + (((e && e.message) || e)));
+      }
+    }else if(cards.length === 0){
+      cards = [
+        normalizeCard({
+          kanji:"書",
+          memorized:false,
+          onMemorized:false,
+          kunMemorized:false,
+          onyomi:[{id:uid(),text:"ショ",example:"書るいをさがす",enabled:true}],
+          kunyomi:[{id:uid(),text:"か(く)",example:"ノートに かく。",enabled:true}],
+          createdAt: now(),
+          updatedAt: now()
+        }),
+        normalizeCard({
+          kanji:"学",
+          memorized:false,
+          onMemorized:false,
+          kunMemorized:false,
+          onyomi:[
+            {id:uid(),text:"ガク",example:"大学で 学ぶ。",enabled:true},
+            {id:uid(),text:"—",example:"（別の音読みがある場合に追加）",enabled:false}
+          ],
+          kunyomi:[{id:uid(),text:"まな(ぶ)",example:"毎日 まなぶ。",enabled:true}],
+          createdAt: now(),
+          updatedAt: now()
+        })
+      ];
+      saveStore();
+    }
+
+    renderList();
+    renderEditor();
+  })();
+})();
+</script>
+</body>
+</html>
