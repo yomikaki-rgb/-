@@ -345,8 +345,23 @@
 
   
     /* 子音クイズ表記を必ず大文字表示（表示のみ・動作非影響） */
-    #consonantSelect option, #consonantSetLabel {
+    #consonantSetLabel, .cons-check {
       text-transform: uppercase;
+    }
+    .cons-check-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+    }
+    .cons-check{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
+    }
+    .cons-check input{
+      width:18px;
+      height:18px;
     }
 
 </style>
@@ -408,18 +423,21 @@
         <button class="btn line-mode" data-line="or" data-color="color">お〜ろ（色付き）</button>
         <button class="btn line-mode" data-line="or" data-color="mono">お〜ろ（色なし）</button>
 <!-- 子音クイズ（お〜ろ（色付き）の下） -->
-<div class="mt-2" style="grid-column:1 / span 1;">
+<div class="mt-2" style="grid-column:1 / span 2;">
   <div class="muted" style="margin-bottom:6px;">子音クイズ</div>
-  <select id="consonantSelect" class="btn" style="width:100%; text-align:left;">
-    <option value="">（えらぶ）</option>
-    <option value="kst">子音K, S, T</option>
-    <option value="nhm">子音N, H, M</option>
-    <option value="yrw">子音Y, R, W</option>
-    <option value="kstnhm">子音K, S, T, ｎ, ｈ, ｍ</option>
-    <option value="all">子音K, S, T, ｎ, ｈ, ｍ, ｙ, ｒ, ｗ</option>
-  </select>
+  <div class="cons-check-grid">
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="k">K</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="s">S</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="t">T</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="n">N</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="h">H</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="m">M</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="y">Y</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="r">R</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="w">W</label>
+  </div>
+  
 </div>
-<div style="grid-column:2 / span 1;"></div>
 
       </div>
     </div>
@@ -612,10 +630,6 @@ const CONSONANT_MAP = {
   k:{ c:"k", label:"クッ（か行）" }, s:{ c:"s", label:"スッ（さ行）" }, t:{ c:"t", label:"トゥ（た行）" }, n:{ c:"n", label:"ンヌ（な行）" }, h:{ c:"h", label:"フ（は行）" }, m:{ c:"m", label:"ム（ま行）" }, y:{ c:"y", label:"ィユ（や行）" }, r:{ c:"r", label:"ゥル（ら行）" }, w:{ c:"w", label:"ゥワ（わ行）" }
 };
 
-const CONSONANT_SETS = {
-  kst:    { label:"子音K, S, T", keys:["k", "s", "t"] }, nhm:    { label:"子音N, H, M", keys:["n", "h", "m"] }, yrw:    { label:"子音Y, R, W", keys:["y", "r", "w"] }, kstnhm: { label:"子音K, S, T, N, H, M", keys:["k", "s", "t", "n", "h", "m"] }, all:    { label:"子音K, S, T, N, H, M, Y, R, W", keys:["k", "s", "t", "n", "h", "m", "y", "r", "w"] }
-};
-
 let quizKind = "line"; // "line" | "cons"
 let consonantSetKey = "";
 let consonantKeys = [];
@@ -721,7 +735,8 @@ let consonantKeys = [];
     const setup=$("#setup"), quiz=$("#quiz"), result=$("#result");
     const topMenu=$("#topMenu");
     const consonantSetup=$("#consonantSetup");
-    const consonantSelect=$("#consonantSelect");
+    const consonantOpenBtn=$("#consonantOpenBtn");
+    const consonantChecks=[...document.querySelectorAll('.consonantCheck')];
     const consonantSetLabel=$("#consonantSetLabel");
     const cTotalRange=$("#cTotalRange");
     const cTotalBadge=$("#cTotalBadge");
@@ -755,13 +770,17 @@ let consonantKeys = [];
       });
     });
 
-// 子音クイズプルダウン
-function setConsonantSet(key){
-  consonantSetKey = key || "";
-  const def = CONSONANT_SETS[consonantSetKey];
-  consonantKeys = def ? def.keys.slice() : [];
+// 子音クイズチェックボックス
+function getSelectedConsonantKeys(){
+  return consonantChecks.filter(ch=>ch.checked).map(ch=>ch.value);
+}
+
+function setConsonantSelection(keys){
+  const picked = Array.isArray(keys) ? keys.slice() : [];
+  consonantSetKey = picked.join(',');
+  consonantKeys = picked;
   if(consonantSetLabel){
-    consonantSetLabel.textContent = def ? def.label : "—";
+    consonantSetLabel.textContent = picked.length ? `子音${picked.map(k=>k.toUpperCase()).join(', ')}` : "—";
   }
 }
 
@@ -784,7 +803,8 @@ function exitConsonantToTop(){
   quizKind = "line";
   consonantSetKey = "";
   consonantKeys = [];
-  if(consonantSelect) consonantSelect.value = "";
+  consonantChecks.forEach(ch=>{ ch.checked = false; });
+  if(consonantSetLabel) consonantSetLabel.textContent = "—";
   consonantSetup.style.display = "none";
   quiz.style.display = "none";
   result.style.display = "none";
@@ -795,27 +815,6 @@ function exitConsonantToTop(){
   totalBadge.textContent = String(total);
   applyLine(currentLineKey);
   updateOrderUI();
-}
-
-if(consonantSelect){
-  consonantSelect.addEventListener('change', ()=>{
-    const v = consonantSelect.value;
-    if(!v){
-      // 未選択へ戻す（トップ表示のまま）
-      consonantSetup.style.display = "none";
-      quizKind = "line";
-      consonantSetKey = "";
-      consonantKeys = [];
-      applyLine(currentLineKey);
-      updateOrderUI();
-      return;
-    }
-    setConsonantSet(v);
-    // 出題数の初期表示を合わせる
-    cTotal = parseInt(cTotalRange.value, 10);
-    cTotalBadge.textContent = String(cTotal);
-    enterConsonantSetup();
-  });
 }
 
 if(cBackBtn){
@@ -911,27 +910,37 @@ function makeQuestion(){
     });
 
     startBtn.addEventListener('click', ()=>{
-      const activeLineBtn = document.querySelector('.btn.line-mode.on');
-      if(activeLineBtn){
-        const line = activeLineBtn.dataset.line;
-        const color = activeLineBtn.dataset.color;
-        useColor = (color === "color");
-        applyLine(line);
+      const picked = getSelectedConsonantKeys();
+      if(picked.length > 0){
+        quizKind = 'cons';
+        setConsonantSelection(picked);
+        total = parseInt(totalRange.value, 10);
+        totalBadge.textContent = String(total);
       }else{
-        applyLine(currentLineKey);
+        quizKind = 'line';
+        const activeLineBtn = document.querySelector('.btn.line-mode.on');
+        if(activeLineBtn){
+          const line = activeLineBtn.dataset.line;
+          const color = activeLineBtn.dataset.color;
+          useColor = (color === "color");
+          applyLine(line);
+        }else{
+          applyLine(currentLineKey);
+        }
       }
 
       build();
       totalSpan.textContent=String(total);
       topMenu.style.display='none';
       setup.style.display='none';
+      consonantSetup.style.display='none';
       result.style.display='none';
       quiz.style.display='';
       render();
     });
 
     cStartBtn.addEventListener('click', ()=>{
-      if(!consonantSetKey || consonantKeys.length===0) return;
+      if(consonantKeys.length===0) return;
       quizKind = 'cons';
       total = cTotal;
       totalSpan.textContent=String(total);
