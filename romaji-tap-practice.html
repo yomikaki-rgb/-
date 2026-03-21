@@ -386,29 +386,43 @@
     function clearPendingToken(){ state.pendingConsonant=''; state.pendingToken=''; state.pendingKana=''; }
     function resetInput(render=true){ state.currentInput=''; state.inputTokens=[]; clearPendingToken(); state.answeredCurrent=false; if (render) renderPractice(); }
     const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    function getSpeechRate(){ return IS_IOS ? 0.78 : 1.25; }
-    function getSpeechGap(){ return IS_IOS ? 350 : 5; }
+    function getSpeechRate(text=''){ return (IS_IOS && /っ/.test(text)) ? 0.68 : (IS_IOS ? 0.78 : 1.25); }
+    function getSpeechGap(text=''){ return (IS_IOS && /っ/.test(text)) ? 420 : (IS_IOS ? 350 : 5); }
+    function hiraToKata(text){
+      return String(text).replace(/[ぁ-ゖ]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
+    }
+    function normalizeSpeechText(text){
+      if(!IS_IOS) return text;
+      const s = String(text || '');
+      if(/っ/.test(s)){
+        return hiraToKata(s);
+      }
+      return s;
+    }
     function speak(text){
       if (!state.speechEnabled || !('speechSynthesis' in window) || !text) return;
       speechSynthesis.cancel();
-      const u=new SpeechSynthesisUtterance(text);
+      const normalized = normalizeSpeechText(text);
+      const u=new SpeechSynthesisUtterance(normalized);
       u.lang='ja-JP';
-      u.rate=getSpeechRate();
+      u.rate=getSpeechRate(normalized);
       speechSynthesis.speak(u);
     }
     function speakSequence(parts){
       if (!state.speechEnabled || !('speechSynthesis' in window)) return;
       speechSynthesis.cancel();
       const queue=parts.filter(Boolean).map(t=>{
-        const u=new SpeechSynthesisUtterance(t);
+        const normalized = normalizeSpeechText(t);
+        const u=new SpeechSynthesisUtterance(normalized);
         u.lang='ja-JP';
-        u.rate=getSpeechRate();
+        u.rate=getSpeechRate(normalized);
+        u._gap=getSpeechGap(normalized);
         return u;
       });
       const next=()=>{
         const u=queue.shift();
         if(!u) return;
-        u.onend=()=>setTimeout(next,getSpeechGap());
+        u.onend=()=>setTimeout(next,u._gap || getSpeechGap());
         speechSynthesis.speak(u);
       };
       next();
