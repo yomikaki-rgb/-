@@ -388,12 +388,16 @@
     const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     function getSpeechRate(){ return IS_IOS ? 0.78 : 1.25; }
     function getSpeechGap(){ return IS_IOS ? 350 : 5; }
+    function normalizeIosSpeech(text){
+      let s = String(text || '');
+      if (IS_IOS){
+        s = s.replace(/っ/g, '');
+      }
+      return s;
+    }
     function speak(text){
       if (!state.speechEnabled || !('speechSynthesis' in window) || !text) return;
-      let speakText = String(text);
-      if (IS_IOS){
-        speakText = speakText.replace(/っ/g, '');
-      }
+      const speakText = normalizeIosSpeech(text);
       speechSynthesis.cancel();
       const u=new SpeechSynthesisUtterance(speakText);
       u.lang='ja-JP';
@@ -404,7 +408,8 @@
       if (!state.speechEnabled || !('speechSynthesis' in window)) return;
       speechSynthesis.cancel();
       const queue=parts.filter(Boolean).map(t=>{
-        const u=new SpeechSynthesisUtterance(t);
+        const speakText = normalizeIosSpeech(t);
+        const u=new SpeechSynthesisUtterance(speakText);
         u.lang='ja-JP';
         u.rate=getSpeechRate();
         return u;
