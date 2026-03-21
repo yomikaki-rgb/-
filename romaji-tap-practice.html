@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ローマ字タップれんしゅう</title>
+  <style>
+    :root {
+      --bg:#f7f8fc; --card:#fff; --line:#dfe5f0; --text:#1f2a44; --sub:#5f6b85;
+      --accent:#4169e1; --ok:#27ae60; --ng:#e74c3c; --warn:#f39c12;
+      --shadow:0 8px 22px rgba(46,74,126,.08); --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"BIZ UDPGothic","UD Digi Kyokasho N-R","Noto Sans JP",sans-serif;background:var(--bg);color:var(--text)}
+    button,input,textarea{font:inherit}
+    .app{max-width:980px;margin:0 auto;padding:8px}
+    .topbar,.toolbar,.action-row,.mode-buttons,.row-buttons,.csv-actions,.candidate-box,.result-actions{display:flex;flex-wrap:wrap;gap:8px}
+    .topbar{justify-content:space-between;align-items:center;margin-bottom:8px}
+    .title{font-size:18px;font-weight:800}
+    .subline{font-size:12px;color:var(--sub)}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:8px;margin-bottom:8px}
+    .section-title{font-size:15px;font-weight:800;margin:0 0 8px}
+    .btn{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:12px;padding:8px 11px;font-weight:800;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .btn.secondary{background:#eef3ff;border-color:#cfdafc}
+    .btn.success{background:#eaf9f0;border-color:#bfe8ce;color:#18663a}
+    .btn.danger{background:#fff1ef;border-color:#f5c6bf;color:#b53c2e}
+    .btn.warn{background:#fff8e8;border-color:#f0ddb0;color:#8a6112}
+    .btn.active{background:#6e8cff;border-color:#6e8cff;color:#fff}
+    .btn.small{font-size:12px;padding:7px 9px}
+    .word-wrap{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;position:relative}
+    .word-side-controls{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+    .free-save-under-read{display:none}
+    .free-save-under-read.show{display:block}
+    .current-word,.current-word-input{width:100%;min-height:64px;border-radius:18px;padding:8px 10px;font-weight:800;font-size:clamp(24px,3.8vw,40px);text-align:center}
+    .current-word{display:flex;align-items:center;justify-content:center;background:#f4f7ff;border:2px dashed #cfdbff;letter-spacing:.08em}
+    .current-word-input{border:2px dashed #cfdbff;background:#f4f7ff}
+    .current-word-input::placeholder{font-size:clamp(16px,2.4vw,24px);color:#8aa0d8;letter-spacing:0}
+    .status-panel{display:grid;grid-template-columns:160px 1fr;gap:8px;margin-top:8px}
+    .status-item{background:#f8faff;border:1px solid var(--line);border-radius:14px;padding:8px;min-height:54px}
+    .status-label{font-size:12px;color:var(--sub);margin-bottom:4px}
+    .status-value{font-size:20px;font-weight:800}
+    .input-preview{font-size:clamp(20px,3vw,30px);font-weight:800;text-align:center;min-height:48px;border-radius:14px;padding:8px 10px;background:#fff;border:2px solid #d9e3f8;margin-top:8px;letter-spacing:.08em}
+    .confirm-preview{min-height:44px;border-radius:14px;border:2px dashed #d6def4;background:#f9fbff;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px 10px;margin-top:8px;font-weight:800;font-size:22px}
+    .feedback{display:none !important;min-height:0;font-weight:800;text-align:center;margin-top:0;font-size:14px}
+    .feedback.ok{color:var(--ok)} .feedback.ng{color:var(--ng)} .feedback.info{color:var(--accent)}
+    .kbd-layout{display:grid;grid-template-columns:1fr 88px;gap:8px;align-items:start;margin-top:8px}
+    .consonant-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));grid-auto-rows:82px;gap:6px;position:relative;padding-bottom:0}
+    .consonant-col,.vowel-col{display:grid;gap:6px}
+    .consonant-col.positional{display:block;width:100%;height:100%}
+    .consonant-title,.vowel-title{margin-top:0!important;margin-bottom:6px!important;min-height:22px;display:flex;align-items:flex-end}
+    .vowel-wrap{position:relative;padding-top:0}
+    .key{border-radius:16px;border:2px solid #cfd8ed;background:#fff;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:6px 4px;font-weight:800;user-select:none}
+    .key.selected{background:#edf3ff;border-color:var(--accent);box-shadow:0 0 0 4px rgba(65,105,225,.12)}
+    .consonant-col .key{min-height:82px}
+    .consonant-col.positional .key{width:100%;height:82px}
+    .vowel-col .key{min-height:42px;background:#fff7ea;border-color:#efd8a8}
+    .vowel-col{position:relative}
+    .vowel-wrap .ok-large{position:absolute;top:-92px;left:0;right:0;z-index:3;min-height:54px;font-size:26px;border-width:3px;padding:8px 6px;box-shadow:0 8px 20px rgba(65,105,225,.16)}
+    .key.nn{min-height:82px;width:100%;background:#f3efff;border-color:#d3c6ff;grid-column:1;grid-row:2;z-index:2}
+    .main{font-size:28px;line-height:1}
+    .sub{font-size:12px;color:var(--sub);margin-top:4px}
+    .ok-large{min-height:58px;font-size:24px;border-width:2px;padding:10px 6px}
+    .checklist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .check-item{border:1px solid var(--line);border-radius:14px;padding:8px 10px;background:#fbfcff;display:flex;align-items:center;gap:8px}
+    .check-item input{width:18px;height:18px}
+    .inline-note{background:#f5f8ff;border:1px solid #d8e4ff;border-radius:12px;padding:8px 10px;color:var(--sub);margin-top:8px;font-size:13px}
+    .muted{color:var(--sub)}
+    textarea,input[type="text"]{width:100%;border:2px solid #d9e3f8;border-radius:14px;padding:10px 12px;background:#fff}
+    .saved-list,.miss-list,.candidate-list{display:grid;gap:8px;margin-top:8px;max-height:220px;overflow:auto}
+    .list-item{border:1px solid var(--line);border-radius:14px;padding:8px 10px;background:#fff;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+    .list-item strong{font-size:17px}
+    .pill{display:inline-block;border-radius:999px;background:#edf3ff;border:1px solid #d5e2ff;padding:4px 8px;font-size:12px;font-weight:700;color:#3350ad}
+    .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}
+    .stat{background:#fafcff;border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+    .stat .num{font-size:24px;font-weight:800}
+    .hidden{display:none!important}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+    @media (max-width: 900px){
+      .consonant-grid{grid-template-columns:repeat(9,minmax(46px,1fr));grid-auto-rows:74px}
+      .consonant-col .key{min-height:74px}.consonant-col.positional .key{height:74px}.main{font-size:24px}
+    }
+    @media (max-width: 760px){
+      .app{padding:6px}.word-wrap{grid-template-columns:1fr}.word-side-controls{width:100%}.status-panel{grid-template-columns:1fr}
+      .kbd-layout{grid-template-columns:1fr}.consonant-grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:auto;padding-bottom:0}
+      .vowel-wrap{padding-top:0}.vowel-col{grid-template-columns:repeat(5,1fr);position:relative;padding-top:42px}.vowel-wrap .ok-large{position:static;left:auto;right:auto;top:auto}.key.nn{position:static;width:auto}.consonant-col.positional{display:grid}.vowel-col .key,.key.nn,.consonant-col.positional .key{min-height:58px;height:auto}.checklist,.stats{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width: 520px){.checklist,.stats{grid-template-columns:1fr}.topbar{align-items:flex-start}}
+  
+    /* hide redundant free-input panel; keep functionality in main word area */
+    #freePanel{display:none !important;}
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div>
+        <div class="title">ローマ字タップれんしゅう</div>
+      </div>
+      <div class="toolbar">
+        <button class="btn secondary small" id="showHowBtn">つかいかた</button>
+        <button class="btn secondary small" id="toggleCaseBtn">大文字表示</button>
+        <button class="btn secondary small" id="toggleGuideBtn">カタカナ表示 ON</button>
+        <button class="btn secondary small" id="toggleExtendedBtn">GZDBP ON</button>
+        <button class="btn secondary small" id="toggleSpeechBtn">音声 ON</button>
+        <button class="btn secondary small" id="toggleAutoConfirmBtn">OK手動</button>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="word-wrap">
+        <div class="current-word" id="currentWord">あい</div>
+        <input type="text" id="currentWordInput" class="current-word-input" placeholder="ここにひらがなを入力" />
+        <div class="word-side-controls">
+          <button class="btn secondary" id="speakWordBtn">単語をよむ</button>
+          <button class="btn primary free-save-under-read" id="freeSaveWordBtn">入力した単語を保存</button>
+        </div>
+      </div>
+
+      <div class="status-panel">
+        <div class="status-item">
+          <div class="status-label">進みぐあい</div>
+          <div class="status-value" id="progressLabel">1 / 1</div>
+        </div>
+        <div>
+          <div class="input-preview mono" id="inputPreview"></div>
+          <div class="confirm-preview mono" id="confirmPreview"></div>
+        </div>
+      </div>
+
+      <div class="feedback info" id="feedback"></div>
+
+      <div class="action-row" style="margin-top:8px;">
+        <button class="btn secondary" id="backspaceBtn">1文字けす</button>
+        <button class="btn danger" id="clearInputBtn">ぜんぶけす</button>
+        <button class="btn warn" id="showAnswerBtn">こたえを見る</button>
+        <button class="btn primary" id="nextWordBtn">つぎへ</button>
+      </div>
+
+      <div class="kbd-layout">
+        <div>
+          <h3 class="section-title consonant-title">子音</h3>
+          <div class="consonant-grid" id="consonantGrid"></div>
+        </div>
+        <div class="vowel-wrap">
+          <h3 class="section-title vowel-title">母音</h3>
+          <div class="vowel-col">
+            <button class="btn success ok-large" id="confirmTokenBtn">OK</button>
+            <div id="vowelGrid" class="vowel-col"></div>
+          </div>
+        </div>
+      </div>
+      <div class="inline-note">基本表記は し=SI、ち=TI、つ=TU、ふ=HU、ん=NN、きゃ=KYA です。</div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">モード</h2>
+      <div class="mode-buttons">
+        <button class="btn active" data-mode="practice">単語練習</button>
+        <button class="btn" data-mode="free">自由入力</button>
+        <button class="btn" data-mode="saved">保存した単語</button>
+        <button class="btn" data-mode="result">結果</button>
+      </div>
+    </section>
+
+    <section class="card" id="practiceSettingsCard">
+      <h2 class="section-title">練習する行</h2>
+      <div class="row-buttons">
+        <button class="btn secondary small" id="selectAllRowsBtn">全選択</button>
+        <button class="btn secondary small" id="clearAllRowsBtn">全解除</button>
+        <button class="btn secondary small" id="shuffleBtn">シャッフル ON</button>
+      </div>
+      <div class="checklist" id="groupChecklist"></div>
+      <div class="inline-note">チェックした行だけを出題します。</div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">CSV</h2>
+      <div class="csv-actions">
+        <label class="btn secondary small" for="csvInput">CSV読み込み</label>
+        <input id="csvInput" type="file" accept=".csv,text/csv" class="hidden" />
+        <button class="btn secondary small" id="exportWordsBtn">単語CSV書き出し</button>
+        <button class="btn secondary small" id="exportHistoryBtn">履歴CSV書き出し</button>
+      </div>
+      <div class="inline-note mono">形式: group,word</div>
+    </section>
+
+    <section class="card hidden" id="freePanel">
+      <h2 class="section-title">自由入力</h2>
+      <div class="inline-note">上の大きな枠を直接タップして、ひらがなを自由に入力してください。</div>
+      <div class="candidate-box">
+        <button class="btn secondary" id="freePracticeBtn">この単語で練習</button>
+        <button class="btn danger" id="clearFreeInputBtn">入力を消す</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="savedPanel">
+      <h2 class="section-title">保存した単語</h2>
+      <div class="row-buttons">
+        <button class="btn secondary small" id="practiceSavedBtn">保存単語で練習開始</button>
+        <label class="btn secondary small" for="savedCsvInput">保存単語のCSV読み込み</label>
+        <input id="savedCsvInput" type="file" accept=".csv,text/csv" class="hidden" />
+        <button class="btn secondary small" id="exportSavedWordsBtn">保存単語のCSV出力</button>
+        <button class="btn danger small" id="clearSavedBtn">保存単語を全削除</button>
+      </div>
+      <div class="saved-list" id="savedList"></div>
+    </section>
+
+    <section class="card hidden" id="resultPanel">
+      <h2 class="section-title">結果</h2>
+      <div class="stats">
+        <div class="stat"><div class="muted">出題</div><div class="num" id="statTotal">0</div></div>
+        <div class="stat"><div class="muted">正解</div><div class="num" id="statCorrect">0</div></div>
+        <div class="stat"><div class="muted">不正解</div><div class="num" id="statWrong">0</div></div>
+        <div class="stat"><div class="muted">正答率</div><div class="num" id="statRate">0%</div></div>
+      </div>
+      <div class="result-actions" style="margin-top:8px;">
+        <button class="btn secondary small" id="retryMissedBtn">ミスした単語だけ練習</button>
+        <button class="btn danger small" id="clearHistoryBtn">結果をリセット</button>
+      </div>
+      <div class="miss-list" id="missList"></div>
+    </section>
+  </div>
+
+  <script>
+    const DEFAULT_WORDS = {
+      "あ行": ["あい","うえ","あお","あう","いえ","いえ","いう","おう","おおい","おおう"],
+      "か行": ["かき","かう","かこ","きく","くき","ここ","かかく","きかく","あか","あき","いか","いけ","おか","かい","こい","あかいかき","あおいかい","こい","あい"],
+      "さ行": ["ささ","さす","しし","しそ","すす","すし","すそ","そし","あさ","あし","あす","あせ","いし","いす","うし","あさい","いしい"],
+      "た行": ["たつ","たて","ちち","つち","てつ","とち","あと","いた","いと","うた","おと","いたい","てあて","あおいいと","あついいた"],
+      "な行": ["なに","なな","ぬの","さんにん","にねん","ななにん","ななねん","あな","あに","あね","いね","うに","うの","おに","おの","おにのあな","いねのね"],
+      "は行": ["はは","ひひ","ひふ","ほほ","はい","はえ","へい","ふえ"],
+      "ま行": ["まま","まめ","みみ","めも","もみ","もむ","もも","あまい","あみ","あむ","あめ","いま","いみ","いも","うま","うみ","うめ","あまいもも","あいまい"],
+      "や行": ["ゆや","ゆい","いや","いよ","いやいや","あや","あゆ","よう","やおや","おや","ようい"],
+      "ら行": ["あら","あり","ある","うら","うる","うり","るり","いろ","おれ","おる","あられ","るりいろ","れい","いろり","りろん","あいいろ","いろいろ","るんるん"]
+    };
+
+    const ROMAJI_MAP = {
+      "あ":"A","い":"I","う":"U","え":"E","お":"O",
+      "か":"KA","き":"KI","く":"KU","け":"KE","こ":"KO",
+      "さ":"SA","し":"SI","す":"SU","せ":"SE","そ":"SO",
+      "た":"TA","ち":"TI","つ":"TU","て":"TE","と":"TO",
+      "な":"NA","に":"NI","ぬ":"NU","ね":"NE","の":"NO",
+      "は":"HA","ひ":"HI","ふ":"HU","へ":"HE","ほ":"HO",
+      "ま":"MA","み":"MI","む":"MU","め":"ME","も":"MO",
+      "や":"YA","ゆ":"YU","よ":"YO",
+      "ら":"RA","り":"RI","る":"RU","れ":"RE","ろ":"RO",
+      "が":"GA","ぎ":"GI","ぐ":"GU","げ":"GE","ご":"GO",
+      "ざ":"ZA","じ":"ZI","ず":"ZU","ぜ":"ZE","ぞ":"ZO",
+      "だ":"DA","ぢ":"DI","づ":"DU","で":"DE","ど":"DO",
+      "ば":"BA","び":"BI","ぶ":"BU","べ":"BE","ぼ":"BO",
+      "ぱ":"PA","ぴ":"PI","ぷ":"PU","ぺ":"PE","ぽ":"PO",
+      "わ":"WA","を":"WO","ん":"NN"
+    };
+
+    const CONSONANTS = [
+      { key: "W", sound: "ワッ", col: 1, row: 1 },
+      { key: "R", sound: "ルッ", col: 2, row: 1 },
+      { key: "Y", sound: "ユッ", col: 3, row: 1 },
+      { key: "M", sound: "ムッ", col: 4, row: 1 },
+      { key: "H", sound: "フッ", col: 5, row: 1 },
+      { key: "N", sound: "ヌッ", col: 6, row: 1 },
+      { key: "T", sound: "トゥッ", col: 7, row: 1 },
+      { key: "S", sound: "スッ", col: 8, row: 1 },
+      { key: "K", sound: "クッ", col: 9, row: 1 },
+      { key: "B", sound: "ブッ", col: 5, row: 2 },
+      { key: "P", sound: "プッ", col: 5, row: 3 },
+      { key: "D", sound: "ドゥッ", col: 7, row: 2 },
+      { key: "Z", sound: "ズッ", col: 8, row: 2 },
+      { key: "G", sound: "グッ", col: 9, row: 2 }
+    ];
+    const VOWELS = [
+      { key: "A", sound: "あ", comboSound: "アッ" },{ key: "I", sound: "い", comboSound: "イッ" },{ key: "U", sound: "う", comboSound: "ウッ" },{ key: "E", sound: "え", comboSound: "エッ" },{ key: "O", sound: "お", comboSound: "オッ" }
+    ];
+    const EXTENDED_CONSONANTS = new Set(["G","Z","D","B","P"]);
+    const YOON_BASES = new Set(["K","S","T","D","N","H","M","Y","R","G","Z","B","P"]);
+    const YOON_TOKENS = {
+      KYA:"きゃ", KYU:"きゅ", KYO:"きょ",
+      SYA:"しゃ", SYU:"しゅ", SYO:"しょ",
+      TYA:"ちゃ", TYU:"ちゅ", TYO:"ちょ",
+      DYA:"ぢゃ", DYU:"ぢゅ", DYO:"ぢょ",
+      NYA:"にゃ", NYU:"にゅ", NYO:"にょ",
+      HYA:"ひゃ", HYU:"ひゅ", HYO:"ひょ",
+      MYA:"みゃ", MYU:"みゅ", MYO:"みょ",
+      YYA:"や", YYU:"ゆ", YYO:"よ",
+      GYA:"ぎゃ", GYU:"ぎゅ", GYO:"ぎょ",
+      ZYA:"じゃ", ZYU:"じゅ", ZYO:"じょ",
+      BYA:"びゃ", BYU:"びゅ", BYO:"びょ",
+      PYA:"ぴゃ", PYU:"ぴゅ", PYO:"ぴょ",
+      RYA:"りゃ", RYU:"りゅ", RYO:"りょ"
+    };
+    const SMALL_YOON_ROMAJI = {
+      "きゃ":"KYA","きゅ":"KYU","きょ":"KYO",
+      "しゃ":"SYA","しゅ":"SYU","しょ":"SYO",
+      "ちゃ":"TYA","ちゅ":"TYU","ちょ":"TYO",
+      "ぢゃ":"DYA","ぢゅ":"DYU","ぢょ":"DYO",
+      "にゃ":"NYA","にゅ":"NYU","にょ":"NYO",
+      "ひゃ":"HYA","ひゅ":"HYU","ひょ":"HYO",
+      "みゃ":"MYA","みゅ":"MYU","みょ":"MYO",
+      "や":"YYA","ゆ":"YYU","よ":"YYO",
+      "ぎゃ":"GYA","ぎゅ":"GYU","ぎょ":"GYO",
+      "じゃ":"ZYA","じゅ":"ZYU","じょ":"ZYO",
+      "びゃ":"BYA","びゅ":"BYU","びょ":"BYO",
+      "ぴゃ":"PYA","ぴゅ":"PYU","ぴょ":"PYO",
+      "りゃ":"RYA","りゅ":"RYU","りょ":"RYO"
+    };
+
+    const state = {
+      mode: "practice",
+      selectedGroups: new Set(Object.keys(DEFAULT_WORDS)),
+      allWords: structuredClone(DEFAULT_WORDS),
+      speechEnabled: true,
+      shuffle: true,
+      letterCase: loadJSON("romajiTapLetterCase", "upper"),
+      showConsonantGuide: loadJSON("romajiTapConsonantGuide", true),
+      showExtendedConsonants: loadJSON("romajiTapExtendedConsonants", true),
+      autoConfirm: loadJSON("romajiTapAutoConfirm", false),
+      freeDraft: "",
+      practiceList: [],
+      practiceSource: "groups",
+      currentIndex: 0,
+      currentWord: "",
+      currentTarget: "",
+      currentInput: "",
+      inputTokens: [],
+      pendingConsonant: "",
+      pendingToken: "",
+      pendingKana: "",
+      history: loadJSON("romajiTapHistory", []),
+      savedWords: loadJSON("romajiTapSavedWords", []),
+      answeredCurrent: false
+    };
+
+    const els = {
+      modeButtons:[...document.querySelectorAll('[data-mode]')],
+      currentWord:document.getElementById('currentWord'), currentWordInput:document.getElementById('currentWordInput'),
+      progressLabel:document.getElementById('progressLabel'), inputPreview:document.getElementById('inputPreview'),
+      confirmPreview:document.getElementById('confirmPreview'), feedback:document.getElementById('feedback'),
+      consonantGrid:document.getElementById('consonantGrid'), vowelGrid:document.getElementById('vowelGrid'),
+      groupChecklist:document.getElementById('groupChecklist'), freePanel:document.getElementById('freePanel'),
+      savedPanel:document.getElementById('savedPanel'), resultPanel:document.getElementById('resultPanel'),
+      practiceSettingsCard:document.getElementById('practiceSettingsCard'),
+      savedList:document.getElementById('savedList'), missList:document.getElementById('missList'),
+      statTotal:document.getElementById('statTotal'), statCorrect:document.getElementById('statCorrect'), statWrong:document.getElementById('statWrong'), statRate:document.getElementById('statRate'),
+      toggleSpeechBtn:document.getElementById('toggleSpeechBtn'), toggleAutoConfirmBtn:document.getElementById('toggleAutoConfirmBtn'), toggleCaseBtn:document.getElementById('toggleCaseBtn'), toggleGuideBtn:document.getElementById('toggleGuideBtn'), toggleExtendedBtn:document.getElementById('toggleExtendedBtn'),
+      csvInput:document.getElementById('csvInput'), savedCsvInput:document.getElementById('savedCsvInput'), freeSaveWordBtn:document.getElementById('freeSaveWordBtn')
+    };
+
+    function loadJSON(key, fallback){ try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }
+    function saveJSON(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+    function persistSettings(){ saveJSON('romajiTapLetterCase', state.letterCase); saveJSON('romajiTapConsonantGuide', state.showConsonantGuide); saveJSON('romajiTapExtendedConsonants', state.showExtendedConsonants); saveJSON('romajiTapAutoConfirm', state.autoConfirm); }
+    function persistSavedWords(){ saveJSON('romajiTapSavedWords', state.savedWords); }
+    function persistHistory(){ saveJSON('romajiTapHistory', state.history); }
+    function displayCase(text){ const v = String(text ?? ''); return state.letterCase === 'lower' ? v.toLowerCase() : v.toUpperCase(); }
+    function sanitizeHiragana(text){ return (text || '').replace(/\s+/g,'').replace(/[^ぁ-んー]/g,'').replace(/[ぁぃぅぇぉゎゕゖ]/g,''); }
+    function toRomaji(word){
+      const chars=[...(word||'')];
+      let out='';
+      for(let i=0;i<chars.length;i++){
+        if(chars[i]==='っ'){
+          const pair=(chars[i+1]||'') + (chars[i+2]||'');
+          if(SMALL_YOON_ROMAJI[pair]){ out += SMALL_YOON_ROMAJI[pair].charAt(0); continue; }
+          const next = ROMAJI_MAP[chars[i+1]] || '';
+          if(next) out += next.charAt(0);
+          continue;
+        }
+        const pair=(chars[i]||'') + (chars[i+1]||'');
+        if(SMALL_YOON_ROMAJI[pair]){ out += SMALL_YOON_ROMAJI[pair]; i++; continue; }
+        out += ROMAJI_MAP[chars[i]] || '';
+      }
+      return out;
+    }
+    function tokensToKana(tokens){ return (tokens || []).map(tokenToKana).join(''); }
+    function tokenToKana(token){
+      const baseMap = {A:'あ',I:'い',U:'う',E:'え',O:'お',KA:'か',KI:'き',KU:'く',KE:'け',KO:'こ',SA:'さ',SI:'し',SU:'す',SE:'せ',SO:'そ',TA:'た',TI:'ち',TU:'つ',TE:'て',TO:'と',NA:'な',NI:'に',NU:'ぬ',NE:'ね',NO:'の',HA:'は',HI:'ひ',HU:'ふ',HE:'へ',HO:'ほ',MA:'ま',MI:'み',MU:'む',ME:'め',MO:'も',YA:'や',YU:'ゆ',YO:'よ',RA:'ら',RI:'り',RU:'る',RE:'れ',RO:'ろ',WA:'わ',WO:'を',GA:'が',GI:'ぎ',GU:'ぐ',GE:'げ',GO:'ご',ZA:'ざ',ZI:'じ',ZU:'ず',ZE:'ぜ',ZO:'ぞ',DA:'だ',DI:'ぢ',DU:'づ',DE:'で',DO:'ど',BA:'ば',BI:'び',BU:'ぶ',BE:'べ',BO:'ぼ',PA:'ぱ',PI:'ぴ',PU:'ぷ',PE:'ぺ',PO:'ぽ',NN:'ん'};
+      const base = YOON_TOKENS[token] || baseMap[token];
+      if(base) return base;
+      const sokuonMatch = /^([A-Z])\1(Y?[AUOIE])$/.exec(token);
+      if(sokuonMatch){
+        const rest = token.slice(1);
+        const kana = YOON_TOKENS[rest] || baseMap[rest];
+        return kana ? ('っ' + kana) : '';
+      }
+      return '';
+    }
+    function setFeedback(msg, kind='info'){ els.feedback.textContent = ''; els.feedback.className = `feedback ${kind}`; }
+    function clearPendingToken(){ state.pendingConsonant=''; state.pendingToken=''; state.pendingKana=''; }
+    function resetInput(render=true){ state.currentInput=''; state.inputTokens=[]; clearPendingToken(); state.answeredCurrent=false; if (render) renderPractice(); }
+    const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    function getSpeechRate(){ return IS_IOS ? 0.78 : 1.25; }
+    function getSpeechGap(){ return IS_IOS ? 350 : 5; }
+    function speak(text){
+      if (!state.speechEnabled || !('speechSynthesis' in window) || !text) return;
+      speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(text);
+      u.lang='ja-JP';
+      u.rate=getSpeechRate(); if(IS_IOS){ u.text = t + ' '; }
+      speechSynthesis.speak(u);
+    }
+    function speakSequence(parts){
+      if (!state.speechEnabled || !('speechSynthesis' in window)) return;
+      speechSynthesis.cancel();
+      const queue=parts.filter(Boolean).map(t=>{
+        const u=new SpeechSynthesisUtterance(t);
+        u.lang='ja-JP';
+        u.rate=getSpeechRate(); if(IS_IOS){ u.text = t + ' '; }
+        return u;
+      });
+      const next=()=>{
+        const u=queue.shift();
+        if(!u) return;
+        u.onend=()=>setTimeout(next,getSpeechGap());
+        speechSynthesis.speak(u);
+      };
+      next();
+    }
+    function shuffleArray(arr){ const copy=[...arr]; for(let i=copy.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [copy[i],copy[j]]=[copy[j],copy[i]]; } return copy; }
+
+    function buildPracticeList(source='groups', list=null){
+      let items=[];
+      if(source==='groups'){
+        [...state.selectedGroups].forEach(group => (state.allWords[group] || []).forEach(word => items.push({group, word})));
+      } else if(source==='saved') {
+        items = state.savedWords.map(word => ({group:'保存単語', word}));
+      } else if(source==='missed' && Array.isArray(list)) {
+        items = list.map(it => ({group: it.group || 'ミス', word: it.word}));
+      } else if(source==='single' && Array.isArray(list)) {
+        items = list.map(word => ({group:'自由入力', word}));
+      }
+      if(state.shuffle) items = shuffleArray(items);
+      state.practiceList = items.filter(it => toRomaji(it.word));
+      state.practiceSource = source;
+      state.currentIndex = 0;
+      loadCurrentWord();
+    }
+    function loadCurrentWord(){
+      const current = state.practiceList[state.currentIndex];
+      if(!current){ state.currentWord=''; state.currentTarget=''; resetInput(false); renderPractice(); setFeedback('出題できる単語がありません。', 'ng'); return; }
+      state.currentWord = current.word; state.currentTarget = toRomaji(current.word); resetInput(false); renderPractice();
+      setFeedback('', 'info');
+    }
+    function renderMode(){
+      els.modeButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === state.mode));
+      els.freePanel.classList.toggle('hidden', state.mode !== 'free');
+      els.savedPanel.classList.toggle('hidden', state.mode !== 'saved');
+      els.resultPanel.classList.toggle('hidden', state.mode !== 'result');
+      els.practiceSettingsCard.classList.toggle('hidden', state.mode !== 'practice');
+      const free = state.mode === 'free';
+      els.currentWord.classList.add('hidden');
+      els.currentWordInput.classList.remove('hidden');
+      els.currentWordInput.readOnly = !free;
+      document.getElementById('speakWordBtn').classList.remove('hidden');
+      els.freeSaveWordBtn.classList.toggle('show', free);
+      if(free){
+        els.currentWordInput.value = state.freeDraft;
+        state.currentTarget = toRomaji(state.freeDraft);
+        resetInput(false); renderPractice(); setTimeout(() => els.currentWordInput.focus(), 0);
+        setFeedback(state.freeDraft ? '上の大きな枠をそのまま編集できます。' : '上の大きな枠に、ひらがなを入力してください。', 'info');
+      } else if(state.practiceList.length) {
+        loadCurrentWord();
+      }
+    }
+    function renderGroups(){
+      els.groupChecklist.innerHTML='';
+      Object.keys(state.allWords).forEach(group => {
+        const wrap=document.createElement('label'); wrap.className='check-item';
+        wrap.innerHTML=`<input type="checkbox" ${state.selectedGroups.has(group)?'checked':''}><span><strong>${group}</strong><br><span class="muted">${(state.allWords[group]||[]).length}語</span></span>`;
+        const input=wrap.querySelector('input');
+        input.addEventListener('change', ()=>{ if(input.checked) state.selectedGroups.add(group); else state.selectedGroups.delete(group); buildPracticeList('groups'); renderGroups(); });
+        els.groupChecklist.appendChild(wrap);
+      });
+    }
+    function renderKeyboard(){
+      els.consonantGrid.innerHTML='';
+      CONSONANTS.forEach(c => {
+        if(!state.showExtendedConsonants && EXTENDED_CONSONANTS.has(c.key)) return;
+        const col=document.createElement('div');
+        col.className='consonant-col positional';
+        col.style.gridColumn=String(c.col);
+        col.style.gridRow=String(c.row);
+        const isSelected = state.pendingConsonant===c.key || state.pendingConsonant===c.key+'Y';
+        const btn=document.createElement('button'); btn.className='key' + (isSelected ? ' selected' : '');
+        btn.innerHTML=`<div class="main">${displayCase(c.key)}</div>${state.showConsonantGuide ? `<div class="sub">${c.sound}</div>` : ''}`;
+        btn.addEventListener('click', ()=>tapConsonant(c.key,c.sound));
+        col.appendChild(btn);
+        els.consonantGrid.appendChild(col);
+      });
+      const nn=document.createElement('button'); nn.className='key nn' + (state.pendingToken==='NN' ? ' selected' : '');
+      nn.innerHTML=`<div class="main">${displayCase('NN')}</div>${state.showConsonantGuide ? `<div class="sub">ん</div>` : ''}`;
+      nn.addEventListener('click', tapNN);
+      els.consonantGrid.appendChild(nn);
+      els.vowelGrid.innerHTML='';
+      VOWELS.forEach(v => {
+        const baseKeys = ['K','S','T','N','H','M','Y','R','W','G','Z','D','B','P'];
+        const selected = state.pendingToken===v.key
+          || baseKeys.some(base => state.pendingToken === (base + v.key))
+          || (['A','U','O'].includes(v.key) && state.pendingConsonant.endsWith('Y') && state.pendingToken===state.pendingConsonant+v.key);
+        const btn=document.createElement('button'); btn.className='key' + (selected ? ' selected' : '');
+        btn.innerHTML=`<div class="main">${displayCase(v.key)}</div>${state.showConsonantGuide ? `<div class="sub">${v.sound}</div>` : ''}`;
+        btn.addEventListener('click', ()=>tapVowel(v.key,v.sound,v.comboSound));
+        els.vowelGrid.appendChild(btn);
+      });
+    }
+    function renderPractice(){
+      const shownWord = state.mode === 'free'
+        ? (state.freeDraft || tokensToKana(state.inputTokens) || '')
+        : state.currentWord;
+      els.currentWord.textContent = shownWord || '―';
+      els.currentWordInput.value = shownWord || '';
+      els.progressLabel.textContent = state.practiceList.length ? `${state.currentIndex+1} / ${state.practiceList.length}` : '0 / 0';
+      els.inputPreview.textContent = state.currentInput ? displayCase(state.currentInput) : ' ';
+      els.confirmPreview.style.display = state.autoConfirm ? 'none' : 'flex';
+      els.confirmPreview.textContent = state.pendingToken ? displayCase(state.pendingToken) : '';
+      renderKeyboard();
+    }
+    function renderSaved(){
+      els.savedList.innerHTML='';
+      if(!state.savedWords.length){ els.savedList.innerHTML='<div class="muted">保存した単語はまだありません。</div>'; return; }
+      state.savedWords.forEach((word,index)=>{
+        const row=document.createElement('div'); row.className='list-item';
+        row.innerHTML=`<div><strong>${word}</strong> <span class="pill mono">${displayCase(toRomaji(word))}</span></div><div class="row-buttons"><button class="btn secondary small">この単語で練習</button><button class="btn danger small">削除</button></div>`;
+        const [practiceBtn, deleteBtn] = row.querySelectorAll('button');
+        practiceBtn.addEventListener('click', ()=>{ state.mode='practice'; renderMode(); buildPracticeList('single',[word]); });
+        deleteBtn.addEventListener('click', ()=>{ state.savedWords.splice(index,1); persistSavedWords(); renderSaved(); });
+        els.savedList.appendChild(row);
+      });
+    }
+    function renderResults(){
+      const total=state.history.length, correct=state.history.filter(h=>h.result==='correct').length, wrong=total-correct, rate=total?Math.round(correct/total*100):0;
+      els.statTotal.textContent=String(total); els.statCorrect.textContent=String(correct); els.statWrong.textContent=String(wrong); els.statRate.textContent=`${rate}%`;
+      const misses=state.history.filter(h=>h.result==='wrong'); els.missList.innerHTML='';
+      if(!misses.length){ els.missList.innerHTML='<div class="muted">ミスした単語はありません。</div>'; return; }
+      misses.slice().reverse().forEach(item=>{ const row=document.createElement('div'); row.className='list-item'; row.innerHTML=`<div><strong>${item.word}</strong> <span class="pill">${item.group}</span><br><span class="muted mono">入力: ${item.input?displayCase(item.input):'-'} / 正解: ${displayCase(item.target)}</span></div>`; els.missList.appendChild(row); });
+    }
+    function recordHistory(result){ state.history.push({date:new Date().toISOString(), group:state.practiceList[state.currentIndex]?.group || '', word:state.currentWord, target:state.currentTarget, input:state.currentInput, result}); persistHistory(); renderResults(); }
+    function judgeProgress(){
+      if(state.mode==='free'){
+        setFeedback('', 'info');
+        return;
+      }
+      if(!state.currentTarget) return;
+      if(state.currentInput === state.currentTarget){
+        setFeedback('', 'ok');
+        if(!state.answeredCurrent) recordHistory('correct');
+        state.answeredCurrent=true;
+        const lastToken = state.inputTokens[state.inputTokens.length - 1] || '';
+        const lastKana = tokenToKana(lastToken);
+        if (lastKana) {
+          speakSequence([lastKana, 'せいかい']);
+        } else {
+          speak('せいかい');
+        }
+        return;
+      }
+      setFeedback('', 'info');
+    }
+    function tapConsonant(key, sound){
+      const doubledMatch = /^([A-Z])\1$/.exec(state.pendingConsonant || '');
+      const doubledBase = doubledMatch ? doubledMatch[1] : '';
+      if(key==='Y' && (YOON_BASES.has(state.pendingConsonant) || (doubledBase && YOON_BASES.has(doubledBase)))){
+        state.pendingConsonant = state.pendingConsonant + 'Y';
+        state.pendingToken='';
+        state.pendingKana = doubledBase ? 'っ' : '';
+        renderPractice();
+        speak(sound);
+        setFeedback('', 'info');
+        return;
+      }
+      if(['K','S','T','G','Z','D','B','P','N','R','H'].includes(key) && state.pendingConsonant===key){
+        state.pendingConsonant = key + key;
+        state.pendingToken='';
+        state.pendingKana='っ';
+        renderPractice();
+        speak('っ');
+        setFeedback('', 'info');
+        return;
+      }
+      clearPendingToken();
+      state.pendingConsonant=key;
+      renderPractice();
+      speak(sound);
+      setFeedback('', 'info');
+    }
+    function tapVowel(key, sound, comboSound){
+      let token='';
+      const isYoon = state.pendingConsonant.endsWith('Y') && ['A','U','O'].includes(key);
+      const isSokuon = /^([A-Z])\1Y?$/.test(state.pendingConsonant);
+      if(isYoon){
+        token=state.pendingConsonant + key;
+      } else if(state.pendingConsonant){
+        token=state.pendingConsonant + key;
+      } else {
+        token=key;
+      }
+      state.pendingToken=token;
+      state.pendingKana=tokenToKana(token);
+      renderPractice();
+      if(isSokuon){
+        speak(tokenToKana(token));
+      } else if(isYoon){
+        speakSequence([sound, tokenToKana(token)]);
+      } else if(state.pendingConsonant){
+        speakSequence([sound, tokenToKana(token)]);
+      } else {
+        speak(sound);
+      }
+      if(state.autoConfirm){
+        confirmPendingToken();
+        setFeedback('', 'info');
+      } else {
+        setFeedback('', 'info');
+      }
+    }
+    function tapNN(){
+      clearPendingToken();
+      state.pendingToken='NN';
+      state.pendingKana='ん';
+      if(state.autoConfirm){
+        state.inputTokens.push('NN');
+        state.currentInput=state.inputTokens.join('');
+        if(state.mode==='free'){
+          const builtKana=tokensToKana(state.inputTokens);
+          state.freeDraft=builtKana;
+          state.currentTarget=toRomaji(builtKana);
+        }
+        clearPendingToken();
+        renderPractice();
+        speak('ん');
+        judgeProgress();
+        return;
+      }
+      renderPractice();
+      speak('ん');
+      setFeedback('', 'info');
+    }
+    function confirmPendingToken(){ if(!state.pendingToken){ setFeedback('OKの前に、子音と母音を選んでください。', 'ng'); return; } state.inputTokens.push(state.pendingToken); state.currentInput=state.inputTokens.join(''); if(state.mode==='free'){ const builtKana=tokensToKana(state.inputTokens); state.freeDraft=builtKana; state.currentTarget=toRomaji(builtKana); } clearPendingToken(); renderPractice(); judgeProgress(); }
+
+    document.getElementById('backspaceBtn').addEventListener('click', ()=>{ if(state.pendingToken || state.pendingConsonant){ clearPendingToken(); } else { state.inputTokens.pop(); state.currentInput=state.inputTokens.join(''); if(state.mode==='free'){ const builtKana=tokensToKana(state.inputTokens); state.freeDraft=builtKana; state.currentTarget=toRomaji(builtKana); } } renderPractice(); setFeedback('1文字けしました。', 'info'); });
+    document.getElementById('confirmTokenBtn').addEventListener('click', confirmPendingToken);
+    document.getElementById('clearInputBtn').addEventListener('click', ()=>{ resetInput(); if(state.mode==='free'){ state.freeDraft=''; state.currentTarget=''; } renderPractice(); setFeedback('入力を消しました。', 'info'); });
+    document.getElementById('showAnswerBtn').addEventListener('click', ()=>{ if(!state.currentTarget) return; window.alert(`こたえ: ${displayCase(state.currentTarget)}`); });
+    document.getElementById('nextWordBtn').addEventListener('click', ()=>{ if(!state.practiceList.length) return; state.currentIndex=(state.currentIndex+1)%state.practiceList.length; loadCurrentWord(); });
+    document.getElementById('speakWordBtn').addEventListener('click', ()=>{ const builtKana=tokensToKana(state.inputTokens); if(builtKana){ speak(builtKana); } else { setFeedback('入力した単語がまだありません。', 'info'); } });
+
+    els.modeButtons.forEach(btn => btn.addEventListener('click', ()=>{ state.mode=btn.dataset.mode; renderMode(); renderResults(); renderSaved(); if(state.mode==='free'){ setTimeout(()=>els.currentWordInput.focus(),0); } }));
+    document.getElementById('selectAllRowsBtn').addEventListener('click', ()=>{ state.selectedGroups=new Set(Object.keys(state.allWords)); renderGroups(); buildPracticeList('groups'); });
+    document.getElementById('clearAllRowsBtn').addEventListener('click', ()=>{ state.selectedGroups=new Set(); renderGroups(); buildPracticeList('groups'); });
+    document.getElementById('shuffleBtn').addEventListener('click', e=>{ state.shuffle=!state.shuffle; e.currentTarget.textContent=`シャッフル ${state.shuffle?'ON':'OFF'}`; buildPracticeList(state.practiceSource==='groups' ? 'groups' : state.practiceSource, state.practiceList); });
+    document.getElementById('toggleSpeechBtn').addEventListener('click', e=>{ state.speechEnabled=!state.speechEnabled; e.currentTarget.textContent=`音声 ${state.speechEnabled?'ON':'OFF'}`; });
+    document.getElementById('toggleAutoConfirmBtn').addEventListener('click', e=>{
+      state.autoConfirm=!state.autoConfirm;
+      e.currentTarget.textContent=state.autoConfirm ? 'OK自動' : 'OK手動';
+      persistSettings();
+      renderPractice();
+      setFeedback('', 'info');
+    });
+    document.getElementById('toggleCaseBtn').addEventListener('click', e=>{ state.letterCase=state.letterCase==='upper' ? 'lower' : 'upper'; e.currentTarget.textContent=state.letterCase==='upper' ? '大文字表示' : '小文字表示'; persistSettings(); renderPractice(); renderSaved(); renderCandidates(); renderResults(); });
+    document.getElementById('toggleGuideBtn').addEventListener('click', e=>{ state.showConsonantGuide=!state.showConsonantGuide; e.currentTarget.textContent=`カタカナ表示 ${state.showConsonantGuide?'ON':'OFF'}`; persistSettings(); renderKeyboard(); });
+    document.getElementById('toggleExtendedBtn').addEventListener('click', e=>{ state.showExtendedConsonants=!state.showExtendedConsonants; e.currentTarget.textContent=`GZDBP ${state.showExtendedConsonants?'ON':'OFF'}`; persistSettings(); renderKeyboard(); });
+    document.getElementById('showHowBtn').addEventListener('click', ()=> alert('【つかいかた】\n1. 子音を押してから母音を押します。\n2. 音を確認してから OK を押します。\n3. 母音だけの文字は A・I・U・E・O だけを押して OK を押します。\n4. ん は W 列の一番下の NN を押します。\n5. K・S・T・D・N・H・M・Y・G・Z・B・P のあとに Y を押してから A・U・O を押すと、拗音が作れます。\n6. 自由入力では、上の大きな枠にひらがなを直接入力します。'));
+
+    els.currentWordInput.addEventListener('input', e=>{ const sanitized=sanitizeHiragana(e.target.value); state.freeDraft=sanitized; if(e.target.value!==sanitized) e.target.value=sanitized; if(state.mode==='free'){ state.currentTarget=toRomaji(sanitized); state.inputTokens=[]; state.currentInput=''; clearPendingToken(); renderPractice(); } });
+    document.getElementById('freePracticeBtn').addEventListener('click', ()=>{ const word=sanitizeHiragana(state.freeDraft); if(!word){ alert('上の大きな枠に、ひらがなを入力してください。'); els.currentWordInput.focus(); return; } state.currentWord=word; state.currentTarget=toRomaji(word); resetInput(false); renderPractice(); setFeedback('入力したことばで練習できます。', 'info'); });
+    function saveFreeWord(){
+      const word=sanitizeHiragana(els.currentWordInput.value || state.freeDraft || tokensToKana(state.inputTokens));
+      if(!word){ els.currentWordInput.focus(); return; }
+      if(!toRomaji(word)){ alert('現在の初版では対応していない文字が入っています。'); return; }
+      state.freeDraft = word;
+      state.currentTarget = toRomaji(word);
+      if(!state.savedWords.includes(word)){
+        state.savedWords.push(word);
+        persistSavedWords();
+        renderSaved();
+        setFeedback('保存しました。', 'ok');
+      } else {
+        setFeedback('この単語はすでに保存されています。', 'info');
+      }
+    }
+    els.freeSaveWordBtn.addEventListener('click', saveFreeWord);
+    document.getElementById('clearFreeInputBtn').addEventListener('click', ()=>{ state.freeDraft=''; state.currentWord=''; state.currentTarget=''; resetInput(false); els.currentWordInput.value=''; renderPractice(); setFeedback('自由入力を消しました。', 'info'); els.currentWordInput.focus(); });
+    document.getElementById('practiceSavedBtn').addEventListener('click', ()=>{ if(!state.savedWords.length){ alert('保存した単語がありません。'); return; } state.mode='practice'; renderMode(); buildPracticeList('saved'); });
+    document.getElementById('exportSavedWordsBtn').addEventListener('click', ()=>{
+      const rows=['group,word'];
+      state.savedWords.forEach(word => rows.push(`${csvEsc('保存単語')},${csvEsc(word)}`));
+      downloadFile('romaji_saved_words.csv', rows.join('\r\n'), 'text/csv;charset=utf-8', true);
+    });
+    document.getElementById('clearSavedBtn').addEventListener('click', ()=>{ if(!confirm('保存した単語をすべて削除しますか？')) return; state.savedWords=[]; persistSavedWords(); renderSaved(); });
+    document.getElementById('retryMissedBtn').addEventListener('click', ()=>{ const misses=state.history.filter(h=>h.result==='wrong'); if(!misses.length){ alert('ミスした単語はありません。'); return; } state.mode='practice'; renderMode(); buildPracticeList('missed', misses); });
+    document.getElementById('clearHistoryBtn').addEventListener('click', ()=>{ if(!confirm('結果をリセットしますか？')) return; state.history=[]; persistHistory(); renderResults(); });
+
+    function downloadFile(name,text,type='text/plain;charset=utf-8',withBom=false){ const parts = withBom ? ['\uFEFF', text] : [text]; const blob=new Blob(parts,{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url); }
+    function csvEsc(v){ const s=String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
+    function parseCSVLine(line){ const result=[]; let cur=''; let inQuotes=false; for(let i=0;i<line.length;i++){ const ch=line[i]; if(ch==='"'){ if(inQuotes && line[i+1]==='"'){ cur+='"'; i++; } else inQuotes=!inQuotes; } else if(ch===',' && !inQuotes){ result.push(cur); cur=''; } else cur+=ch; } result.push(cur); return result; }
+    document.getElementById('exportWordsBtn').addEventListener('click', ()=>{
+      const rows=['group,word,source'];
+      Object.entries(state.allWords).forEach(([group, words])=>words.forEach(word=>rows.push(`${csvEsc(group)},${csvEsc(word)},default`)));
+      state.savedWords.forEach(word=>rows.push(`${csvEsc('保存単語')},${csvEsc(word)},free_saved`));
+      downloadFile('romaji_words.csv', rows.join('\r\n'), 'text/csv;charset=utf-8', true);
+    });
+    document.getElementById('exportHistoryBtn').addEventListener('click', ()=>{ const rows=['date,group,word,target,input,result']; state.history.forEach(h=>rows.push(`${csvEsc(h.date)},${csvEsc(h.group)},${csvEsc(h.word)},${csvEsc(h.target)},${csvEsc(h.input)},${csvEsc(h.result)}`)); downloadFile('romaji_history.csv', rows.join('\r\n'), 'text/csv;charset=utf-8', true); });
+    els.csvInput.addEventListener('change', async e=>{
+      const file=e.target.files?.[0];
+      if(!file) return;
+      const text=await file.text();
+      const normalized = text.replace(/^\uFEFF/, '');
+      const lines=normalized.split(/\r?\n/).filter(Boolean);
+      if(!lines.length) return;
+      const start=lines[0].toLowerCase().includes('group') ? 1 : 0;
+      let added=0;
+      let savedAdded=0;
+      for(let i=start;i<lines.length;i++){
+        const cols=parseCSVLine(lines[i]);
+        if(cols.length<2) continue;
+        const group=(cols[0] || '').trim() || '読み込み';
+        const word=sanitizeHiragana((cols[1] || '').trim());
+        const source=(cols[2] || '').trim().toLowerCase();
+        if(!word || !toRomaji(word)) continue;
+        const isSavedWord = source === 'free_saved' || source === 'user' || group === '保存単語';
+        if(isSavedWord){
+          if(!state.savedWords.includes(word)){
+            state.savedWords.push(word);
+            savedAdded++;
+          }
+          continue;
+        }
+        if(!state.allWords[group]) state.allWords[group]=[];
+        state.allWords[group].push(word);
+        added++;
+      }
+      if(savedAdded) persistSavedWords();
+      if(added || savedAdded){
+        alert(`${added + savedAdded}語を読み込みました。`);
+        renderGroups();
+        renderSaved();
+        buildPracticeList('groups');
+      } else {
+        alert('読み込める単語がありませんでした。');
+      }
+      e.target.value='';
+    });
+
+    els.savedCsvInput.addEventListener('change', async e=>{
+      const file=e.target.files?.[0];
+      if(!file) return;
+      const text=await file.text();
+      const normalized = text.replace(/^\uFEFF/, '');
+      const lines=normalized.split(/\r?\n/).filter(Boolean);
+      if(!lines.length) return;
+      const header = (lines[0] || '').toLowerCase();
+      const start = (header.includes('group') || header.includes('word')) ? 1 : 0;
+      let savedAdded=0;
+      for(let i=start;i<lines.length;i++){
+        const cols=parseCSVLine(lines[i]);
+        let word='';
+        if(cols.length >= 2){
+          word = sanitizeHiragana((cols[1] || '').trim());
+        } else if(cols.length === 1){
+          word = sanitizeHiragana((cols[0] || '').trim());
+        }
+        if(!word || !toRomaji(word)) continue;
+        if(!state.savedWords.includes(word)){
+          state.savedWords.push(word);
+          savedAdded++;
+        }
+      }
+      if(savedAdded){
+        persistSavedWords();
+        renderSaved();
+        alert(`${savedAdded}語を保存単語に読み込みました。`);
+      } else {
+        alert('読み込める保存単語がありませんでした。');
+      }
+      e.target.value='';
+    });
+
+    els.toggleCaseBtn.textContent = state.letterCase === 'upper' ? '大文字表示' : '小文字表示';
+    els.toggleGuideBtn.textContent = `カタカナ表示 ${state.showConsonantGuide ? 'ON' : 'OFF'}`;
+    els.toggleExtendedBtn.textContent = `GZDBP ${state.showExtendedConsonants ? 'ON' : 'OFF'}`;
+    renderMode(); renderGroups(); renderSaved(); renderResults(); renderKeyboard(); buildPracticeList('groups');
+  </script>
+</body>
+</html>
