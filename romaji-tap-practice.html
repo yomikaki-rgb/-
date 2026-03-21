@@ -393,7 +393,7 @@
       speechSynthesis.cancel();
       const u=new SpeechSynthesisUtterance(text);
       u.lang='ja-JP';
-      u.rate=getSpeechRate(); if(IS_IOS){ u.text = t + ' '; }
+      u.rate=getSpeechRate();
       speechSynthesis.speak(u);
     }
     function speakSequence(parts){
@@ -402,7 +402,7 @@
       const queue=parts.filter(Boolean).map(t=>{
         const u=new SpeechSynthesisUtterance(t);
         u.lang='ja-JP';
-        u.rate=getSpeechRate(); if(IS_IOS){ u.text = t + ' '; }
+        u.rate=getSpeechRate();
         return u;
       });
       const next=()=>{
