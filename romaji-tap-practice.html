@@ -391,7 +391,7 @@
     function normalizeIosSpeech(text){
       let s = String(text || '');
       if (IS_IOS){
-        s = s.replace(/っ/g, '');
+        s = s.replace(/[っッ]/g, '');
       }
       return s;
     }
