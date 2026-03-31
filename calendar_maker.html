@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>スタンプカレンダー（2ヶ月 / A4縦）</title>
+<title>スタンプカレンダー（最大12ヶ月 / A4縦）</title>
 <style>
 :root{ --line:1px; --ink:#000; }
 html,body{ margin:0; padding:0; }
@@ -107,6 +107,8 @@ button{ padding:8px 14px; font-size:14px; cursor:pointer; }
 
 .daynum{ font-size:12pt; line-height:1.05; }
 .hname{ font-size:9pt; line-height:1.05; }
+.dreading{ font-size:7.5pt; line-height:1.0; white-space:nowrap; }
+.hide-dreading .dreading{ font-size:7.5pt; line-height:1.0; white-space:nowrap; }
 .is-holiday .daynum, .is-holiday .hname{ color:#c00; }
 .hide-hname .hname{ display:none; }
 .hide-holiday-color .is-holiday .daynum,
@@ -123,17 +125,20 @@ ruby rt{ font-size:60%; }
 <body>
 
 <div id="editor" aria-label="編集画面">
-  <h2>スタンプカレンダー（2ヶ月 / A4縦）</h2>
+  <h2>スタンプカレンダー（最大12ヶ月 / A4縦）</h2>
 
   <div class="field">
     <label for="startMonth">開始月（1ヶ月目）</label>
     <select id="startMonth"></select>
+    <label for="monthCount" style="margin-left:12px; min-width:auto;">作成月数</label>
+    <select id="monthCount" aria-label="作成月数"></select>
     <small>月曜始まりで自動生成します。</small>
   </div>
 
   <div class="field">
     <label><input id="toggleHolidays" type="checkbox" checked> 祝日を表示</label>
     <label style="margin-left:12px;"><input id="toggleHolidayNames" type="checkbox" checked> 祝日名を表示</label>
+    <label style="margin-left:12px;"><input id="toggleDateReadings" type="checkbox"> 日付の読み方を表示</label>
     <span style="margin-left:12px;">
       祝日名の表記：
       <select id="holidayNameStyle" aria-label="祝日名の表記">
@@ -174,9 +179,11 @@ ruby rt{ font-size:60%; }
 
   const elStartMonth = document.getElementById("startMonth");
   const elTop = document.getElementById("topComment");
+  const elMonthCount = document.getElementById("monthCount");
   const elBottom = document.getElementById("bottomComment");
   const elToggleH = document.getElementById("toggleHolidays");
   const elToggleHN = document.getElementById("toggleHolidayNames");
+  const elToggleDR = document.getElementById("toggleDateReadings");
   const elHolidayNameStyle = document.getElementById("holidayNameStyle");
   const elPrint = document.getElementById("print");
   const btnUpdate = document.getElementById("btnUpdate");
@@ -184,13 +191,11 @@ ruby rt{ font-size:60%; }
 
   // ---- 開始月ドロップダウン（YYYY-MM） ----
   function populateMonthOptions(){
-    // 開始月は 2026-01 固定。過去分を無くす代わりに後ろ（未来）を伸ばす。
-    // 49ヶ月分（2026-01 〜 2030-01）を用意（操作性重視、印刷仕様には影響しない）
-    const start = new Date(2026, 0, 1); // 2026-01-01
-    const end = new Date(2040, 11, 1);   // 2030-01-01（含む）
+    const start = new Date(2026, 0, 1);
+    const end = new Date(2040, 11, 1);
 
-    // 既存オプションをクリア
     while(elStartMonth.firstChild) elStartMonth.removeChild(elStartMonth.firstChild);
+    while(elMonthCount.firstChild) elMonthCount.removeChild(elMonthCount.firstChild);
 
     for(let d = new Date(start); d <= end; d.setMonth(d.getMonth() + 1)){
       const y = d.getFullYear();
@@ -200,10 +205,30 @@ ruby rt{ font-size:60%; }
       opt.textContent = y + "年 " + m + "月";
       elStartMonth.appendChild(opt);
     }
+
+    for(let i=1;i<=12;i++){
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = i + "ヶ月";
+      if(i === 2) opt.selected = true;
+      elMonthCount.appendChild(opt);
+    }
   }
 
   function pad2(n){ return (n<10 ? "0"+n : ""+n); }
   function ymd(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+  function dateReading(day){
+    const map = {
+      1:"ついたち", 2:"ふつか", 3:"みっか", 4:"よっか", 5:"いつか",
+      6:"むいか", 7:"なのか", 8:"ようか", 9:"ここのか", 10:"とおか",
+      11:"じゅういちにち", 12:"じゅうににち", 13:"じゅうさんにち", 14:"じゅうよっか", 15:"じゅうごにち",
+      16:"じゅうろくにち", 17:"じゅうしちにち", 18:"じゅうはちにち", 19:"じゅうくにち", 20:"はつか",
+      21:"にじゅういちにち", 22:"にじゅうににち", 23:"にじゅうさんにち", 24:"にじゅうよっか", 25:"にじゅうごにち",
+      26:"にじゅうろくにち", 27:"にじゅうしちにち", 28:"にじゅうはちにち", 29:"にじゅうくにち", 30:"さんじゅうにち",
+      31:"さんじゅういちにち"
+    };
+    return map[day] || "";
+  }
   function addMonths(year, monthIndex, add){
     const d = new Date(year, monthIndex, 1);
     d.setMonth(d.getMonth()+add);
@@ -280,13 +305,11 @@ ruby rt{ font-size:60%; }
     }
     return hol;
   }
-  function holidaysForYears(y1,y2){
+  function holidaysForRange(startYear,endYear){
     const map = {};
-    const h1 = computeHolidaysJP(y1);
-    for(const k in h1){ if(Object.prototype.hasOwnProperty.call(h1,k)) map[k]=h1[k]; }
-    if(y2 !== y1){
-      const h2 = computeHolidaysJP(y2);
-      for(const k in h2){ if(Object.prototype.hasOwnProperty.call(h2,k)) map[k]=h2[k]; }
+    for(let y = startYear; y <= endYear; y++) {
+      const hy = computeHolidaysJP(y);
+      for(const k in hy){ if(Object.prototype.hasOwnProperty.call(hy,k)) map[k]=hy[k]; }
     }
     return map;
   }
@@ -360,6 +383,11 @@ ruby rt{ font-size:60%; }
           dn.textContent = String(dayNum);
           td.appendChild(dn);
 
+          const dr = document.createElement("div");
+          dr.className = "dreading";
+          dr.textContent = dateReading(dayNum);
+          td.appendChild(dr);
+
           if(hobj){
             td.classList.add("is-holiday");
             const hn = document.createElement("div");
@@ -372,6 +400,11 @@ ruby rt{ font-size:60%; }
           dn.className = "daynum";
           dn.textContent = "";
           td.appendChild(dn);
+
+          const dr = document.createElement("div");
+          dr.className = "dreading";
+          dr.textContent = "";
+          td.appendChild(dr);
         }
 
         tr.appendChild(td);
@@ -394,15 +427,17 @@ ruby rt{ font-size:60%; }
 
   function restore(){
     try{
-      const s = localStorage.getItem("seal_calendar_state_v4");
+      const s = localStorage.getItem("seal_calendar_state_v5");
       if(!s) return;
       const o = JSON.parse(s);
       if(o && typeof o === "object"){
         if(o.startMonth) elStartMonth.value = o.startMonth;
+        if(o.monthCount) elMonthCount.value = String(o.monthCount);
         if(typeof o.top === "string") elTop.value = o.top;
         if(typeof o.bottom === "string") elBottom.value = o.bottom;
         if(typeof o.showH === "boolean") elToggleH.checked = o.showH;
         if(typeof o.showHN === "boolean") elToggleHN.checked = o.showHN;
+        if(typeof o.showDR === "boolean") elToggleDR.checked = o.showDR;
         if(o.holidayNameStyle && elHolidayNameStyle) elHolidayNameStyle.value = o.holidayNameStyle;
       }
     }catch(e){}
@@ -412,87 +447,98 @@ ruby rt{ font-size:60%; }
     if(!elStartMonth.value){
       elStartMonth.value = "2026-01";
     }
+    if(!elMonthCount.value){
+      elMonthCount.value = "2";
+    }
     if(elHolidayNameStyle && !elHolidayNameStyle.value){
       elHolidayNameStyle.value = "hira";
     }
 
     const showH = !!elToggleH.checked;
     const showHN = !!elToggleHN.checked;
+    const showDR = !!elToggleDR.checked;
     const holidayNameStyle = (elHolidayNameStyle && elHolidayNameStyle.value) ? elHolidayNameStyle.value : "kanji";
+    const monthCount = Math.min(12, Math.max(1, Number(elMonthCount.value) || 2));
 
     const [yStr, mStr] = elStartMonth.value.split("-");
-    const y1 = Number(yStr);
-    const m1 = Number(mStr) - 1;
-    const m2 = addMonths(y1, m1, 1);
-    const y2 = m2.y, mo2 = m2.m;
+    const startYear = Number(yStr);
+    const startMonthIndex = Number(mStr) - 1;
 
-    const holidays = showH ? holidaysForYears(y1, y2) : {};
+    const monthList = [];
+    for(let i=0; i<monthCount; i++){
+      const mm = addMonths(startYear, startMonthIndex, i);
+      monthList.push(mm);
+    }
 
-    // 固定部分合計（2ヶ月＋上下コメント）
-    const fixed =
-      H.comment + H.spacer +
-      H.title + H.weekday +
-      H.spacer +
-      H.title + H.weekday +
-      H.spacer +
-      H.comment;
+    const endYear = monthList[monthList.length - 1].y;
+    const holidays = showH ? holidaysForRange(startYear, endYear) : {};
 
-    // 誤差吸収の安全余白（整数mm）
-    const safety = 14;
-    let remaining = H.page - fixed - safety;
-    if(remaining < 50) remaining = 50;
-
-    const perMonthDayRows = Math.floor(remaining / 2);
-
-    // 状態保存
     try{
-      localStorage.setItem("seal_calendar_state_v4", JSON.stringify({
+      localStorage.setItem("seal_calendar_state_v5", JSON.stringify({
         startMonth: elStartMonth.value,
+        monthCount: monthCount,
         top: elTop.value,
         bottom: elBottom.value,
         showH: showH,
         showHN: showHN,
+        showDR: showDR,
         holidayNameStyle: holidayNameStyle
       }));
     }catch(e){}
 
-    const page = document.createElement("div");
-    page.className = "print-page";
-    if(!showHN) page.classList.add("hide-hname");
-    if(!showH) page.classList.add("hide-holiday-color");
-
-    const top = document.createElement("div");
-    top.className = "comment-box";
-    top.textContent = elTop.value || "";
-    page.appendChild(top);
-    page.appendChild(makeSpacer());
-
-    const t1 = document.createElement("div");
-    t1.className = "month-title";
-    t1.textContent = monthTitleText(y1, m1);
-    page.appendChild(t1);
-    page.appendChild(buildMonthTable(y1, m1, holidays, holidayNameStyle, perMonthDayRows));
-    page.appendChild(makeSpacer());
-
-    const t2 = document.createElement("div");
-    t2.className = "month-title";
-    t2.textContent = monthTitleText(y2, mo2);
-    page.appendChild(t2);
-    page.appendChild(buildMonthTable(y2, mo2, holidays, holidayNameStyle, perMonthDayRows));
-    page.appendChild(makeSpacer());
-
-    const bottom = document.createElement("div");
-    bottom.className = "comment-box";
-    bottom.textContent = elBottom.value || "";
-    page.appendChild(bottom);
-
     while(elPrint.firstChild) elPrint.removeChild(elPrint.firstChild);
-    elPrint.appendChild(page);
+
+    for(let pageStart=0; pageStart<monthList.length; pageStart+=2){
+      const monthsOnPage = monthList.slice(pageStart, pageStart + 2);
+
+      const fixed =
+        H.comment + H.spacer +
+        (monthsOnPage.length * (H.title + H.weekday)) +
+        (monthsOnPage.length * H.spacer) +
+        H.comment;
+
+      const safety = 14;
+      let remaining = H.page - fixed - safety;
+      if(remaining < 50) remaining = 50;
+      const perMonthDayRows = Math.floor(remaining / monthsOnPage.length);
+
+      const page = document.createElement("div");
+      page.className = "print-page";
+      if(!showHN) page.classList.add("hide-hname");
+      if(!showH) page.classList.add("hide-holiday-color");
+      if(!showDR) page.classList.add("hide-dreading");
+      if(pageStart > 0) page.style.pageBreakBefore = "always";
+
+      const top = document.createElement("div");
+      top.className = "comment-box";
+      top.textContent = elTop.value || "";
+      page.appendChild(top);
+      page.appendChild(makeSpacer());
+
+      monthsOnPage.forEach(function(info){
+        const title = document.createElement("div");
+        title.className = "month-title";
+        title.textContent = monthTitleText(info.y, info.m);
+        page.appendChild(title);
+        page.appendChild(buildMonthTable(info.y, info.m, holidays, holidayNameStyle, perMonthDayRows));
+        page.appendChild(makeSpacer());
+      });
+
+      const bottom = document.createElement("div");
+      bottom.className = "comment-box";
+      bottom.textContent = elBottom.value || "";
+      page.appendChild(bottom);
+
+      elPrint.appendChild(page);
+    }
   }
 
   btnUpdate.addEventListener("click", function(){ render(); });
+  elStartMonth.addEventListener("change", function(){ render(); });
+  elMonthCount.addEventListener("change", function(){ render(); });
   elToggleH.addEventListener("change", function(){ render(); });
   elToggleHN.addEventListener("change", function(){ render(); });
+  elToggleDR.addEventListener("change", function(){ render(); });
   if(elHolidayNameStyle) elHolidayNameStyle.addEventListener("change", function(){ render(); });
   btnPrint.addEventListener("click", function(){ render().then(function(){ window.print(); }); });
 
@@ -501,6 +547,9 @@ ruby rt{ font-size:60%; }
   // restore後も未選択なら 2026-01 を選択
   if(!elStartMonth.value){
     elStartMonth.value = "2026-01";
+  }
+  if(!elMonthCount.value){
+    elMonthCount.value = "2";
   }
   if(elHolidayNameStyle && !elHolidayNameStyle.value){
     elHolidayNameStyle.value = "hira";
