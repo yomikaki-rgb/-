@@ -27,6 +27,8 @@
     .btn.danger{background:#fff1ef;border-color:#f5c6bf;color:#b53c2e}
     .btn.warn{background:#fff8e8;border-color:#f0ddb0;color:#8a6112}
     .btn.active{background:#6e8cff;border-color:#6e8cff;color:#fff}
+.print-big-btn{font-size:72px;padding:30px 48px;font-weight:900;background:#ff3b3b !important;border-color:#ff3b3b !important;color:#fff !important}
+.back-small-btn{font-size:18px;padding:10px 16px;font-weight:700}
     .btn.small{font-size:12px;padding:7px 9px}
     .word-wrap{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;position:relative}
     .word-side-controls{display:flex;flex-direction:column;gap:8px;align-items:stretch}
@@ -102,11 +104,32 @@
         <button class="btn secondary small" id="toggleGuideBtn">カタカナ表示 ON</button>
         <button class="btn secondary small" id="toggleExtendedBtn">GZDBP ON</button>
         <button class="btn secondary small" id="toggleSpeechBtn">音声 ON</button>
-        <button class="btn secondary small" id="toggleAutoConfirmBtn">OK手動</button>
+                <button class="btn secondary small" id="toggleDisplayModeBtn">漢字＋(かな)</button>
       </div>
     </div>
 
-    <section class="card">
+    <section class="card" id="practiceIntroCard">
+      <h2 class="section-title">れんしゅう</h2>
+      <div class="inline-note">じゅんびができたら、下のボタンを押してはじめます。</div>
+      <div class="action-row" style="margin-top:8px;">
+        <button class="btn primary" id="startPracticeBtn">れんしゅうをはじめる</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="practiceSessionCard">
+      <div class="topbar" style="margin-bottom:0;">
+        <div>
+          <div class="section-title" style="margin-bottom:4px;">れんしゅうした たんご</div>
+          <div class="status-value" id="practicedCountLabel" style="font-size:36px;">0 こ</div>
+        </div>
+        <div class="toolbar">
+          <button class="btn secondary" id="printPracticedBtn" class="btn print-big-btn" style="background:#ff0000 !important;color:#fff !important;border-color:#ff0000 !important;font-size:32px;padding:14px 24px;">いんさつ</button>
+<button class="btn secondary back-small-btn" style="font-size:16px;padding:8px 14px;" id="backToStartBtn">はじめにもどる</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="practiceCard">
       <div class="word-wrap">
         <div class="current-word" id="currentWord">あい</div>
         <input type="text" id="currentWordInput" class="current-word-input" placeholder="ここにひらがなを入力" />
@@ -144,8 +167,7 @@
         <div class="vowel-wrap">
           <h3 class="section-title vowel-title">母音</h3>
           <div class="vowel-col">
-            <button class="btn success ok-large" id="confirmTokenBtn">OK</button>
-            <div id="vowelGrid" class="vowel-col"></div>
+                        <div id="vowelGrid" class="vowel-col"></div>
           </div>
         </div>
       </div>
@@ -165,9 +187,9 @@
     <section class="card" id="practiceSettingsCard">
       <h2 class="section-title">練習する行</h2>
       <div class="row-buttons">
-        <button class="btn secondary small" id="selectAllRowsBtn">全選択</button>
+                <button class="btn secondary small" id="selectAllRowsBtn">全選択</button>
         <button class="btn secondary small" id="clearAllRowsBtn">全解除</button>
-        <button class="btn secondary small" id="shuffleBtn">シャッフル ON</button>
+        
       </div>
       <div class="checklist" id="groupChecklist"></div>
       <div class="inline-note">チェックした行だけを出題します。</div>
@@ -223,16 +245,557 @@
 
   <script>
     const DEFAULT_WORDS = {
-      "あ行": ["あい","うえ","あお","あう","いえ","いえ","いう","おう","おおい","おおう"],
-      "か行": ["かき","かう","かこ","きく","くき","ここ","かかく","きかく","あか","あき","いか","いけ","おか","かい","こい","あかいかき","あおいかい","こい","あい"],
-      "さ行": ["ささ","さす","しし","しそ","すす","すし","すそ","そし","あさ","あし","あす","あせ","いし","いす","うし","あさい","いしい"],
-      "た行": ["たつ","たて","ちち","つち","てつ","とち","あと","いた","いと","うた","おと","いたい","てあて","あおいいと","あついいた"],
-      "な行": ["なに","なな","ぬの","さんにん","にねん","ななにん","ななねん","あな","あに","あね","いね","うに","うの","おに","おの","おにのあな","いねのね"],
-      "は行": ["はは","ひひ","ひふ","ほほ","はい","はえ","へい","ふえ"],
-      "ま行": ["まま","まめ","みみ","めも","もみ","もむ","もも","あまい","あみ","あむ","あめ","いま","いみ","いも","うま","うみ","うめ","あまいもも","あいまい"],
-      "や行": ["ゆや","ゆい","いや","いよ","いやいや","あや","あゆ","よう","やおや","おや","ようい"],
-      "ら行": ["あら","あり","ある","うら","うる","うり","るり","いろ","おれ","おる","あられ","るりいろ","れい","いろり","りろん","あいいろ","いろいろ","るんるん"]
-    };
+      "あ行": [
+            {
+                  "text": "愛",
+                  "kana": "あい"
+            },
+            {
+                  "text": "上",
+                  "kana": "うえ"
+            },
+            {
+                  "text": "青",
+                  "kana": "あお"
+            },
+            {
+                  "text": "会う",
+                  "kana": "あう"
+            },
+            {
+                  "text": "家",
+                  "kana": "いえ"
+            },
+            {
+                  "text": "言う",
+                  "kana": "いう"
+            },
+            {
+                  "text": "追う",
+                  "kana": "おう"
+            },
+            {
+                  "text": "多い",
+                  "kana": "おおい"
+            },
+            {
+                  "text": "おおう",
+                  "kana": "おおう"
+            }
+      ],
+      "か行": [
+            {
+                  "text": "柿",
+                  "kana": "かき"
+            },
+            {
+                  "text": "買う",
+                  "kana": "かう"
+            },
+            {
+                  "text": "過去",
+                  "kana": "かこ"
+            },
+            {
+                  "text": "聞く",
+                  "kana": "きく"
+            },
+            {
+                  "text": "くき",
+                  "kana": "くき"
+            },
+            {
+                  "text": "ここ",
+                  "kana": "ここ"
+            },
+            {
+                  "text": "価格",
+                  "kana": "かかく"
+            },
+            {
+                  "text": "企画",
+                  "kana": "きかく"
+            },
+            {
+                  "text": "赤",
+                  "kana": "あか"
+            },
+            {
+                  "text": "秋",
+                  "kana": "あき"
+            },
+            {
+                  "text": "いか",
+                  "kana": "いか"
+            },
+            {
+                  "text": "池",
+                  "kana": "いけ"
+            },
+            {
+                  "text": "丘",
+                  "kana": "おか"
+            },
+            {
+                  "text": "貝",
+                  "kana": "かい"
+            },
+            {
+                  "text": "恋",
+                  "kana": "こい"
+            },
+            {
+                  "text": "赤い柿",
+                  "kana": "あかいかき"
+            },
+            {
+                  "text": "青い貝",
+                  "kana": "あおいかい"
+            },
+            {
+                  "text": "恋",
+                  "kana": "こい"
+            },
+            {
+                  "text": "愛",
+                  "kana": "あい"
+            }
+      ],
+      "さ行": [
+            {
+                  "text": "笹",
+                  "kana": "ささ"
+            },
+            {
+                  "text": "指す",
+                  "kana": "さす"
+            },
+            {
+                  "text": "獅子",
+                  "kana": "しし"
+            },
+            {
+                  "text": "しそ",
+                  "kana": "しそ"
+            },
+            {
+                  "text": "すす",
+                  "kana": "すす"
+            },
+            {
+                  "text": "寿司",
+                  "kana": "すし"
+            },
+            {
+                  "text": "裾",
+                  "kana": "すそ"
+            },
+            {
+                  "text": "阻止",
+                  "kana": "そし"
+            },
+            {
+                  "text": "朝",
+                  "kana": "あさ"
+            },
+            {
+                  "text": "足",
+                  "kana": "あし"
+            },
+            {
+                  "text": "明日",
+                  "kana": "あす"
+            },
+            {
+                  "text": "汗",
+                  "kana": "あせ"
+            },
+            {
+                  "text": "石",
+                  "kana": "いし"
+            },
+            {
+                  "text": "椅子",
+                  "kana": "いす"
+            },
+            {
+                  "text": "牛",
+                  "kana": "うし"
+            },
+            {
+                  "text": "浅い",
+                  "kana": "あさい"
+            },
+            {
+                  "text": "石井",
+                  "kana": "いしい"
+            }
+      ],
+      "た行": [
+            {
+                  "text": "立つ",
+                  "kana": "たつ"
+            },
+            {
+                  "text": "縦",
+                  "kana": "たて"
+            },
+            {
+                  "text": "父",
+                  "kana": "ちち"
+            },
+            {
+                  "text": "土",
+                  "kana": "つち"
+            },
+            {
+                  "text": "鉄",
+                  "kana": "てつ"
+            },
+            {
+                  "text": "土地",
+                  "kana": "とち"
+            },
+            {
+                  "text": "跡",
+                  "kana": "あと"
+            },
+            {
+                  "text": "板",
+                  "kana": "いた"
+            },
+            {
+                  "text": "糸",
+                  "kana": "いと"
+            },
+            {
+                  "text": "歌",
+                  "kana": "うた"
+            },
+            {
+                  "text": "音",
+                  "kana": "おと"
+            },
+            {
+                  "text": "痛い",
+                  "kana": "いたい"
+            },
+            {
+                  "text": "手当て",
+                  "kana": "てあて"
+            },
+            {
+                  "text": "青い糸",
+                  "kana": "あおいいと"
+            },
+            {
+                  "text": "厚い板",
+                  "kana": "あついいた"
+            }
+      ],
+      "な行": [
+            {
+                  "text": "何",
+                  "kana": "なに"
+            },
+            {
+                  "text": "七",
+                  "kana": "なな"
+            },
+            {
+                  "text": "布",
+                  "kana": "ぬの"
+            },
+            {
+                  "text": "三人",
+                  "kana": "さんにん"
+            },
+            {
+                  "text": "二年",
+                  "kana": "にねん"
+            },
+            {
+                  "text": "七人",
+                  "kana": "ななにん"
+            },
+            {
+                  "text": "七年",
+                  "kana": "ななねん"
+            },
+            {
+                  "text": "穴",
+                  "kana": "あな"
+            },
+            {
+                  "text": "兄",
+                  "kana": "あに"
+            },
+            {
+                  "text": "姉",
+                  "kana": "あね"
+            },
+            {
+                  "text": "稲",
+                  "kana": "いね"
+            },
+            {
+                  "text": "ウニ",
+                  "kana": "うに"
+            },
+            {
+                  "text": "ウノ",
+                  "kana": "うの"
+            },
+            {
+                  "text": "鬼",
+                  "kana": "おに"
+            },
+            {
+                  "text": "斧",
+                  "kana": "おの"
+            },
+            {
+                  "text": "鬼の穴",
+                  "kana": "おにのあな"
+            },
+            {
+                  "text": "稲の根",
+                  "kana": "いねのね"
+            }
+      ],
+      "は行": [
+            {
+                  "text": "母",
+                  "kana": "はは"
+            },
+            {
+                  "text": "ヒヒ",
+                  "kana": "ひひ"
+            },
+            {
+                  "text": "皮膚",
+                  "kana": "ひふ"
+            },
+            {
+                  "text": "頬",
+                  "kana": "ほほ"
+            },
+            {
+                  "text": "肺",
+                  "kana": "はい"
+            },
+            {
+                  "text": "ハエ",
+                  "kana": "はえ"
+            },
+            {
+                  "text": "塀",
+                  "kana": "へい"
+            },
+            {
+                  "text": "笛",
+                  "kana": "ふえ"
+            }
+      ],
+      "ま行": [
+            {
+                  "text": "ママ",
+                  "kana": "まま"
+            },
+            {
+                  "text": "豆",
+                  "kana": "まめ"
+            },
+            {
+                  "text": "耳",
+                  "kana": "みみ"
+            },
+            {
+                  "text": "メモ",
+                  "kana": "めも"
+            },
+            {
+                  "text": "モミ",
+                  "kana": "もみ"
+            },
+            {
+                  "text": "揉む",
+                  "kana": "もむ"
+            },
+            {
+                  "text": "桃",
+                  "kana": "もも"
+            },
+            {
+                  "text": "甘い",
+                  "kana": "あまい"
+            },
+            {
+                  "text": "網",
+                  "kana": "あみ"
+            },
+            {
+                  "text": "編む",
+                  "kana": "あむ"
+            },
+            {
+                  "text": "雨",
+                  "kana": "あめ"
+            },
+            {
+                  "text": "今",
+                  "kana": "いま"
+            },
+            {
+                  "text": "意味",
+                  "kana": "いみ"
+            },
+            {
+                  "text": "芋",
+                  "kana": "いも"
+            },
+            {
+                  "text": "馬",
+                  "kana": "うま"
+            },
+            {
+                  "text": "海",
+                  "kana": "うみ"
+            },
+            {
+                  "text": "梅",
+                  "kana": "うめ"
+            },
+            {
+                  "text": "甘い桃",
+                  "kana": "あまいもも"
+            },
+            {
+                  "text": "曖昧",
+                  "kana": "あいまい"
+            }
+      ],
+      "や行": [
+            {
+                  "text": "湯屋",
+                  "kana": "ゆや"
+            },
+            {
+                  "text": "ユイ",
+                  "kana": "ゆい"
+            },
+            {
+                  "text": "嫌",
+                  "kana": "いや"
+            },
+            {
+                  "text": "イヨ",
+                  "kana": "いよ"
+            },
+            {
+                  "text": "嫌々",
+                  "kana": "いやいや"
+            },
+            {
+                  "text": "アヤ",
+                  "kana": "あや"
+            },
+            {
+                  "text": "鮎",
+                  "kana": "あゆ"
+            },
+            {
+                  "text": "用",
+                  "kana": "よう"
+            },
+            {
+                  "text": "八百屋",
+                  "kana": "やおや"
+            },
+            {
+                  "text": "親",
+                  "kana": "おや"
+            },
+            {
+                  "text": "用意",
+                  "kana": "ようい"
+            }
+      ],
+      "ら行": [
+            {
+                  "text": "粗",
+                  "kana": "あら"
+            },
+            {
+                  "text": "アリ",
+                  "kana": "あり"
+            },
+            {
+                  "text": "有る",
+                  "kana": "ある"
+            },
+            {
+                  "text": "裏",
+                  "kana": "うら"
+            },
+            {
+                  "text": "売る",
+                  "kana": "うる"
+            },
+            {
+                  "text": "瓜",
+                  "kana": "うり"
+            },
+            {
+                  "text": "瑠璃",
+                  "kana": "るり"
+            },
+            {
+                  "text": "色",
+                  "kana": "いろ"
+            },
+            {
+                  "text": "俺",
+                  "kana": "おれ"
+            },
+            {
+                  "text": "折る",
+                  "kana": "おる"
+            },
+            {
+                  "text": "アラレ",
+                  "kana": "あられ"
+            },
+            {
+                  "text": "瑠璃色",
+                  "kana": "るりいろ"
+            },
+            {
+                  "text": "例",
+                  "kana": "れい"
+            },
+            {
+                  "text": "囲炉裏",
+                  "kana": "いろり"
+            },
+            {
+                  "text": "理論",
+                  "kana": "りろん"
+            },
+            {
+                  "text": "藍色",
+                  "kana": "あいいろ"
+            },
+            {
+                  "text": "色々",
+                  "kana": "いろいろ"
+            },
+            {
+                  "text": "ルンルン",
+                  "kana": "るんるん"
+            }
+      ]
+};
 
     const ROMAJI_MAP = {
       "あ":"A","い":"I","う":"U","え":"E","お":"O",
@@ -312,7 +875,7 @@
       letterCase: loadJSON("romajiTapLetterCase", "upper"),
       showConsonantGuide: loadJSON("romajiTapConsonantGuide", true),
       showExtendedConsonants: loadJSON("romajiTapExtendedConsonants", true),
-      autoConfirm: loadJSON("romajiTapAutoConfirm", false),
+      autoConfirm: true,
       freeDraft: "",
       practiceList: [],
       practiceSource: "groups",
@@ -326,7 +889,10 @@
       pendingKana: "",
       history: loadJSON("romajiTapHistory", []),
       savedWords: loadJSON("romajiTapSavedWords", []),
-      answeredCurrent: false
+      answeredCurrent: false,
+      displayMode: loadJSON("romajiTapDisplayMode", "kanji_kana"),
+      practiceStarted: false,
+      practicedWords: []
     };
 
     const els = {
@@ -337,19 +903,49 @@
       consonantGrid:document.getElementById('consonantGrid'), vowelGrid:document.getElementById('vowelGrid'),
       groupChecklist:document.getElementById('groupChecklist'), freePanel:document.getElementById('freePanel'),
       savedPanel:document.getElementById('savedPanel'), resultPanel:document.getElementById('resultPanel'),
-      practiceSettingsCard:document.getElementById('practiceSettingsCard'),
+      practiceSettingsCard:document.getElementById('practiceSettingsCard'), practiceCard:document.getElementById('practiceCard'), practiceIntroCard:document.getElementById('practiceIntroCard'), practiceSessionCard:document.getElementById('practiceSessionCard'),
       savedList:document.getElementById('savedList'), missList:document.getElementById('missList'),
       statTotal:document.getElementById('statTotal'), statCorrect:document.getElementById('statCorrect'), statWrong:document.getElementById('statWrong'), statRate:document.getElementById('statRate'),
-      toggleSpeechBtn:document.getElementById('toggleSpeechBtn'), toggleAutoConfirmBtn:document.getElementById('toggleAutoConfirmBtn'), toggleCaseBtn:document.getElementById('toggleCaseBtn'), toggleGuideBtn:document.getElementById('toggleGuideBtn'), toggleExtendedBtn:document.getElementById('toggleExtendedBtn'),
-      csvInput:document.getElementById('csvInput'), savedCsvInput:document.getElementById('savedCsvInput'), freeSaveWordBtn:document.getElementById('freeSaveWordBtn')
+      toggleSpeechBtn:document.getElementById('toggleSpeechBtn'), toggleDisplayModeBtn:document.getElementById('toggleDisplayModeBtn'), toggleCaseBtn:document.getElementById('toggleCaseBtn'), toggleGuideBtn:document.getElementById('toggleGuideBtn'), toggleExtendedBtn:document.getElementById('toggleExtendedBtn'),
+      csvInput:document.getElementById('csvInput'), savedCsvInput:document.getElementById('savedCsvInput'), freeSaveWordBtn:document.getElementById('freeSaveWordBtn'),
+      startPracticeBtn:document.getElementById('startPracticeBtn'), printPracticedBtn:document.getElementById('printPracticedBtn'), practicedCountLabel:document.getElementById('practicedCountLabel')
     };
 
     function loadJSON(key, fallback){ try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }
     function saveJSON(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
-    function persistSettings(){ saveJSON('romajiTapLetterCase', state.letterCase); saveJSON('romajiTapConsonantGuide', state.showConsonantGuide); saveJSON('romajiTapExtendedConsonants', state.showExtendedConsonants); saveJSON('romajiTapAutoConfirm', state.autoConfirm); }
+    function persistSettings(){ saveJSON('romajiTapLetterCase', state.letterCase); saveJSON('romajiTapConsonantGuide', state.showConsonantGuide); saveJSON('romajiTapExtendedConsonants', state.showExtendedConsonants); saveJSON('romajiTapAutoConfirm', state.autoConfirm); saveJSON('romajiTapDisplayMode', state.displayMode); }
     function persistSavedWords(){ saveJSON('romajiTapSavedWords', state.savedWords); }
     function persistHistory(){ saveJSON('romajiTapHistory', state.history); }
     function displayCase(text){ const v = String(text ?? ''); return state.letterCase === 'lower' ? v.toLowerCase() : v.toUpperCase(); }
+
+    function getWordText(word){ return typeof word === 'string' ? word : (word?.text || ''); }
+    function getWordKana(word){ return typeof word === 'string' ? word : (word?.kana || ''); }
+    function getDisplayWord(word){
+      const text = getWordText(word);
+      const kana = getWordKana(word);
+      if(!text && !kana) return '';
+      if(state.displayMode === 'kana') return kana || text;
+      if(!kana || text === kana) return text || kana;
+      return `${text}(${kana})`;
+    }
+
+    function getPracticeWordId(word){
+      return `${getWordText(word)}||${getWordKana(word)}`;
+    }
+    function renderPracticedCount(){
+      if(els.practicedCountLabel){
+        els.practicedCountLabel.textContent = `${state.practicedWords.length} こ`;
+      }
+    }
+    function markCurrentWordPracticed(){
+      if(!state.practiceStarted || state.mode !== 'practice' || !state.currentWord) return;
+      const id = getPracticeWordId(state.currentWord);
+      if(!state.practicedWords.some(item => item.id === id)){
+        state.practicedWords.push({ id, text: getWordText(state.currentWord), kana: getWordKana(state.currentWord) });
+        renderPracticedCount();
+      }
+    }
+
     function sanitizeHiragana(text){ return (text || '').replace(/\s+/g,'').replace(/[^ぁ-んー]/g,'').replace(/[ぁぃぅぇぉゎゕゖ]/g,''); }
     function toRomaji(word){
       const chars=[...(word||'')];
@@ -435,15 +1031,23 @@
         items = list.map(word => ({group:'自由入力', word}));
       }
       if(state.shuffle) items = shuffleArray(items);
-      state.practiceList = items.filter(it => toRomaji(it.word));
+      state.practiceList = items.filter(it => toRomaji(getWordKana(it.word)));
       state.practiceSource = source;
       state.currentIndex = 0;
+      if(state.mode === 'practice' && !state.practiceStarted){
+        state.currentWord='';
+        state.currentTarget='';
+        resetInput(false);
+        renderPractice();
+        setFeedback('「練習をはじめる」を押してください。', 'info');
+        return;
+      }
       loadCurrentWord();
     }
     function loadCurrentWord(){
       const current = state.practiceList[state.currentIndex];
       if(!current){ state.currentWord=''; state.currentTarget=''; resetInput(false); renderPractice(); setFeedback('出題できる単語がありません。', 'ng'); return; }
-      state.currentWord = current.word; state.currentTarget = toRomaji(current.word); resetInput(false); renderPractice();
+      state.currentWord = current.word; state.currentTarget = toRomaji(getWordKana(current.word)); resetInput(false); renderPractice();
       setFeedback('', 'info');
     }
     function renderMode(){
@@ -452,6 +1056,9 @@
       els.savedPanel.classList.toggle('hidden', state.mode !== 'saved');
       els.resultPanel.classList.toggle('hidden', state.mode !== 'result');
       els.practiceSettingsCard.classList.toggle('hidden', state.mode !== 'practice');
+      if(els.practiceCard) els.practiceCard.classList.toggle('hidden', state.mode === 'practice' ? !state.practiceStarted : false);
+      if(els.practiceIntroCard) els.practiceIntroCard.classList.toggle('hidden', state.mode !== 'practice' || state.practiceStarted);
+      if(els.practiceSessionCard) els.practiceSessionCard.classList.toggle('hidden', state.mode !== 'practice' || !state.practiceStarted);
       const free = state.mode === 'free';
       els.currentWord.classList.add('hidden');
       els.currentWordInput.classList.remove('hidden');
@@ -463,9 +1070,16 @@
         state.currentTarget = toRomaji(state.freeDraft);
         resetInput(false); renderPractice(); setTimeout(() => els.currentWordInput.focus(), 0);
         setFeedback(state.freeDraft ? '上の大きな枠をそのまま編集できます。' : '上の大きな枠に、ひらがなを入力してください。', 'info');
+      } else if(state.mode === 'practice') {
+        if(state.practiceStarted && state.practiceList.length) {
+          loadCurrentWord();
+        } else {
+          state.currentWord=''; state.currentTarget=''; resetInput(false); renderPractice(); setFeedback('「練習をはじめる」を押してください。', 'info');
+        }
       } else if(state.practiceList.length) {
         loadCurrentWord();
       }
+      renderPracticedCount();
     }
     function renderGroups(){
       els.groupChecklist.innerHTML='';
@@ -473,7 +1087,8 @@
         const wrap=document.createElement('label'); wrap.className='check-item';
         wrap.innerHTML=`<input type="checkbox" ${state.selectedGroups.has(group)?'checked':''}><span><strong>${group}</strong><br><span class="muted">${(state.allWords[group]||[]).length}語</span></span>`;
         const input=wrap.querySelector('input');
-        input.addEventListener('change', ()=>{ if(input.checked) state.selectedGroups.add(group); else state.selectedGroups.delete(group); buildPracticeList('groups'); renderGroups(); });
+        input.addEventListener('change', ()=>{ if(input.checked) state.selectedGroups.add(group); else state.selectedGroups.delete(group); document.getElementById('backToStartBtn').addEventListener('click', ()=>{ location.reload(); });
+    buildPracticeList('groups'); renderGroups(); });
         els.groupChecklist.appendChild(wrap);
       });
     }
@@ -511,7 +1126,7 @@
     function renderPractice(){
       const shownWord = state.mode === 'free'
         ? (state.freeDraft || tokensToKana(state.inputTokens) || '')
-        : state.currentWord;
+        : getDisplayWord(state.currentWord);
       els.currentWord.textContent = shownWord || '―';
       els.currentWordInput.value = shownWord || '';
       els.progressLabel.textContent = state.practiceList.length ? `${state.currentIndex+1} / ${state.practiceList.length}` : '0 / 0';
@@ -525,7 +1140,7 @@
       if(!state.savedWords.length){ els.savedList.innerHTML='<div class="muted">保存した単語はまだありません。</div>'; return; }
       state.savedWords.forEach((word,index)=>{
         const row=document.createElement('div'); row.className='list-item';
-        row.innerHTML=`<div><strong>${word}</strong> <span class="pill mono">${displayCase(toRomaji(word))}</span></div><div class="row-buttons"><button class="btn secondary small">この単語で練習</button><button class="btn danger small">削除</button></div>`;
+        row.innerHTML=`<div><strong>${getDisplayWord(word)}</strong> <span class="pill mono">${displayCase(toRomaji(getWordKana(word)))}</span></div><div class="row-buttons"><button class="btn secondary small">この単語で練習</button><button class="btn danger small">削除</button></div>`;
         const [practiceBtn, deleteBtn] = row.querySelectorAll('button');
         practiceBtn.addEventListener('click', ()=>{ state.mode='practice'; renderMode(); buildPracticeList('single',[word]); });
         deleteBtn.addEventListener('click', ()=>{ state.savedWords.splice(index,1); persistSavedWords(); renderSaved(); });
@@ -537,7 +1152,7 @@
       els.statTotal.textContent=String(total); els.statCorrect.textContent=String(correct); els.statWrong.textContent=String(wrong); els.statRate.textContent=`${rate}%`;
       const misses=state.history.filter(h=>h.result==='wrong'); els.missList.innerHTML='';
       if(!misses.length){ els.missList.innerHTML='<div class="muted">ミスした単語はありません。</div>'; return; }
-      misses.slice().reverse().forEach(item=>{ const row=document.createElement('div'); row.className='list-item'; row.innerHTML=`<div><strong>${item.word}</strong> <span class="pill">${item.group}</span><br><span class="muted mono">入力: ${item.input?displayCase(item.input):'-'} / 正解: ${displayCase(item.target)}</span></div>`; els.missList.appendChild(row); });
+      misses.slice().reverse().forEach(item=>{ const row=document.createElement('div'); row.className='list-item'; row.innerHTML=`<div><strong>${getDisplayWord(item.word)}</strong> <span class="pill">${item.group}</span><br><span class="muted mono">入力: ${item.input?displayCase(item.input):'-'} / 正解: ${displayCase(item.target)}</span></div>`; els.missList.appendChild(row); });
     }
     function recordHistory(result){ state.history.push({date:new Date().toISOString(), group:state.practiceList[state.currentIndex]?.group || '', word:state.currentWord, target:state.currentTarget, input:state.currentInput, result}); persistHistory(); renderResults(); }
     function judgeProgress(){
@@ -550,6 +1165,7 @@
         setFeedback('', 'ok');
         if(!state.answeredCurrent) recordHistory('correct');
         state.answeredCurrent=true;
+        markCurrentWordPracticed();
         const lastToken = state.inputTokens[state.inputTokens.length - 1] || '';
         const lastKana = tokenToKana(lastToken);
         if (lastKana) {
@@ -643,28 +1259,54 @@
     function confirmPendingToken(){ if(!state.pendingToken){ setFeedback('OKの前に、子音と母音を選んでください。', 'ng'); return; } state.inputTokens.push(state.pendingToken); state.currentInput=state.inputTokens.join(''); if(state.mode==='free'){ const builtKana=tokensToKana(state.inputTokens); state.freeDraft=builtKana; state.currentTarget=toRomaji(builtKana); } clearPendingToken(); renderPractice(); judgeProgress(); }
 
     document.getElementById('backspaceBtn').addEventListener('click', ()=>{ if(state.pendingToken || state.pendingConsonant){ clearPendingToken(); } else { state.inputTokens.pop(); state.currentInput=state.inputTokens.join(''); if(state.mode==='free'){ const builtKana=tokensToKana(state.inputTokens); state.freeDraft=builtKana; state.currentTarget=toRomaji(builtKana); } } renderPractice(); setFeedback('1文字けしました。', 'info'); });
-    document.getElementById('confirmTokenBtn').addEventListener('click', confirmPendingToken);
     document.getElementById('clearInputBtn').addEventListener('click', ()=>{ resetInput(); if(state.mode==='free'){ state.freeDraft=''; state.currentTarget=''; } renderPractice(); setFeedback('入力を消しました。', 'info'); });
     document.getElementById('showAnswerBtn').addEventListener('click', ()=>{ if(!state.currentTarget) return; window.alert(`こたえ: ${displayCase(state.currentTarget)}`); });
     document.getElementById('nextWordBtn').addEventListener('click', ()=>{ if(!state.practiceList.length) return; state.currentIndex=(state.currentIndex+1)%state.practiceList.length; loadCurrentWord(); });
     document.getElementById('speakWordBtn').addEventListener('click', ()=>{ const builtKana=tokensToKana(state.inputTokens); if(builtKana){ speak(builtKana); } else { setFeedback('入力した単語がまだありません。', 'info'); } });
 
     els.modeButtons.forEach(btn => btn.addEventListener('click', ()=>{ state.mode=btn.dataset.mode; renderMode(); renderResults(); renderSaved(); if(state.mode==='free'){ setTimeout(()=>els.currentWordInput.focus(),0); } }));
-    document.getElementById('selectAllRowsBtn').addEventListener('click', ()=>{ state.selectedGroups=new Set(Object.keys(state.allWords)); renderGroups(); buildPracticeList('groups'); });
-    document.getElementById('clearAllRowsBtn').addEventListener('click', ()=>{ state.selectedGroups=new Set(); renderGroups(); buildPracticeList('groups'); });
-    document.getElementById('shuffleBtn').addEventListener('click', e=>{ state.shuffle=!state.shuffle; e.currentTarget.textContent=`シャッフル ${state.shuffle?'ON':'OFF'}`; buildPracticeList(state.practiceSource==='groups' ? 'groups' : state.practiceSource, state.practiceList); });
-    document.getElementById('toggleSpeechBtn').addEventListener('click', e=>{ state.speechEnabled=!state.speechEnabled; e.currentTarget.textContent=`音声 ${state.speechEnabled?'ON':'OFF'}`; });
-    document.getElementById('toggleAutoConfirmBtn').addEventListener('click', e=>{
-      state.autoConfirm=!state.autoConfirm;
-      e.currentTarget.textContent=state.autoConfirm ? 'OK自動' : 'OK手動';
+    document.getElementById('startPracticeBtn').addEventListener('click', ()=>{
+      state.mode='practice';
+      state.practiceStarted = true;
+      state.practicedWords = [];
+      renderMode();
+      renderPracticedCount();
+      document.getElementById('backToStartBtn').addEventListener('click', ()=>{ location.reload(); });
+    buildPracticeList('groups');
+    });
+    document.getElementById('printPracticedBtn').addEventListener('click', ()=>{
+      if(!state.practicedWords.length){
+        alert('印刷する練習単語がありません。');
+        return;
+      }
+      const items = state.practicedWords.map(item => state.displayMode === 'kana' ? (item.kana || item.text) : (item.kana && item.text !== item.kana ? `${item.text}(${item.kana})` : (item.text || item.kana)));
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+      const printWindow = window.open('', '_blank');
+      if(!printWindow) return;
+      printWindow.document.write(`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>練習した単語</title><style>body{font-family:"BIZ UDPGothic","UD Digi Kyokasho N-R","Noto Sans JP",sans-serif;margin:24px;color:#1f2a44}h1{font-size:22px;margin:0 0 8px}.date{font-size:18px;margin:0 0 16px}ul{margin:0;padding-left:28px}li{font-size:22px;line-height:1.8}</style></head><body><h1>練習した単語</h1><div class="date">日付：${dateStr}</div><ul>${items.map(item => `<li>${item}</li>`).join('')}</ul></body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    });
+
+    document.getElementById('selectAllRowsBtn').addEventListener('click', ()=>{ state.selectedGroups=new Set(Object.keys(state.allWords)); renderGroups(); document.getElementById('backToStartBtn').addEventListener('click', ()=>{ location.reload(); });
+    buildPracticeList('groups'); });
+    document.getElementById('clearAllRowsBtn').addEventListener('click', ()=>{ state.selectedGroups=new Set(); renderGroups(); document.getElementById('backToStartBtn').addEventListener('click', ()=>{ location.reload(); });
+    buildPracticeList('groups'); });
+        document.getElementById('toggleSpeechBtn').addEventListener('click', e=>{ state.speechEnabled=!state.speechEnabled; e.currentTarget.textContent=`音声 ${state.speechEnabled?'ON':'OFF'}`; });
+    document.getElementById('toggleDisplayModeBtn').addEventListener('click', e=>{
+      state.displayMode = state.displayMode === 'kanji_kana' ? 'kana' : 'kanji_kana';
+      e.currentTarget.textContent = state.displayMode === 'kanji_kana' ? '漢字＋(かな)' : 'ひらがな';
       persistSettings();
       renderPractice();
-      setFeedback('', 'info');
+      renderSaved();
+      renderResults();
     });
-    document.getElementById('toggleCaseBtn').addEventListener('click', e=>{ state.letterCase=state.letterCase==='upper' ? 'lower' : 'upper'; e.currentTarget.textContent=state.letterCase==='upper' ? '大文字表示' : '小文字表示'; persistSettings(); renderPractice(); renderSaved(); renderCandidates(); renderResults(); });
+    document.getElementById('toggleCaseBtn').addEventListener('click', e=>{ state.letterCase=state.letterCase==='upper' ? 'lower' : 'upper'; e.currentTarget.textContent=state.letterCase==='upper' ? '大文字表示' : '小文字表示'; persistSettings(); renderPractice(); renderSaved(); renderResults(); });
     document.getElementById('toggleGuideBtn').addEventListener('click', e=>{ state.showConsonantGuide=!state.showConsonantGuide; e.currentTarget.textContent=`カタカナ表示 ${state.showConsonantGuide?'ON':'OFF'}`; persistSettings(); renderKeyboard(); });
     document.getElementById('toggleExtendedBtn').addEventListener('click', e=>{ state.showExtendedConsonants=!state.showExtendedConsonants; e.currentTarget.textContent=`GZDBP ${state.showExtendedConsonants?'ON':'OFF'}`; persistSettings(); renderKeyboard(); });
-    document.getElementById('showHowBtn').addEventListener('click', ()=> alert('【つかいかた】\n1. 子音を押してから母音を押します。\n2. 音を確認してから OK を押します。\n3. 母音だけの文字は A・I・U・E・O だけを押して OK を押します。\n4. ん は W 列の一番下の NN を押します。\n5. K・S・T・D・N・H・M・Y・G・Z・B・P のあとに Y を押してから A・U・O を押すと、拗音が作れます。\n6. 自由入力では、上の大きな枠にひらがなを直接入力します。'));
+    document.getElementById('showHowBtn').addEventListener('click', ()=> alert('【つかいかた】\n1. 「練習をはじめる」を押してから始めます。\n2. 子音を押してから母音を押すと、自動で入力されます。\n3. 母音だけの文字は A・I・U・E・O を押します。\n4. ん は W 列の一番下の NN を押します。\n5. K・S・T・D・N・H・M・Y・G・Z・B・P のあとに Y を押してから A・U・O を押すと、拗音が作れます。\n6. 自由入力では、上の大きな枠にひらがなを直接入力します。'));
 
     els.currentWordInput.addEventListener('input', e=>{ const sanitized=sanitizeHiragana(e.target.value); state.freeDraft=sanitized; if(e.target.value!==sanitized) e.target.value=sanitized; if(state.mode==='free'){ state.currentTarget=toRomaji(sanitized); state.inputTokens=[]; state.currentInput=''; clearPendingToken(); renderPractice(); } });
     document.getElementById('freePracticeBtn').addEventListener('click', ()=>{ const word=sanitizeHiragana(state.freeDraft); if(!word){ alert('上の大きな枠に、ひらがなを入力してください。'); els.currentWordInput.focus(); return; } state.currentWord=word; state.currentTarget=toRomaji(word); resetInput(false); renderPractice(); setFeedback('入力したことばで練習できます。', 'info'); });
@@ -700,7 +1342,7 @@
     function parseCSVLine(line){ const result=[]; let cur=''; let inQuotes=false; for(let i=0;i<line.length;i++){ const ch=line[i]; if(ch==='"'){ if(inQuotes && line[i+1]==='"'){ cur+='"'; i++; } else inQuotes=!inQuotes; } else if(ch===',' && !inQuotes){ result.push(cur); cur=''; } else cur+=ch; } result.push(cur); return result; }
     document.getElementById('exportWordsBtn').addEventListener('click', ()=>{
       const rows=['group,word,source'];
-      Object.entries(state.allWords).forEach(([group, words])=>words.forEach(word=>rows.push(`${csvEsc(group)},${csvEsc(word)},default`)));
+      Object.entries(state.allWords).forEach(([group, words])=>words.forEach(word=>rows.push(`${csvEsc(group)},${csvEsc(getWordKana(word))},default`)));
       state.savedWords.forEach(word=>rows.push(`${csvEsc('保存単語')},${csvEsc(word)},free_saved`));
       downloadFile('romaji_words.csv', rows.join('\r\n'), 'text/csv;charset=utf-8', true);
     });
@@ -739,7 +1381,8 @@
         alert(`${added + savedAdded}語を読み込みました。`);
         renderGroups();
         renderSaved();
-        buildPracticeList('groups');
+        document.getElementById('backToStartBtn').addEventListener('click', ()=>{ location.reload(); });
+    buildPracticeList('groups');
       } else {
         alert('読み込める単語がありませんでした。');
       }
@@ -781,9 +1424,12 @@
     });
 
     els.toggleCaseBtn.textContent = state.letterCase === 'upper' ? '大文字表示' : '小文字表示';
+    els.toggleDisplayModeBtn.textContent = state.displayMode === 'kanji_kana' ? '漢字＋(かな)' : 'ひらがな';
+    renderPracticedCount();
     els.toggleGuideBtn.textContent = `カタカナ表示 ${state.showConsonantGuide ? 'ON' : 'OFF'}`;
     els.toggleExtendedBtn.textContent = `GZDBP ${state.showExtendedConsonants ? 'ON' : 'OFF'}`;
-    renderMode(); renderGroups(); renderSaved(); renderResults(); renderKeyboard(); buildPracticeList('groups');
+    renderMode(); renderGroups(); renderSaved(); renderResults(); renderKeyboard(); document.getElementById('backToStartBtn').addEventListener('click', ()=>{ location.reload(); });
+    buildPracticeList('groups');
   </script>
 </body>
 </html>
