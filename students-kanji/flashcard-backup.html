@@ -1195,7 +1195,15 @@ function buildFlashQueue(){
     $("flashAnswer").classList.remove("show");
     $("flashAnswer").textContent = "";
 
-    const c = flashQueue[flashIndex];
+    let c = flashQueue[flashIndex];
+    while(c){
+      flashPicked.on = pickEnabled(c.onyomi);
+      flashPicked.kun = pickEnabled(c.kunyomi);
+      if(flashPicked.on || flashPicked.kun) break;
+      flashIndex++;
+      c = flashQueue[flashIndex];
+    }
+
     if(!c){
       $("flashKanji").textContent = "終了";
       $("flashPrompt").textContent = "おつかれさまでした";
@@ -1207,12 +1215,7 @@ $("flashPos").textContent = `${flashQueue.length} / ${flashQueue.length}`;
       return;
     }
 
-    flashPicked.on = pickEnabled(c.onyomi);
-    flashPicked.kun = pickEnabled(c.kunyomi);
-
     $("flashKanji").textContent = c.kanji;
-    $("flashPrompt").textContent = "音読みは？";
-    // $("flashStage").textContent = "音読み";
     $("flashNextBtn").disabled = false;
     $("flashHintBtn").disabled = false;
     if($("flashAnswerBtn")) $("flashAnswerBtn").disabled = false;
@@ -1220,10 +1223,12 @@ $("flashPos").textContent = `${flashQueue.length} / ${flashQueue.length}`;
     // Memorize buttons only at kunyomi stage (to avoid accidental)
 $("flashPos").textContent = `${flashIndex+1} / ${flashQueue.length}`;
 
-
-    // If no onyomi enabled, jump to kunyomi stage with message
-    if(!flashPicked.on){
-      $("flashPrompt").textContent = "音読みなし";
+    if(flashPicked.on){
+      flashStage = "on";
+      $("flashPrompt").textContent = "音読みは？";
+    }else{
+      flashStage = "kun";
+      $("flashPrompt").textContent = "訓読みは？";
     }
   }
 
@@ -1260,13 +1265,13 @@ $("flashPos").textContent = `${flashIndex+1} / ${flashQueue.length}`;
 
   
   function backStage(){
-    if(flashStage === "kun"){
+    if(flashStage === "kun" && flashPicked.on){
       flashStage = "on";
-      $("flashPrompt").textContent = flashPicked.on ? "音読みは？" : "音読みなし";
+      $("flashPrompt").textContent = "音読みは？";
       // $("flashStage").textContent = "音読み";
       return;
     }
-    if(flashStage === "on" && flashIndex > 0){
+    if(flashIndex > 0){
       flashIndex--;
       startFlashCard();
     }
@@ -1282,12 +1287,14 @@ function nextStage(){
     if(!c) return;
 
     if(flashStage==="on"){
-      flashStage = "kun";
-      $("flashPrompt").textContent = "訓読みは？";
-      // $("flashStage").textContent = "訓読み";
-if(!flashPicked.kun){
-        $("flashPrompt").textContent = "訓読みなし";
+      if(flashPicked.kun){
+        flashStage = "kun";
+        $("flashPrompt").textContent = "訓読みは？";
+        // $("flashStage").textContent = "訓読み";
+        return;
       }
+      flashIndex++;
+      startFlashCard();
       return;
     }
 
