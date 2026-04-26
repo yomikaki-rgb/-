@@ -1329,10 +1329,10 @@ $("flashPos").textContent = `${flashIndex+1} / ${flashQueue.length}`;
 
     if(flashPicked.on){
       flashStage = "on";
-      $("flashPrompt").textContent = "音読みは？";
+      $("flashPrompt").innerHTML = '<span style="color:#d14b4b;">音読み</span>は？';
     }else{
       flashStage = "kun";
-      $("flashPrompt").textContent = "訓読みは？";
+      $("flashPrompt").innerHTML = '<span style="color:#2f8f5f;">訓読み</span>は？';
     }
   }
 
@@ -1385,14 +1385,14 @@ $("flashPos").textContent = `${flashIndex+1} / ${flashQueue.length}`;
       if(flashCursor.kun > 0){
         flashCursor.kun--;
         flashPicked.kun = kunList[flashCursor.kun] || null;
-        $("flashPrompt").textContent = "訓読みは？";
+        $("flashPrompt").innerHTML = '<span style="color:#2f8f5f;">訓読み</span>は？';
         return;
       }
       if(onList.length){
         flashStage = "on";
         flashCursor.on = Math.max(0, onList.length - 1);
         flashPicked.on = onList[flashCursor.on] || null;
-        $("flashPrompt").textContent = "音読みは？";
+        $("flashPrompt").innerHTML = '<span style="color:#d14b4b;">音読み</span>は？';
         return;
       }
     }
@@ -1400,7 +1400,7 @@ $("flashPos").textContent = `${flashIndex+1} / ${flashQueue.length}`;
     if(flashStage === "on" && flashCursor.on > 0){
       flashCursor.on--;
       flashPicked.on = onList[flashCursor.on] || null;
-      $("flashPrompt").textContent = "音読みは？";
+      $("flashPrompt").innerHTML = '<span style="color:#d14b4b;">音読み</span>は？';
       return;
     }
 
@@ -1415,12 +1415,12 @@ $("flashPos").textContent = `${flashIndex+1} / ${flashQueue.length}`;
           flashStage = "kun";
           flashCursor.kun = prevKun.length - 1;
           flashPicked.kun = prevKun[flashCursor.kun] || null;
-          $("flashPrompt").textContent = "訓読みは？";
+          $("flashPrompt").innerHTML = '<span style="color:#2f8f5f;">訓読み</span>は？';
         }else if(prevOn.length){
           flashStage = "on";
           flashCursor.on = prevOn.length - 1;
           flashPicked.on = prevOn[flashCursor.on] || null;
-          $("flashPrompt").textContent = "音読みは？";
+          $("flashPrompt").innerHTML = '<span style="color:#d14b4b;">音読み</span>は？';
         }
       }
     }
@@ -1442,14 +1442,14 @@ function nextStage(){
       if(flashCursor.on + 1 < onList.length){
         flashCursor.on++;
         flashPicked.on = onList[flashCursor.on] || null;
-        $("flashPrompt").textContent = "音読みは？";
+        $("flashPrompt").innerHTML = '<span style="color:#d14b4b;">音読み</span>は？';
         return;
       }
       if(kunList.length){
         flashStage = "kun";
         flashCursor.kun = 0;
         flashPicked.kun = kunList[0] || null;
-        $("flashPrompt").textContent = "訓読みは？";
+        $("flashPrompt").innerHTML = '<span style="color:#2f8f5f;">訓読み</span>は？';
         return;
       }
       flashIndex++;
@@ -1460,7 +1460,7 @@ function nextStage(){
     if(flashCursor.kun + 1 < kunList.length){
       flashCursor.kun++;
       flashPicked.kun = kunList[flashCursor.kun] || null;
-      $("flashPrompt").textContent = "訓読みは？";
+      $("flashPrompt").innerHTML = '<span style="color:#2f8f5f;">訓読み</span>は？';
       return;
     }
 
