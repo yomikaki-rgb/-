@@ -1396,6 +1396,13 @@ function renderKeyboard(){
         RYA:'りゃ',RYU:'りゅ',RYO:'りょ',GYA:'ぎゃ',GYU:'ぎゅ',GYO:'ぎょ',JA:'じゃ',JU:'じゅ',JO:'じょ',
         JYA:'じゃ',JYU:'じゅ',JYO:'じょ',ZYA:'じゃ',ZYU:'じゅ',ZYO:'じょ',
         BYA:'びゃ',BYU:'びゅ',BYO:'びょ',PYA:'ぴゃ',PYU:'ぴゅ',PYO:'ぴょ',
+
+        SHE:'しぇ',CHE:'ちぇ',JE:'じぇ',
+        FA:'ふぁ',FI:'ふぃ',FE:'ふぇ',FO:'ふぉ',
+        WI:'うぃ',WE:'うぇ',WO:'うぉ',
+        TSA:'つぁ',TSI:'つぃ',TSE:'つぇ',TSO:'つぉ',
+        TI:'てぃ',DI:'でぃ',TU:'とぅ',DU:'どぅ',
+
         A:'あ',I:'い',U:'う',E:'え',O:'お',
         KA:'か',KI:'き',KU:'く',KE:'け',KO:'こ',
         SA:'さ',SI:'し',SHI:'し',SU:'す',SE:'せ',SO:'そ',
@@ -1442,22 +1449,44 @@ function renderKeyboard(){
     }
 
 
+
+    function isCurrentAnswerCorrect(){
+      if(!state.currentWord) return false;
+      const typed = String(state.currentInput || '').toUpperCase().replace(/\s+/g, '');
+      const typedKana = qwertyRomajiToKana(typed);
+      const targetKana = getWordKana(state.currentWord);
+      return typedKana === targetKana;
+    }
+
+
+    function commitFreeModeWord(){
+      const builtKana = qwertyRomajiToKana(state.currentInput);
+      if(!builtKana) return false;
+
+      state.freeDraft = builtKana;
+      state.currentTarget = toRomaji(builtKana);
+
+      if(!state.freeDoneWords.includes(builtKana)){
+        state.freeDoneWords.push(builtKana);
+        persistFreeDoneWords();
+      }
+
+      renderFreeDoneDisplay();
+      return true;
+    }
+
     function judgeByDoneButton(){
       if(state.mode === 'free'){
-        const builtKana = qwertyRomajiToKana(state.currentInput);
-        if(builtKana){
-          state.freeDraft = builtKana;
-          state.currentTarget = toRomaji(builtKana);
-          if(!state.freeDoneWords.includes(builtKana)){
-            state.freeDoneWords.push(builtKana);
-            persistFreeDoneWords();
-          }
+        const ok = commitFreeModeWord();
+
+        if(ok){
           setFeedback('できた！', 'ok');
           speakNow('できた');
         } else {
           setFeedback('もう一度', 'ng');
           speakNow('もう一度');
         }
+
         renderPractice();
         return;
       }
@@ -1576,7 +1605,35 @@ function renderKeyboard(){
     document.getElementById('clearInputBtn').addEventListener('click', ()=>{ resetInput(); if(state.mode==='free'){ state.freeDraft=''; state.currentTarget=''; } state.currentInput=''; state.inputTokens=[]; renderPractice(); setFeedback('入力を消しました。', 'info'); });
     document.getElementById('showAnswerBtn').addEventListener('click', ()=>{ if(!state.currentTarget) return; const candidates=[...getAnswerCandidates(state.currentWord)]; window.alert(`こたえ: ${displayCase(state.currentTarget)}\nほかにOK: ${candidates.slice(0,8).map(displayCase).join(' / ')}`); });
     if(document.getElementById('qwertyDoneBtn')) if(document.getElementById('qwertyDoneBtn')) document.getElementById('qwertyDoneBtn').addEventListener('click', judgeByDoneButton);
-document.getElementById('nextWordBtn').addEventListener('click', ()=>{ if(!state.practiceList.length) return; state.currentIndex=(state.currentIndex+1)%state.practiceList.length; loadCurrentWord(); });
+document.getElementById('nextWordBtn').addEventListener('click', ()=>{
+
+      if(state.mode === 'free'){
+        const ok = commitFreeModeWord();
+        if(ok){
+          setFeedback('できた！', 'ok');
+          speakNow('できた');
+        } else {
+          setFeedback('もう一度', 'ng');
+          speakNow('もう一度');
+        }
+        renderPractice();
+        return;
+      }
+
+      if(state.mode === 'practice' && state.currentWord){
+        if(!state.answeredCurrent){
+          const ok = isCurrentAnswerCorrect();
+          judgeByDoneButton();
+          if(!ok){
+            return;
+          }
+        }
+      }
+
+      if(!state.practiceList.length) return;
+      state.currentIndex=(state.currentIndex+1)%state.practiceList.length;
+      loadCurrentWord();
+    });
     document.getElementById('speakWordBtn').addEventListener('click', ()=>{ const kana = state.mode === 'practice' ? getWordKana(state.currentWord) : (state.freeDraft || ''); if(kana){ speak(kana); } else { setFeedback('読む単語がまだありません。', 'info'); } });
 
     els.modeButtons.forEach(btn => btn.addEventListener('click', ()=>{ state.mode=btn.dataset.mode; renderMode(); renderSaved(); if(state.mode==='free'){ setTimeout(()=>els.currentWordInput.focus(),0); } }));
