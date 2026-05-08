@@ -240,6 +240,43 @@
   }
   table{width:100%;border-collapse:collapse;font-size:15px}
   th,td{border-bottom:1px solid #ddd;padding:7px;text-align:left}
+
+@media (max-width: 600px){
+  .app{
+    padding:10px 8px 18px;
+  }
+  h1{
+    font-size:32px;
+  }
+  .panel{
+    padding:12px;
+    border-radius:18px;
+  }
+  .tapButton{
+    width:min(300px,92vw);
+    height:120px;
+    font-size:34px;
+    border-radius:24px;
+  }
+  .buttons{
+    gap:8px;
+  }
+  .btn{
+    padding:12px 16px;
+    font-size:18px;
+  }
+  .num{
+    min-width:32px;
+    height:32px;
+    font-size:18px;
+  }
+  .hiddenWord{
+    font-size:clamp(30px,10vw,54px);
+    min-height:72px;
+    padding:12px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -643,9 +680,21 @@ function playMoraHint(){
   });
 }
 
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function unlockAudio(){
+  if(audioCtx.state === 'suspended'){
+    audioCtx.resume();
+  }
+}
+
+document.addEventListener('touchstart', unlockAudio, {passive:true});
+document.addEventListener('click', unlockAudio);
+
 function playTapSound(){
   try{
-    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    unlockAudio();
+    const ac = audioCtx;
     const now = ac.currentTime;
 
     function burst(start, duration, volume){
