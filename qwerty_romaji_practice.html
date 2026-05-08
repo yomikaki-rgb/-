@@ -100,7 +100,23 @@
     /* QWERTY keyboard additions */
     .qwerty-layout{margin-top:8px;display:grid;gap:8px}
     .qwerty-row{display:flex;justify-content:center;gap:6px;flex-wrap:nowrap}
-    .qkey{min-width:54px;min-height:54px;border-radius:14px;border:2px solid #cfd8ed;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;user-select:none;box-shadow:0 3px 0 rgba(31,42,68,.08)}
+    .qkey{
+      width:clamp(48px, 6vw, 84px);
+      min-width:48px;
+      height:clamp(48px, 6vw, 84px);
+      min-height:48px;
+      border-radius:14px;
+      border:2px solid #cfd8ed;
+      background:#fff;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      font-size:clamp(18px, 2vw, 30px);
+      user-select:none;
+      box-shadow:0 3px 0 rgba(31,42,68,.08)
+    }
     .qkey.dimmed-key{color:#cbd5e1 !important;}
     .qkey:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(31,42,68,.08)}
     .qkey.wide{min-width:104px;font-size:16px;padding:0 12px}
@@ -1452,10 +1468,9 @@ function renderKeyboard(){
 
     function isCurrentAnswerCorrect(){
       if(!state.currentWord) return false;
-      const typed = String(state.currentInput || '').toUpperCase().replace(/\s+/g, '');
-      const typedKana = qwertyRomajiToKana(typed);
-      const targetKana = getWordKana(state.currentWord);
-      return typedKana === targetKana;
+      const typed = normalizeRomajiInput(state.currentInput);
+      if(!typed) return false;
+      return getAnswerCandidates(state.currentWord).has(typed);
     }
 
 
@@ -1493,11 +1508,10 @@ function renderKeyboard(){
 
       if(!state.currentWord) return;
 
-      const typed = String(state.currentInput || '').toUpperCase().replace(/\s+/g, '');
-      const typedKana = qwertyRomajiToKana(typed);
-      const targetKana = getWordKana(state.currentWord);
+      const typed = normalizeRomajiInput(state.currentInput);
+      const isCorrect = getAnswerCandidates(state.currentWord).has(typed);
 
-      if(typedKana === targetKana){
+      if(isCorrect){
         setFeedback('せいかい！', 'ok');
         if(!state.answeredCurrent) recordHistory('correct');
         state.answeredCurrent = true;
@@ -1611,7 +1625,12 @@ document.getElementById('nextWordBtn').addEventListener('click', ()=>{
         const ok = commitFreeModeWord();
         if(ok){
           setFeedback('できた！', 'ok');
-          speakNow('できた');
+          state.freeDraft = '';
+          state.currentTarget = '';
+          state.currentInput = '';
+          state.inputTokens = [];
+          clearPendingToken();
+          if(els.currentWordInput) els.currentWordInput.value = '';
         } else {
           setFeedback('もう一度', 'ng');
           speakNow('もう一度');
