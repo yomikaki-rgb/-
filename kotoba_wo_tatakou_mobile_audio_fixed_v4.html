@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ことばをたたこう！</title>
+<style>
+  :root{
+    --bg:#d9f6ff;
+    --main:#179b49;
+    --main2:#0d7f38;
+    --accent:#0b75d1;
+    --danger:#e91e63;
+    --text:#222;
+    --card:#fff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:"UD Digi Kyokasho N-R","UD デジタル 教科書体 N-R","UD デジタル 教科書体", "Noto Sans JP", system-ui, sans-serif;
+    background:linear-gradient(180deg,#b6eff6 0%,#eafcff 100%);
+    color:var(--text);
+    min-height:100vh;
+  }
+  .app{
+    max-width:980px;
+    margin:0 auto;
+    padding:18px 16px 28px;
+  }
+  header{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:12px;
+  }
+  h1{
+    margin:0;
+    font-size:clamp(26px,4vw,42px);
+    letter-spacing:.04em;
+    color:#0a6c32;
+    text-shadow:0 2px 0 #fff;
+  }
+  .pill{
+    background:#fff;
+    border:3px solid var(--main);
+    border-radius:999px;
+    padding:8px 14px;
+    font-weight:700;
+    box-shadow:0 3px 0 rgba(0,0,0,.15);
+  }
+  .panel{
+    background:rgba(255,255,255,.86);
+    border:4px solid var(--main);
+    border-radius:24px;
+    padding:18px;
+    box-shadow:0 8px 0 rgba(0,0,0,.13);
+  }
+  .screen{
+    min-height:380px;
+    display:grid;
+    grid-template-rows:auto 1fr auto;
+    gap:16px;
+  }
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .progress{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .num{
+    min-width:38px;
+    height:38px;
+    display:grid;
+    place-items:center;
+    border-radius:10px;
+    background:#1fa742;
+    color:white;
+    font-size:22px;
+    font-weight:800;
+    border:3px solid #08752c;
+    box-shadow:0 3px 0 rgba(0,0,0,.16);
+  }
+  .num.active{background:#7ef07f;color:#084d20}
+  .mainarea{
+    display:grid;
+    place-items:center;
+    text-align:center;
+    padding:10px;
+  }
+  .questionBox{
+    width:min(720px,100%);
+    display:grid;
+    gap:22px;
+    justify-items:center;
+  }
+  .hiddenWord{
+    min-height:92px;
+    width:100%;
+    display:grid;
+    place-items:center;
+    font-size:clamp(38px,8vw,74px);
+    font-weight:800;
+    letter-spacing:.08em;
+    color:#111;
+    background:#fff;
+    border:4px dashed #81c784;
+    border-radius:22px;
+    padding:18px;
+  }
+  .hintOff{color:#9e9e9e;font-size:clamp(22px,4vw,36px);font-weight:700;}
+  .tapDisplay{
+    min-height:70px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .dot{
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:#1e88e5;
+    border:3px solid #0d47a1;
+    box-shadow:0 4px 0 rgba(0,0,0,.18);
+  }
+  .tapButton{
+    width:min(360px,88vw);
+    height:150px;
+    border-radius:36px;
+    border:5px solid #0d7f38;
+    background:#fff;
+    font-size:42px;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow:0 9px 0 rgba(0,0,0,.22);
+    touch-action:manipulation;
+  }
+  .tapButton:active{transform:translateY(5px);box-shadow:0 4px 0 rgba(0,0,0,.22)}
+  .message{
+    min-height:42px;
+    font-size:clamp(22px,4vw,34px);
+    font-weight:900;
+  }
+  .message.ok{color:#0a8f35}
+  .message.ng{color:#d81b60}
+  .buttons{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  button{
+    font-family:inherit;
+  }
+  .btn{
+    border:0;
+    border-radius:999px;
+    padding:14px 22px;
+    font-size:clamp(19px,3vw,26px);
+    font-weight:900;
+    color:#fff;
+    cursor:pointer;
+    box-shadow:0 5px 0 rgba(0,0,0,.22);
+    touch-action:manipulation;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.22)}
+  .listen{background:#ff9800}
+  .hint{background:#9c27b0}
+  .look{background:#673ab7}
+  .reset{background:#e91e63}
+  .done{background:#0b75d1}
+  .next{background:#1fa742}
+  .setting{background:#607d8b}
+  details{
+    margin-top:18px;
+  }
+  summary{
+    cursor:pointer;
+    font-size:20px;
+    font-weight:800;
+    color:#0a6c32;
+  }
+  .settingsGrid{
+    margin-top:12px;
+    display:grid;
+    gap:14px;
+  }
+  .checkArea{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 14px;
+  }
+  label.check{
+    background:#fff;
+    border:2px solid #89c68f;
+    border-radius:999px;
+    padding:8px 12px;
+    font-weight:700;
+  }
+  textarea{
+    width:100%;
+    min-height:220px;
+    font-family:ui-monospace,Consolas,monospace;
+    font-size:15px;
+    border:2px solid #8bc34a;
+    border-radius:12px;
+    padding:12px;
+  }
+  .small{
+    font-size:14px;
+    line-height:1.6;
+    color:#444;
+  }
+  .rowBtns{display:flex;gap:10px;flex-wrap:wrap}
+  .miniBtn{
+    border:0;
+    border-radius:12px;
+    padding:10px 14px;
+    font-weight:800;
+    background:#0a8f35;
+    color:#fff;
+    cursor:pointer;
+  }
+  .miniBtn.gray{background:#607d8b}
+  .results{
+    margin-top:14px;
+    background:#fff;
+    border-radius:16px;
+    padding:12px;
+    border:2px solid #a5d6a7;
+  }
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th,td{border-bottom:1px solid #ddd;padding:7px;text-align:left}
+
+@media (max-width: 600px){
+  .app{
+    padding:10px 8px 18px;
+  }
+  h1{
+    font-size:32px;
+  }
+  .panel{
+    padding:12px;
+    border-radius:18px;
+  }
+  .tapButton{
+    width:min(300px,92vw);
+    height:120px;
+    font-size:34px;
+    border-radius:24px;
+  }
+  .buttons{
+    gap:8px;
+  }
+  .btn{
+    padding:12px 16px;
+    font-size:18px;
+  }
+  .num{
+    min-width:32px;
+    height:32px;
+    font-size:18px;
+  }
+  .hiddenWord{
+    font-size:clamp(30px,10vw,54px);
+    min-height:72px;
+    padding:12px;
+  }
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>ことばをたたこう！</h1>
+    <div class="pill" id="countLabel">1 / 10</div>
+  </header>
+
+  <section class="panel screen">
+    <div class="topbar">
+      <div class="progress" id="progress"></div>
+      <button class="btn setting" id="shuffleBtn" type="button">まぜる</button>
+    </div>
+
+    <main class="mainarea">
+      <div class="questionBox">
+        <div class="hiddenWord" id="wordView"><span class="hintOff">ことばは まだ みえません</span></div>
+        <button class="tapButton" id="tapBtn" type="button">👏<br>たたく</button>
+        <div class="tapDisplay" id="tapDisplay"></div>
+        <div class="message" id="message"></div>
+      </div>
+    </main>
+
+    <div class="buttons">
+      <button class="btn listen" id="listenBtn" type="button">▶ きく</button>
+      <button class="btn hint" id="hintBtn" type="button">ヒント</button>
+      <button class="btn look" id="lookBtn" type="button">見る</button>
+      <button class="btn reset" id="resetBtn" type="button">やりなおす</button>
+      <button class="btn done" id="doneBtn" type="button">できた</button>
+      
+    </div>
+  </section>
+
+  <details class="panel">
+    <summary>単語の設定・種類の選択</summary>
+    <div class="settingsGrid">
+      <div>
+        <strong>出題する種類</strong>
+        <div class="checkArea" id="typeChecks"></div>
+      </div>
+      <div>
+        <strong>単語データ</strong>
+        <p class="small">種類の見出しを書き、その下に単語を並べます。スペース・改行・全角スペースで区切れます。<br>例：<br>清音<br>すいか　さかな<br>撥音<br>ひんと　にんじん<br>分類は見出しで指定し、モーラ区切りは自動で作ります。</p>
+        <textarea id="dataText"></textarea>
+        <div class="rowBtns">
+          <button class="miniBtn" id="applyDataBtn" type="button">このデータで使う</button>
+          <button class="miniBtn gray" id="restoreInitialBtn" type="button">最初のデータにもどす</button>
+          <button class="miniBtn gray" id="downloadCsvBtn" type="button">テキストを保存</button>
+          <input id="fileInput" type="file" accept=".txt,.csv,text/plain,text/csv" hidden>
+          <button class="miniBtn gray" id="loadCsvBtn" type="button">テキストを読み込む</button>
+        </div>
+      </div>
+      <div class="results" id="results"></div>
+    </div>
+  </details>
+</div>
+
+<script>
+// ============================================================
+// 単語を差し替える場合は、まずここだけ編集しても使えます。
+// 形式：word = 表示・読み上げる単語 / mora = /区切り / type = 種類
+// ============================================================
+const DEFAULT_WORDS = [
+  { word:'すいか', mora:'す/い/か', type:'清音' },
+  { word:'さかな', mora:'さ/か/な', type:'清音' },
+  { word:'しろくま', mora:'し/ろ/く/ま', type:'清音' },
+  { word:'かえる', mora:'か/え/る', type:'清音' },
+  { word:'たけのこ', mora:'た/け/の/こ', type:'清音' },
+  { word:'しまうま', mora:'し/ま/う/ま', type:'清音' },
+  { word:'こども', mora:'こ/ど/も', type:'清音' },
+  { word:'つくえ', mora:'つ/く/え', type:'清音' },
+  { word:'えほん', mora:'え/ほ/ん', type:'清音' },
+  { word:'さる', mora:'さ/る', type:'清音' },
+  { word:'にわとり', mora:'に/わ/と/り', type:'清音' },
+  { word:'てぶくろ', mora:'て/ぶ/く/ろ', type:'清音' },
+  { word:'みず', mora:'み/ず', type:'清音' },
+  { word:'いぬ', mora:'い/ぬ', type:'清音' },
+  { word:'ひんと', mora:'ひ/ん/と', type:'撥音' },
+  { word:'にんじん', mora:'に/ん/じ/ん', type:'撥音' },
+  { word:'だいこん', mora:'だ/い/こ/ん', type:'撥音' },
+  { word:'しんぶん', mora:'し/ん/ぶ/ん', type:'撥音' },
+  { word:'せんざい', mora:'せ/ん/ざ/い', type:'撥音' },
+  { word:'ずかん', mora:'ず/か/ん', type:'撥音' },
+  { word:'うどん', mora:'う/ど/ん', type:'撥音' },
+  { word:'りんご', mora:'り/ん/ご', type:'撥音' },
+  { word:'みかん', mora:'み/か/ん', type:'撥音' },
+  { word:'おかあさん', mora:'お/か/あ/さ/ん', type:'長音' },
+  { word:'おとうさん', mora:'お/と/う/さ/ん', type:'長音' },
+  { word:'さんすう', mora:'さ/ん/す/う', type:'長音' },
+  { word:'せんせい', mora:'せ/ん/せ/い', type:'長音' },
+  { word:'そうじき', mora:'そ/う/じ/き', type:'長音' },
+  { word:'ゆうやけ', mora:'ゆ/う/や/け', type:'長音' },
+  { word:'ろうそく', mora:'ろ/う/そ/く', type:'長音' },
+  { word:'くうき', mora:'く/う/き', type:'長音' },
+  { word:'こおり', mora:'こ/お/り', type:'長音' },
+  { word:'せんせい', mora:'せ/ん/せ/い', type:'長音' },
+  { word:'おねえさん', mora:'お/ね/え/さ/ん', type:'長音' },
+  { word:'れいぞうこ', mora:'れ/い/ぞ/う/こ', type:'長音' },
+  { word:'きって', mora:'き/っ/て', type:'促音' },
+  { word:'コロッケ', mora:'コ/ロ/ッ/ケ', type:'促音' },
+  { word:'スキップ', mora:'ス/キ/ッ/プ', type:'促音' },
+  { word:'ロボット', mora:'ロ/ボ/ッ/ト', type:'促音' },
+  { word:'えにっき', mora:'え/に/っ/き', type:'促音' },
+  { word:'もっきん', mora:'も/っ/き/ん', type:'促音' },
+  { word:'かっぱ', mora:'か/っ/ぱ', type:'促音' },
+  { word:'せっけん', mora:'せ/っ/け/ん', type:'促音' },
+  { word:'しっぽ', mora:'し/っ/ぽ', type:'促音' },
+  { word:'ポケット', mora:'ポ/ケ/ッ/ト', type:'促音' },
+  { word:'しっぷ', mora:'し/っ/ぷ', type:'促音' },
+  { word:'コップ', mora:'コ/ッ/プ', type:'促音' },
+  { word:'はっけん', mora:'は/っ/け/ん', type:'促音' },
+  { word:'きっちん', mora:'き/っ/ち/ん', type:'促音' },
+  { word:'キャベツ', mora:'キャ/ベ/ツ', type:'拗音' },
+  { word:'しゃしん', mora:'しゃ/し/ん', type:'拗音' },
+  { word:'パジャマ', mora:'パ/ジャ/マ', type:'拗音' },
+  { word:'せんしゃ', mora:'せ/ん/しゃ', type:'拗音' },
+  { word:'かいしゃ', mora:'か/い/しゃ', type:'拗音' },
+  { word:'ちゃわん', mora:'ちゃ/わ/ん', type:'拗音' },
+  { word:'おちゃ', mora:'お/ちゃ', type:'拗音' },
+  { word:'じゃぐち', mora:'じゃ/ぐ/ち', type:'拗音' },
+  { word:'じゃんけん', mora:'じゃ/ん/け/ん', type:'拗音' },
+  { word:'にんじゃ', mora:'に/ん/じゃ', type:'拗音' },
+  { word:'しゅくだい', mora:'しゅ/く/だ/い', type:'拗音' },
+  { word:'ちょきん', mora:'ちょ/き/ん', type:'拗音' },
+  { word:'きょじん', mora:'きょ/じ/ん', type:'拗音' },
+  { word:'きかんしゃ', mora:'き/か/ん/しゃ', type:'拗音' },
+  { word:'しょうゆ', mora:'しょ/う/ゆ', type:'拗長音' },
+  { word:'きょうしつ', mora:'きょ/う/し/つ', type:'拗長音' },
+  { word:'はくちょう', mora:'は/く/ちょ/う', type:'拗長音' },
+  { word:'ぎゅうにゅう', mora:'ぎゅ/う/にゅ/う', type:'拗長音' },
+  { word:'きゅうしょく', mora:'きゅ/う/しょ/く', type:'拗長音' },
+  { word:'ちゅうしゃ', mora:'ちゅ/う/しゃ', type:'拗長音' },
+  { word:'べんきょう', mora:'べ/ん/きょ/う', type:'拗長音' },
+  { word:'うちゅう', mora:'う/ちゅ/う', type:'拗長音' },
+  { word:'きゅうり', mora:'きゅ/う/り', type:'拗長音' },
+  { word:'リュック', mora:'リュ/ッ/ク', type:'拗促音' },
+  { word:'ケチャップ', mora:'ケ/チャ/ッ/プ', type:'拗促音' },
+  { word:'キャップ', mora:'キャ/ッ/プ', type:'拗促音' },
+  { word:'しゃっくり', mora:'しゃ/っ/く/り', type:'拗促音' },
+  { word:'ちょっかい', mora:'ちょ/っ/か/い', type:'拗促音' },
+  { word:'しょっぱい', mora:'しょ/っ/ぱ/い', type:'拗促音' },
+  { word:'ちょっかく', mora:'ちょ/っ/か/く', type:'拗促音' },
+  { word:'しゅっぱつ', mora:'しゅ/っ/ぱ/つ', type:'拗促音' },
+  { word:'しょっき', mora:'しょ/っ/き', type:'拗促音' }
+];
+
+const TYPE_ORDER = ['清音','撥音','長音','促音','拗音','拗長音','拗促音'];
+const INITIAL_TEXT_DATA = wordsToText(DEFAULT_WORDS);
+
+let allWords = loadWordsFromStorage() || DEFAULT_WORDS.slice();
+let activeTypes = new Set(loadTypesFromStorage() || TYPE_ORDER);
+let deck = [];
+let index = 0;
+let taps = 0;
+let isCorrect = false;
+let seen = false;
+let history = [];
+
+const els = {
+  countLabel: document.getElementById('countLabel'),
+  progress: document.getElementById('progress'),
+  wordView: document.getElementById('wordView'),
+  tapBtn: document.getElementById('tapBtn'),
+  tapDisplay: document.getElementById('tapDisplay'),
+  message: document.getElementById('message'),
+  listenBtn: document.getElementById('listenBtn'),
+  hintBtn: document.getElementById('hintBtn'),
+  lookBtn: document.getElementById('lookBtn'),
+  resetBtn: document.getElementById('resetBtn'),
+  doneBtn: document.getElementById('doneBtn'),
+  shuffleBtn: document.getElementById('shuffleBtn'),
+  typeChecks: document.getElementById('typeChecks'),
+  dataText: document.getElementById('dataText'),
+  applyDataBtn: document.getElementById('applyDataBtn'),
+  restoreInitialBtn: document.getElementById('restoreInitialBtn'),
+  downloadCsvBtn: document.getElementById('downloadCsvBtn'),
+  loadCsvBtn: document.getElementById('loadCsvBtn'),
+  fileInput: document.getElementById('fileInput'),
+  results: document.getElementById('results')
+};
+
+init();
+
+function init(){
+  renderTypeChecks();
+  els.dataText.value = wordsToText(allWords);
+  makeDeck(false);
+  bindEvents();
+  render();
+}
+
+function bindEvents(){
+  els.listenBtn.addEventListener('click', () => speak(current().word));
+  els.hintBtn.addEventListener('click', playMoraHint);
+  els.lookBtn.addEventListener('click', () => { seen = true; renderWord(); });
+  els.tapBtn.addEventListener('click', () => { taps++; isCorrect = false; setMessage('', ''); renderTaps(); playTapSound(); });
+  els.resetBtn.addEventListener('click', resetCurrent);
+  els.doneBtn.addEventListener('click', judge);
+  els.shuffleBtn.addEventListener('click', () => makeDeck(true));
+  els.applyDataBtn.addEventListener('click', applyDataText);
+  els.restoreInitialBtn.addEventListener('click', restoreInitialData);
+  els.downloadCsvBtn.addEventListener('click', downloadCsv);
+  els.loadCsvBtn.addEventListener('click', () => els.fileInput.click());
+  els.fileInput.addEventListener('change', loadCsvFile);
+}
+
+function renderTypeChecks(){
+  els.typeChecks.innerHTML = '';
+  TYPE_ORDER.forEach(type => {
+    const label = document.createElement('label');
+    label.className = 'check';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = activeTypes.has(type);
+    input.addEventListener('change', () => {
+      if(input.checked) activeTypes.add(type); else activeTypes.delete(type);
+      localStorage.setItem('moraTapTypes', JSON.stringify([...activeTypes]));
+      makeDeck(false);
+    });
+    label.appendChild(input);
+    label.append(' ' + type);
+    els.typeChecks.appendChild(label);
+  });
+}
+
+function makeDeck(shuffle){
+  deck = allWords.filter(w => activeTypes.has(w.type));
+  if(deck.length === 0) deck = allWords.slice();
+  if(shuffle) deck = shuffled(deck);
+  index = 0;
+  history = [];
+  resetCurrent(false);
+  render();
+}
+
+function current(){ return deck[index] || {word:'',mora:'',type:''}; }
+
+function render(){
+  renderProgress();
+  renderWord();
+  renderTaps();
+  renderResults();
+}
+
+function renderProgress(){
+  els.countLabel.textContent = deck.length ? `${index+1} / ${deck.length}` : '0 / 0';
+  els.progress.innerHTML = '';
+  deck.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'num' + (i === index ? ' active' : '');
+    d.textContent = i + 1;
+    els.progress.appendChild(d);
+  });
+}
+
+function renderWord(){
+  if(seen || isCorrect){
+    els.wordView.textContent = current().mora.replaceAll('/', '・');
+  }else{
+    els.wordView.innerHTML = '<span class="hintOff">ことばは まだ みえません</span>';
+  }
+}
+
+function renderTaps(){
+  els.tapDisplay.innerHTML = '';
+  for(let i=0;i<taps;i++){
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    els.tapDisplay.appendChild(dot);
+  }
+}
+
+function resetCurrent(clearMsg=true){
+  taps = 0;
+  isCorrect = false;
+  seen = false;
+  if(clearMsg) setMessage('', '');
+  renderWord();
+  renderTaps();
+}
+
+function judge(){
+  const correctCount = current().mora.split('/').filter(Boolean).length;
+  const ok = taps === correctCount;
+  history.push({word:current().word, mora:current().mora, type:current().type, taps, correctCount, ok});
+  if(ok){
+    isCorrect = true;
+    seen = true;
+    setMessage('せいかい！', 'ok');
+    speak('せいかい');
+    showMora = true;
+    renderWord();
+    renderResults();
+
+    setTimeout(() => {
+      next();
+    }, 3000);
+    return;
+  }else{
+    isCorrect = false;
+    setMessage('もういちど', 'ng');
+    speak('もういちど');
+  }
+  renderWord();
+  renderResults();
+}
+
+function next(){
+  if(!isCorrect){
+    setMessage('せいかいしたら つぎへ いけます', 'ng');
+    speak('もういちど');
+    return;
+  }
+  if(index < deck.length - 1){
+    index++;
+  }else{
+    index = 0;
+  }
+  resetCurrent(false);
+  setMessage('', '');
+  render();
+}
+
+function setMessage(text, cls){
+  els.message.textContent = text;
+  els.message.className = 'message ' + (cls || '');
+}
+
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP';
+  u.rate = 1.02;
+  u.pitch = 1.05;
+  window.speechSynthesis.speak(u);
+}
+
+function speakWithoutCancel(text, rate=0.82){
+  if(!('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP';
+  u.rate = rate;
+  u.pitch = 1.05;
+  window.speechSynthesis.speak(u);
+}
+
+function speakMoraWithClaps(text, clapCount=1, rate=0.72){
+  const clapInterval = 820;
+
+  function playClaps(){
+    for(let i = 0; i < clapCount; i++){
+      setTimeout(() => playTapSound(), i * clapInterval);
+    }
+  }
+
+  if(!('speechSynthesis' in window)){
+    playClaps();
+    return;
+  }
+
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP';
+  u.rate = rate;
+  u.pitch = 1.05;
+
+  // 読み上げが実際に始まった瞬間に1拍目を合わせる。
+  // 長音「ー」は単独で読ませず、前の音にくっつけて読ませる。
+  u.onstart = () => playClaps();
+  window.speechSynthesis.speak(u);
+}
+
+function makeHintUnits(moras){
+  const units = [];
+  moras.forEach(mora => {
+    if(mora === 'ー' && units.length){
+      units[units.length - 1].text += 'ー';
+      units[units.length - 1].clapCount += 1;
+    }else{
+      units.push({ text:mora, clapCount:1 });
+    }
+  });
+  return units;
+}
+
+function playMoraHint(){
+  const moras = current().mora.split('/').map(v => v.trim()).filter(Boolean);
+  if(!moras.length) return;
+
+  if('speechSynthesis' in window) window.speechSynthesis.cancel();
+  setMessage('ヒントを きいてね', 'ok');
+
+  const units = makeHintUnits(moras);
+  let delay = 0;
+  units.forEach(unit => {
+    setTimeout(() => {
+      speakMoraWithClaps(unit.text, unit.clapCount, 0.72);
+    }, delay);
+    delay += unit.clapCount * 820;
+  });
+}
+
+let audioCtx = null;
+const CLAP_SOUND_SRC = 'data:audio/wav;base64,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/f8AAPz/+//7/wYABAAAAAMA/f///wAABgADAPr/BgACAAUABAD6/wEA/P/+/wQAAwD7/wUA/f/9/wQAAgD8/wIAAwAEAAIAAAD///3//f/9/wAA/f8AAAIAAAADAAAAAwD9//7/AAAAAP3/AwD//wMAAwD+/wIAAAD+/wAAAwD//wIAAQD//wAAAAD//wEAAQD///7//v////7/AgAAAAAAAAD//wAAAAAAAAEA//8AAAAAAQAAAAEAAAD//wAAAAAAAAAAAAAAAP//AAD/////AAAAAP//AAD//wAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+let clapAudio = null;
+
+function isMobileDevice(){
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
+function getClapAudio(){
+  if(!clapAudio){
+    clapAudio = new Audio(CLAP_SOUND_SRC);
+    clapAudio.preload = 'auto';
+    clapAudio.volume = 1;
+  }
+  return clapAudio;
+}
+
+function unlockAudio(){
+  if(isMobileDevice()){
+    try{
+      const a = getClapAudio();
+      a.load();
+    }catch(e){}
+  }
+
+  try{
+    if(!audioCtx){
+      const AudioCtor = window.AudioContext || window.webkitAudioContext;
+      if(AudioCtor) audioCtx = new AudioCtor();
+    }
+    if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }catch(e){}
+}
+
+document.addEventListener('touchstart', unlockAudio, {passive:true});
+document.addEventListener('pointerdown', unlockAudio, {passive:true});
+document.addEventListener('click', unlockAudio);
+
+function playTapSound(){
+  // スマホでは内蔵した短い音声データを使う。
+  // PC・タブレットでは元のWeb Audio合成音だけを使う（二重鳴りを防ぐ）。
+  if(isMobileDevice()){
+    try{
+      const base = getClapAudio();
+      const a = base.cloneNode(true);
+      a.volume = 1;
+      a.currentTime = 0;
+      const p = a.play();
+      if(p && typeof p.catch === 'function') p.catch(() => {});
+      return;
+    }catch(e){}
+  }
+
+  try{
+    if(!audioCtx){
+      const AudioCtor = window.AudioContext || window.webkitAudioContext;
+      if(!AudioCtor) return;
+      audioCtx = new AudioCtor();
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+
+    const ac = audioCtx;
+    const now = ac.currentTime;
+
+    function burst(start, duration, volume){
+      const buffer = ac.createBuffer(1, Math.floor(ac.sampleRate * duration), ac.sampleRate);
+      const data = buffer.getChannelData(0);
+
+      for(let i = 0; i < data.length; i++){
+        const t = i / data.length;
+        const attack = Math.min(1, t * 18);
+        const decay = Math.pow(1 - t, 3.2);
+        data[i] = (Math.random() * 2 - 1) * attack * decay;
+      }
+
+      const noise = ac.createBufferSource();
+      noise.buffer = buffer;
+
+      const high = ac.createBiquadFilter();
+      high.type = 'highpass';
+      high.frequency.value = 850;
+
+      const mid = ac.createBiquadFilter();
+      mid.type = 'bandpass';
+      mid.frequency.value = 2100;
+      mid.Q.value = 0.9;
+
+      const gain = ac.createGain();
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(volume, start + 0.006);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+      noise.connect(high);
+      high.connect(mid);
+      mid.connect(gain);
+      gain.connect(ac.destination);
+
+      noise.start(start);
+      noise.stop(start + duration);
+    }
+
+    burst(now, 0.075, 1.0);
+    burst(now + 0.022, 0.065, 0.55);
+  }catch(e){}
+}
+
+function wordsToText(words){
+  const grouped = {};
+  TYPE_ORDER.forEach(type => grouped[type] = []);
+  words.forEach(w => {
+    if(!grouped[w.type]) grouped[w.type] = [];
+    grouped[w.type].push(w.word);
+  });
+  return Object.keys(grouped)
+    .filter(type => grouped[type].length)
+    .map(type => `${type}\n${grouped[type].join('　')}`)
+    .join('\n\n');
+}
+
+function autoMora(word){
+  const chars = Array.from(String(word).trim());
+  const smallKana = 'ゃゅょぁぃぅぇぉャュョァィゥェォ';
+  const moras = [];
+  chars.forEach(ch => {
+    if(smallKana.includes(ch) && moras.length){
+      moras[moras.length - 1] += ch;
+    }else{
+      moras.push(ch);
+    }
+  });
+  return moras.join('/');
+}
+
+function splitWords(line){
+  return line
+    .replace(/[、，]/g, ' ')
+    .split(/[\s　]+/)
+    .map(v => v.trim())
+    .filter(Boolean);
+}
+
+function parseText(text){
+  const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith('#'));
+
+  // 以前のCSV形式も読み込めるように残しておく。
+  if(lines.some(line => line.includes(',') && line.split(',').length >= 3)){
+    return lines.map(line => {
+        const cols = line.split(',').map(v => v.trim());
+        const word = cols[0] || '';
+        return { word, mora: cols[1] || autoMora(word), type: cols[2] || '清音' };
+      })
+      .filter(w => w.word && w.mora);
+  }
+
+  const parsed = [];
+  let currentType = '';
+  lines.forEach(line => {
+    const normalized = line.replace(/\s/g, '');
+    if(TYPE_ORDER.includes(normalized)){
+      currentType = normalized;
+      return;
+    }
+    if(!currentType) return;
+    splitWords(line).forEach(word => {
+      parsed.push({ word, mora:autoMora(word), type:currentType });
+    });
+  });
+  return parsed;
+}
+
+function applyDataText(){
+  const parsed = parseText(els.dataText.value);
+  if(parsed.length === 0){
+    alert('単語データがありません。');
+    return;
+  }
+  allWords = parsed;
+  localStorage.setItem('moraTapWords', JSON.stringify(allWords));
+  makeDeck(false);
+}
+
+function restoreInitialData(){
+  allWords = DEFAULT_WORDS.slice();
+  els.dataText.value = INITIAL_TEXT_DATA;
+  localStorage.setItem('moraTapWords', JSON.stringify(allWords));
+  makeDeck(false);
+  setMessage('最初のデータにもどしました', 'ok');
+}
+
+function downloadCsv(){
+  const blob = new Blob(['﻿' + wordsToText(allWords)], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mora_words.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function loadCsvFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    els.dataText.value = String(reader.result || '');
+    applyDataText();
+  };
+  reader.readAsText(file, 'utf-8');
+  e.target.value = '';
+}
+
+function renderResults(){
+  const recent = history.slice(-8).reverse();
+  if(recent.length === 0){
+    els.results.innerHTML = '<strong>結果</strong><p class="small">まだ結果はありません。</p>';
+    return;
+  }
+  els.results.innerHTML = '<strong>結果</strong><table><thead><tr><th>ことば</th><th>タップ</th><th>正解</th><th>判定</th></tr></thead><tbody>' +
+    recent.map(r => `<tr><td>${escapeHtml(r.word)}</td><td>${r.taps}</td><td>${r.correctCount}</td><td>${r.ok ? '○' : '×'}</td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+function loadWordsFromStorage(){
+  try{
+    const data = JSON.parse(localStorage.getItem('moraTapWords'));
+    return Array.isArray(data) && data.length ? data : null;
+  }catch(e){ return null; }
+}
+
+function loadTypesFromStorage(){
+  try{
+    const data = JSON.parse(localStorage.getItem('moraTapTypes'));
+    return Array.isArray(data) && data.length ? data : null;
+  }catch(e){ return null; }
+}
+
+function shuffled(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+</script>
+
+
+
+
+
+<!-- version: grouped-text-input-auto-mora-20260508 -->
+</body>
+</html>
