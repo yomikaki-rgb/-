@@ -241,6 +241,30 @@
   table{width:100%;border-collapse:collapse;font-size:15px}
   th,td{border-bottom:1px solid #ddd;padding:7px;text-align:left}
 
+  .moraWrap{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    align-items:center;
+    gap:.18em;
+  }
+  .moraUnit{
+    display:inline-block;
+    border-radius:.22em;
+    padding:.03em .12em;
+    transition:background-color .15s ease, transform .15s ease, color .15s ease;
+  }
+  .moraUnit.active{
+    background:#ffeb3b;
+    color:#111;
+    transform:scale(1.12);
+    box-shadow:0 4px 0 rgba(0,0,0,.16);
+  }
+  .moraSep{
+    color:#777;
+    font-weight:800;
+  }
+
 @media (max-width: 600px){
   .app{
     padding:10px 8px 18px;
@@ -304,7 +328,7 @@
     <div class="buttons">
       <button class="btn listen" id="listenBtn" type="button">▶ きく</button>
       <button class="btn hint" id="hintBtn" type="button">ヒント</button>
-      <button class="btn look" id="lookBtn" type="button">見る</button>
+      <button class="btn look" id="answerBtn" type="button">こたえ</button>
       <button class="btn reset" id="resetBtn" type="button">やりなおす</button>
       <button class="btn done" id="doneBtn" type="button">できた</button>
       
@@ -434,6 +458,10 @@ let index = 0;
 let taps = 0;
 let isCorrect = false;
 let seen = false;
+let hinting = false;
+let hintActiveIndex = -1;
+let hintTimers = [];
+let hintRunId = 0;
 let history = [];
 
 const els = {
@@ -445,7 +473,7 @@ const els = {
   message: document.getElementById('message'),
   listenBtn: document.getElementById('listenBtn'),
   hintBtn: document.getElementById('hintBtn'),
-  lookBtn: document.getElementById('lookBtn'),
+  answerBtn: document.getElementById('answerBtn'),
   resetBtn: document.getElementById('resetBtn'),
   doneBtn: document.getElementById('doneBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
@@ -472,7 +500,7 @@ function init(){
 function bindEvents(){
   els.listenBtn.addEventListener('click', () => speak(current().word));
   els.hintBtn.addEventListener('click', playMoraHint);
-  els.lookBtn.addEventListener('click', () => { seen = true; renderWord(); });
+  els.answerBtn.addEventListener('click', playMoraAnswer);
   els.tapBtn.addEventListener('click', () => { taps++; isCorrect = false; setMessage('', ''); renderTaps(); playTapSound(); });
   els.resetBtn.addEventListener('click', resetCurrent);
   els.doneBtn.addEventListener('click', judge);
@@ -534,11 +562,36 @@ function renderProgress(){
 }
 
 function renderWord(){
-  if(seen || isCorrect){
-    els.wordView.textContent = current().mora.replaceAll('/', '・');
+  if(hinting){
+    renderMoraHighlight(hintActiveIndex);
+  }else if(seen || isCorrect){
+    renderMoraHighlight(-1);
   }else{
     els.wordView.innerHTML = '<span class="hintOff">ことばは まだ みえません</span>';
   }
+}
+
+function renderMoraHighlight(activeIndex){
+  const moras = current().mora.split('/').map(v => v.trim()).filter(Boolean);
+  const wrap = document.createElement('div');
+  wrap.className = 'moraWrap';
+
+  moras.forEach((mora, i) => {
+    const span = document.createElement('span');
+    span.className = 'moraUnit' + (i === activeIndex ? ' active' : '');
+    span.textContent = mora;
+    wrap.appendChild(span);
+
+    if(i < moras.length - 1){
+      const sep = document.createElement('span');
+      sep.className = 'moraSep';
+      sep.textContent = '・';
+      wrap.appendChild(sep);
+    }
+  });
+
+  els.wordView.innerHTML = '';
+  els.wordView.appendChild(wrap);
 }
 
 function renderTaps(){
@@ -551,6 +604,7 @@ function renderTaps(){
 }
 
 function resetCurrent(clearMsg=true){
+  clearHintTimers();
   taps = 0;
   isCorrect = false;
   seen = false;
@@ -625,59 +679,183 @@ function speakWithoutCancel(text, rate=0.82){
   window.speechSynthesis.speak(u);
 }
 
-function speakMoraWithClaps(text, clapCount=1, rate=0.72){
-  const clapInterval = 820;
-
-  function playClaps(){
-    for(let i = 0; i < clapCount; i++){
-      setTimeout(() => playTapSound(), i * clapInterval);
-    }
-  }
-
-  if(!('speechSynthesis' in window)){
-    playClaps();
-    return;
-  }
-
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'ja-JP';
-  u.rate = rate;
-  u.pitch = 1.05;
-
-  // 読み上げが実際に始まった瞬間に1拍目を合わせる。
-  // 長音「ー」は単独で読ませず、前の音にくっつけて読ませる。
-  u.onstart = () => playClaps();
-  window.speechSynthesis.speak(u);
-}
-
-function makeHintUnits(moras){
-  const units = [];
-  moras.forEach(mora => {
-    if(mora === 'ー' && units.length){
-      units[units.length - 1].text += 'ー';
-      units[units.length - 1].clapCount += 1;
-    }else{
-      units.push({ text:mora, clapCount:1 });
-    }
-  });
-  return units;
-}
+const HINT_AFTER_SPEECH_PAUSE_MS = 170;
+const HINT_SOKUON_MS = 560;
+const HINT_FALLBACK_MS = 900;
+const ANSWER_STEP_MS = 700;
+const ANSWER_END_PAUSE_MS = 320;
+const ANSWER_LONGTONE_AFTER_PAUSE_MS = 430;
 
 function playMoraHint(){
   const moras = current().mora.split('/').map(v => v.trim()).filter(Boolean);
   if(!moras.length) return;
 
-  if('speechSynthesis' in window) window.speechSynthesis.cancel();
-  setMessage('ヒントを きいてね', 'ok');
+  clearHintTimers();
+  const runId = ++hintRunId;
 
-  const units = makeHintUnits(moras);
-  let delay = 0;
-  units.forEach(unit => {
-    setTimeout(() => {
-      speakMoraWithClaps(unit.text, unit.clapCount, 0.72);
-    }, delay);
-    delay += unit.clapCount * 820;
-  });
+  if('speechSynthesis' in window) window.speechSynthesis.cancel();
+  setMessage('ヒントを きいて みてね', 'ok');
+
+  // ヒントでは文字・ハイライトを出さない。
+  // 画面は現在の状態のままにして、音声と手拍子だけを出す。
+  hinting = false;
+  hintActiveIndex = -1;
+  renderWord();
+
+  playHintStep(moras, 0, runId);
+}
+
+function playHintStep(moras, i, runId){
+  if(runId !== hintRunId) return;
+
+  if(i >= moras.length){
+    hintTimers.push(setTimeout(() => {
+      if(runId !== hintRunId) return;
+      setMessage('', '');
+    }, 260));
+    return;
+  }
+
+  const mora = moras[i];
+
+  // 促音は読ませると端末差が大きいので、ヒントでは拍だけ出す。
+  if(mora === 'っ' || mora === 'ッ'){
+    playTapSound();
+    hintTimers.push(setTimeout(() => playHintStep(moras, i + 1, runId), HINT_SOKUON_MS));
+    return;
+  }
+
+  if(!('speechSynthesis' in window)){
+    playTapSound();
+    hintTimers.push(setTimeout(() => playHintStep(moras, i + 1, runId), HINT_SOKUON_MS));
+    return;
+  }
+
+  let started = false;
+  let finished = false;
+
+  const u = new SpeechSynthesisUtterance(mora);
+  u.lang = 'ja-JP';
+  u.rate = 0.92;
+  u.pitch = 1.05;
+
+  const clapOnStart = () => {
+    if(started || runId !== hintRunId) return;
+    started = true;
+    playTapSound();
+  };
+
+  const goNext = () => {
+    if(finished || runId !== hintRunId) return;
+    finished = true;
+    clapOnStart();
+    const nextDelay = (mora === 'ー') ? ANSWER_LONGTONE_AFTER_PAUSE_MS : HINT_AFTER_SPEECH_PAUSE_MS;
+    hintTimers.push(setTimeout(() => playHintStep(moras, i + 1, runId), nextDelay));
+  };
+
+  u.onstart = clapOnStart;
+  u.onend = goNext;
+  u.onerror = goNext;
+  window.speechSynthesis.speak(u);
+
+  // 古い端末で onstart / onend が返らない場合の保険。
+  hintTimers.push(setTimeout(clapOnStart, 180));
+  hintTimers.push(setTimeout(goNext, HINT_FALLBACK_MS));
+}
+
+function playMoraAnswer(){
+  const moras = current().mora.split('/').map(v => v.trim()).filter(Boolean);
+  if(!moras.length) return;
+
+  clearHintTimers();
+  const runId = ++hintRunId;
+
+  if('speechSynthesis' in window) window.speechSynthesis.cancel();
+  setMessage('こたえを みてね', 'ok');
+  seen = true;
+  hinting = true;
+  hintActiveIndex = -1;
+  renderWord();
+
+  playAnswerStep(moras, 0, runId);
+}
+
+function playAnswerStep(moras, i, runId){
+  if(runId !== hintRunId) return;
+
+  if(i >= moras.length){
+    hintTimers.push(setTimeout(() => {
+      if(runId !== hintRunId) return;
+      hinting = false;
+      hintActiveIndex = -1;
+      renderWord();
+      setMessage('', '');
+    }, ANSWER_END_PAUSE_MS));
+    return;
+  }
+
+  const mora = moras[i];
+
+  const showAndClap = () => {
+    if(runId !== hintRunId) return;
+    hinting = true;
+    hintActiveIndex = i;
+    renderWord();
+    playTapSound();
+  };
+
+  // 促音は端末によって読み上げが不安定なので、文字・ハイライト・手拍子だけを出す。
+  if(mora === 'っ' || mora === 'ッ'){
+    showAndClap();
+    hintTimers.push(setTimeout(() => playAnswerStep(moras, i + 1, runId), HINT_SOKUON_MS));
+    return;
+  }
+
+  if(!('speechSynthesis' in window)){
+    showAndClap();
+    hintTimers.push(setTimeout(() => playAnswerStep(moras, i + 1, runId), HINT_SOKUON_MS));
+    return;
+  }
+
+  let started = false;
+  let finished = false;
+
+  const u = new SpeechSynthesisUtterance(mora);
+  u.lang = 'ja-JP';
+  u.rate = 0.92;
+  u.pitch = 1.05;
+
+  const startStep = () => {
+    if(started || runId !== hintRunId) return;
+    started = true;
+    showAndClap();
+  };
+
+  const goNext = () => {
+    if(finished || runId !== hintRunId) return;
+    finished = true;
+    startStep();
+    const nextDelay = (mora === 'ー') ? ANSWER_LONGTONE_AFTER_PAUSE_MS : HINT_AFTER_SPEECH_PAUSE_MS;
+    hintTimers.push(setTimeout(() => playAnswerStep(moras, i + 1, runId), nextDelay));
+  };
+
+  u.onstart = startStep;
+  u.onend = goNext;
+  u.onerror = goNext;
+  window.speechSynthesis.speak(u);
+
+  // 古い端末で onstart / onend が返らない場合の保険。
+  hintTimers.push(setTimeout(startStep, 180));
+  hintTimers.push(setTimeout(goNext, HINT_FALLBACK_MS));
+}
+
+function clearHintTimers(){
+  hintTimers.forEach(id => clearTimeout(id));
+  hintTimers = [];
+  hintRunId++;
+  if('speechSynthesis' in window) window.speechSynthesis.cancel();
+  hinting = false;
+  hintActiveIndex = -1;
 }
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -888,6 +1066,6 @@ function escapeHtml(s){
 
 
 
-<!-- version: grouped-text-input-auto-mora-20260508 -->
+<!-- version: grouped-text-input-auto-mora-hint-highlight-tts-fixed-timer-20260509 -->
 </body>
 </html>
