@@ -1445,33 +1445,17 @@ function createPiece(type, options={}){
   if(options.draggable !== false){
     wrap.draggable = false;
     wrap.addEventListener('click', () => {
-      selectPiece(type, Number.isInteger(options.sourceIndex) ? options.sourceIndex : null, wrap);
-    });
-
-    wrap.addEventListener('dblclick', e => {
-      e.preventDefault();
       if(Number.isInteger(options.sourceIndex)){
         clearPlacedPiece(options.sourceIndex);
         clearPieceSelection();
         selectedPaletteType = null;
         selectedPlacedIndex = null;
+        return;
       }
-    });
 
-    let lastTapTime = 0;
-    wrap.addEventListener('touchend', e => {
-      if(!Number.isInteger(options.sourceIndex)) return;
-      const now = Date.now();
-      if(now - lastTapTime < 360){
-        e.preventDefault();
-        clearPlacedPiece(options.sourceIndex);
-        clearPieceSelection();
-        selectedPaletteType = null;
-        selectedPlacedIndex = null;
-      }
-      lastTapTime = now;
-    }, {passive:false});
-  }
+      selectPiece(type, null, wrap);
+    });
+}
 
   return wrap;
 }
