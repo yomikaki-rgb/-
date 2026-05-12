@@ -364,6 +364,11 @@
     animation:shake .28s linear 2;
     background:#ffebee;
   }
+  .moraPiece.selectedPiece{
+    transform:scale(1.12);
+    filter:drop-shadow(0 0 6px rgba(255,140,0,.9));
+  }
+
   .moraPiece{
     position:relative;
     cursor:grab;
@@ -404,6 +409,22 @@
     50%{transform:translateX(4px)}
     75%{transform:translateX(-4px)}
     100%{transform:translateX(0)}
+  }
+
+
+  .tapControlRow{
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:nowrap;
+  }
+  .tapResetSide{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding-top:0;
   }
 
 @media (max-width: 600px){
@@ -455,13 +476,19 @@
     <div class="topbar">
       <div class="progress" id="progress"></div>
       <button class="btn setting" id="shuffleBtn" type="button">まぜる</button>
-      <button class="btn setting" id="tapCircleToggleBtn" type="button">たたく〇 表示</button>
     </div>
 
     <main class="mainarea">
       <div class="questionBox">
         <div class="hiddenWord" id="wordView"><span class="hintOff">ことばは まだ みえません</span></div>
-        <button class="tapButton" id="tapBtn" type="button">👏<br>たたく</button>
+        <div class="tapControlRow">
+          <button class="tapButton" id="tapBtn" type="button">👏<br>たたく</button>
+
+          <div class="tapResetSide">
+            <button class="btn reset" id="resetTapBtn" type="button">やりなおす</button>
+            <button class="btn setting" id="tapCircleToggleBtn" type="button">〇表示</button>
+          </div>
+        </div>
         <div class="tapDisplay" id="tapDisplay"></div>
         <div class="message" id="message"></div>
         <div class="moraCircleArea" id="moraCircleArea">
@@ -469,6 +496,7 @@
             <div class="moraLevelBtns">
               <button class="miniBtn" id="moraLevel1Btn" type="button">レベル1：ぴったり</button>
               <button class="miniBtn gray" id="moraLevel2Btn" type="button">レベル2：まぜる</button>
+              <button class="miniBtn" style="background:#e91e63;" id="resetCircleBtn" type="button">やりなおす</button>
             </div>
 
             <div class="moraCircleMain">
@@ -486,7 +514,6 @@
       <button class="btn hint" id="hintBtn" type="button">ヒント</button>
       <button class="btn look" id="moraCircleBtn" type="button">おとのまる</button>
       <button class="btn look" id="answerBtn" type="button">こたえ</button>
-      <button class="btn reset" id="resetBtn" type="button">やりなおす</button>
       <button class="btn done" id="doneBtn" type="button">できた</button>
       
     </div>
@@ -626,6 +653,8 @@ let draggedPieceType = null;
 let draggedPieceSourceIndex = null;
 let circleLevel = Number(localStorage.getItem('moraCircleLevel') || '1');
 let retryTargets = { tap:false, circle:false };
+let selectedPaletteType = null;
+let selectedPlacedIndex = null;
 let showTapCircles = localStorage.getItem('moraShowTapCircles') !== 'false';
 
 const els = {
@@ -644,7 +673,8 @@ const els = {
   paletteRow: document.getElementById('paletteRow'),
   moraLevel1Btn: document.getElementById('moraLevel1Btn'),
   moraLevel2Btn: document.getElementById('moraLevel2Btn'),
-  resetBtn: document.getElementById('resetBtn'),
+  resetTapBtn: document.getElementById('resetTapBtn'),
+  resetCircleBtn: document.getElementById('resetCircleBtn'),
   tapCircleToggleBtn: document.getElementById('tapCircleToggleBtn'),
   doneBtn: document.getElementById('doneBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
@@ -683,7 +713,8 @@ function bindEvents(){
     renderTaps();
     playTapSound();
   });
-  els.resetBtn.addEventListener('click', retryWrongParts);
+  els.resetTapBtn.addEventListener('click', resetTapOnly);
+  els.resetCircleBtn.addEventListener('click', resetCircleOnly);
   els.tapCircleToggleBtn.addEventListener('click', toggleTapCircles);
   els.doneBtn.addEventListener('click', judge);
   els.shuffleBtn.addEventListener('click', () => makeDeck(true));
@@ -791,7 +822,7 @@ function renderTaps(){
 
 function renderTapCircleToggle(){
   if(!els.tapCircleToggleBtn) return;
-  els.tapCircleToggleBtn.textContent = showTapCircles ? 'たたく〇 表示' : 'たたく〇 非表示';
+  els.tapCircleToggleBtn.textContent = '〇表示';
 }
 
 function toggleTapCircles(){
@@ -843,16 +874,52 @@ function getCircleAnswerOk(){
   return expected.every((type, idx) => placedPieces[idx] === type);
 }
 
+
+function resetTapOnly(){
+  clearHintTimers();
+  if(els.tapDisplay) els.tapDisplay.classList.remove('bad');
+  taps = 0;
+  renderTaps();
+  retryTargets.tap = false;
+  isCorrect = false;
+  setMessage('', '');
+}
+
+function resetCircleOnly(){
+  clearHintTimers();
+
+  if(moraCircleMode){
+    placedPieces = [];
+
+    if(circleLevel === 2){
+      renderLongSlotPieces();
+      const longSlot = els.slotRow.querySelector('.moraLongSlot');
+      if(longSlot) longSlot.classList.remove('bad');
+    }else{
+      Array.from(els.slotRow.children).forEach(slot => {
+        slot.innerHTML = '';
+        slot.classList.remove('bad');
+      });
+    }
+  }
+
+  clearPieceSelection();
+  selectedPaletteType = null;
+  selectedPlacedIndex = null;
+  retryTargets.circle = false;
+  isCorrect = false;
+  setMessage('', '');
+}
+
+
 function retryWrongParts(){
   clearHintTimers();
   if(els.tapDisplay) els.tapDisplay.classList.remove('bad');
 
-  if(retryTargets.tap){
-    taps = 0;
-    renderTaps();
-  }
+  taps = 0;
+  renderTaps();
 
-  if(retryTargets.circle && moraCircleMode){
+  if(moraCircleMode){
     if(circleLevel === 2){
       placedPieces = [];
       if(typeof renderLevel2Pieces === 'function'){
@@ -870,6 +937,9 @@ function retryWrongParts(){
   }
 
   retryTargets = { tap:false, circle:false };
+  clearPieceSelection();
+  selectedPaletteType = null;
+  selectedPlacedIndex = null;
   isCorrect = false;
   setMessage('', '');
 }
@@ -1278,9 +1348,10 @@ function buildMoraCircleUI(){
       placeNextPiece(type);
     });
 
-    longSlot.addEventListener('click', () => {
-      if(draggedPieceType){
-        placeNextPiece(draggedPieceType);
+    longSlot.addEventListener('click', e => {
+      if(selectedPaletteType){
+        const target = getLongSlotDropIndex(longSlot, e.clientX);
+        placeNextPieceAt(selectedPaletteType, target);
       }
     });
 
@@ -1300,8 +1371,8 @@ function buildMoraCircleUI(){
       });
 
       slot.addEventListener('click', () => {
-        if(draggedPieceType){
-          placePiece(idx, draggedPieceType);
+        if(selectedPaletteType){
+          placePiece(idx, selectedPaletteType);
         }
       });
 
@@ -1332,6 +1403,24 @@ function buildMoraCircleUI(){
   });
 }
 
+
+function clearPieceSelection(){
+  document.querySelectorAll('.moraPiece.selectedPiece').forEach(el => {
+    el.classList.remove('selectedPiece');
+  });
+}
+
+function selectPiece(type, sourceIndex, element){
+  clearPieceSelection();
+
+  selectedPaletteType = type;
+  selectedPlacedIndex = sourceIndex;
+
+  if(element){
+    element.classList.add('selectedPiece');
+  }
+}
+
 function createPiece(type, options={}){
   const wrap = document.createElement('div');
   wrap.className = 'moraPiece';
@@ -1354,18 +1443,34 @@ function createPiece(type, options={}){
   }
 
   if(options.draggable !== false){
-    wrap.draggable = true;
-    wrap.addEventListener('dragstart', e => {
-      draggedPieceType = type;
-      draggedPieceSourceIndex = Number.isInteger(options.sourceIndex) ? options.sourceIndex : null;
-      e.dataTransfer.setData('text/plain', type);
-      e.dataTransfer.setData('source-index', draggedPieceSourceIndex === null ? '' : String(draggedPieceSourceIndex));
+    wrap.draggable = false;
+    wrap.addEventListener('click', () => {
+      selectPiece(type, Number.isInteger(options.sourceIndex) ? options.sourceIndex : null, wrap);
     });
 
-    wrap.addEventListener('click', () => {
-      draggedPieceType = type;
-      draggedPieceSourceIndex = Number.isInteger(options.sourceIndex) ? options.sourceIndex : null;
+    wrap.addEventListener('dblclick', e => {
+      e.preventDefault();
+      if(Number.isInteger(options.sourceIndex)){
+        clearPlacedPiece(options.sourceIndex);
+        clearPieceSelection();
+        selectedPaletteType = null;
+        selectedPlacedIndex = null;
+      }
     });
+
+    let lastTapTime = 0;
+    wrap.addEventListener('touchend', e => {
+      if(!Number.isInteger(options.sourceIndex)) return;
+      const now = Date.now();
+      if(now - lastTapTime < 360){
+        e.preventDefault();
+        clearPlacedPiece(options.sourceIndex);
+        clearPieceSelection();
+        selectedPaletteType = null;
+        selectedPlacedIndex = null;
+      }
+      lastTapTime = now;
+    }, {passive:false});
   }
 
   return wrap;
@@ -1382,19 +1487,30 @@ function getLongSlotDropIndex(longSlot, clientX){
   return pieces.length;
 }
 
-function placeNextPiece(type){
+
+function placeNextPieceAt(type, targetIndex){
   if(!type) return;
 
-  const sourceIndex = draggedPieceSourceIndex;
-  if(sourceIndex !== null){
-    placedPieces.splice(sourceIndex, 1);
+  if(selectedPlacedIndex !== null){
+    const moved = placedPieces.splice(selectedPlacedIndex, 1)[0];
+    const insertAt = Math.max(0, Math.min(targetIndex, placedPieces.length));
+    placedPieces.splice(insertAt, 0, moved);
+  }else{
+    const insertAt = Math.max(0, Math.min(targetIndex, placedPieces.length));
+    placedPieces.splice(insertAt, 0, type);
   }
 
-  placedPieces.push(type);
-
   renderLongSlotPieces();
-  draggedPieceType = null;
-  draggedPieceSourceIndex = null;
+  clearPieceSelection();
+  selectedPaletteType = null;
+  selectedPlacedIndex = null;
+}
+
+
+function placeNextPiece(type){
+  if(!type) return;
+  placedPieces.push(type);
+  renderLongSlotPieces();
 }
 
 function renderLongSlotPieces(){
