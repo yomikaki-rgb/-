@@ -98,7 +98,7 @@
   .questionBox{
     width:min(720px,100%);
     display:grid;
-    gap:22px;
+    gap:10px;
     justify-items:center;
   }
   .hiddenWord{
@@ -117,7 +117,7 @@
   }
   .hintOff{color:#9e9e9e;font-size:clamp(22px,4vw,36px);font-weight:700;}
   .tapDisplay{
-    min-height:70px;
+    min-height:48px;
     display:flex;
     justify-content:center;
     align-items:center;
@@ -133,18 +133,26 @@
     box-shadow:0 4px 0 rgba(0,0,0,.18);
   }
   .tapButton{
-    width:min(360px,88vw);
-    height:150px;
-    border-radius:36px;
+    width:min(280px,82vw);
+    height:105px;
+    border-radius:28px;
     border:5px solid #0d7f38;
     background:#fff;
-    font-size:42px;
+    font-size:34px;
     font-weight:900;
     cursor:pointer;
     box-shadow:0 9px 0 rgba(0,0,0,.22);
     touch-action:manipulation;
   }
   .tapButton:active{transform:translateY(5px);box-shadow:0 4px 0 rgba(0,0,0,.22)}
+  .tapButton.bad{
+    border-color:#f44336;
+    background:#ffebee;
+    animation:shake .28s linear 2;
+  }
+  .tapDisplay.hiddenTaps{
+    display:none;
+  }
   .message{
     min-height:42px;
     font-size:clamp(22px,4vw,34px);
@@ -265,6 +273,139 @@
     font-weight:800;
   }
 
+  .answerSmall .moraWrap{
+    font-size:clamp(28px,5.8vw,50px);
+  }
+
+
+  .moraCircleArea{
+    display:none;
+    width:100%;
+    max-width:760px;
+    margin:0 auto;
+    padding:12px;
+    background:#fffdf7;
+    border:4px solid #ffb74d;
+    border-radius:24px;
+  }
+
+  .moraCircleLayout{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+  }
+
+  .moraLevelBtns{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    justify-content:flex-start;
+    flex-wrap:nowrap;
+    margin-bottom:0;
+    flex:0 0 auto;
+  }
+
+  .moraCircleMain{
+    flex:1 1 auto;
+  }
+  .moraLevelBtns .activeLevel{
+    outline:4px solid #ffcc80;
+    background:#0a8f35;
+  }
+
+  .slotRow,.paletteRow{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    justify-content:center;
+    align-items:center;
+    min-height:90px;
+    margin:12px 0;
+  }
+  .moraSlot{
+    width:72px;
+    height:72px;
+    border:4px dashed #bbb;
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#fafafa;
+  }
+  .tapDisplay.bad{
+    animation:shake .28s linear 2;
+    background:#ffebee;
+    border-radius:18px;
+  }
+  .moraSlot.bad{
+    border-color:#f44336;
+    animation:shake .28s linear 2;
+    background:#ffebee;
+  }
+  .slotRow.level2Long{
+    min-height:78px;
+    margin:8px 0;
+  }
+  .moraLongSlot{
+    width:min(540px,94%);
+    min-height:72px;
+    border:4px dashed #bbb;
+    border-radius:18px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:flex-start;
+    gap:10px;
+    padding:8px 12px;
+    background:#fafafa;
+  }
+  .moraLongSlot.bad{
+    border-color:#f44336;
+    animation:shake .28s linear 2;
+    background:#ffebee;
+  }
+  .moraPiece{
+    position:relative;
+    cursor:grab;
+    touch-action:none;
+  }
+  .circle-main{
+    width:58px;
+    height:58px;
+    border-radius:50%;
+    background:#ef9a57;
+    border:6px solid #f57c00;
+  }
+  .circle-small{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:#3d63b8;
+  }
+  .youon-dot{
+    position:absolute;
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    background:#ff5b5b;
+    border:5px solid #ff2d2d;
+    right:-2px;
+    bottom:-2px;
+  }
+  .pieceLabel{
+    font-size:14px;
+    font-weight:800;
+    text-align:center;
+    margin-top:4px;
+  }
+  @keyframes shake{
+    0%{transform:translateX(0)}
+    25%{transform:translateX(-4px)}
+    50%{transform:translateX(4px)}
+    75%{transform:translateX(-4px)}
+    100%{transform:translateX(0)}
+  }
+
 @media (max-width: 600px){
   .app{
     padding:10px 8px 18px;
@@ -277,10 +418,10 @@
     border-radius:18px;
   }
   .tapButton{
-    width:min(300px,92vw);
-    height:120px;
-    font-size:34px;
-    border-radius:24px;
+    width:min(240px,88vw);
+    height:88px;
+    font-size:28px;
+    border-radius:22px;
   }
   .buttons{
     gap:8px;
@@ -314,6 +455,7 @@
     <div class="topbar">
       <div class="progress" id="progress"></div>
       <button class="btn setting" id="shuffleBtn" type="button">まぜる</button>
+      <button class="btn setting" id="tapCircleToggleBtn" type="button">たたく〇 表示</button>
     </div>
 
     <main class="mainarea">
@@ -322,12 +464,27 @@
         <button class="tapButton" id="tapBtn" type="button">👏<br>たたく</button>
         <div class="tapDisplay" id="tapDisplay"></div>
         <div class="message" id="message"></div>
+        <div class="moraCircleArea" id="moraCircleArea">
+          <div class="moraCircleLayout">
+            <div class="moraLevelBtns">
+              <button class="miniBtn" id="moraLevel1Btn" type="button">レベル1：ぴったり</button>
+              <button class="miniBtn gray" id="moraLevel2Btn" type="button">レベル2：まぜる</button>
+            </div>
+
+            <div class="moraCircleMain">
+              <div class="slotRow" id="slotRow"></div>
+              <div class="paletteRow" id="paletteRow"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
 
     <div class="buttons">
       <button class="btn listen" id="listenBtn" type="button">▶ きく</button>
       <button class="btn hint" id="hintBtn" type="button">ヒント</button>
+      <button class="btn look" id="moraCircleBtn" type="button">おとのまる</button>
       <button class="btn look" id="answerBtn" type="button">こたえ</button>
       <button class="btn reset" id="resetBtn" type="button">やりなおす</button>
       <button class="btn done" id="doneBtn" type="button">できた</button>
@@ -463,6 +620,13 @@ let hintActiveIndex = -1;
 let hintTimers = [];
 let hintRunId = 0;
 let history = [];
+let moraCircleMode = false;
+let placedPieces = [];
+let draggedPieceType = null;
+let draggedPieceSourceIndex = null;
+let circleLevel = Number(localStorage.getItem('moraCircleLevel') || '1');
+let retryTargets = { tap:false, circle:false };
+let showTapCircles = localStorage.getItem('moraShowTapCircles') !== 'false';
 
 const els = {
   countLabel: document.getElementById('countLabel'),
@@ -474,7 +638,14 @@ const els = {
   listenBtn: document.getElementById('listenBtn'),
   hintBtn: document.getElementById('hintBtn'),
   answerBtn: document.getElementById('answerBtn'),
+  moraCircleBtn: document.getElementById('moraCircleBtn'),
+  moraCircleArea: document.getElementById('moraCircleArea'),
+  slotRow: document.getElementById('slotRow'),
+  paletteRow: document.getElementById('paletteRow'),
+  moraLevel1Btn: document.getElementById('moraLevel1Btn'),
+  moraLevel2Btn: document.getElementById('moraLevel2Btn'),
   resetBtn: document.getElementById('resetBtn'),
+  tapCircleToggleBtn: document.getElementById('tapCircleToggleBtn'),
   doneBtn: document.getElementById('doneBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
   typeChecks: document.getElementById('typeChecks'),
@@ -501,8 +672,19 @@ function bindEvents(){
   els.listenBtn.addEventListener('click', () => speak(current().word));
   els.hintBtn.addEventListener('click', playMoraHint);
   els.answerBtn.addEventListener('click', playMoraAnswer);
-  els.tapBtn.addEventListener('click', () => { taps++; isCorrect = false; setMessage('', ''); renderTaps(); playTapSound(); });
-  els.resetBtn.addEventListener('click', resetCurrent);
+  els.moraCircleBtn.addEventListener('click', openMoraCircleMode);
+  els.moraLevel1Btn.addEventListener('click', () => setMoraCircleLevel(1));
+  els.moraLevel2Btn.addEventListener('click', () => setMoraCircleLevel(2));
+  els.tapBtn.addEventListener('click', () => {
+    taps++;
+    isCorrect = false;
+    els.tapBtn.classList.remove('bad');
+    setMessage('', '');
+    renderTaps();
+    playTapSound();
+  });
+  els.resetBtn.addEventListener('click', retryWrongParts);
+  els.tapCircleToggleBtn.addEventListener('click', toggleTapCircles);
   els.doneBtn.addEventListener('click', judge);
   els.shuffleBtn.addEventListener('click', () => makeDeck(true));
   els.applyDataBtn.addEventListener('click', applyDataText);
@@ -547,6 +729,7 @@ function render(){
   renderProgress();
   renderWord();
   renderTaps();
+  renderTapCircleToggle();
   renderResults();
 }
 
@@ -562,6 +745,7 @@ function renderProgress(){
 }
 
 function renderWord(){
+  els.wordView.classList.toggle('answerSmall', hinting || seen || isCorrect);
   if(hinting){
     renderMoraHighlight(hintActiveIndex);
   }else if(seen || isCorrect){
@@ -596,16 +780,37 @@ function renderMoraHighlight(activeIndex){
 
 function renderTaps(){
   els.tapDisplay.innerHTML = '';
+  els.tapDisplay.classList.toggle('hiddenTaps', !showTapCircles);
+  const moras = current().mora.split('/').map(v => v.trim()).filter(Boolean);
   for(let i=0;i<taps;i++){
-    const dot = document.createElement('div');
-    dot.className = 'dot';
-    els.tapDisplay.appendChild(dot);
+    const mora = moras[i] || '';
+    const type = mora ? getMoraType(mora) : 'normal';
+    els.tapDisplay.appendChild(createPiece(type, {draggable:false}));
   }
+}
+
+function renderTapCircleToggle(){
+  if(!els.tapCircleToggleBtn) return;
+  els.tapCircleToggleBtn.textContent = showTapCircles ? 'たたく〇 表示' : 'たたく〇 非表示';
+}
+
+function toggleTapCircles(){
+  showTapCircles = !showTapCircles;
+  localStorage.setItem('moraShowTapCircles', String(showTapCircles));
+  renderTaps();
+  renderTapCircleToggle();
 }
 
 function resetCurrent(clearMsg=true){
   clearHintTimers();
+  if(els.tapDisplay) els.tapDisplay.classList.remove('bad');
+  if(els.moraCircleArea){
+    els.moraCircleArea.style.display = 'none';
+    moraCircleMode = false;
+    placedPieces = [];
+  }
   taps = 0;
+  els.tapBtn.classList.remove('bad');
   isCorrect = false;
   seen = false;
   if(clearMsg) setMessage('', '');
@@ -613,16 +818,82 @@ function resetCurrent(clearMsg=true){
   renderTaps();
 }
 
+function resetTapChallenge(){
+  clearHintTimers();
+  taps = 0;
+  els.tapBtn.classList.remove('bad');
+  isCorrect = false;
+  seen = false;
+  setMessage('', '');
+  renderWord();
+  renderTaps();
+}
+
+function getCircleAnswerOk(){
+  if(!moraCircleMode) return true;
+
+  const moras = current().mora.split('/').filter(Boolean);
+  const expected = moras.map(getMoraType);
+
+  if(circleLevel === 2){
+    if(placedPieces.length !== expected.length) return false;
+    return expected.every((type, idx) => placedPieces[idx] === type);
+  }
+
+  return expected.every((type, idx) => placedPieces[idx] === type);
+}
+
+function retryWrongParts(){
+  clearHintTimers();
+  if(els.tapDisplay) els.tapDisplay.classList.remove('bad');
+
+  if(retryTargets.tap){
+    taps = 0;
+    renderTaps();
+  }
+
+  if(retryTargets.circle && moraCircleMode){
+    if(circleLevel === 2){
+      placedPieces = [];
+      if(typeof renderLevel2Pieces === 'function'){
+        renderLevel2Pieces();
+      }else{
+        buildMoraCircleUI();
+      }
+    }else{
+      placedPieces = [];
+      Array.from(els.slotRow.children).forEach(slot => {
+        slot.innerHTML = '';
+        slot.classList.remove('bad');
+      });
+    }
+  }
+
+  retryTargets = { tap:false, circle:false };
+  isCorrect = false;
+  setMessage('', '');
+}
+
 function judge(){
   const correctCount = current().mora.split('/').filter(Boolean).length;
-  const ok = taps === correctCount;
-  history.push({word:current().word, mora:current().mora, type:current().type, taps, correctCount, ok});
-  if(ok){
+  const tapOk = taps === correctCount;
+  const circleOk = getCircleAnswerOk();
+
+  history.push({
+    word:current().word,
+    mora:current().mora,
+    type:current().type,
+    taps,
+    correctCount,
+    ok: tapOk && circleOk
+  });
+
+  if(tapOk && circleOk){
+    retryTargets = { tap:false, circle:false };
     isCorrect = true;
     seen = true;
     setMessage('せいかい！', 'ok');
     speak('せいかい');
-    showMora = true;
     renderWord();
     renderResults();
 
@@ -630,11 +901,33 @@ function judge(){
       next();
     }, 3000);
     return;
-  }else{
-    isCorrect = false;
-    setMessage('もういちど', 'ng');
-    speak('もういちど');
   }
+
+  retryTargets = { tap: !tapOk, circle: !circleOk };
+  if(!tapOk && els.tapDisplay){
+    els.tapDisplay.classList.remove('bad');
+    void els.tapDisplay.offsetWidth;
+    els.tapDisplay.classList.add('bad');
+  }
+  if(!circleOk){
+    if(circleLevel === 2){
+      const longSlot = els.slotRow.querySelector('.moraLongSlot');
+      if(longSlot){
+        longSlot.classList.remove('bad');
+        void longSlot.offsetWidth;
+        longSlot.classList.add('bad');
+      }
+    }else{
+      Array.from(els.slotRow.children).forEach(slot => {
+        slot.classList.remove('bad');
+        void slot.offsetWidth;
+        slot.classList.add('bad');
+      });
+    }
+  }
+  isCorrect = false;
+  setMessage('もういちど', 'ng');
+  speak('もういちど');
   renderWord();
   renderResults();
 }
@@ -918,6 +1211,249 @@ function playTapSound(){
   }catch(e){}
 }
 
+
+function getMoraType(mora){
+  if(mora === 'っ' || mora === 'ッ') return 'sokuon';
+  const smallKana = ['ゃ','ゅ','ょ','ャ','ュ','ョ'];
+  if([...mora].some(c => smallKana.includes(c))) return 'youon';
+  return 'normal';
+}
+
+function openMoraCircleMode(){
+  moraCircleMode = true;
+  els.moraCircleArea.style.display = 'block';
+  buildMoraCircleUI();
+}
+
+function setMoraCircleLevel(level){
+  circleLevel = level;
+  localStorage.setItem('moraCircleLevel', String(circleLevel));
+  if(moraCircleMode){
+    buildMoraCircleUI();
+  }
+}
+
+function renderMoraLevelButtons(){
+  if(!els.moraLevel1Btn || !els.moraLevel2Btn) return;
+  els.moraLevel1Btn.classList.toggle('activeLevel', circleLevel === 1);
+  els.moraLevel2Btn.classList.toggle('activeLevel', circleLevel === 2);
+  els.moraLevel1Btn.classList.toggle('gray', circleLevel !== 1);
+  els.moraLevel2Btn.classList.toggle('gray', circleLevel !== 2);
+}
+
+function buildMoraCircleUI(){
+  renderMoraLevelButtons();
+  const moras = current().mora.split('/').filter(Boolean);
+
+  placedPieces = (circleLevel === 2) ? [] : new Array(moras.length).fill(null);
+
+  els.slotRow.innerHTML = '';
+  els.slotRow.classList.toggle('level2Long', circleLevel === 2);
+
+  if(circleLevel === 2){
+    const longSlot = document.createElement('div');
+    longSlot.className = 'moraLongSlot';
+
+    longSlot.addEventListener('dragover', e => e.preventDefault());
+
+    longSlot.addEventListener('drop', e => {
+      e.preventDefault();
+      const type = e.dataTransfer.getData('text/plain');
+      const sourceIndexText = e.dataTransfer.getData('source-index');
+
+      if(sourceIndexText !== ''){
+        const from = Number(sourceIndexText);
+        if(Number.isInteger(from) && from >= 0 && from < placedPieces.length){
+          const target = getLongSlotDropIndex(longSlot, e.clientX);
+          const moved = placedPieces.splice(from, 1)[0];
+          const insertAt = Math.max(0, Math.min(target, placedPieces.length));
+          placedPieces.splice(insertAt, 0, moved);
+          renderLongSlotPieces();
+          draggedPieceType = null;
+          draggedPieceSourceIndex = null;
+          return;
+        }
+      }
+
+      placeNextPiece(type);
+    });
+
+    longSlot.addEventListener('click', () => {
+      if(draggedPieceType){
+        placeNextPiece(draggedPieceType);
+      }
+    });
+
+    els.slotRow.appendChild(longSlot);
+  }else{
+    moras.forEach((_, idx) => {
+      const slot = document.createElement('div');
+      slot.className = 'moraSlot';
+      slot.dataset.index = idx;
+
+      slot.addEventListener('dragover', e => e.preventDefault());
+
+      slot.addEventListener('drop', e => {
+        e.preventDefault();
+        const type = e.dataTransfer.getData('text/plain');
+        placePiece(idx, type);
+      });
+
+      slot.addEventListener('click', () => {
+        if(draggedPieceType){
+          placePiece(idx, draggedPieceType);
+        }
+      });
+
+      els.slotRow.appendChild(slot);
+    });
+  }
+
+  const palette = moras.map(m => getMoraType(m));
+
+  if(circleLevel === 2){
+    palette.push('normal','youon','sokuon');
+  }
+
+  els.paletteRow.innerHTML = '';
+  els.paletteRow.addEventListener('dragover', e => e.preventDefault());
+  els.paletteRow.ondrop = e => {
+    e.preventDefault();
+    if(draggedPieceSourceIndex !== null){
+      clearPlacedPiece(draggedPieceSourceIndex);
+    }
+    draggedPieceType = null;
+    draggedPieceSourceIndex = null;
+  };
+
+  shuffled(palette).forEach(type => {
+    const piece = createPiece(type);
+    els.paletteRow.appendChild(piece);
+  });
+}
+
+function createPiece(type, options={}){
+  const wrap = document.createElement('div');
+  wrap.className = 'moraPiece';
+  wrap.dataset.type = type;
+
+  if(type === 'sokuon'){
+    const small = document.createElement('div');
+    small.className = 'circle-small';
+    wrap.appendChild(small);
+  }else{
+    const main = document.createElement('div');
+    main.className = 'circle-main';
+    wrap.appendChild(main);
+
+    if(type === 'youon'){
+      const dot = document.createElement('div');
+      dot.className = 'youon-dot';
+      wrap.appendChild(dot);
+    }
+  }
+
+  if(options.draggable !== false){
+    wrap.draggable = true;
+    wrap.addEventListener('dragstart', e => {
+      draggedPieceType = type;
+      draggedPieceSourceIndex = Number.isInteger(options.sourceIndex) ? options.sourceIndex : null;
+      e.dataTransfer.setData('text/plain', type);
+      e.dataTransfer.setData('source-index', draggedPieceSourceIndex === null ? '' : String(draggedPieceSourceIndex));
+    });
+
+    wrap.addEventListener('click', () => {
+      draggedPieceType = type;
+      draggedPieceSourceIndex = Number.isInteger(options.sourceIndex) ? options.sourceIndex : null;
+    });
+  }
+
+  return wrap;
+}
+
+function getLongSlotDropIndex(longSlot, clientX){
+  const pieces = Array.from(longSlot.querySelectorAll('.moraPiece'));
+  for(let i = 0; i < pieces.length; i++){
+    const rect = pieces[i].getBoundingClientRect();
+    if(clientX < rect.left + rect.width / 2){
+      return i;
+    }
+  }
+  return pieces.length;
+}
+
+function placeNextPiece(type){
+  if(!type) return;
+
+  const sourceIndex = draggedPieceSourceIndex;
+  if(sourceIndex !== null){
+    placedPieces.splice(sourceIndex, 1);
+  }
+
+  placedPieces.push(type);
+
+  renderLongSlotPieces();
+  draggedPieceType = null;
+  draggedPieceSourceIndex = null;
+}
+
+function renderLongSlotPieces(){
+  const longSlot = els.slotRow.querySelector('.moraLongSlot');
+  if(!longSlot) return;
+
+  longSlot.innerHTML = '';
+  longSlot.classList.remove('bad');
+  placedPieces.forEach((type, idx) => {
+    if(type){
+      longSlot.appendChild(createPiece(type, {sourceIndex:idx}));
+    }
+  });
+}
+
+function placePiece(index, type){
+  if(!type) return;
+
+  const sourceIndex = draggedPieceSourceIndex;
+  const oldType = placedPieces[index];
+  placedPieces[index] = type;
+
+  if(sourceIndex !== null && sourceIndex !== index){
+    placedPieces[sourceIndex] = oldType || null;
+  }
+
+  rebuildLevel1Slots();
+  draggedPieceType = null;
+  draggedPieceSourceIndex = null;
+}
+
+function rebuildLevel1Slots(){
+  if(circleLevel === 2) return;
+  Array.from(els.slotRow.children).forEach((slot, idx) => {
+    slot.innerHTML = '';
+    slot.classList.remove('bad');
+    const type = placedPieces[idx];
+    if(type){
+      slot.appendChild(createPiece(type, {sourceIndex:idx}));
+    }
+  });
+}
+
+function clearPlacedPiece(index){
+  if(circleLevel === 2){
+    placedPieces.splice(index, 1);
+    renderLongSlotPieces();
+    return;
+  }
+
+  placedPieces[index] = null;
+  const slot = els.slotRow.children[index];
+  if(slot){
+    slot.innerHTML = '';
+    slot.classList.remove('bad');
+  }
+}
+
+
 function wordsToText(words){
   const grouped = {};
   TYPE_ORDER.forEach(type => grouped[type] = []);
@@ -1066,6 +1602,6 @@ function escapeHtml(s){
 
 
 
-<!-- version: grouped-text-input-auto-mora-hint-highlight-tts-fixed-timer-20260509 -->
+<!-- version: level2-unlimited-and-dual-judge-20260512 -->
 </body>
 </html>
