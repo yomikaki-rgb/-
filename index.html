@@ -1092,13 +1092,11 @@ canvas#shooterCanvas{
             <textarea id="managePromptInput" class="manageTextInput managePromptLarge" rows="3"></textarea>
           </div>
           <div class="manageField">
-            
-<div class="manageField">
-<label for="manageTargetInput">赤字部分（例：晴天）</label>
-<input id="manageTargetInput" class="manageTextInput manageAnswerLarge" type="text" />
-</div>
-
-<label for="manageAnswerInput">読み（例：せいてん）</label>
+            <label for="manageTargetInput">赤字部分（例：晴天）</label>
+            <input id="manageTargetInput" class="manageTextInput manageAnswerLarge" type="text" />
+          </div>
+          <div class="manageField">
+            <label for="manageAnswerInput">読み（例：せいてん）</label>
             <input id="manageAnswerInput" class="manageTextInput manageAnswerLarge" type="text" />
           </div>
         </div>
@@ -1197,9 +1195,14 @@ function escapeHTML(s){
 }
 function renderPromptHTML(item){
   const prompt = String(item?.prompt ?? "");
-  const target = String(item?.target ?? "");
-  if(!target || !prompt.includes(target)) return escapeHTML(prompt);
+  const target = String(item?.target ?? "").trim();
+
+  // 赤字部分が空欄なら、赤字化せず黒字で表示する
+  if(target === "") return escapeHTML(prompt);
+
   const i = prompt.indexOf(target);
+  if(i < 0) return escapeHTML(prompt);
+
   return escapeHTML(prompt.slice(0, i))
     + `<span class="targetRead">${escapeHTML(target)}</span>`
     + escapeHTML(prompt.slice(i + target.length));
@@ -3287,12 +3290,12 @@ function addFromManageSingleInput(){
   const rawTarget = String(manageTargetInputEl.value ?? "").trim();
   const rawAnswer = String(manageAnswerInputEl.value ?? "").trim();
 
-  if(!rawPrompt || !rawTarget || !rawAnswer){
-    if(manageNoteEl) manageNoteEl.textContent = "問題文・赤字部分・読みを入力してください";
+  if(!rawPrompt || !rawAnswer){
+    if(manageNoteEl) manageNoteEl.textContent = "問題文と読みを入力してください";
     return;
   }
 
-  if(!rawPrompt.includes(rawTarget)){
+  if(rawTarget && !rawPrompt.includes(rawTarget)){
     if(manageNoteEl) manageNoteEl.textContent = "問題文の中に赤字部分がありません";
     return;
   }
