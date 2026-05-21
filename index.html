@@ -157,12 +157,23 @@
   .msg.ok{ color:var(--ok); }
   .msg.ng{ color:var(--ng); }
   .hintLine{
-    margin-top:6px;
+    margin-top:10px;
     text-align:center;
-    color:var(--sub);
+    color:#111827;
     font-weight:900;
-    font-size:16px;
-    min-height: 1.4em;
+    font-size:28px;
+    line-height:1.45;
+    min-height: 1.6em;
+  }
+  #hintBtn{
+    background:#fee2e2;
+    color:#7f1d1d;
+    border:1px solid #fecaca;
+  }
+  #hintExampleBtn{
+    background:#dbeafe;
+    color:#1e3a8a;
+    border:1px solid #bfdbfe;
   }
 
   .underInputRow{
@@ -838,6 +849,11 @@ canvas#shooterCanvas{
     color:#dc2626;
     font-weight:900;
   }
+  .autoOkuri{
+    color:#9ca3af;
+    font-weight:900;
+    margin-left:2px;
+  }
 
   /* ===== Flashcard minimal UI ===== */
   .modeBtn{
@@ -958,7 +974,8 @@ canvas#shooterCanvas{
 </div>
 
       <div class="btns">
-        <button class="ghost" id="hintBtn">ヒント</button>
+        <button class="ghost" id="hintBtn">ヒント（ひともじ）</button>
+        <button class="ghost" id="hintExampleBtn" type="button">ヒント（れいぶん）</button>
         <!-- ★「せいかいを見る」ボタン削除 -->
         <button class="primary" id="checkBtn">できた</button>
         <button class="ghost" id="flipBtn" type="button">めくる</button>
@@ -1080,7 +1097,7 @@ canvas#shooterCanvas{
   <div class="manageCard">
     <div class="manageHeader">
       <div class="manageTitle">問題管理</div>
-      <div class="manageSub">問題文と読みを分けて、1問ずつ追加できます</div>
+      <div class="manageSub">例文と読みを分けて、1問ずつ追加できます</div>
     </div>
 
     <div class="manageBody">
@@ -1088,15 +1105,19 @@ canvas#shooterCanvas{
         <div class="manageLabel">1問ずつ追加</div>
         <div class="manageFieldGrid">
           <div class="manageField">
-            <label for="managePromptInput">問題文（例：今日は晴天で気持ちがよい。）</label>
+            <label for="managePromptInput">例文（例：今日は晴天で気持ちがよい。）</label>
             <textarea id="managePromptInput" class="manageTextInput managePromptLarge" rows="3"></textarea>
           </div>
           <div class="manageField">
-            <label for="manageTargetInput">赤字部分（例：晴天）</label>
+            <label for="manageTargetInput">赤字部分（例：晴天／学ぶ）</label>
             <input id="manageTargetInput" class="manageTextInput manageAnswerLarge" type="text" />
           </div>
           <div class="manageField">
-            <label for="manageAnswerInput">読み（例：せいてん）</label>
+            <label for="manageFullReadingInput">完全読み（例：せいてん／まなぶ）</label>
+            <input id="manageFullReadingInput" class="manageTextInput manageAnswerLarge" type="text" />
+          </div>
+          <div class="manageField">
+            <label for="manageAnswerInput">入力させる読み（例：せい／まな）</label>
             <input id="manageAnswerInput" class="manageTextInput manageAnswerLarge" type="text" />
           </div>
         </div>
@@ -1110,17 +1131,17 @@ canvas#shooterCanvas{
           <button class="ghost" id="manageCsvImportBtn" type="button">CSV読み込み（上書き）</button>
           <button class="ghost" id="manageCsvExportBtn" type="button">CSV出力</button>
         </div>
-        <div class="manageSub" style="margin-top:6px;">CSV形式：prompt,target,answer（例：ふじ山にのぼる。,山,さん）</div>
+        <div class="manageSub" style="margin-top:6px;">CSV形式：prompt,target,fullReading,inputReading（例：学校で新しいことを学ぶ。,学ぶ,まなぶ,まな）</div>
 
 <div class="manageNote" id="manageNote"></div>
       </div>
 
       <div class="manageSection">
-        <div class="manageLabel">いま入っている問題</div>
+        <div class="manageLabel">いま入っている例文</div>
 
         <div class="manageListTools">
           <button class="ghost" id="manageCheckAllBtn" type="button">全てにチェック</button>
-          <button class="danger" id="manageDeleteBtn" type="button">チェックした問題を削除</button>
+          <button class="danger" id="manageDeleteBtn" type="button">チェックした例文を削除</button>
         </div>
 
         <div class="manageList" id="manageList"></div>
@@ -1137,11 +1158,11 @@ canvas#shooterCanvas{
 <script>
 /* 🔽 置き換え：デフォルト問題（初期値） */
 const WORDS_TEXT_DEFAULT = `
-雨天 うてん
-空気 くうき
-天気 てんき
-ふじ山 さん
-学ぶ まな
+雨天 うてん う
+空気 くうき くう
+天気 てんき てん
+ふじ山 ふじさん さん
+学ぶ まなぶ まな
 左右 さゆう
 右せつ う
 正ほうけい せい
@@ -1208,6 +1229,84 @@ function renderPromptHTML(item){
     + escapeHTML(prompt.slice(i + target.length));
 }
 
+function renderTargetOnlyHTML(item){
+  const target = String(item?.target ?? "").trim();
+  const prompt = String(item?.prompt ?? "").trim();
+  const text = target || prompt || "—";
+  return `<span class="targetRead">${escapeHTML(text)}</span>`;
+}
+/* ===== 読みの自動補完（送り仮名＋一部の漢字語） =====
+   例：学ぶ＋まな → ぶ、晴天＋せい → てん
+   ※全読み欄がないため、よく使う読みを辞書で推定する。 */
+const KANJI_READING_MAP = {
+  "一":["いち","ひと"], "二":["に","ふた"], "三":["さん","み"], "四":["し","よん","よ"], "五":["ご","いつ"],
+  "六":["ろく","む"], "七":["しち","なな"], "八":["はち","や"], "九":["きゅう","く","ここの"], "十":["じゅう","とお"],
+  "上":["じょう","うえ","あ"], "下":["か","げ","した","さ"], "左":["さ","ひだり"], "右":["う","ゆう","みぎ"],
+  "大":["だい","たい","おお"], "小":["しょう","ちい","こ"], "中":["ちゅう","なか"], "学":["がく","まな"], "校":["こう"],
+  "男":["だん","おとこ"], "女":["じょ","おんな"], "子":["し","こ"], "天":["てん"], "気":["き"], "空":["くう","そら"],
+  "雨":["う","あめ"], "晴":["せい","は"], "山":["さん","やま"], "川":["せん","かわ"], "田":["でん","た"],
+  "日":["にち","じつ","ひ","か"], "月":["げつ","がつ","つき"], "火":["か","ひ"], "水":["すい","みず"], "木":["もく","ぼく","き"],
+  "金":["きん","かね"], "土":["ど","と","つち"], "曜":["よう"], "時":["じ","とき"], "間":["かん","あいだ"],
+  "目":["もく","め"], "的":["てき"], "手":["しゅ","て"], "足":["そく","あし"], "名":["めい","な"], "人":["じん","にん","ひと"],
+  "早":["そう","はや"], "先":["せん","さき"], "文":["ぶん","もん"], "字":["じ"], "赤":["せき","あか"],
+  "青":["せい","あお"], "白":["はく","しろ"], "黒":["こく","くろ"], "正":["せい","しょう","ただ"], "方":["ほう","かた"],
+  "形":["けい","かたち"], "長":["ちょう","なが"], "春":["しゅん","はる"], "力":["りょく","りき","ちから"],
+  "新":["しん","あたら"], "親":["しん","した"], "毎":["まい"], "後":["ご","こう","うし"], "前":["ぜん","まえ"],
+  "入":["にゅう","はい","い"], "出":["しゅつ","で","だ"], "立":["りつ","た"], "休":["きゅう","やす"], "夜":["や","よる"],
+  "犬":["けん","いぬ"], "村":["そん","むら"], "場":["じょう","ば"], "愛":["あい"], "南":["なん","みなみ"],
+  "極":["きょく"], "晴":["せい","は"], "食":["しょく","た"], "朝":["ちょう","あさ"], "昼":["ちゅう","ひる"],
+  "生":["せい","しょう","なま","い"], "態":["たい"], "困":["こん","こま"], "難":["なん","むずか"], "特":["とく"],
+  "異":["い","こと"], "過":["か","す"], "酷":["こく"], "圧":["あつ"], "練":["れん"], "習":["しゅう"],
+};
+function isKanaChar(ch){
+  return /^[ぁ-んァ-ンー]$/.test(ch);
+}
+function expandTargetReadings(target){
+  let candidates = [""];
+  const chars = Array.from(String(target ?? "").trim());
+  for(const ch of chars){
+    let readings = null;
+    if(isKanaChar(ch)){
+      readings = [normalize(ch)];
+    }else{
+      readings = KANJI_READING_MAP[ch] || null;
+    }
+    if(!readings) return [];
+    const next = [];
+    for(const base of candidates){
+      for(const r of readings){
+        next.push(base + normalize(r));
+      }
+    }
+    candidates = Array.from(new Set(next)).slice(0, 80);
+  }
+  return candidates.filter(Boolean);
+}
+function getAutoCompletionSuffix(item, answerNorm){
+  const ans = normalize(answerNorm);
+  if(!item || !ans) return "";
+
+  const full = normalize(item.fullReading || "");
+  if(full && full.startsWith(ans) && full.length > ans.length){
+    return full.slice(ans.length);
+  }
+
+  return "";
+}
+function answerDisplayHTML(){
+  const input = normalize(typed);
+  const item = ITEMS[order[idx]] || null;
+  const baseAnswers = (item?.answers || []).map(a => normalize(a)).filter(Boolean);
+  let html = escapeHTML(input);
+  if(input && baseAnswers.includes(input)){
+    const suffix = getAutoCompletionSuffix(item, input);
+    if(suffix){
+      html += `<span class="autoOkuri">${escapeHTML(suffix)}</span>`;
+    }
+  }
+  return html;
+}
+
 function parseWordsText(text){
   const lines = String(text ?? "").split(/\r?\n/);
   const items = [];
@@ -1221,9 +1320,25 @@ function parseWordsText(text){
     const parsed = parsePromptTarget(parts[0]);
     const prompt = parsed.prompt;
     const target = parsed.target;
-    const answers = parts.slice(1); // ★複数読みは「別解」として保持
 
-    items.push({ prompt, target, answers });
+    let fullReading = "";
+    let inputReading = "";
+
+    if(parts.length >= 3){
+      fullReading = parts[1];
+      inputReading = parts[2];
+    }else{
+      fullReading = parts[1];
+      inputReading = parts[1];
+    }
+
+    items.push({
+      prompt,
+      target,
+      fullReading,
+      inputReading,
+      answers:[inputReading]
+    });
   }
   return items;
 }
@@ -1530,6 +1645,7 @@ const progressBadge = document.getElementById("progressBadge");
 const scoreBadge = document.getElementById("scoreBadge");
 
 const hintBtn = document.getElementById("hintBtn");
+const hintExampleBtn = document.getElementById("hintExampleBtn");
 /* ★showAnswerBtn削除 */
 const checkBtn = document.getElementById("checkBtn");
 const nextBtn = document.getElementById("nextBtn");
@@ -1704,7 +1820,8 @@ function applyModeUI(){
   if(underRowEl) underRowEl.style.display = isFlash ? "none" : "";
   if(nativeInputEl) nativeInputEl.style.display = isFlash ? "none" : "";
 
-  hintBtn.style.display = isFlash ? "none" : "";
+  hintBtn.style.display = "";
+  if(hintExampleBtn) hintExampleBtn.style.display = "";
   checkBtn.style.display = isFlash ? "none" : "";
 
   flashBar.style.display = "flex";
@@ -1794,6 +1911,8 @@ function showFlashFace(){
     markLearningBtn.disabled = true;
     markMasteredBtn.disabled = true;
     shuffleFlashBtn.disabled = true;
+    hintBtn.disabled = true;
+    if(hintExampleBtn) hintExampleBtn.disabled = true;
     if(studyMode !== "flash") updateBadges();
     updateFlashToggle();
     return;
@@ -1804,11 +1923,14 @@ function showFlashFace(){
   markLearningBtn.disabled = false;
   markMasteredBtn.disabled = false;
   shuffleFlashBtn.disabled = false;
+  hintBtn.disabled = false;
+  if(hintExampleBtn) hintExampleBtn.disabled = false;
 
   promptEl.innerHTML = renderPromptHTML(item);
   msgEl.textContent = "";
   msgEl.className = "msg";
   hintLineEl.textContent = "";
+  hintLineEl.className = "hintLine";
   answerView.className = "answer";
 
   if(!flashIsBack){
@@ -1877,6 +1999,7 @@ function loadQuestion(){
     nextBtn.disabled = true;
     checkBtn.disabled = true;
     hintBtn.disabled = true;
+    if(hintExampleBtn) hintExampleBtn.disabled = true;
     return;
   }
   typed = "";
@@ -1890,15 +2013,19 @@ function loadQuestion(){
   wrongLoggedThisQ = false;
 
   const item = ITEMS[order[idx]] || {prompt:"—",answers:[""]};
-  promptEl.innerHTML = renderPromptHTML(item);
+  // 通常は赤字部分だけを出題。例文は「ヒント（れいぶん）」で表示する。
+  promptEl.innerHTML = renderTargetOnlyHTML(item);
 
   msgEl.textContent = "";
   msgEl.className = "msg";
   hintLineEl.textContent = "";
+  hintLineEl.className = "hintLine";
   answerView.className = "answer";
 
   nextBtn.disabled = true;
   checkBtn.disabled = false;
+  hintBtn.disabled = false;
+  if(hintExampleBtn) hintExampleBtn.disabled = false;
 
   if(studyMode !== "flash") updateBadges();
   renderAnswer();
@@ -1916,7 +2043,7 @@ function updateBadges(){
   }
 }
 function renderAnswer(){
-  answerView.textContent = normalize(typed);
+  answerView.innerHTML = answerDisplayHTML();
   if(nativeInput) nativeInput.value = normalize(typed);
 }
 function isCorrectFlexible(inputNorm, ansNorm){
@@ -1926,7 +2053,13 @@ function isCorrectFlexible(inputNorm, ansNorm){
 
 function currentAnswers(){
   const item = ITEMS[order[idx]] || {answers:[""]};
-  return (item.answers || []).map(a => normalize(a));
+  const base = (item.answers || []).map(a => normalize(a)).filter(Boolean);
+  const all = [...base];
+  base.forEach(a => {
+    const suffix = getAutoCompletionSuffix(item, a);
+    if(suffix) all.push(a + suffix); // 「まな」→「まなぶ」、「せい」→「せいてん」も正解にする
+  });
+  return Array.from(new Set(all));
 }
 
 /* ★30点くす玉（しかけ得点で判定） */
@@ -2063,6 +2196,7 @@ function next(){
     msgEl.textContent = `おつかれさま！ せいかいは ${score} こ`;
     msgEl.className = "msg ok";
     hintLineEl.textContent = "";
+    hintLineEl.className = "hintLine";
     answerView.textContent = "";
     nextBtn.disabled = true;
     checkBtn.disabled = true;
@@ -2079,6 +2213,7 @@ function showHint(){
   }
 
   const ans = currentAnswers()[0] ?? "";
+  hintLineEl.className = "hintLine hintOne";
   if(!ans){
     hintLineEl.textContent = "ヒントがありません";
     return;
@@ -2086,6 +2221,20 @@ function showHint(){
   hintCount++;
   const n = Math.min(hintCount, ans.length);
   hintLineEl.textContent = `ヒント： ${ans.slice(0, n)}…`;
+}
+function showExampleHint(){
+  hintedThisQ = true;
+  if(!hintLoggedThisQ){
+    logHintOnce();
+    hintLoggedThisQ = true;
+  }
+  const item = ITEMS[order[idx]] || null;
+  hintLineEl.className = "hintLine hintExample";
+  if(!item || !item.prompt){
+    hintLineEl.textContent = "れいぶんがありません";
+    return;
+  }
+  hintLineEl.innerHTML = "れいぶん：" + renderPromptHTML(item);
 }
 
 /* ========= パネル表示切替 ========= */
@@ -2495,6 +2644,9 @@ function revealTreasureAndHoldResult(){
 }
 /* ========= イベント ========= */
 hintBtn.addEventListener("click", showHint);
+if(hintExampleBtn){
+  hintExampleBtn.addEventListener("click", showExampleHint);
+}
 /* ★showAnswerBtn削除：イベントも削除 */
 checkBtn.addEventListener("click", check);
 nextBtn.addEventListener("click", next);
@@ -3080,23 +3232,19 @@ function parseCsvTextToItems(csvText){
 
   const firstRaw = parseCsvLine(lines[0]);
   const first = firstRaw.map(x=>String(x ?? "").toLowerCase());
-  const headerish = first.includes("prompt") || first.includes("kanji") || first.includes("answer") || first.includes("target") || first.includes("漢字") || first.includes("よみ") || first.includes("赤字") || first.includes("対象");
+  const headerish = first.includes("prompt") || first.includes("target") || first.includes("fullreading") || first.includes("inputreading") || first.includes("answer") || first.includes("漢字") || first.includes("よみ") || first.includes("赤字");
   const startAt = headerish ? 1 : 0;
 
   let promptIdx = 0;
   let targetIdx = -1;
-  let answerIdxs = [];
+  let fullIdx = -1;
+  let inputIdx = -1;
+
   if(headerish){
-    promptIdx = Math.max(first.findIndex(x => x === "prompt" || x === "kanji" || x === "漢字" || x === "表示語" || x === "問題"), 0);
+    promptIdx = Math.max(first.findIndex(x => x === "prompt" || x === "例文" || x === "問題" || x === "問題文"), 0);
     targetIdx = first.findIndex(x => x === "target" || x === "赤字" || x === "対象" || x === "赤字部分");
-    answerIdxs = first
-      .map((x,i)=>({x,i}))
-      .filter(o => o.x === "answer" || o.x.startsWith("answer") || o.x === "よみ" || o.x === "読み" || o.x.startsWith("answer"))
-      .map(o => o.i);
-    if(answerIdxs.length===0){
-      const skip = new Set([promptIdx, targetIdx]);
-      answerIdxs = first.map((_,i)=>i).filter(i => !skip.has(i));
-    }
+    fullIdx = first.findIndex(x => x === "fullreading" || x === "full_reading" || x === "完全読み" || x === "全読み");
+    inputIdx = first.findIndex(x => x === "inputreading" || x === "input_reading" || x === "answer" || x === "answer1" || x === "入力させる読み" || x === "入力読み" || x === "よみ" || x === "読み");
   }
 
   const items = [];
@@ -3106,36 +3254,45 @@ function parseCsvTextToItems(csvText){
 
     let prompt = "";
     let target = "";
-    let answers = [];
+    let fullReading = "";
+    let inputReading = "";
 
     if(headerish){
       prompt = String(cols[promptIdx] ?? "").trim();
       target = targetIdx >= 0 ? String(cols[targetIdx] ?? "").trim() : "";
-      answers = answerIdxs.map(ai => String(cols[ai] ?? "").trim()).filter(Boolean);
+      fullReading = fullIdx >= 0 ? String(cols[fullIdx] ?? "").trim() : "";
+      inputReading = inputIdx >= 0 ? String(cols[inputIdx] ?? "").trim() : "";
+    }else if(cols.length >= 4){
+      prompt = String(cols[0] ?? "").trim();
+      target = String(cols[1] ?? "").trim();
+      fullReading = String(cols[2] ?? "").trim();
+      inputReading = String(cols[3] ?? "").trim();
     }else if(cols.length >= 3 && String(cols[0] ?? "").includes(String(cols[1] ?? "").trim())){
       prompt = String(cols[0] ?? "").trim();
       target = String(cols[1] ?? "").trim();
-      answers = cols.slice(2).map(c => String(c ?? "").trim()).filter(Boolean);
+      fullReading = String(cols[2] ?? "").trim();
+      inputReading = fullReading;
     }else{
       prompt = String(cols[0] ?? "").trim();
-      answers = cols.slice(1).map(c => String(c ?? "").trim()).filter(Boolean);
+      fullReading = String(cols[1] ?? "").trim();
+      inputReading = fullReading;
     }
 
-    if(!prompt || answers.length===0) continue;
+    if(!prompt || !fullReading || !inputReading) continue;
     const parsed = parsePromptTarget(prompt, target);
-    items.push({prompt: parsed.prompt, target: parsed.target, answers});
+    items.push({
+      prompt: parsed.prompt,
+      target: parsed.target,
+      fullReading,
+      inputReading,
+      answers:[inputReading]
+    });
   }
   return items;
 }
 function itemsToCsvText(items){
   const rows = [];
-  let maxA = 1;
-  for(const it of (items||[])){
-    const n = (it.answers||[]).length;
-    if(n > maxA) maxA = n;
-  }
-  const header = ["prompt", "target", ...Array.from({length:maxA}, (_,i)=>`answer${i+1}`)];
-  rows.push(header);
+  rows.push(["prompt", "target", "fullReading", "inputReading"]);
 
   const esc = (v) => {
     const s = String(v ?? "");
@@ -3144,12 +3301,12 @@ function itemsToCsvText(items){
   };
 
   for(const it of (items||[])){
-    const p = String(it.prompt ?? "");
-    const t = String(it.target ?? "");
-    const a = (it.answers||[]).map(x=>String(x ?? ""));
-    const row = [p, t, ...a];
-    while(row.length < 2 + maxA) row.push("");
-    rows.push(row);
+    rows.push([
+      String(it.prompt ?? ""),
+      String(it.target ?? ""),
+      String(it.fullReading ?? ""),
+      String(it.inputReading ?? ((it.answers || [""])[0] || ""))
+    ]);
   }
   return rows.map(r => r.map(esc).join(",")).join("\n");
 }
@@ -3178,7 +3335,7 @@ function importCsvIntoItems(){
     const text = String(reader.result ?? "");
     const items = parseCsvTextToItems(text);
     if(!items || items.length===0){
-      if(manageNoteEl) manageNoteEl.textContent = "CSVから問題を読み込めませんでした（形式：prompt,target,answer）";
+      if(manageNoteEl) manageNoteEl.textContent = "CSVから問題を読み込めませんでした（形式：prompt,target,fullReading,inputReading）";
       return;
     }
     ITEMS = items;
@@ -3205,6 +3362,7 @@ const manageInputEl = document.getElementById("manageInput");
 const managePromptInputEl = document.getElementById("managePromptInput");
 const manageAnswerInputEl = document.getElementById("manageAnswerInput");
 const manageTargetInputEl = document.getElementById("manageTargetInput");
+const manageFullReadingInputEl = document.getElementById("manageFullReadingInput");
 const manageSingleAddBtn = document.getElementById("manageSingleAddBtn");
 const manageSingleClearBtn = document.getElementById("manageSingleClearBtn");
 const manageAddBtn = document.getElementById("manageAddBtn");
@@ -3262,7 +3420,7 @@ function renderManageList(){
 
     const a = document.createElement("div");
     a.className = "manageRowAns";
-    a.textContent = "赤字： " + (it.target || "指定なし") + "　よみ： " + (it.answers || []).join(" / ");
+    a.textContent = "赤字： " + (it.target || "指定なし") + "　完全読み： " + (it.fullReading || "") + "　入力： " + (it.inputReading || (it.answers || []).join(" / "));
 
     main.appendChild(p);
     main.appendChild(a);
@@ -3288,23 +3446,38 @@ function addFromManageSingleInput(){
 
   const rawPrompt = String(managePromptInputEl.value ?? "").trim();
   const rawTarget = String(manageTargetInputEl.value ?? "").trim();
-  const rawAnswer = String(manageAnswerInputEl.value ?? "").trim();
+  const rawFullReading = String(manageFullReadingInputEl?.value ?? "").trim();
+  const rawInputReading = String(manageAnswerInputEl.value ?? "").trim();
 
-  if(!rawPrompt || !rawAnswer){
-    if(manageNoteEl) manageNoteEl.textContent = "問題文と読みを入力してください";
+  if(!rawPrompt || !rawFullReading || !rawInputReading){
+    if(manageNoteEl) manageNoteEl.textContent = "例文・完全読み・入力させる読みを入力してください";
     return;
   }
 
   if(rawTarget && !rawPrompt.includes(rawTarget)){
-    if(manageNoteEl) manageNoteEl.textContent = "問題文の中に赤字部分がありません";
+    if(manageNoteEl) manageNoteEl.textContent = "例文の中に赤字部分がありません";
     return;
   }
 
-  const newItems = [{ prompt: rawPrompt, target: rawTarget, answers: [rawAnswer] }];
+  const fullNorm = normalize(rawFullReading);
+  const inputNorm = normalize(rawInputReading);
+  if(fullNorm && inputNorm && !fullNorm.startsWith(inputNorm)){
+    if(manageNoteEl) manageNoteEl.textContent = "完全読みは、入力させる読みから始まる形にしてください";
+    return;
+  }
+
+  const newItems = [{
+    prompt: rawPrompt,
+    target: rawTarget,
+    fullReading: rawFullReading,
+    inputReading: rawInputReading,
+    answers: [rawInputReading]
+  }];
   appendManageItems(newItems, true);
 
   managePromptInputEl.value = "";
   manageTargetInputEl.value = "";
+  if(manageFullReadingInputEl) manageFullReadingInputEl.value = "";
   manageAnswerInputEl.value = "";
 }
 
@@ -3355,8 +3528,9 @@ function showAddedPreview(addedItems){
   const lines = (addedItems || []).map(it=>{
     const p = String(it.prompt ?? "");
     const t = String(it.target ?? "");
-    const a = (it.answers || []).join(" / ");
-    return `${p}　赤字：${t || "指定なし"}　→　${a}`;
+    const full = String(it.fullReading ?? "");
+    const input = String(it.inputReading ?? ((it.answers || []).join(" / ")));
+    return `${p}　赤字：${t || "指定なし"}　完全読み：${full}　入力：${input}`;
   }).join("\n");
 
   box.textContent = lines;
@@ -3423,6 +3597,7 @@ if(manageSingleClearBtn){
   manageSingleClearBtn.addEventListener("click", ()=>{
     if(managePromptInputEl) managePromptInputEl.value = "";
     if(manageTargetInputEl) manageTargetInputEl.value = "";
+    if(manageFullReadingInputEl) manageFullReadingInputEl.value = "";
     if(manageAnswerInputEl) manageAnswerInputEl.value = "";
     if(manageNoteEl) manageNoteEl.textContent = "";
   });
