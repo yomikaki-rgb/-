@@ -1117,7 +1117,7 @@ canvas#shooterCanvas{
             <input id="manageFullReadingInput" class="manageTextInput manageAnswerLarge" type="text" />
           </div>
           <div class="manageField">
-            <label for="manageAnswerInput">入力させる読み（例：せい／まな）</label>
+            <label for="manageAnswerInput">入力させる読み（空欄なら完全読みと同じ／例：せい・まな）</label>
             <input id="manageAnswerInput" class="manageTextInput manageAnswerLarge" type="text" />
           </div>
         </div>
@@ -1131,7 +1131,7 @@ canvas#shooterCanvas{
           <button class="ghost" id="manageCsvImportBtn" type="button">CSV読み込み（上書き）</button>
           <button class="ghost" id="manageCsvExportBtn" type="button">CSV出力</button>
         </div>
-        <div class="manageSub" style="margin-top:6px;">CSV形式：prompt,target,fullReading,inputReading（例：学校で新しいことを学ぶ。,学ぶ,まなぶ,まな）</div>
+        <div class="manageSub" style="margin-top:6px;">CSV形式：prompt,target,fullReading,inputReading（4列目は省略可。例：学校で新しいことを学ぶ。,学ぶ,まなぶ,まな）</div>
 
 <div class="manageNote" id="manageNote"></div>
       </div>
@@ -3449,8 +3449,13 @@ function addFromManageSingleInput(){
   const rawFullReading = String(manageFullReadingInputEl?.value ?? "").trim();
   const rawInputReading = String(manageAnswerInputEl.value ?? "").trim();
 
-  if(!rawPrompt || !rawFullReading || !rawInputReading){
-    if(manageNoteEl) manageNoteEl.textContent = "例文・完全読み・入力させる読みを入力してください";
+  if(!rawPrompt || !rawFullReading){
+    if(manageNoteEl) manageNoteEl.textContent = "例文・完全読みを入力してください";
+    return;
+  }
+
+  if(rawInputReading && !rawFullReading){
+    if(manageNoteEl) manageNoteEl.textContent = "入力させる読みだけでは追加できません。完全読みを入力してください";
     return;
   }
 
@@ -3459,8 +3464,9 @@ function addFromManageSingleInput(){
     return;
   }
 
+  const finalInputReading = rawInputReading || rawFullReading;
   const fullNorm = normalize(rawFullReading);
-  const inputNorm = normalize(rawInputReading);
+  const inputNorm = normalize(finalInputReading);
   if(fullNorm && inputNorm && !fullNorm.startsWith(inputNorm)){
     if(manageNoteEl) manageNoteEl.textContent = "完全読みは、入力させる読みから始まる形にしてください";
     return;
@@ -3470,8 +3476,8 @@ function addFromManageSingleInput(){
     prompt: rawPrompt,
     target: rawTarget,
     fullReading: rawFullReading,
-    inputReading: rawInputReading,
-    answers: [rawInputReading]
+    inputReading: finalInputReading,
+    answers: [finalInputReading]
   }];
   appendManageItems(newItems, true);
 
