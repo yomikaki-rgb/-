@@ -3087,6 +3087,8 @@ function buildRubyHTML(mixed, kana) {
     "歴史の展示館": "<ruby>歴史<rt>れきし</rt></ruby>の<ruby>展示館<rt>てんじかん</rt></ruby>",
     "外国の大使館": "<ruby>外国<rt>がいこく</rt></ruby>の<ruby>大使館<rt>たいしかん</rt></ruby>",
     /* 指定箇所の分割表示用固定ルビ（対象熟語をルビなしにするため、前後だけでbuildRubyHTMLに渡される） */
+    "今年に入って、": "<ruby>今年<rt>ことし</rt></ruby>に<ruby>入<rt>はい</rt></ruby>って、",
+    "事故が次々に発生している。": "<ruby>事故<rt>じこ</rt></ruby>が<ruby>次々<rt>つぎつぎ</rt></ruby>に<ruby>発生<rt>はっせい</rt></ruby>している。",
     "物語の中で": "<ruby>物語<rt>ものがたり</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で",
     "地面の中からとれる": "<ruby>地面<rt>じめん</rt></ruby>の<ruby>中<rt>なか</rt></ruby>からとれる",
     "は、いろいろな物の材料になる。": "は、いろいろな<ruby>物<rt>もの</rt></ruby>の<ruby>材料<rt>ざいりょう</rt></ruby>になる。",
@@ -3680,6 +3682,26 @@ function getTargetReadingInfo(q) {
   const explicit = (q["読み"] ?? q["よみ"] ?? q["読み方"] ?? q["熟語読み"] ?? "").toString().trim();
   const idx = mixed.indexOf(target);
   if (!target || idx < 0) return { reading: explicit, start: -1, end: -1, before: kana, after: "" };
+
+  // 対象語が後続の熟語と連結している場合の読み上げ・ハイライト位置固定。
+  // 例：鉄道事故 → 対象語「鉄道」だけを無音化し、「事故」から読み上げを再開する。
+  const TARGET_READING_EXCEPT = {
+    "今年に入って、鉄道事故が次々に発生している。||鉄道": "てつどう"
+  };
+  const fixedTargetReading = TARGET_READING_EXCEPT[`${mixed}||${target}`];
+  if (fixedTargetReading) {
+    const kidx = kana.indexOf(normalizeKanaForAlign(fixedTargetReading));
+    if (kidx >= 0) {
+      const kend = kidx + normalizeKanaForAlign(fixedTargetReading).length;
+      return {
+        reading: fixedTargetReading,
+        start: kidx,
+        end: kend,
+        before: kana.slice(0, kidx),
+        after: kana.slice(kend)
+      };
+    }
+  }
 
   const aligned = alignMixedToKana(mixed, kana);
   if (!aligned) {
