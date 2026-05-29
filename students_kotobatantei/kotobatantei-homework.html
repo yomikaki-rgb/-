@@ -446,6 +446,15 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
   .homeworkSaveNotice { font-size:13px; color:var(--muted); }
   .choiceUsedBadge { display:none; font-size:13px; color:var(--muted); margin-top:6px; }
   .choiceUsedBadge.show { display:block; }
+  .homeworkProgressBox {
+    margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  .homeworkProgressCount {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:82px; padding:8px 12px; border-radius:999px;
+    background:#fff3a6; border:1px solid #e5d36a; font-size:18px; font-weight:800;
+  }
+  .homeworkResumeNotice { font-size:14px; font-weight:700; color:#178a3b; }
 }
 @media print {
   .homeworkTop, .homeworkField, .homeworkSaveNotice, .choiceUsedBadge { display:none !important; }
@@ -521,6 +530,99 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
   .submitNote { margin-top:6px !important; font-size:13px !important; color:#555 !important; }
 }
 @media print { #submitFixedBar { display:none !important; } }
+
+
+/* === FINAL TWO-BUTTON SUBMIT BAR LAYOUT === */
+@media screen {
+  #submitFixedBar {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    padding: 14px 18px 16px !important;
+  }
+
+  #submitFixedBar .submitButtonGrid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+    align-items: start !important;
+    width: min(1120px, 100%) !important;
+    margin: 0 auto !important;
+  }
+
+  #submitFixedBar .submitColumn {
+    min-width: 0 !important;
+  }
+
+  #submitFixedBar .submitActionButton,
+  #submitFixedBar #btnSubmitHomework,
+  #submitFixedBar #btnSaveForLater {
+    display: flex !important;
+    width: 100% !important;
+    height: 88px !important;
+    min-height: 88px !important;
+    box-sizing: border-box !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 12px 14px !important;
+    border-radius: 18px !important;
+    font-size: 26px !important;
+    font-weight: 900 !important;
+    line-height: 1.15 !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+
+  #submitFixedBar #btnSaveForLater {
+    background: #2d6cdf !important;
+    border: 2px solid #2d6cdf !important;
+    color: #fff !important;
+    box-shadow: 0 6px 0 #1b4fa8 !important;
+  }
+
+  #submitFixedBar #btnSubmitHomework {
+    background: #178a3b !important;
+    border: 2px solid #178a3b !important;
+    color: #fff !important;
+    box-shadow: 0 6px 0 #0f6429 !important;
+  }
+
+  #submitFixedBar #btnSubmitHomework rt {
+    color: #fff !important;
+    font-size: .55em !important;
+  }
+
+  #submitFixedBar .saveLaterNote {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-top: 10px !important;
+    text-align: center !important;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+    color: #333 !important;
+  }
+
+  #quiz {
+    padding-bottom: 150px !important;
+  }
+}
+
+@media screen and (max-width: 560px) {
+  #submitFixedBar .submitActionButton,
+  #submitFixedBar #btnSubmitHomework,
+  #submitFixedBar #btnSaveForLater {
+    height: 76px !important;
+    min-height: 76px !important;
+    font-size: 20px !important;
+  }
+
+  #submitFixedBar .saveLaterNote {
+    font-size: 12px !important;
+  }
+
+  #quiz {
+    padding-bottom: 140px !important;
+  }
+}
 
 </style>
 </head>
@@ -672,13 +774,24 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
           </div>
           <div class="homeworkSaveNotice">最後に画面下の「先生に提出する」を押すと、先生のGoogleフォームに送信されます。CSV保存もできます。</div>
         </div>
+        <div class="homeworkProgressBox">
+          <div id="homeworkProgress" class="homeworkProgressCount">0/0問</div>
+          <div id="homeworkResumeNotice" class="homeworkResumeNotice" style="display:none;">つづきから再開します</div>
+        </div>
       </div>
       <div id="submitStatus" class="notice noPrint" style="display:none; margin:10px 0;"></div>
       <div id="quizCards" class="grid"></div>
 
       <div id="submitFixedBar" class="noPrint">
-        <button class="btn primary" id="btnSubmitHomework" type="button">📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する</button>
-        <div class="submitNote">全部入力したら、ここを押してください。</div>
+        <div class="submitButtonGrid">
+          <div class="submitColumn">
+            <button class="btn submitActionButton saveLaterButton" id="btnSaveForLater" type="button">💾 今日はここまで</button>
+            <div class="submitNote saveLaterNote">とちゅうでやめるときは「今日はここまで」をおしてください。</div>
+          </div>
+          <div class="submitColumn">
+            <button class="btn primary submitActionButton submitHomeworkButton" id="btnSubmitHomework" type="button">📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する</button>
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -819,6 +932,7 @@ const state = {
   mode: "seq", // seq | pick
   selectedIds: new Set(),
   maxSelect: 5,
+  homeworkCurrentIndex: 0,
   settings: {
     showAnswer: true,
     ruby: true,
@@ -4082,6 +4196,165 @@ function saveHomeworkCsv() {
 }
 
 
+const HOMEWORK_STORAGE_PREFIX = "kotoba_tantei_homework_v1::";
+
+function getHomeworkStorageSource() {
+  const sp = new URLSearchParams(location.search);
+  const setName = (sp.get("set") || "").trim();
+  const idsParam = (sp.get("ids") || "").trim();
+  const jsonParam = (sp.get("json") || sp.get("csv") || "").trim();
+  if (setName) return `set:${normalizeJsonFileName(setName)}`;
+  if (jsonParam) return `file:${jsonParam}`;
+  if (idsParam) return `ids:${idsParam}`;
+  return `url:${location.pathname}${location.search}`;
+}
+
+function getHomeworkStorageKey() {
+  return HOMEWORK_STORAGE_PREFIX + getHomeworkStorageSource();
+}
+
+function getSelectedChoiceValue(idx) {
+  const selected = document.querySelector(`input[name="q_${idx}"]:checked`);
+  return selected ? selected.value : "";
+}
+
+function updateHomeworkProgress() {
+  const picked = getSelectedQuestions();
+  const total = picked.length;
+  let done = 0;
+  picked.forEach((q, idx) => {
+    const reading = ((document.getElementById(`readingInput_${idx}`) || {}).value || "").trim();
+    const meaning = ((document.getElementById(`meaningInput_${idx}`) || {}).value || "").trim();
+    const choice = getSelectedChoiceValue(idx);
+    if (reading || meaning || choice) done++;
+  });
+  const box = document.getElementById("homeworkProgress");
+  if (box) box.textContent = `${done}/${total}問`;
+  return { done, total };
+}
+
+function buildHomeworkSaveData() {
+  const picked = getSelectedQuestions();
+  const answers = {};
+  picked.forEach((q, idx) => {
+    const qid = (q[COL.id] ?? "").toString();
+    const panel = document.getElementById(`choices_${idx}`);
+    answers[qid] = {
+      reading: ((document.getElementById(`readingInput_${idx}`) || {}).value || ""),
+      meaning: ((document.getElementById(`meaningInput_${idx}`) || {}).value || ""),
+      choice: getSelectedChoiceValue(idx),
+      choiceUsed: panel ? panel.getAttribute("data-used") === "1" : false
+    };
+  });
+  return {
+    version: 1,
+    savedAt: new Date().toISOString(),
+    storageSource: getHomeworkStorageSource(),
+    questionIds: picked.map(q => (q[COL.id] ?? "").toString()),
+    studentName: ((document.getElementById("studentName") || {}).value || ""),
+    currentIndex: Number(state.homeworkCurrentIndex) || 0,
+    answers
+  };
+}
+
+function saveHomeworkProgress(idx) {
+  if (Number.isFinite(Number(idx))) state.homeworkCurrentIndex = Number(idx);
+  try {
+    localStorage.setItem(getHomeworkStorageKey(), JSON.stringify(buildHomeworkSaveData()));
+  } catch (err) {
+    console.warn("宿題データを保存できませんでした。", err);
+  }
+  updateHomeworkProgress();
+}
+
+function readHomeworkProgress() {
+  try {
+    const raw = localStorage.getItem(getHomeworkStorageKey());
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (err) {
+    console.warn("宿題データを読み込めませんでした。", err);
+    return null;
+  }
+}
+
+function restoreHomeworkProgressIfAny() {
+  const data = readHomeworkProgress();
+  if (!data || !data.answers) {
+    updateHomeworkProgress();
+    return false;
+  }
+  const picked = getSelectedQuestions();
+  const currentIds = picked.map(q => (q[COL.id] ?? "").toString());
+  const savedIds = Array.isArray(data.questionIds) ? data.questionIds : [];
+  if (savedIds.length && currentIds.join("|") !== savedIds.join("|")) {
+    updateHomeworkProgress();
+    return false;
+  }
+
+  const nameInput = document.getElementById("studentName");
+  if (nameInput && typeof data.studentName === "string") nameInput.value = data.studentName;
+
+  picked.forEach((q, idx) => {
+    const qid = (q[COL.id] ?? "").toString();
+    const a = data.answers[qid];
+    if (!a) return;
+    const reading = document.getElementById(`readingInput_${idx}`);
+    const meaning = document.getElementById(`meaningInput_${idx}`);
+    if (reading && typeof a.reading === "string") reading.value = a.reading;
+    if (meaning && typeof a.meaning === "string") meaning.value = a.meaning;
+    if (a.choice) {
+      const radio = document.querySelector(`input[name="q_${idx}"][value="${CSS.escape(String(a.choice))}"]`);
+      if (radio) radio.checked = true;
+      const fb = document.getElementById(`fb_${idx}`);
+      if (fb) {
+        fb.textContent = "えらびました";
+        fb.className = "choiceFeedback";
+      }
+    }
+    const panel = document.getElementById(`choices_${idx}`);
+    const used = document.getElementById(`choiceUsed_${idx}`);
+    if (panel && a.choiceUsed) panel.setAttribute("data-used", "1");
+    if (used && a.choiceUsed) used.classList.add("show");
+  });
+
+  state.homeworkCurrentIndex = Math.max(0, Math.min(Number(data.currentIndex) || 0, Math.max(0, picked.length - 1)));
+  updateHomeworkProgress();
+  const notice = document.getElementById("homeworkResumeNotice");
+  if (notice) notice.style.display = "block";
+  const card = document.querySelector(`[data-card-idx="${state.homeworkCurrentIndex}"]`);
+  if (card && typeof card.scrollIntoView === "function") {
+    setTimeout(() => card.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }
+  return true;
+}
+
+function clearHomeworkProgress() {
+  try {
+    localStorage.removeItem(getHomeworkStorageKey());
+  } catch (err) {
+    console.warn("宿題データを削除できませんでした。", err);
+  }
+}
+
+function bindHomeworkAutosave(container) {
+  if (!container) return;
+  const saveFromTarget = (target) => {
+    if (!target) return;
+    const qidx = target.getAttribute("data-qidx") || (target.name || "").replace(/^q_/, "");
+    saveHomeworkProgress(qidx);
+  };
+  const nameInput = document.getElementById("studentName");
+  if (nameInput) nameInput.addEventListener("input", () => saveHomeworkProgress(state.homeworkCurrentIndex));
+  container.querySelectorAll("[data-homework]").forEach(el => {
+    el.addEventListener("input", (e) => saveFromTarget(e.target));
+  });
+  container.querySelectorAll("input[type='radio'][name^='q_']").forEach(el => {
+    el.addEventListener("change", (e) => saveFromTarget(e.target));
+  });
+}
+
+
 const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSen5rwHphgjz2rBhhB_EyK523FqM3S_WYsERTfH6nPme68JYQ/formResponse";
 const GOOGLE_FORM_ENTRY = {
   name: "entry.682305989",
@@ -4145,8 +4418,9 @@ async function submitHomeworkToGoogleForm() {
 
   try {
     await fetch(GOOGLE_FORM_URL, { method: "POST", mode: "no-cors", body: fd });
-    setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。`, false);
-    alert("提出しました。");
+    clearHomeworkProgress();
+    setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。保存データは削除しました。`, false);
+    alert("提出しました。保存データを削除しました。");
   } catch (err) {
     console.error(err);
     setSubmitStatus("提出できませんでした。通信状態を確認してください。必要ならCSV保存で提出してください。", true);
@@ -4194,6 +4468,7 @@ function renderQuiz() {
       }
       const used = document.getElementById(`choiceUsed_${showChoices.getAttribute("data-qidx")}`);
       if (used) used.classList.add("show");
+      saveHomeworkProgress(showChoices.getAttribute("data-qidx"));
       return;
     }
 
@@ -4249,8 +4524,13 @@ function renderQuiz() {
       fb.textContent = "えらびました";
       fb.className = "choiceFeedback";
     }
+    saveHomeworkProgress(idx);
   };
+
+  bindHomeworkAutosave(container);
+  restoreHomeworkProgressIfAny();
 }
+
 
 function openSettings() {
   $("#settingsBackdrop").classList.add("show");
@@ -4400,6 +4680,22 @@ async function init() {
 
 
 init();
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btnSaveForLater = document.getElementById('btnSaveForLater');
+  if(btnSaveForLater){
+    btnSaveForLater.addEventListener('click', () => {
+      try{
+        if(typeof saveHomeworkProgress === 'function'){
+          saveHomeworkProgress();
+        }
+      }catch(e){}
+      alert('つづきはここからできます。');
+    });
+  }
+});
+
+
 </script>
 
 </body>
