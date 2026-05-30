@@ -3347,6 +3347,10 @@ function buildRubyHTML(mixed, kana) {
     "地面の中からとれる": "<ruby>地面<rt>じめん</rt></ruby>の<ruby>中<rt>なか</rt></ruby>からとれる",
     "は、いろいろな物の材料になる。": "は、いろいろな<ruby>物<rt>もの</rt></ruby>の<ruby>材料<rt>ざいりょう</rt></ruby>になる。",
     "に荷物をしまった。": "に<ruby>荷物<rt>にもつ</rt></ruby>をしまった。",
+    "量が多く、道に車がたくさん走っていた。": "<ruby>量<rt>りょう</rt></ruby>が<ruby>多<rt>おお</rt></ruby>く、<ruby>道<rt>みち</rt></ruby>に<ruby>車<rt>くるま</rt></ruby>がたくさん<ruby>走<rt>はし</rt></ruby>っていた。",
+    "外国で旅行していた家族が、日本に": "<ruby>外国<rt>がいこく</rt></ruby>で<ruby>旅行<rt>りょこう</rt></ruby>していた<ruby>家族<rt>かぞく</rt></ruby>が、<ruby>日本<rt>にっぽん</rt></ruby>に",
+    "母は": "<ruby>母<rt>はは</rt></ruby>は",
+    "ねる前に、毎日": "ねる<ruby>前<rt>まえ</rt></ruby>に、<ruby>毎日<rt>まいにち</rt></ruby>",
     "店は今年、大きな": "<ruby>店<rt>みせ</rt></ruby>は<ruby>今年<rt>ことし</rt></ruby>、<ruby>大<rt>おお</rt></ruby>きな",
 });
 
@@ -3941,8 +3945,19 @@ function getTargetReadingInfo(q) {
   // 例：鉄道事故 → 対象語「鉄道」だけを無音化し、「事故」から読み上げを再開する。
   const TARGET_READING_EXCEPT = {
     "今年に入って、鉄道事故が次々に発生している。||鉄道": "てつどう",
-    "日本には47の都道府県がある。||都道府県": "とどうふけん"
+    "日本には47の都道府県がある。||都道府県": "とどうふけん",
+    "朝は交通量が多く、道に車がたくさん走っていた。||交通": "こうつう"
   };
+  if (mixed === "朝は交通量が多く、道に車がたくさん走っていた。" && target === "交通") {
+    return {
+      reading: "こうつう",
+      start: 3,
+      end: 7,
+      before: "あさは",
+      after: "りょうがおおく、みちにくるまがたくさんはしっていた。"
+    };
+  }
+
   const fixedTargetReading = TARGET_READING_EXCEPT[`${mixed}||${target}`];
   if (fixedTargetReading) {
     const kidx = kana.indexOf(normalizeKanaForAlign(fixedTargetReading));
