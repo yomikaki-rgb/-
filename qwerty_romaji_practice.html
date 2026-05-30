@@ -126,7 +126,7 @@
     .qkey.enter{background:#eaf9f0;border-color:#bfe8ce;color:#18663a}
     .qkey.vowel-on.c-a{color:#ef4444}.qkey.vowel-on.c-i{color:#c68a15}.qkey.vowel-on.c-u{color:#34d399}.qkey.vowel-on.c-e{color:#60a5fa}.qkey.vowel-on.c-o{color:#92400e}
     .qkey.cons-on{border-width:3px}
-    .qkey.cons-k{background:#fee2e2;border-color:#ef4444}.qkey.cons-s{background:#fef3c7;border-color:#f59e0b}.qkey.cons-t{background:#dcfce7;border-color:#22c55e}.qkey.cons-n{background:#dbeafe;border-color:#3b82f6}.qkey.cons-h{background:#fce7f3;border-color:#ec4899}.qkey.cons-m{background:#ede9fe;border-color:#8b5cf6}.qkey.cons-y{background:#ccfbf1;border-color:#14b8a6}.qkey.cons-r{background:#ffedd5;border-color:#f97316}.qkey.cons-w{background:#e5e7eb;border-color:#6b7280}
+    .qkey.cons-k{background:#fee2e2;border-color:#ef4444}.qkey.cons-s{background:#fef3c7;border-color:#f59e0b}.qkey.cons-t{background:#dcfce7;border-color:#22c55e}.qkey.cons-n{background:#dbeafe;border-color:#3b82f6}.qkey.cons-h{background:#fce7f3;border-color:#ec4899}.qkey.cons-m{background:#ede9fe;border-color:#8b5cf6}.qkey.cons-y{background:#ccfbf1;border-color:#14b8a6}.qkey.cons-r{background:#ffedd5;border-color:#f97316}.qkey.cons-w{background:#e5e7eb;border-color:#6b7280}.qkey.cons-g{background:#fee2e2;border-color:#ef4444}.qkey.cons-z{background:#fef3c7;border-color:#f59e0b}.qkey.cons-d{background:#dcfce7;border-color:#22c55e}.qkey.cons-b{background:#fce7f3;border-color:#ec4899}.qkey.cons-p{background:#ede9fe;border-color:#8b5cf6}
     .keyboard-options{display:grid;gap:8px;margin-top:8px}
     .option-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
     .toggle-chip{border:1px solid var(--line);border-radius:999px;background:#fff;padding:7px 10px;font-weight:800;cursor:pointer}
@@ -323,6 +323,7 @@
           <div class="option-row">
             <button class="btn secondary small" id="toggleVowelColorBtn">母音色 ON</button>
             <button class="btn secondary small" id="toggleConsonantColorBtn">子音キー色 ON</button>
+            <button class="btn secondary small" id="resetConsonantHighlightBtn">子音ハイライトを全部解除</button>
           </div>
           <div class="option-row" id="consonantColorChoices"></div>
         </div>
@@ -348,7 +349,7 @@
         <button class="btn secondary small" id="shuffleBtn">シャッフル ON</button>
       </div>
       <div class="checklist" id="groupChecklist"></div>
-      <div class="inline-note">チェックした行だけを出題します。</div>
+      <div class="inline-note">チェックした行だけを出題します。濁音（が行〜ぱ行）と拗音（きゃ行〜じゃ行）も選べます。</div>
     </section>
 
     <section class="card">
@@ -935,6 +936,55 @@
                   "text": "ルンルン",
                   "kana": "るんるん"
             }
+      ],
+      "が行": [
+            {"text":"蛾","kana":"が"}, {"text":"具","kana":"ぐ"}, {"text":"五","kana":"ご"}, {"text":"害","kana":"がい"},
+            {"text":"あご","kana":"あご"}, {"text":"囲碁","kana":"いご"}, {"text":"映画","kana":"えいが"}, {"text":"英語","kana":"えいご"},
+            {"text":"言語","kana":"げんご"}, {"text":"銀","kana":"ぎん"}, {"text":"午後","kana":"ごご"}, {"text":"議員","kana":"ぎいん"}, {"text":"銀河","kana":"ぎんが"}
+      ],
+      "ざ行": [
+            {"text":"図","kana":"ず"}, {"text":"象","kana":"ぞう"}, {"text":"あざ","kana":"あざ"}, {"text":"味","kana":"あじ"},
+            {"text":"意地","kana":"いじ"}, {"text":"おじさん","kana":"おじさん"}, {"text":"アジア","kana":"あじあ"}, {"text":"全然","kana":"ぜんぜん"},
+            {"text":"依存","kana":"いぞん"}, {"text":"オゾン","kana":"おぞん"}, {"text":"大損","kana":"おおぞん"}, {"text":"善意","kana":"ぜんい"}, {"text":"以前","kana":"いぜん"}
+      ],
+      "だ行": [
+            {"text":"駄々","kana":"だだ"}, {"text":"台","kana":"だい"}, {"text":"ドア","kana":"どあ"}, {"text":"仇","kana":"あだ"},
+            {"text":"枝","kana":"えだ"}, {"text":"井戸","kana":"いど"}, {"text":"江戸","kana":"えど"}, {"text":"遺伝","kana":"いでん"}, {"text":"縁談","kana":"えんだん"}
+      ],
+      "ば行": [
+            {"text":"乳母","kana":"うば"}, {"text":"おばさん","kana":"おばさん"}, {"text":"海老","kana":"えび"}, {"text":"帯","kana":"おび"},
+            {"text":"いぼ","kana":"いぼ"}, {"text":"晩","kana":"ばん"}, {"text":"瓶","kana":"びん"}, {"text":"文","kana":"ぶん"},
+            {"text":"お盆","kana":"おぼん"}, {"text":"青葉","kana":"あおば"}, {"text":"ボンボン","kana":"ぼんぼん"}
+      ],
+      "ぱ行": [
+            {"text":"パパ","kana":"ぱぱ"}, {"text":"アポ","kana":"あぽ"}, {"text":"オペ","kana":"おぺ"}, {"text":"パン","kana":"ぱん"},
+            {"text":"ピン","kana":"ぴん"}, {"text":"ペン","kana":"ぺん"}, {"text":"ポンプ","kana":"ぽんぷ"}, {"text":"ポンポン","kana":"ぽんぽん"},
+            {"text":"プンプン","kana":"ぷんぷん"}, {"text":"ピンポン","kana":"ぴんぽん"}
+      ],
+      "きゃ行": [
+            {"text":"客","kana":"きゃく"}, {"text":"客席","kana":"きゃくせき"}, {"text":"キャスター","kana":"きゃすたあ"}, {"text":"キャンプ","kana":"きゃんぷ"},
+            {"text":"キャラメル","kana":"きゃらめる"}, {"text":"きゅう","kana":"きゅう"}, {"text":"きゅうり","kana":"きゅうり"}, {"text":"球根","kana":"きゅうこん"},
+            {"text":"休日","kana":"きゅうじつ"}, {"text":"宮殿","kana":"きゅうでん"}, {"text":"今日","kana":"きょう"}, {"text":"京都","kana":"きょうと"},
+            {"text":"教科","kana":"きょうか"}, {"text":"教室","kana":"きょうしつ"}
+      ],
+      "しゃ行": [
+            {"text":"車庫","kana":"しゃこ"}, {"text":"シャツ","kana":"しゃつ"}, {"text":"おしゃれ","kana":"おしゃれ"}, {"text":"写真","kana":"しゃしん"},
+            {"text":"習字","kana":"しゅうじ"}, {"text":"手話","kana":"しゅわ"}, {"text":"修理","kana":"しゅうり"}, {"text":"宿題","kana":"しゅくだい"},
+            {"text":"消化","kana":"しょうか"}, {"text":"食事","kana":"しょくじ"}, {"text":"食欲","kana":"しょくよく"}
+      ],
+      "ちゃ行": [
+            {"text":"茶色","kana":"ちゃいろ"}, {"text":"チャイム","kana":"ちゃいむ"}, {"text":"茶わん","kana":"ちゃわん"}, {"text":"着陸","kana":"ちゃくりく"},
+            {"text":"注意","kana":"ちゅうい"}, {"text":"中止","kana":"ちゅうし"}, {"text":"中学","kana":"ちゅうがく"}, {"text":"中国","kana":"ちゅうごく"},
+            {"text":"中心","kana":"ちゅうしん"}, {"text":"ちょうちょ","kana":"ちょうちょ"}, {"text":"調子","kana":"ちょうし"}, {"text":"貯金","kana":"ちょきん"}
+      ],
+      "ぎゃ行": [
+            {"text":"逆","kana":"ぎゃく"}, {"text":"ギャンブル","kana":"ぎゃんぶる"}, {"text":"逆転","kana":"ぎゃくてん"}, {"text":"牛乳","kana":"ぎゅうにゅう"},
+            {"text":"牛肉","kana":"ぎゅうにく"}, {"text":"牛丼","kana":"ぎゅうどん"}, {"text":"餃子","kana":"ぎょうざ"}, {"text":"魚類","kana":"ぎょるい"}
+      ],
+      "じゃ行": [
+            {"text":"じゃんけん","kana":"じゃんけん"}, {"text":"蛇口","kana":"じゃぐち"}, {"text":"ジャンプ","kana":"じゃんぷ"}, {"text":"じゃがりこ","kana":"じゃがりこ"},
+            {"text":"準備","kana":"じゅんび"}, {"text":"芸術","kana":"げいじゅつ"}, {"text":"十分","kana":"じゅうぶん"}, {"text":"女子","kana":"じょし"},
+            {"text":"男女","kana":"だんじょ"}, {"text":"上手","kana":"じょうず"}, {"text":"丈夫","kana":"じょうぶ"}
       ]
 };
 
@@ -1033,15 +1083,22 @@
       answeredCurrent: false,
       displayMode: loadJSON("romajiTapDisplayMode", "kanji_kana"),
       practiceStarted: false,
-      highlightConsonants: ['K','S','T','N','H','M','Y','R','W'],
+      highlightConsonants: ['K','S','T','N','H','M','Y','R','W','G','Z','D','B','P'],
       practicedWords: [],
       freeDoneWords: loadJSON("romajiTapFreeDoneWords", []),
       vowelColorOn: loadJSON("romajiTapVowelColorOn", true),
       consonantColorOn: loadJSON("romajiTapConsonantColorOn", true),
-      coloredConsonants: new Set(loadJSON("romajiTapColoredConsonants", ["K","S","T","N","H","M","Y","R","W"]))
+      coloredConsonants: new Set(loadJSON("romajiTapColoredConsonants", ["K","S","T","N","H","M","Y","R","W","G","Z","D","B","P"]))
     };
 
-    const els = {
+    // Force-enable all intended consonant highlights even when old localStorage settings exist.
+    ['K','S','T','N','H','M','Y','R','W','G','Z','D','B','P'].forEach(k => {
+      if (!state.highlightConsonants.includes(k)) state.highlightConsonants.push(k);
+      state.coloredConsonants.add(k);
+    });
+    saveJSON('romajiTapColoredConsonants', Array.from(state.coloredConsonants));
+
+const els = {
       modeButtons:[...document.querySelectorAll('[data-mode]')],
       currentWord:document.getElementById('currentWord'), currentWordInput:document.getElementById('currentWordInput'),
       progressLabel:document.getElementById('progressLabel'), inputPreview:document.getElementById('inputPreview'),
@@ -1331,7 +1388,7 @@
       ['A','S','D','F','G','H','J','K','L'],
       ['Z','X','C','V','B','N','M']
     ];
-    const COLOR_CONSONANTS = ['K','S','T','N','H','M','Y','R','W'];
+    const COLOR_CONSONANTS = ['K','S','T','N','H','M','Y','R','W','G','Z','D','B','P'];
     
     function isHighlightedConsonant(letter){
       const active = state.highlightConsonants || [];
@@ -1400,6 +1457,14 @@ function renderKeyboard(){
         });
         els.consonantColorChoices.appendChild(btn);
       });
+    }
+
+    function resetConsonantHighlight(){
+      state.consonantColorOn = true;
+      state.highlightConsonants = [];
+      state.coloredConsonants = new Set();
+      persistSettings();
+      renderKeyboard();
     }
 
     function qwertyRomajiToKana(input){
@@ -2253,6 +2318,8 @@ document.getElementById('nextWordBtn').addEventListener('click', ()=>{
     document.getElementById('printPracticedBtn').addEventListener('click', printPracticedWords);
     document.getElementById('backToStartBtn').addEventListener('click', ()=>{ state.freeDoneWords = []; try { persistFreeDoneWords(); } catch(e) {} location.reload(); });
     renderMode(); renderGroups(); renderSaved(); renderKeyboard(); buildPracticeList('groups');
+
+    document.getElementById('resetConsonantHighlightBtn')?.addEventListener('click', resetConsonantHighlight);
 </script>
 </body>
 </html>
