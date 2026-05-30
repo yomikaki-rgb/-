@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ことば探偵</title>
+  <title>ことば探偵宿題用</title>
   <style>
     :root {
       --bg:#ffffff; --fg:#111; --muted:#666; --line:#e6e6e6; --card:#fafafa; --accent:#3B2C5A;
@@ -428,13 +428,238 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
   }
 }
 
+
+
+/* === HOMEWORK MODE ADDITION === */
+@media screen {
+  .homeworkTop {
+    background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:10px;
+  }
+  .homeworkField { margin-top:10px; }
+  .homeworkField label { display:block; font-weight:700; margin-bottom:6px; }
+  .homeworkInput, .homeworkTextarea {
+    width:100%; box-sizing:border-box; border:2px solid var(--line); border-radius:12px;
+    padding:12px 14px; font-size:20px !important; line-height:1.5; background:#fff; font-family:inherit;
+  }
+  .homeworkTextarea { min-height:86px; resize:vertical; line-height:1.5; }
+  .homeworkInput { min-height:58px; }
+  .homeworkSaveNotice { font-size:13px; color:var(--muted); }
+  .choiceUsedBadge { display:none; font-size:13px; color:var(--muted); margin-top:6px; }
+  .choiceUsedBadge.show { display:block; }
+  .homeworkProgressBox {
+    margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  .homeworkProgressCount {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:82px; padding:8px 12px; border-radius:999px;
+    background:#fff3a6; border:1px solid #e5d36a; font-size:18px; font-weight:800;
+  }
+  .homeworkResumeNotice { font-size:14px; font-weight:700; color:#178a3b; }
+}
+@media print {
+  .homeworkTop, .homeworkField, .homeworkSaveNotice, .choiceUsedBadge { display:none !important; }
+}
+
+
+
+/* === BIG VISIBLE SUBMIT BUTTON === */
+@media screen {
+  #submitFixedBar.noPrint {
+    display: block !important;
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 99999 !important;
+    background: rgba(255,255,255,.98) !important;
+    border: 3px solid #2f8f46 !important;
+    border-radius: 18px !important;
+    padding: 12px !important;
+    margin: 16px 0 0 0 !important;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.18) !important;
+  }
+  #btnSubmitHomework {
+    display: block !important;
+    width: 100% !important;
+    min-height: 72px !important;
+    font-size: 25px !important;
+    font-weight: 900 !important;
+    border-radius: 18px !important;
+    background: #2f8f46 !important;
+    border: 2px solid #2f8f46 !important;
+    color: #fff !important;
+    box-shadow: 0 6px 0 #1d6930 !important;
+  }
+  #btnSubmitHomework rt { color:#fff !important; font-size:.55em !important; }
+  #submitFixedBar .submitNote {
+    margin-top: 8px !important;
+    text-align: center !important;
+    font-size: 14px !important;
+    color: #333 !important;
+  }
+}
+@media print { #submitFixedBar { display:none !important; } }
+
+
+/* === FINAL SUBMIT BUTTON FIX === */
+@media screen {
+  #submitFixedBar {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 99999 !important;
+    display: block !important;
+    background: #ffffff !important;
+    border-top: 2px solid #d8d8d8 !important;
+    padding: 10px 16px 12px !important;
+    text-align: center !important;
+    box-shadow: 0 -4px 18px rgba(0,0,0,.16) !important;
+  }
+  #submitFixedBar #btnSubmitHomework {
+    display: inline-block !important;
+    width: min(720px, 96vw) !important;
+    font-size: 24px !important;
+    font-weight: 800 !important;
+    padding: 16px 20px !important;
+    border-radius: 18px !important;
+    background: #178a3b !important;
+    border-color: #178a3b !important;
+    color: #fff !important;
+  }
+  #submitFixedBar #btnSubmitHomework rt { color:#fff !important; font-size:.55em !important; }
+  #quiz { padding-bottom: 112px !important; }
+  .submitNote { margin-top:6px !important; font-size:13px !important; color:#555 !important; }
+}
+@media print { #submitFixedBar { display:none !important; } }
+
+
+/* === FINAL TWO-BUTTON SUBMIT BAR LAYOUT === */
+@media screen {
+  #submitFixedBar {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    padding: 14px 18px 16px !important;
+  }
+
+  #submitFixedBar .submitButtonGrid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+    align-items: start !important;
+    width: min(1120px, 100%) !important;
+    margin: 0 auto !important;
+  }
+
+  #submitFixedBar .submitColumn {
+    min-width: 0 !important;
+  }
+
+  #submitFixedBar .submitActionButton,
+  #submitFixedBar #btnSubmitHomework,
+  #submitFixedBar #btnSaveForLater {
+    display: flex !important;
+    width: 100% !important;
+    height: 88px !important;
+    min-height: 88px !important;
+    box-sizing: border-box !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 12px 14px !important;
+    border-radius: 18px !important;
+    font-size: 26px !important;
+    font-weight: 900 !important;
+    line-height: 1.15 !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+
+  #submitFixedBar #btnSaveForLater {
+    background: #2d6cdf !important;
+    border: 2px solid #2d6cdf !important;
+    color: #fff !important;
+    box-shadow: 0 6px 0 #1b4fa8 !important;
+  }
+
+  #submitFixedBar #btnSubmitHomework {
+    background: #178a3b !important;
+    border: 2px solid #178a3b !important;
+    color: #fff !important;
+    box-shadow: 0 6px 0 #0f6429 !important;
+  }
+
+  #submitFixedBar #btnSubmitHomework rt {
+    color: #fff !important;
+    font-size: .55em !important;
+  }
+
+  #submitFixedBar .saveLaterNote {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-top: 10px !important;
+    text-align: center !important;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+    color: #333 !important;
+  }
+
+  #quiz {
+    padding-bottom: 150px !important;
+  }
+}
+
+@media screen and (max-width: 560px) {
+  #submitFixedBar .submitActionButton,
+  #submitFixedBar #btnSubmitHomework,
+  #submitFixedBar #btnSaveForLater {
+    height: 76px !important;
+    min-height: 76px !important;
+    font-size: 20px !important;
+  }
+
+  #submitFixedBar .saveLaterNote {
+    font-size: 12px !important;
+  }
+
+  #quiz {
+    padding-bottom: 140px !important;
+  }
+}
+
+
+.unknownBtn {
+  margin-top:8px;
+  font-size:16px !important;
+  font-weight:700;
+  border-radius:12px !important;
+  background:#fff4d6 !important;
+  border:2px solid #e0b84f !important;
+}
+
+
+.answerRevealBtn:disabled { opacity:.45 !important; cursor:not-allowed !important; }
+.answerBox.revealed { display:block !important; }
+
+
+.answerActionRow{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin-top:8px;
+}
+
+
+.btn.answerLocked:disabled{
+  opacity:.45 !important;
+  cursor:not-allowed !important;
+}
+
 </style>
 </head>
 <body>
   <div class="wrap">
     <header class="noPrint">
       <div>
-        <h1>ことば探偵</h1>
+        <h1>ことば探偵宿題用</h1>
         <div class="muted">ことばの読みと意味を、ヒントから推理しよう！</div>
       </div>
       <div class="row">
@@ -566,10 +791,37 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
         <div class="row">
           <button class="btn" id="btnStopSpeech" disabled>読み上げ停止</button>
           <button class="btn" id="btnPrint2">A4で印刷</button>
+          <button class="btn" id="btnSaveHomework">CSV保存</button>
         </div>
       </div>
 
+      <div class="homeworkTop noPrint">
+        <div class="row" style="justify-content:space-between; align-items:flex-end;">
+          <div style="flex:1; min-width:220px;">
+            <label class="muted" for="studentName">名前</label><br>
+            <input id="studentName" type="text" placeholder="名前を入力" />
+          </div>
+          <div class="homeworkSaveNotice">最後に画面下の「先生に提出する」を押すと、先生のGoogleフォームに送信されます。CSV保存もできます。</div>
+        </div>
+        <div class="homeworkProgressBox">
+          <div id="homeworkProgress" class="homeworkProgressCount">0/0問</div>
+          <div id="homeworkResumeNotice" class="homeworkResumeNotice" style="display:none;">つづきから再開します</div>
+        </div>
+      </div>
+      <div id="submitStatus" class="notice noPrint" style="display:none; margin:10px 0;"></div>
       <div id="quizCards" class="grid"></div>
+
+      <div id="submitFixedBar" class="noPrint">
+        <div class="submitButtonGrid">
+          <div class="submitColumn">
+            <button class="btn submitActionButton saveLaterButton" id="btnSaveForLater" type="button">💾 今日はここまで</button>
+            <div class="submitNote saveLaterNote">とちゅうでやめるときは「今日はここまで」をおしてください。</div>
+          </div>
+          <div class="submitColumn">
+            <button class="btn primary submitActionButton submitHomeworkButton" id="btnSubmitHomework" type="button">📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する</button>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -709,6 +961,7 @@ const state = {
   mode: "seq", // seq | pick
   selectedIds: new Set(),
   maxSelect: 5,
+  homeworkCurrentIndex: 0,
   settings: {
     showAnswer: true,
     ruby: true,
@@ -1807,6 +2060,7 @@ function buildRubyHTML(mixed, kana) {
     "体温がとても高くなること": "<ruby>体温<rt>たいおん</rt></ruby>がとても<ruby>高<rt>たか</rt></ruby>くなること",
     "元気がなくなること": "<ruby>元気<rt>げんき</rt></ruby>がなくなること",
     "日本には47の都道府県がある。": "<ruby>日本<rt>にほん</rt></ruby>には47の<ruby>都道府県<rt>とどうふけん</rt></ruby>がある。",
+    "日本には47の": "<ruby>日本<rt>にほん</rt></ruby>には47の",
     "国の名前": "<ruby>国<rt>くに</rt></ruby>の<ruby>名前<rt>なまえ</rt></ruby>",
     "地域の大きな区分": "<ruby>地域<rt>ちいき</rt></ruby>の<ruby>大<rt>おお</rt></ruby>きな<ruby>区分<rt>くぶん</rt></ruby>",
     "学校の数": "<ruby>学校<rt>がっこう</rt></ruby>の<ruby>数<rt>かず</rt></ruby>",
@@ -3087,6 +3341,8 @@ function buildRubyHTML(mixed, kana) {
     "歴史の展示館": "<ruby>歴史<rt>れきし</rt></ruby>の<ruby>展示館<rt>てんじかん</rt></ruby>",
     "外国の大使館": "<ruby>外国<rt>がいこく</rt></ruby>の<ruby>大使館<rt>たいしかん</rt></ruby>",
     /* 指定箇所の分割表示用固定ルビ（対象熟語をルビなしにするため、前後だけでbuildRubyHTMLに渡される） */
+    "今年に入って、": "<ruby>今年<rt>ことし</rt></ruby>に<ruby>入<rt>はい</rt></ruby>って、",
+    "事故が次々に発生している。": "<ruby>事故<rt>じこ</rt></ruby>が<ruby>次々<rt>つぎつぎ</rt></ruby>に<ruby>発生<rt>はっせい</rt></ruby>している。",
     "物語の中で": "<ruby>物語<rt>ものがたり</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で",
     "地面の中からとれる": "<ruby>地面<rt>じめん</rt></ruby>の<ruby>中<rt>なか</rt></ruby>からとれる",
     "は、いろいろな物の材料になる。": "は、いろいろな<ruby>物<rt>もの</rt></ruby>の<ruby>材料<rt>ざいりょう</rt></ruby>になる。",
@@ -3681,6 +3937,27 @@ function getTargetReadingInfo(q) {
   const idx = mixed.indexOf(target);
   if (!target || idx < 0) return { reading: explicit, start: -1, end: -1, before: kana, after: "" };
 
+  // 対象語が後続の熟語と連結している場合の読み上げ・ハイライト位置固定。
+  // 例：鉄道事故 → 対象語「鉄道」だけを無音化し、「事故」から読み上げを再開する。
+  const TARGET_READING_EXCEPT = {
+    "今年に入って、鉄道事故が次々に発生している。||鉄道": "てつどう",
+    "日本には47の都道府県がある。||都道府県": "とどうふけん"
+  };
+  const fixedTargetReading = TARGET_READING_EXCEPT[`${mixed}||${target}`];
+  if (fixedTargetReading) {
+    const kidx = kana.indexOf(normalizeKanaForAlign(fixedTargetReading));
+    if (kidx >= 0) {
+      const kend = kidx + normalizeKanaForAlign(fixedTargetReading).length;
+      return {
+        reading: fixedTargetReading,
+        start: kidx,
+        end: kend,
+        before: kana.slice(0, kidx),
+        after: kana.slice(kend)
+      };
+    }
+  }
+
   const aligned = alignMixedToKana(mixed, kana);
   if (!aligned) {
     if (explicit) {
@@ -3717,9 +3994,8 @@ function renderQuestionCard(q, idx, total) {
   const reading = readingInfo.reading || "（読みデータ未設定）";
   const hint = getReadingHint(q, readingInfo.reading);
 
-  const showAnsBtn = state.settings.showAnswer
-      ? `<button class="btn" type="button" data-action="showAnswer" data-box="ans_${idx}">答えを見る</button>`
-      : "";
+  // 宿題用：回答前は答えを見られない。読み・意味に回答後だけ表示できる。
+  const showAnsBtn = `<button class="btn primary answerRevealBtn" type="button" data-action="revealAnswerAfterResponse" data-card-idx="${idx}" disabled>答えを見る</button>`;
 
   return `
     <div class="card" data-card-idx="${idx}">
@@ -3734,13 +4010,25 @@ function renderQuestionCard(q, idx, total) {
           <button class="btn" type="button" aria-label="読みの問題をきく" data-action="speakReadingPrompt" data-card-idx="${idx}">🔊</button>
           <div class="readingPrompt">「<span class="promptTarget">${escapeHTML(word)}</span>」は、なんと読む？</div>
         </div>
+        <div class="homeworkField noPrint">
+          <label for="readingInput_${idx}">読み</label>
+          <input class="homeworkInput" id="readingInput_${idx}" data-homework="reading" data-qidx="${idx}" type="text" autocomplete="off" placeholder="ここに読み">
+<button type="button" class="btn unknownBtn" onclick="setUnknownAnswer('readingInput_${idx}')">🤔 読みがわからない</button>
+        </div>
       </div>
 
       <div class="stepBox">
         <div class="readingRow">
           <button class="btn" type="button" aria-label="意味の問題をきく" data-action="speakMeaningPrompt" data-card-idx="${idx}">🔊</button>
           <div class="meaningPrompt">「<span class="promptTarget">${escapeHTML(word)}</span>」は、どんな意味？ 文から考えてみよう。</div>
-          <button class="btn" type="button" data-action="showChoices" data-panel="choices_${idx}">ヒントをみる</button>
+          </div>
+        <div class="homeworkField noPrint">
+          <label for="meaningInput_${idx}">いみ</label>
+          <textarea class="homeworkTextarea" id="meaningInput_${idx}" data-homework="meaning" data-qidx="${idx}" placeholder="ここにいみ"></textarea>
+<div class="answerActionRow">
+<button type="button" class="btn unknownBtn" onclick="setUnknownAnswer('meaningInput_${idx}')">🤔 意味がわからない</button>
+<button class="btn" type="button" data-action="showChoices" data-panel="choices_${idx}" data-qidx="${idx}">わからないときは見てね</button>
+</div>
         </div>
       </div>
 
@@ -3753,17 +4041,16 @@ function renderQuestionCard(q, idx, total) {
         ${renderOption(idx, 3, q[COL.c3], q[COL.c3k])}
       </div>
       <div class="choiceFeedback" id="fb_${idx}" aria-live="polite"></div>
+      <div class="choiceUsedBadge noPrint" id="choiceUsed_${idx}">3択を使いました</div>
 
       <div class="row noPrint answerButtonRow">${showAnsBtn}</div>
-
-      <div class="answerBox" id="ans_${idx}">
+      <div class="answerBox" id="answer_${idx}">
         <div class="answerHeader">
-          <button class="btn noPrint" type="button" aria-label="答えをきく" data-action="speakAnswer" data-reading="${escapeHTML(readingInfo.reading || "")}" data-word="${escapeHTML(word)}" data-meaning="${escapeHTML(correctText)}">🔊</button>
-          <div class="muted">答え</div>
+          <button class="btn noPrint" type="button" data-action="speakAnswer" data-word="${escapeHTML(word)}" data-reading="${escapeHTML(reading)}" data-meaning="${escapeHTML(correctText)}">🔊 答えをきく</button>
+          <strong>答え</strong>
         </div>
-        <div class="answerWord">${escapeHTML(word)}（${escapeHTML(reading)}）</div>
-        <div style="margin-top:6px;"><strong>意味：</strong>${escapeHTML(correctText)}</div>
-        
+        <div class="answerWord">${escapeHTML(word)}：${escapeHTML(reading)}</div>
+        <div>${escapeHTML(correctText)}</div>
       </div>
     </div>
   `;
@@ -3883,6 +4170,330 @@ function speakAnswerReading(word, reading, meaning) {
   });
 }
 
+
+function normalizeAnswerText(s) {
+  return (s ?? "").toString()
+    .trim()
+    .replace(/[ァ-ン]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60))
+    .replace(/\s+/g, "")
+    .replace(/[。、，．・！!？?]/g, "");
+}
+
+function csvCell(v) {
+  const s = (v ?? "").toString();
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+function downloadTextFile(filename, text, mime) {
+  const blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function buildHomeworkRows() {
+  const picked = getSelectedQuestions();
+  const studentName = ((document.getElementById("studentName") || {}).value || "").trim();
+  const savedAt = new Date().toLocaleString("ja-JP");
+  return picked.map((q, idx) => {
+    const readingInfo = getTargetReadingInfo(q);
+    const correctReading = readingInfo.reading || "";
+    const readingInput = ((document.getElementById(`readingInput_${idx}`) || {}).value || "").trim();
+    const meaningInput = ((document.getElementById(`meaningInput_${idx}`) || {}).value || "").trim();
+    const panel = document.getElementById(`choices_${idx}`);
+    const choiceUsed = panel ? panel.getAttribute("data-used") === "1" : false;
+    const selected = document.querySelector(`input[name="q_${idx}"]:checked`);
+    const selectedChoice = selected ? selected.value : "";
+    const correctChoice = (q[COL.ans] ?? "").toString().trim();
+    const readingCorrect = normalizeAnswerText(readingInput) && normalizeAnswerText(readingInput) === normalizeAnswerText(correctReading) ? "○" : "";
+    const choiceCorrect = selectedChoice ? (selectedChoice === correctChoice ? "○" : "×") : "";
+    return {
+      savedAt, studentName,
+      id: q[COL.id] ?? "", word: q[COL.word] ?? "", sentence: q[COL.sentence] ?? "",
+      readingInput, correctReading, readingCorrect,
+      meaningInput, correctMeaning: getCorrectMeaning(q),
+      choiceUsed: choiceUsed ? "はい" : "いいえ", selectedChoice, correctChoice, choiceCorrect
+    };
+  });
+}
+
+function saveHomeworkCsv() {
+  const rows = buildHomeworkRows();
+  if (!rows.length) { alert("保存する問題がありません。"); return; }
+  const studentName = (((document.getElementById("studentName") || {}).value || "").trim() || "noname").replace(/[\/:*?"<>|\s]+/g, "_");
+  const d = new Date();
+  const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+  const headers = ["保存日時","名前","問題ID","熟語","例文","読み入力","正しい読み","読み正誤","意味入力","正しい意味","3択使用","選んだ番号","3択正解番号","3択正誤"];
+  const lines = [headers.map(csvCell).join(",")];
+  rows.forEach(r => {
+    lines.push([r.savedAt,r.studentName,r.id,r.word,r.sentence,r.readingInput,r.correctReading,r.readingCorrect,r.meaningInput,r.correctMeaning,r.choiceUsed,r.selectedChoice,r.correctChoice,r.choiceCorrect].map(csvCell).join(","));
+  });
+  downloadTextFile(`宿題結果_${studentName}_${ymd}.csv`, "\ufeff" + lines.join("\n"), "text/csv;charset=utf-8");
+}
+
+
+const HOMEWORK_STORAGE_PREFIX = "kotoba_tantei_homework_v1::";
+
+function getHomeworkStorageSource() {
+  const sp = new URLSearchParams(location.search);
+  const setName = (sp.get("set") || "").trim();
+  const idsParam = (sp.get("ids") || "").trim();
+  const jsonParam = (sp.get("json") || sp.get("csv") || "").trim();
+  if (setName) return `set:${normalizeJsonFileName(setName)}`;
+  if (jsonParam) return `file:${jsonParam}`;
+  if (idsParam) return `ids:${idsParam}`;
+  return `url:${location.pathname}${location.search}`;
+}
+
+function getHomeworkStorageKey() {
+  return HOMEWORK_STORAGE_PREFIX + getHomeworkStorageSource();
+}
+
+function getSelectedChoiceValue(idx) {
+  const selected = document.querySelector(`input[name="q_${idx}"]:checked`);
+  return selected ? selected.value : "";
+}
+
+function updateHomeworkProgress() {
+  const picked = getSelectedQuestions();
+  const total = picked.length;
+  let done = 0;
+  picked.forEach((q, idx) => {
+    const reading = ((document.getElementById(`readingInput_${idx}`) || {}).value || "").trim();
+    const meaning = ((document.getElementById(`meaningInput_${idx}`) || {}).value || "").trim();
+    const choice = getSelectedChoiceValue(idx);
+    if (reading || meaning || choice) done++;
+  });
+  const box = document.getElementById("homeworkProgress");
+  if (box) box.textContent = `${done}/${total}問`;
+  return { done, total };
+}
+
+function buildHomeworkSaveData() {
+  const picked = getSelectedQuestions();
+  const answers = {};
+  picked.forEach((q, idx) => {
+    const qid = (q[COL.id] ?? "").toString();
+    const panel = document.getElementById(`choices_${idx}`);
+    answers[qid] = {
+      reading: ((document.getElementById(`readingInput_${idx}`) || {}).value || ""),
+      meaning: ((document.getElementById(`meaningInput_${idx}`) || {}).value || ""),
+      choice: getSelectedChoiceValue(idx),
+      choiceUsed: panel ? panel.getAttribute("data-used") === "1" : false
+    };
+  });
+  return {
+    version: 1,
+    savedAt: new Date().toISOString(),
+    storageSource: getHomeworkStorageSource(),
+    questionIds: picked.map(q => (q[COL.id] ?? "").toString()),
+    studentName: ((document.getElementById("studentName") || {}).value || ""),
+    currentIndex: Number(state.homeworkCurrentIndex) || 0,
+    answers
+  };
+}
+
+function saveHomeworkProgress(idx) {
+  if (Number.isFinite(Number(idx))) state.homeworkCurrentIndex = Number(idx);
+  try {
+    localStorage.setItem(getHomeworkStorageKey(), JSON.stringify(buildHomeworkSaveData()));
+  } catch (err) {
+    console.warn("宿題データを保存できませんでした。", err);
+  }
+  updateHomeworkProgress();
+}
+
+function readHomeworkProgress() {
+  try {
+    const raw = localStorage.getItem(getHomeworkStorageKey());
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (err) {
+    console.warn("宿題データを読み込めませんでした。", err);
+    return null;
+  }
+}
+
+function restoreHomeworkProgressIfAny() {
+  const data = readHomeworkProgress();
+  if (!data || !data.answers) {
+    updateHomeworkProgress();
+    return false;
+  }
+  const picked = getSelectedQuestions();
+  const currentIds = picked.map(q => (q[COL.id] ?? "").toString());
+  const savedIds = Array.isArray(data.questionIds) ? data.questionIds : [];
+  if (savedIds.length && currentIds.join("|") !== savedIds.join("|")) {
+    updateHomeworkProgress();
+    return false;
+  }
+
+  const nameInput = document.getElementById("studentName");
+  if (nameInput && typeof data.studentName === "string") nameInput.value = data.studentName;
+
+  picked.forEach((q, idx) => {
+    const qid = (q[COL.id] ?? "").toString();
+    const a = data.answers[qid];
+    if (!a) return;
+    const reading = document.getElementById(`readingInput_${idx}`);
+    const meaning = document.getElementById(`meaningInput_${idx}`);
+    if (reading && typeof a.reading === "string") reading.value = a.reading;
+    if (meaning && typeof a.meaning === "string") meaning.value = a.meaning;
+    if (a.choice) {
+      const radio = document.querySelector(`input[name="q_${idx}"][value="${CSS.escape(String(a.choice))}"]`);
+      if (radio) radio.checked = true;
+      const fb = document.getElementById(`fb_${idx}`);
+      if (fb) {
+        fb.textContent = "えらびました";
+        fb.className = "choiceFeedback";
+      }
+    }
+    const panel = document.getElementById(`choices_${idx}`);
+    const used = document.getElementById(`choiceUsed_${idx}`);
+    if (panel && a.choiceUsed) panel.setAttribute("data-used", "1");
+    if (used && a.choiceUsed) used.classList.add("show");
+    updateAnswerRevealButton(idx);
+  });
+
+  state.homeworkCurrentIndex = Math.max(0, Math.min(Number(data.currentIndex) || 0, Math.max(0, picked.length - 1)));
+  updateHomeworkProgress();
+  const notice = document.getElementById("homeworkResumeNotice");
+  if (notice) notice.style.display = "block";
+  const card = document.querySelector(`[data-card-idx="${state.homeworkCurrentIndex}"]`);
+  if (card && typeof card.scrollIntoView === "function") {
+    setTimeout(() => card.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }
+  return true;
+}
+
+function clearHomeworkProgress() {
+  try {
+    localStorage.removeItem(getHomeworkStorageKey());
+  } catch (err) {
+    console.warn("宿題データを削除できませんでした。", err);
+  }
+}
+
+function bindHomeworkAutosave(container) {
+  if (!container) return;
+  const saveFromTarget = (target) => {
+    if (!target) return;
+    const qidx = target.getAttribute("data-qidx") || (target.name || "").replace(/^q_/, "");
+    saveHomeworkProgress(qidx);
+  };
+  const nameInput = document.getElementById("studentName");
+  if (nameInput) nameInput.addEventListener("input", () => saveHomeworkProgress(state.homeworkCurrentIndex));
+  container.querySelectorAll("[data-homework]").forEach(el => {
+    el.addEventListener("input", (e) => saveFromTarget(e.target));
+  });
+  container.querySelectorAll("input[type='radio'][name^='q_']").forEach(el => {
+    el.addEventListener("change", (e) => saveFromTarget(e.target));
+  });
+}
+
+
+const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSen5rwHphgjz2rBhhB_EyK523FqM3S_WYsERTfH6nPme68JYQ/formResponse";
+const GOOGLE_FORM_ENTRY = {
+  name: "entry.682305989",
+  content: "entry.1008623579"
+};
+
+function setSubmitStatus(message, isError) {
+  const box = document.getElementById("submitStatus");
+  if (!box) return;
+  box.style.display = "block";
+  box.textContent = message;
+  box.style.borderColor = isError ? "#b00020" : "var(--line)";
+  box.style.color = isError ? "#b00020" : "var(--fg)";
+}
+
+function buildHomeworkSubmitContent(rows) {
+  const submittedAt = new Date().toLocaleString("ja-JP");
+  const ids = rows.map(r => r.id).filter(Boolean).join(" / ");
+  const lines = [];
+  lines.push(`提出日時：${submittedAt}`);
+  if (ids) lines.push(`課題：${ids}`);
+  lines.push(`問題数：${rows.length}問`);
+  lines.push("");
+
+  rows.forEach((r, i) => {
+    lines.push(`${i + 1}. ${r.id}　${r.word}`);
+    lines.push(`例文：${r.sentence}`);
+    lines.push(`★読み（本人の回答）：${r.readingInput || "（未入力）"}`);
+    lines.push(`★いみ（本人の回答）：${r.meaningInput || "（未入力）"}`);
+    lines.push(`3択使用：${r.choiceUsed}`);
+    if (r.selectedChoice) {
+      lines.push(`3択で選んだ番号：${r.selectedChoice}`);
+      lines.push(`3択の正解番号：${r.correctChoice || "（未設定）"}`);
+      lines.push(`3択の正誤：${r.choiceCorrect || "（未判定）"}`);
+    }
+    lines.push("");
+  });
+  return lines.join("\n");
+}
+
+async function submitHomeworkToGoogleForm() {
+  const rows = buildHomeworkRows();
+  if (!rows.length) { alert("提出する問題がありません。"); return; }
+
+  const studentName = ((document.getElementById("studentName") || {}).value || "").trim();
+  if (!studentName) {
+    alert("名前を入力してください。");
+    const nameInput = document.getElementById("studentName");
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  const content = buildHomeworkSubmitContent(rows);
+  const fd = new FormData();
+  fd.append(GOOGLE_FORM_ENTRY.name, studentName);
+  fd.append(GOOGLE_FORM_ENTRY.content, content);
+
+  const btn = document.getElementById("btnSubmitHomework");
+  if (btn) { btn.disabled = true; btn.innerHTML = "📩 <ruby>提出中<rt>ていしゅつちゅう</rt></ruby>…"; }
+  setSubmitStatus(`Googleフォームに提出中です（${rows.length}問を1件にまとめて送信）…`, false);
+
+  try {
+    await fetch(GOOGLE_FORM_URL, { method: "POST", mode: "no-cors", body: fd });
+    clearHomeworkProgress();
+    setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。保存データは削除しました。`, false);
+    alert("提出しました。保存データを削除しました。");
+  } catch (err) {
+    console.error(err);
+    setSubmitStatus("提出できませんでした。通信状態を確認してください。必要ならCSV保存で提出してください。", true);
+    alert("提出できませんでした。CSV保存で提出してください。");
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = "📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する"; }
+  }
+}
+
+
+function updateAnswerRevealButton(cardIdx){
+  const btn = document.querySelector(`[data-action="revealAnswerAfterResponse"][data-card-idx="${cardIdx}"]`);
+  if(!btn) return;
+  const selectedChoice = getSelectedChoiceValue(cardIdx);
+  btn.disabled = !selectedChoice;
+}
+
+function revealAnswerAfterResponse(cardIdx){
+  updateAnswerRevealButton(cardIdx);
+  const btn = document.querySelector(`[data-action="revealAnswerAfterResponse"][data-card-idx="${cardIdx}"]`);
+  const selectedChoice = getSelectedChoiceValue(cardIdx);
+  if(!selectedChoice){
+    alert("3たくを1つえらんでから、答えを見てください。");
+    return;
+  }
+  const box = document.getElementById(`answer_${cardIdx}`);
+  if(box) box.classList.add("show", "revealed");
+  if(btn) btn.textContent = "答えを表示中";
+  saveHomeworkProgress(cardIdx);
+}
+
 function renderQuiz() {
   $("#home").style.display = "none";
   $("#quiz").style.display = "";
@@ -3912,10 +4523,23 @@ function renderQuiz() {
       return;
     }
 
+    const revealAns = t.closest("[data-action='revealAnswerAfterResponse']");
+    if (revealAns) {
+      revealAnswerAfterResponse(revealAns.getAttribute("data-card-idx"));
+      return;
+    }
+
     const showChoices = t.closest("[data-action='showChoices']");
     if (showChoices) {
       const panel = document.getElementById(showChoices.getAttribute("data-panel"));
-      if (panel) panel.classList.toggle("show");
+      if (panel) {
+        panel.classList.toggle("show");
+        panel.setAttribute("data-used", "1");
+      }
+      const used = document.getElementById(`choiceUsed_${showChoices.getAttribute("data-qidx")}`);
+      if (used) used.classList.add("show");
+      updateAnswerRevealButton(showChoices.getAttribute("data-qidx"));
+      saveHomeworkProgress(showChoices.getAttribute("data-qidx"));
       return;
     }
 
@@ -3966,20 +4590,26 @@ function renderQuiz() {
     const idx = m[1];
     const panel = document.getElementById(`choices_${idx}`);
     const fb = document.getElementById(`fb_${idx}`);
-    if (!panel || !fb) return;
-    const correct = panel.getAttribute("data-correct");
-    if (input.value === correct) {
-      fb.textContent = "せいかい";
-      fb.className = "choiceFeedback ok";
-      speakText("せいかい");
-    } else {
-      fb.textContent = "もういちど";
-      fb.className = "choiceFeedback ng";
-      input.checked = false;
-      speakText("もういちど");
+    if (panel) panel.setAttribute("data-used", "1");
+    updateAnswerRevealButton(idx);
+    if (fb) {
+      fb.textContent = "えらびました";
+      fb.className = "choiceFeedback";
     }
+    saveHomeworkProgress(idx);
   };
+
+  bindHomeworkAutosave(container);
+  container.querySelectorAll(".homeworkInput, .homeworkTextarea").forEach(el => {
+    const idx = el.getAttribute("data-qidx");
+    updateAnswerRevealButton(idx);
+    el.addEventListener("input", () => updateAnswerRevealButton(idx));
+    el.addEventListener("change", () => updateAnswerRevealButton(idx));
+  });
+  restoreHomeworkProgressIfAny();
+  picked.forEach((q, idx) => updateAnswerRevealButton(idx));
 }
+
 
 function openSettings() {
   $("#settingsBackdrop").classList.add("show");
@@ -4069,6 +4699,10 @@ async function init() {
   if (bp) bp.addEventListener("click", () => window.print());
   const bp2 = document.getElementById("btnPrint2");
   if (bp2) bp2.addEventListener("click", () => window.print());
+  const saveHomeworkBtn = document.getElementById("btnSaveHomework");
+  if (saveHomeworkBtn) saveHomeworkBtn.addEventListener("click", saveHomeworkCsv);
+  const submitHomeworkBtn = document.querySelector("#submitFixedBar #btnSubmitHomework") || document.getElementById("btnSubmitHomework");
+  if (submitHomeworkBtn) submitHomeworkBtn.addEventListener("click", submitHomeworkToGoogleForm);
 
   $("#btnGoHome").addEventListener("click", () => {
     stopSpeech();
@@ -4125,7 +4759,35 @@ async function init() {
 
 
 init();
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btnSaveForLater = document.getElementById('btnSaveForLater');
+  if(btnSaveForLater){
+    btnSaveForLater.addEventListener('click', () => {
+      try{
+        if(typeof saveHomeworkProgress === 'function'){
+          saveHomeworkProgress();
+        }
+      }catch(e){}
+      alert('つづきはここからできます。');
+    });
+  }
+});
+
+
+
+function setUnknownAnswer(targetId){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  el.value = 'わからない';
+  el.dispatchEvent(new Event('input', { bubbles:true }));
+  el.dispatchEvent(new Event('change', { bubbles:true }));
+  const idx = el.getAttribute('data-qidx');
+  if(idx !== null) updateAnswerRevealButton(idx);
+}
+
 </script>
+
 
 </body>
 </html>
