@@ -624,6 +624,29 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
   }
 }
 
+
+.unknownBtn {
+  margin-top:8px;
+  font-size:16px !important;
+  font-weight:700;
+  border-radius:12px !important;
+  background:#fff4d6 !important;
+  border:2px solid #e0b84f !important;
+}
+
+
+.answerRevealBtn:disabled { opacity:.45 !important; cursor:not-allowed !important; }
+.answerBox.revealed { display:block !important; }
+
+
+.answerActionRow{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin-top:8px;
+}
+
 </style>
 </head>
 <body>
@@ -3965,8 +3988,8 @@ function renderQuestionCard(q, idx, total) {
   const reading = readingInfo.reading || "（読みデータ未設定）";
   const hint = getReadingHint(q, readingInfo.reading);
 
-  // 宿題提出用：子ども側には正解を表示しない
-  const showAnsBtn = "";
+  // 宿題用：回答前は答えを見られない。読み・意味に回答後だけ表示できる。
+  const showAnsBtn = `<button class="btn primary answerRevealBtn" type="button" data-action="revealAnswerAfterResponse" data-card-idx="${idx}" disabled>答えを見る</button>`;
 
   return `
     <div class="card" data-card-idx="${idx}">
@@ -3984,6 +4007,7 @@ function renderQuestionCard(q, idx, total) {
         <div class="homeworkField noPrint">
           <label for="readingInput_${idx}">読み</label>
           <input class="homeworkInput" id="readingInput_${idx}" data-homework="reading" data-qidx="${idx}" type="text" autocomplete="off" placeholder="ここに読み">
+<button type="button" class="btn unknownBtn" onclick="setUnknownAnswer('readingInput_${idx}')">🤔 読みがわからない</button>
         </div>
       </div>
 
@@ -3991,11 +4015,14 @@ function renderQuestionCard(q, idx, total) {
         <div class="readingRow">
           <button class="btn" type="button" aria-label="意味の問題をきく" data-action="speakMeaningPrompt" data-card-idx="${idx}">🔊</button>
           <div class="meaningPrompt">「<span class="promptTarget">${escapeHTML(word)}</span>」は、どんな意味？ 文から考えてみよう。</div>
-          <button class="btn" type="button" data-action="showChoices" data-panel="choices_${idx}" data-qidx="${idx}">わからないときは見てね</button>
-        </div>
+          </div>
         <div class="homeworkField noPrint">
           <label for="meaningInput_${idx}">いみ</label>
           <textarea class="homeworkTextarea" id="meaningInput_${idx}" data-homework="meaning" data-qidx="${idx}" placeholder="ここにいみ"></textarea>
+<div class="answerActionRow">
+<button type="button" class="btn unknownBtn" onclick="setUnknownAnswer('meaningInput_${idx}')">🤔 意味がわからない</button>
+<button class="btn" type="button" data-action="showChoices" data-panel="choices_${idx}" data-qidx="${idx}">わからないときは見てね</button>
+</div>
         </div>
       </div>
 
@@ -4011,6 +4038,14 @@ function renderQuestionCard(q, idx, total) {
       <div class="choiceUsedBadge noPrint" id="choiceUsed_${idx}">3択を使いました</div>
 
       <div class="row noPrint answerButtonRow">${showAnsBtn}</div>
+      <div class="answerBox" id="answer_${idx}">
+        <div class="answerHeader">
+          <button class="btn noPrint" type="button" data-action="speakAnswer" data-word="${escapeHTML(word)}" data-reading="${escapeHTML(reading)}" data-meaning="${escapeHTML(correctText)}">🔊 答えをきく</button>
+          <strong>答え</strong>
+        </div>
+        <div class="answerWord">${escapeHTML(word)}：${escapeHTML(reading)}</div>
+        <div>${escapeHTML(correctText)}</div>
+      </div>
     </div>
   `;
 }
@@ -4430,6 +4465,30 @@ async function submitHomeworkToGoogleForm() {
   }
 }
 
+
+function updateAnswerRevealButton(cardIdx){
+  const reading = document.getElementById(`readingInput_${cardIdx}`);
+  const meaning = document.getElementById(`meaningInput_${cardIdx}`);
+  const btn = document.querySelector(`[data-action="revealAnswerAfterResponse"][data-card-idx="${cardIdx}"]`);
+  if(!btn) return;
+  const hasReading = reading && reading.value.trim().length > 0;
+  const hasMeaning = meaning && meaning.value.trim().length > 0;
+  btn.disabled = !(hasReading && hasMeaning);
+}
+
+function revealAnswerAfterResponse(cardIdx){
+  updateAnswerRevealButton(cardIdx);
+  const btn = document.querySelector(`[data-action="revealAnswerAfterResponse"][data-card-idx="${cardIdx}"]`);
+  if(btn && btn.disabled){
+    alert("読みと意味を入力するか、「わからない」を押してから答えを見てください。");
+    return;
+  }
+  const box = document.getElementById(`answer_${cardIdx}`);
+  if(box) box.classList.add("show", "revealed");
+  if(btn) btn.textContent = "答えを表示中";
+  saveHomeworkProgress(cardIdx);
+}
+
 function renderQuiz() {
   $("#home").style.display = "none";
   $("#quiz").style.display = "";
@@ -4456,6 +4515,12 @@ function renderQuiz() {
     if (showAns) {
       const box = document.getElementById(showAns.getAttribute("data-box"));
       if (box) box.classList.toggle("show");
+      return;
+    }
+
+    const revealAns = t.closest("[data-action='revealAnswerAfterResponse']");
+    if (revealAns) {
+      revealAnswerAfterResponse(revealAns.getAttribute("data-card-idx"));
       return;
     }
 
@@ -4528,7 +4593,14 @@ function renderQuiz() {
   };
 
   bindHomeworkAutosave(container);
+  container.querySelectorAll(".homeworkInput, .homeworkTextarea").forEach(el => {
+    const idx = el.getAttribute("data-qidx");
+    updateAnswerRevealButton(idx);
+    el.addEventListener("input", () => updateAnswerRevealButton(idx));
+    el.addEventListener("change", () => updateAnswerRevealButton(idx));
+  });
   restoreHomeworkProgressIfAny();
+  picked.forEach((q, idx) => updateAnswerRevealButton(idx));
 }
 
 
@@ -4695,6 +4767,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+
+
+function setUnknownAnswer(targetId){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  el.value = 'わからない';
+  el.dispatchEvent(new Event('input', { bubbles:true }));
+  el.dispatchEvent(new Event('change', { bubbles:true }));
+  const idx = el.getAttribute('data-qidx');
+  if(idx !== null) updateAnswerRevealButton(idx);
+}
 
 </script>
 
