@@ -3727,7 +3727,7 @@ function lockQuestionAfterAnswer(idx, selectedValue, isCorrect) {
   });
   const fb = document.getElementById(`fb_${idx}`);
   if (fb) {
-    fb.textContent = isCorrect ? "〇" : "×";
+    fb.textContent = isCorrect ? "せいかい" : "おしい";
     fb.className = `choiceFeedback show ${isCorrect ? "ok" : "ng"}`;
   }
   const ansBtn = document.getElementById(`answerBtn_${idx}`);
@@ -3745,7 +3745,7 @@ function handleChoiceSelected(idx, selectedValue, q, shouldSpeak = true) {
   if (!selected) return;
   const isCorrect = selected === correct;
   lockQuestionAfterAnswer(idx, selected, isCorrect);
-  if (shouldSpeak) speakFeedbackText(isCorrect ? "〇" : "×");
+  if (shouldSpeak) speakFeedbackText(isCorrect ? "せいかい" : "おしい");
   saveHomeworkProgress(idx);
   updateHomeworkProgress();
 }
@@ -3772,6 +3772,7 @@ function buildHomeworkSaveData() {
       selected,
       correctAnswer,
       isCorrect: selected ? selected === correctAnswer : false,
+        formCorrectMark: ((selected ? selected === correctAnswer : false) ? "〇" : "×"),
       starred: selected ? selected !== correctAnswer : false,
       viewedAnswer: viewed
     };
@@ -3857,6 +3858,7 @@ function buildHomeworkRows() {
       correctText: (getCorrectText(q) ?? "").toString(),
       isCorrect,
       starred: selected ? !isCorrect : false,
+        formCorrectMark: ((false) ? "〇" : "×"),
       viewedAnswer: viewed
     };
   });
@@ -4135,6 +4137,12 @@ async function init() {
 
 
 init();
+
+function formCorrectMarkFromAnswer(a){
+  const ok = (a && (a.isCorrect === true || a.correct === true || a.result === "せいかい" || a.result === "〇"));
+  return ok ? "〇" : "×";
+}
+
 </script>
 
 </body>
