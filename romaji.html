@@ -10,6 +10,7 @@
       --card:#ffffffcc; --primary:#4f46e5; --primary-weak:#e0e7ff;
       --border:#d1d5db; --ok-weak:#ecfdf5; --ok-border:#34d399;
       --accent:#f59e0b;
+      --yoon:#a855f7;
     }
     *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     body{
@@ -97,6 +98,7 @@
     .c-u { color:#34d399; }
     .c-e { color:#60a5fa; }
     .c-o { color:#92400e; }
+    .c-y { color:var(--yoon); font-weight:900; }
 
     /* 行＆色モード選択のグリッド（10行×2） */
     .line-grid{
@@ -371,6 +373,7 @@
   <div class="container">
     <div class="row mt-4">
       <h1 id="titleHeading">あ行（色付き）</h1>
+      <button id="romanStyleBtn" class="btn" type="button">訓令式</button>
     </div>
 
     <!-- 行 & 色つき/色なし 選択 -->
@@ -407,6 +410,54 @@
         <button class="btn line-mode" data-line="wa" data-color="color">わ行（色つき）</button>
         <button class="btn line-mode" data-line="wa" data-color="mono">わ行（色なし）</button>
 
+        <button class="btn line-mode" data-line="ga" data-color="color">が行（色付き）</button>
+        <button class="btn line-mode" data-line="ga" data-color="mono">が行（色なし）</button>
+
+        <button class="btn line-mode" data-line="za" data-color="color">ざ行（色付き）</button>
+        <button class="btn line-mode" data-line="za" data-color="mono">ざ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="da" data-color="color">だ行（色付き）</button>
+        <button class="btn line-mode" data-line="da" data-color="mono">だ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="ba" data-color="color">ば行（色付き）</button>
+        <button class="btn line-mode" data-line="ba" data-color="mono">ば行（色なし）</button>
+
+        <button class="btn line-mode" data-line="pa" data-color="color">ぱ行（色付き）</button>
+        <button class="btn line-mode" data-line="pa" data-color="mono">ぱ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="kya" data-color="color">きゃ行（色付き）</button>
+        <button class="btn line-mode" data-line="kya" data-color="mono">きゃ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="sya" data-color="color">しゃ行（色付き）</button>
+        <button class="btn line-mode" data-line="sya" data-color="mono">しゃ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="tya" data-color="color">ちゃ行（色付き）</button>
+        <button class="btn line-mode" data-line="tya" data-color="mono">ちゃ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="gya" data-color="color">ぎゃ行（色付き）</button>
+        <button class="btn line-mode" data-line="gya" data-color="mono">ぎゃ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="zya" data-color="color">じゃ行（色付き）</button>
+        <button class="btn line-mode" data-line="zya" data-color="mono">じゃ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="nya" data-color="color">にゃ行（色付き）</button>
+        <button class="btn line-mode" data-line="nya" data-color="mono">にゃ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="hya" data-color="color">ひゃ行（色付き）</button>
+        <button class="btn line-mode" data-line="hya" data-color="mono">ひゃ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="bya" data-color="color">びゃ行（色付き）</button>
+        <button class="btn line-mode" data-line="bya" data-color="mono">びゃ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="pya" data-color="color">ぴゃ行（色付き）</button>
+        <button class="btn line-mode" data-line="pya" data-color="mono">ぴゃ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="mya" data-color="color">みゃ行（色付き）</button>
+        <button class="btn line-mode" data-line="mya" data-color="mono">みゃ行（色なし）</button>
+
+        <button class="btn line-mode" data-line="rya" data-color="color">りゃ行（色付き）</button>
+        <button class="btn line-mode" data-line="rya" data-color="mono">りゃ行（色なし）</button>
+
         <!-- あ〜わ／い〜り／う〜る／え〜れ／お〜ろ -->
         <button class="btn line-mode" data-line="aw" data-color="color">あ〜わ（色付き）</button>
         <button class="btn line-mode" data-line="aw" data-color="mono">あ〜わ（色なし）</button>
@@ -435,6 +486,11 @@
     <label class="cons-check"><input type="checkbox" class="consonantCheck" value="y">Y</label>
     <label class="cons-check"><input type="checkbox" class="consonantCheck" value="r">R</label>
     <label class="cons-check"><input type="checkbox" class="consonantCheck" value="w">W</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="g">G</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="z">Z</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="d">D</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="b">B</label>
+    <label class="cons-check"><input type="checkbox" class="consonantCheck" value="p">P</label>
   </div>
   
 </div>
@@ -612,6 +668,38 @@
         key:"ra", label:"ら行", roma:["RA", "RI", "RU", "RE", "RO"], hira:["ら", "り", "る", "れ", "ろ"]
       }, wa: {
         key:"wa", label:"わ行", roma:["WA", "WO", "NN"], hira:["わ", "を", "ん"]
+      }, ga: {
+        key:"ga", label:"が行", roma:["GA", "GI", "GU", "GE", "GO"], hira:["が", "ぎ", "ぐ", "げ", "ご"]
+      }, za: {
+        key:"za", label:"ざ行", roma:["ZA", "ZI", "ZU", "ZE", "ZO"], hira:["ざ", "じ", "ず", "ぜ", "ぞ"]
+      }, da: {
+        key:"da", label:"だ行", roma:["DA", "DI", "DU", "DE", "DO"], hira:["だ", "ぢ", "づ", "で", "ど"]
+      }, ba: {
+        key:"ba", label:"ば行", roma:["BA", "BI", "BU", "BE", "BO"], hira:["ば", "び", "ぶ", "べ", "ぼ"]
+      }, pa: {
+        key:"pa", label:"ぱ行", roma:["PA", "PI", "PU", "PE", "PO"], hira:["ぱ", "ぴ", "ぷ", "ぺ", "ぽ"]
+      }, kya: {
+        key:"kya", label:"きゃ行", roma:["KYA", "KYU", "KYO"], hira:["きゃ", "きゅ", "きょ"]
+      }, sya: {
+        key:"sya", label:"しゃ行", roma:["SYA", "SYU", "SYO"], hira:["しゃ", "しゅ", "しょ"]
+      }, tya: {
+        key:"tya", label:"ちゃ行", roma:["TYA", "TYU", "TYO"], hira:["ちゃ", "ちゅ", "ちょ"]
+      }, gya: {
+        key:"gya", label:"ぎゃ行", roma:["GYA", "GYU", "GYO"], hira:["ぎゃ", "ぎゅ", "ぎょ"]
+      }, zya: {
+        key:"zya", label:"じゃ行", roma:["ZYA", "ZYU", "ZYO"], hira:["じゃ", "じゅ", "じょ"]
+      }, nya: {
+        key:"nya", label:"にゃ行", roma:["NYA", "NYU", "NYO"], hira:["にゃ", "にゅ", "にょ"]
+      }, hya: {
+        key:"hya", label:"ひゃ行", roma:["HYA", "HYU", "HYO"], hira:["ひゃ", "ひゅ", "ひょ"]
+      }, bya: {
+        key:"bya", label:"びゃ行", roma:["BYA", "BYU", "BYO"], hira:["びゃ", "びゅ", "びょ"]
+      }, pya: {
+        key:"pya", label:"ぴゃ行", roma:["PYA", "PYU", "PYO"], hira:["ぴゃ", "ぴゅ", "ぴょ"]
+      }, mya: {
+        key:"mya", label:"みゃ行", roma:["MYA", "MYU", "MYO"], hira:["みゃ", "みゅ", "みょ"]
+      }, rya: {
+        key:"rya", label:"りゃ行", roma:["RYA", "RYU", "RYO"], hira:["りゃ", "りゅ", "りょ"]
       }, /* あ〜わ／い〜り／う〜る／え〜れ／お〜ろ */
       aw: {
         key:"aw", label:"あ〜わ", roma:["A", "KA", "SA", "TA", "NA", "HA", "MA", "YA", "RA", "WA"], hira:["あ", "か", "さ", "た", "な", "は", "ま", "や", "ら", "わ"]
@@ -627,7 +715,8 @@
     };
 /* ========= 子音クイズデータ ========= */
 const CONSONANT_MAP = {
-  k:{ c:"k", label:"クッ（か行）" }, s:{ c:"s", label:"スッ（さ行）" }, t:{ c:"t", label:"トゥ（た行）" }, n:{ c:"n", label:"ンヌ（な行）" }, h:{ c:"h", label:"フ（は行）" }, m:{ c:"m", label:"ム（ま行）" }, y:{ c:"y", label:"ィユ（や行）" }, r:{ c:"r", label:"ゥル（ら行）" }, w:{ c:"w", label:"ゥワ（わ行）" }
+  k:{ c:"k", label:"クッ（か行）" }, s:{ c:"s", label:"スッ（さ行）" }, t:{ c:"t", label:"トゥ（た行）" }, n:{ c:"n", label:"ンヌ（な行）" }, h:{ c:"h", label:"フ（は行）" }, m:{ c:"m", label:"ム（ま行）" }, y:{ c:"y", label:"ィユ（や行）" }, r:{ c:"r", label:"ゥル（ら行）" }, w:{ c:"w", label:"ゥワ（わ行）" },
+  g:{ c:"g", label:"グッ（が行）" }, z:{ c:"z", label:"ズッ（ざ行）" }, d:{ c:"d", label:"ドゥ（だ行）" }, b:{ c:"b", label:"ブッ（ば行）" }, p:{ c:"p", label:"プッ（ぱ行）" }
 };
 
 let quizKind = "line"; // "line" | "cons"
@@ -637,6 +726,7 @@ let consonantKeys = [];
 
     let currentLineKey = "a";
     let useColor = true;
+    let romanStyle = "kunrei"; // "kunrei" | "hepburn"
 
     let ROMA = [];
     let HIRA = [];
@@ -692,37 +782,58 @@ let consonantKeys = [];
 
     /* ========= クイズ部分 ========= */
 
+    function toDisplayRoma(roma){
+      if(romanStyle !== "hepburn") return roma;
+      const map = {
+        SI:"SHI", TI:"CHI", TU:"TSU", HU:"FU", ZI:"JI",
+        SYA:"SHA", SYU:"SHU", SYO:"SHO",
+        TYA:"CHA", TYU:"CHU", TYO:"CHO",
+        ZYA:"JA", ZYU:"JU", ZYO:"JO"
+      };
+      return map[roma] || roma;
+    }
+
+    function updateRomanStyleUI(){
+      const btn = document.querySelector('#romanStyleBtn');
+      if(btn){ btn.textContent = romanStyle === "kunrei" ? "訓令式" : "ヘボン式"; }
+      applyLine(currentLineKey);
+    }
+
     // 色つきローマ字
     function coloredRoma(roma){
-      // 1文字（A, I, U, E, O）
-      if(roma.length === 1){
-        const v = roma;
-        let span = v;
-        if(v==="A") span=`<span class="c-a">A</span>`;
-        if(v==="I") span=`<span class="c-i">I</span>`;
-        if(v==="U") span=`<span class="c-u">U</span>`;
-        if(v==="E") span=`<span class="c-e">E</span>`;
-        if(v==="O") span=`<span class="c-o">O</span>`;
-        return span;
+      const display = toDisplayRoma(roma);
+      const colorVowel = (v)=>{
+        if(v==="A") return `<span class="c-a">A</span>`;
+        if(v==="I") return `<span class="c-i">I</span>`;
+        if(v==="U") return `<span class="c-u">U</span>`;
+        if(v==="E") return `<span class="c-e">E</span>`;
+        if(v==="O") return `<span class="c-o">O</span>`;
+        return v;
+      };
+
+      // 母音単独
+      if(/^[AIUEO]$/.test(display)){
+        return colorVowel(display);
       }
-      // 2文字以上（KA, YA, NN など）
-      const c = roma[0];
-      const rest = roma.slice(1);
-      // 2文字だと仮定して, 2文字目が母音なら色分け
-      const v = rest[0];
-      let vPart = rest;
-      if(rest.length === 1){
-        if(v==="A") vPart='<span class="c-a">A</span>';
-        if(v==="I") vPart='<span class="c-i">I</span>';
-        if(v==="U") vPart='<span class="c-u">U</span>';
-        if(v==="E") vPart='<span class="c-e">E</span>';
-        if(v==="O") vPart='<span class="c-o">O</span>';
+
+      // 訓令式の拗音：Yは専用色で統一
+      const yoon = display.match(/^([A-Z]+)(Y)([AUO])$/);
+      if(yoon){
+        return `<span class="c-k">${yoon[1]}</span><span class="c-y">Y</span>${colorVowel(yoon[3])}`;
       }
-      return `<span class="c-k">${c}</span>${vPart}`;
+
+      // ヘボン式のSHA/CHA/JAなど：最後の母音だけ母音色
+      const last = display.slice(-1);
+      if(/[AIUEO]/.test(last) && display.length >= 2){
+        return `<span class="c-k">${display.slice(0,-1)}</span>${colorVowel(last)}`;
+      }
+
+      // NNなど
+      return `<span class="c-k">${display}</span>`;
     }
 
     function renderRoma(roma){
-      if(!useColor) return roma;
+      if(!useColor) return toDisplayRoma(roma);
       return coloredRoma(roma);
     }
 
@@ -755,6 +866,15 @@ let consonantKeys = [];
       orderBtn.addEventListener('click', ()=>{
         orderOn = !orderOn;
         updateOrderUI();
+      });
+    }
+
+    const romanStyleBtn = $("#romanStyleBtn");
+    if(romanStyleBtn){
+      romanStyleBtn.addEventListener('click', ()=>{
+        romanStyle = romanStyle === "kunrei" ? "hepburn" : "kunrei";
+        updateRomanStyleUI();
+        if(quiz.style.display !== 'none' && questions.length){ render(); }
       });
     }
 
