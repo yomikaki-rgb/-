@@ -647,6 +647,12 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
   margin-top:8px;
 }
 
+
+.btn.answerLocked:disabled{
+  opacity:.45 !important;
+  cursor:not-allowed !important;
+}
+
 </style>
 </head>
 <body>
@@ -4351,6 +4357,7 @@ function restoreHomeworkProgressIfAny() {
     const used = document.getElementById(`choiceUsed_${idx}`);
     if (panel && a.choiceUsed) panel.setAttribute("data-used", "1");
     if (used && a.choiceUsed) used.classList.add("show");
+    updateAnswerRevealButton(idx);
   });
 
   state.homeworkCurrentIndex = Math.max(0, Math.min(Number(data.currentIndex) || 0, Math.max(0, picked.length - 1)));
@@ -4467,20 +4474,18 @@ async function submitHomeworkToGoogleForm() {
 
 
 function updateAnswerRevealButton(cardIdx){
-  const reading = document.getElementById(`readingInput_${cardIdx}`);
-  const meaning = document.getElementById(`meaningInput_${cardIdx}`);
   const btn = document.querySelector(`[data-action="revealAnswerAfterResponse"][data-card-idx="${cardIdx}"]`);
   if(!btn) return;
-  const hasReading = reading && reading.value.trim().length > 0;
-  const hasMeaning = meaning && meaning.value.trim().length > 0;
-  btn.disabled = !(hasReading && hasMeaning);
+  const selectedChoice = getSelectedChoiceValue(cardIdx);
+  btn.disabled = !selectedChoice;
 }
 
 function revealAnswerAfterResponse(cardIdx){
   updateAnswerRevealButton(cardIdx);
   const btn = document.querySelector(`[data-action="revealAnswerAfterResponse"][data-card-idx="${cardIdx}"]`);
-  if(btn && btn.disabled){
-    alert("読みと意味を入力するか、「わからない」を押してから答えを見てください。");
+  const selectedChoice = getSelectedChoiceValue(cardIdx);
+  if(!selectedChoice){
+    alert("3たくを1つえらんでから、答えを見てください。");
     return;
   }
   const box = document.getElementById(`answer_${cardIdx}`);
@@ -4533,6 +4538,7 @@ function renderQuiz() {
       }
       const used = document.getElementById(`choiceUsed_${showChoices.getAttribute("data-qidx")}`);
       if (used) used.classList.add("show");
+      updateAnswerRevealButton(showChoices.getAttribute("data-qidx"));
       saveHomeworkProgress(showChoices.getAttribute("data-qidx"));
       return;
     }
@@ -4585,6 +4591,7 @@ function renderQuiz() {
     const panel = document.getElementById(`choices_${idx}`);
     const fb = document.getElementById(`fb_${idx}`);
     if (panel) panel.setAttribute("data-used", "1");
+    updateAnswerRevealButton(idx);
     if (fb) {
       fb.textContent = "えらびました";
       fb.className = "choiceFeedback";
@@ -4780,6 +4787,7 @@ function setUnknownAnswer(targetId){
 }
 
 </script>
+
 
 </body>
 </html>
