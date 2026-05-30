@@ -401,6 +401,36 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
 @media print { .homeworkOnly, #submitFixedBar, .choiceFeedback { display:none !important; } }
 
 </style>
+
+<style id="finalBigFontOverride">
+@media screen {
+  .sentence,
+  .sentence label,
+  .sentence span,
+  .readingPrompt,
+  .meaningPrompt {
+    font-size: 20px !important;
+    line-height: 1.5 !important;
+  }
+
+  .opt label,
+  .choicePanel .opt label,
+  .opts .opt label {
+    font-size: 19px !important;
+    line-height: 1.5 !important;
+  }
+
+  .opt {
+    padding: 8px 10px !important;
+  }
+
+  .opt input[type="radio"]{
+    transform: scale(1.0) translateY(2px) !important;
+    margin-right: 10px !important;
+  }
+}
+</style>
+
 </head>
 <body>
   <div class="wrap">
@@ -3697,7 +3727,7 @@ function lockQuestionAfterAnswer(idx, selectedValue, isCorrect) {
   });
   const fb = document.getElementById(`fb_${idx}`);
   if (fb) {
-    fb.textContent = isCorrect ? "せいかい" : "おしい";
+    fb.textContent = isCorrect ? "〇" : "×";
     fb.className = `choiceFeedback show ${isCorrect ? "ok" : "ng"}`;
   }
   const ansBtn = document.getElementById(`answerBtn_${idx}`);
@@ -3715,7 +3745,7 @@ function handleChoiceSelected(idx, selectedValue, q, shouldSpeak = true) {
   if (!selected) return;
   const isCorrect = selected === correct;
   lockQuestionAfterAnswer(idx, selected, isCorrect);
-  if (shouldSpeak) speakFeedbackText(isCorrect ? "せいかい" : "おしい");
+  if (shouldSpeak) speakFeedbackText(isCorrect ? "〇" : "×");
   saveHomeworkProgress(idx);
   updateHomeworkProgress();
 }
@@ -3855,7 +3885,7 @@ function buildHomeworkSubmitContent(rows) {
     lines.push(`例文：${r.sentence}`);
     lines.push(`★本人の回答：${r.selected || "（未回答）"}．${r.selectedText || ""}`);
     lines.push(`正解：${r.correctAnswer || "（未設定）"}．${r.correctText || ""}`);
-    lines.push(`正誤：${r.selected ? (r.isCorrect ? "せいかい" : "おしい") : "未回答"}`);
+    lines.push(`正誤：${r.selected ? (r.isCorrect ? "〇" : "×") : "未回答"}`);
     lines.push(`答えを見た：${r.viewedAnswer ? "はい" : "いいえ"}`);
     lines.push("");
   });
