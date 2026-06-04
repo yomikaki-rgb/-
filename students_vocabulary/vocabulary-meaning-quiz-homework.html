@@ -612,7 +612,7 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
       <div class="field">
         <div>
           <strong>答えの表示</strong>
-          <div class="muted">有：問題画面で「答えを見る」を表示</div>
+          <div class="muted">正誤判定後に答えを自動表示します</div>
         </div>
         <div class="seg" aria-label="answer setting">
           <button type="button" id="ansOn">有</button>
@@ -3579,14 +3579,12 @@ function renderQuestionCard(q, idx, total) {
   const a = (q[COL.ans] ?? "").toString().trim();
   const correctText = a === "1" ? q[COL.c1] : a === "2" ? q[COL.c2] : q[COL.c3];
 
-  const showAnsBtn = state.settings.showAnswer
-      ? `<button class="btn answerRevealBtn" type="button" data-action="showAnswer" data-box="ans_${idx}" id="answerBtn_${idx}">答えを見る</button>`
-      : "";
-
   return `
-    <div class="card">
+    <div class="card" data-card-idx="${idx}" data-qid="${escapeHTML(qid)}" data-answer-viewed="0">
       <div class="qtitle">
-        <div></div>
+        <div>
+          <button class="btn primary noPrint" type="button" data-action="speak" data-id="${escapeHTML(qid)}" aria-label="${idx+1}番を読み上げる">🔊 読み上げ</button>
+        </div>
         <div class="qno">${escapeHTML(qid)}（${idx+1}/${total}）</div>
       </div>
       <div class="sentence" lang="ja"><span class="seqNo">${idx+1}.</span><div style="flex:1;">${sentenceHTML}</div></div>
@@ -3598,13 +3596,8 @@ function renderQuestionCard(q, idx, total) {
       </div>
       <div class="choiceFeedback" id="fb_${idx}" aria-live="polite"></div>
 
-      <div class="row noPrint" style="margin-top:10px; justify-content:space-between;">
-        <button class="btn primary" type="button" data-action="speak" data-id="${escapeHTML(qid)}">読み上げ</button>
-        ${showAnsBtn}
-      </div>
-
       <div class="answerBox" id="ans_${idx}">
-        <div class="muted">正解</div>
+        <div class="muted">答え</div>
         <div><strong>${escapeHTML(a)}</strong>：${escapeHTML(correctText ?? "")}</div>
       </div>
     </div>
@@ -3693,6 +3686,44 @@ function getHomeworkStorageKey() {
   return HOMEWORK_STORAGE_PREFIX + getHomeworkStorageSource();
 }
 
+function makeAssignmentSetId() {
+  const picked = getSelectedQuestions();
+  const ids = picked.map(q => (q[COL.id] ?? "").toString().trim()).filter(Boolean);
+  const sp = new URLSearchParams(location.search);
+  const setName = (sp.get("set") || "").trim();
+  if (setName) return `set_${normalizeJsonFileName(setName)}`;
+  if (ids.length) return `ids_${ids.join("_")}`;
+  return `url_${location.pathname}${location.search}`.replace(/[^a-zA-Z0-9_-]+/g, "_");
+}
+
+function getHomeworkSubmittedKey() {
+  return `submitted_${makeAssignmentSetId()}`;
+}
+
+function isHomeworkSubmitted() {
+  try { return localStorage.getItem(getHomeworkSubmittedKey()) === "1"; } catch { return false; }
+}
+
+function markHomeworkSubmitted() {
+  try { localStorage.setItem(getHomeworkSubmittedKey(), "1"); } catch {}
+}
+
+function setHomeworkUiSubmitted() {
+  const submitBtn = document.getElementById("btnSubmitHomework");
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "提出ずみ";
+  }
+  const saveBtn = document.getElementById("btnSaveForLater");
+  if (saveBtn) saveBtn.disabled = true;
+  document.querySelectorAll("input[type='radio'][name^='q_']").forEach(r => { r.disabled = true; });
+  setSubmitStatus("提出ずみです。この課題は再提出できません。", false);
+}
+
+function applySubmittedLockIfNeeded() {
+  if (isStudentHomeworkMode() && isHomeworkSubmitted()) setHomeworkUiSubmitted();
+}
+
 function getSelectedChoiceValue(idx) {
   const selected = document.querySelector(`input[name="q_${idx}"]:checked`);
   return selected ? selected.value : "";
@@ -3730,8 +3761,9 @@ function lockQuestionAfterAnswer(idx, selectedValue, isCorrect) {
     fb.textContent = isCorrect ? "せいかい" : "おしい";
     fb.className = `choiceFeedback show ${isCorrect ? "ok" : "ng"}`;
   }
-  const ansBtn = document.getElementById(`answerBtn_${idx}`);
-  if (ansBtn) ansBtn.classList.add("show");
+  const box = document.getElementById(`ans_${idx}`);
+  if (box) box.classList.add("show");
+  markAnswerViewed(idx);
 }
 
 function markAnswerViewed(idx) {
@@ -3740,6 +3772,7 @@ function markAnswerViewed(idx) {
 }
 
 function handleChoiceSelected(idx, selectedValue, q, shouldSpeak = true) {
+  if (isStudentHomeworkMode() && isHomeworkSubmitted()) { applySubmittedLockIfNeeded(); return; }
   const selected = String(selectedValue || "");
   const correct = getCorrectAnswer(q);
   if (!selected) return;
@@ -3792,6 +3825,7 @@ function buildHomeworkSaveData() {
 
 function saveHomeworkProgress(idx) {
   if (!isStudentHomeworkMode()) return;
+  if (isHomeworkSubmitted()) return;
   if (Number.isFinite(Number(idx))) state.homeworkCurrentIndex = Number(idx);
   try { localStorage.setItem(getHomeworkStorageKey(), JSON.stringify(buildHomeworkSaveData())); } catch (err) { console.warn(err); }
   updateHomeworkProgress();
@@ -3895,6 +3929,7 @@ function buildHomeworkSubmitContent(rows) {
 }
 
 async function submitHomeworkToGoogleForm() {
+  if (isHomeworkSubmitted()) { applySubmittedLockIfNeeded(); return; }
   const rows = buildHomeworkRows();
   if (!rows.length) { alert("提出する問題がありません。"); return; }
   const studentName = ((document.getElementById("studentName") || {}).value || "").trim();
@@ -3908,15 +3943,17 @@ async function submitHomeworkToGoogleForm() {
   setSubmitStatus(`Googleフォームに提出中です（${rows.length}問を1件にまとめて送信）…`, false);
   try {
     await fetch(GOOGLE_FORM_URL, { method:"POST", mode:"no-cors", body:fd });
+    markHomeworkSubmitted();
     clearHomeworkProgress();
     setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。`, false);
+    setHomeworkUiSubmitted();
     alert("提出しました。保存データを削除しました。");
   } catch (err) {
     console.error(err);
     setSubmitStatus("提出できませんでした。通信状態を確認してください。", true);
     alert("提出できませんでした。通信状態を確認してください。");
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = "📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する"; }
+    if (btn && !isHomeworkSubmitted()) { btn.disabled = false; btn.innerHTML = "📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する"; }
   }
 }
 
@@ -3950,23 +3987,11 @@ function renderQuiz() {
     return (idx > 0 && idx % perPage === 0) ? `<div class="pageBreak"></div>${card}` : card;
   }).join("");
 
-  // Bind "答えを見る" (direct). It appears only after a choice is locked.
-  container.querySelectorAll("[data-action='showAnswer']").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const boxId = btn.getAttribute("data-box");
-      const box = document.getElementById(boxId);
-      if (box) box.classList.toggle("show");
-      const m = (boxId || "").match(/ans_(\d+)/);
-      if (m) {
-        markAnswerViewed(Number(m[1]));
-        saveHomeworkProgress(Number(m[1]));
-      }
-    });
-  });
 
   bindHomeworkAndJudgement(container, picked);
   restoreHomeworkProgressIfAny(picked);
   updateHomeworkProgress();
+  applySubmittedLockIfNeeded();
 
   // Speak button (delegation)
   container.onclick = (e) => {
@@ -4103,7 +4128,7 @@ async function init() {
   const submitHomeworkBtn = document.getElementById("btnSubmitHomework");
   if (submitHomeworkBtn) submitHomeworkBtn.addEventListener("click", submitHomeworkToGoogleForm);
   const saveForLaterBtn = document.getElementById("btnSaveForLater");
-  if (saveForLaterBtn) saveForLaterBtn.addEventListener("click", () => { saveHomeworkProgress(state.homeworkCurrentIndex); alert("つづきはここからできます。"); });
+  if (saveForLaterBtn) saveForLaterBtn.addEventListener("click", () => { if (isHomeworkSubmitted()) { applySubmittedLockIfNeeded(); return; } saveHomeworkProgress(state.homeworkCurrentIndex); alert("つづきはここからできます。"); });
 
   // Keep export UI in sync
   const st = document.getElementById("setTitle");
