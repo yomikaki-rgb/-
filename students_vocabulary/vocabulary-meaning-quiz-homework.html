@@ -595,7 +595,7 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
             <div class="submitNote">とちゅうでやめるときは「今日はここまで」をおしてください。</div>
           </div>
           <div class="submitColumn">
-            <button class="btn primary submitActionButton" id="btnSubmitHomework" type="button" onclick="submitHomeworkToGoogleForm(event)">📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する</button>
+            <button class="btn primary submitActionButton" id="btnSubmitHomework" type="button">📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する</button>
           </div>
         </div>
       </div>
@@ -3620,7 +3620,7 @@ function stopSpeech() {
 
 function speakParts(parts) {
   if (!("speechSynthesis" in window)) {
-    alert("この端末では読み上げが利用できません。");
+    showSubmitAlert("この端末では読み上げが利用できません。");
     return;
   }
 
@@ -3964,6 +3964,12 @@ function submitHomeworkByHiddenForm(studentName, content) {
 }
 
 async function submitHomeworkToGoogleForm(event) {
+  if (window.__homeworkSubmitHandling) return;
+  window.__homeworkSubmitHandling = true;
+  setTimeout(() => { window.__homeworkSubmitHandling = false; }, 800);
+  if (event && typeof event.preventDefault === "function") event.preventDefault();
+  if (event && typeof event.stopPropagation === "function") event.stopPropagation();
+
   if (event && typeof event.preventDefault === "function") event.preventDefault();
   if (HOMEWORK_SUBMITTING) return;
 
@@ -3974,11 +3980,17 @@ async function submitHomeworkToGoogleForm(event) {
   if (isHomeworkSubmitted()) { applySubmittedLockIfNeeded(); return; }
 
   const rows = buildHomeworkRows();
-  if (!rows.length) { alert("提出する問題がありません。"); return; }
+  if (!rows.length) { showSubmitAlert("提出する問題がありません。"); return; }
+
+  const totalQuestions = getSelectedQuestions().length;
+  if (rows.length < totalQuestions) {
+    showSubmitAlert(`まだ回答していない問題があります。\n${totalQuestions - rows.length}問のこっています。`);
+    return;
+  }
 
   const studentName = ((document.getElementById("studentName") || {}).value || "").trim();
   if (!studentName) {
-    alert("名前を入力してください。");
+    showSubmitAlert("名前を入力してください。");
     const input = document.getElementById("studentName");
     if (input) input.focus();
     return;
@@ -4001,14 +4013,14 @@ async function submitHomeworkToGoogleForm(event) {
       setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。`, false);
       setHomeworkUiSubmitted();
       HOMEWORK_SUBMITTING = false;
-      alert("提出しました。保存データを削除しました。");
+      showSubmitAlert("提出しました。保存データを削除しました。");
     }, 700);
   } catch (err) {
     console.error(err);
     HOMEWORK_SUBMITTING = false;
     setSubmitStatus("提出できませんでした。通信状態を確認してください。", true);
     if (btn && !isHomeworkSubmitted()) { btn.disabled = false; btn.innerHTML = "📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する"; }
-    alert("提出できませんでした。通信状態を確認してください。");
+    showSubmitAlert("提出できませんでした。通信状態を確認してください。");
   }
 }
 
@@ -4193,7 +4205,7 @@ async function init() {
     if (btn) submitHomeworkToGoogleForm(e);
   });
   const saveForLaterBtn = document.getElementById("btnSaveForLater");
-  if (saveForLaterBtn) saveForLaterBtn.addEventListener("click", () => { if (isHomeworkSubmitted()) { applySubmittedLockIfNeeded(); return; } saveHomeworkProgress(state.homeworkCurrentIndex); alert("つづきはここからできます。"); });
+  if (saveForLaterBtn) saveForLaterBtn.addEventListener("click", () => { if (isHomeworkSubmitted()) { applySubmittedLockIfNeeded(); return; } saveHomeworkProgress(state.homeworkCurrentIndex); showSubmitAlert("つづきはここからできます。"); });
 
   // Keep export UI in sync
   const st = document.getElementById("setTitle");
@@ -4365,7 +4377,7 @@ async function init() {
 
     const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
     if (!studentName) {
-      alert('名前を入力してください。');
+      showSubmitAlert('名前を入力してください。');
       const input = document.getElementById('studentName');
       if (input) input.focus();
       return false;
@@ -4374,7 +4386,7 @@ async function init() {
     let rows = [];
     try { rows = buildHomeworkRows(); } catch(e) { console.error(e); }
     if (!rows || !rows.length) {
-      alert('提出する問題がありません。');
+      showSubmitAlert('提出する問題がありません。');
       return false;
     }
 
@@ -4391,7 +4403,7 @@ async function init() {
       if (typeof clearHomeworkProgress === 'function') clearHomeworkProgress();
       if (typeof setSubmitStatus === 'function') setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。`, false);
       window.setHomeworkUiSubmitted();
-      alert('提出しました。保存データを削除しました。');
+      showSubmitAlert('提出しました。保存データを削除しました。');
     } catch(e) {
       console.error(e);
       if (typeof setSubmitStatus === 'function') setSubmitStatus('提出できませんでした。通信状態を確認してください。', true);
@@ -4399,7 +4411,7 @@ async function init() {
         btn.disabled = false;
         btn.innerHTML = '📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する';
       }
-      alert('提出できませんでした。通信状態を確認してください。');
+      showSubmitAlert('提出できませんでした。通信状態を確認してください。');
     }
     return false;
   };
@@ -4512,7 +4524,7 @@ async function init() {
 
     const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
     if (!studentName) {
-      alert('名前を入力してください。');
+      showSubmitAlert('名前を入力してください。');
       const input = document.getElementById('studentName');
       if (input) input.focus();
       return false;
@@ -4520,7 +4532,7 @@ async function init() {
 
     const rows = window.buildHomeworkRows();
     if (!rows.length) {
-      alert('画面上の問題を取得できませんでした。いったん「問題をはじめる」から開き直してください。');
+      showSubmitAlert('画面上の問題を取得できませんでした。いったん「問題をはじめる」から開き直してください。');
       return false;
     }
 
@@ -4564,7 +4576,7 @@ async function init() {
       if (typeof clearHomeworkProgress === 'function') clearHomeworkProgress();
       if (typeof setSubmitStatus === 'function') setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。`, false);
       if (typeof setHomeworkUiSubmitted === 'function') setHomeworkUiSubmitted();
-      alert('提出しました。保存データを削除しました。');
+      showSubmitAlert('提出しました。保存データを削除しました。');
     } catch(e) {
       console.error(e);
       if (typeof setSubmitStatus === 'function') setSubmitStatus('提出できませんでした。通信状態を確認してください。', true);
@@ -4572,7 +4584,7 @@ async function init() {
         btn.disabled = false;
         btn.innerHTML = '📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する';
       }
-      alert('提出できませんでした。通信状態を確認してください。');
+      showSubmitAlert('提出できませんでした。通信状態を確認してください。');
     }
     return false;
   };
@@ -4584,6 +4596,85 @@ async function init() {
   }, true);
 })();
 
+
+/* === FINAL OVERRIDE: 全問回答必須チェック（未回答そのものを見る） === */
+(function(){
+  const previousSubmitHomeworkToGoogleForm = window.submitHomeworkToGoogleForm;
+
+  function getVisibleHomeworkQuestionCount(){
+    const cards = Array.from(document.querySelectorAll('#quizCards .card[data-card-idx]'));
+    if (cards.length) return cards.length;
+    try {
+      if (typeof getDisplayedQuestions === 'function') return getDisplayedQuestions().length;
+    } catch(e) {}
+    try {
+      if (typeof getSelectedQuestions === 'function') return getSelectedQuestions().length;
+    } catch(e) {}
+    return 0;
+  }
+
+  function getUnansweredQuestionNumbers(){
+    const total = getVisibleHomeworkQuestionCount();
+    const unanswered = [];
+    for (let i = 0; i < total; i++) {
+      let selected = '';
+      try {
+        if (typeof getSelectedChoiceValue === 'function') selected = getSelectedChoiceValue(i) || '';
+      } catch(e) {}
+      if (!selected) {
+        const checked = document.querySelector(`input[name="q_${i}"]:checked`);
+        selected = checked ? checked.value : '';
+      }
+      if (!selected) unanswered.push(i + 1);
+    }
+    return unanswered;
+  }
+
+  window.submitHomeworkToGoogleForm = function(event){
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+
+    state.isStudentMode = true;
+    document.body.classList.add('homework-mode','force-submitbar');
+
+    if (typeof isHomeworkSubmitted === 'function' && isHomeworkSubmitted()) {
+      if (typeof applySubmittedLockIfNeeded === 'function') applySubmittedLockIfNeeded();
+      else if (typeof setHomeworkUiSubmitted === 'function') setHomeworkUiSubmitted();
+      return false;
+    }
+
+    const total = getVisibleHomeworkQuestionCount();
+    if (!total) {
+      showSubmitAlert('提出する問題がありません。いったん「問題をはじめる」から開き直してください。');
+      return false;
+    }
+
+    const unanswered = getUnansweredQuestionNumbers();
+    if (unanswered.length) {
+      showSubmitAlert(`まだ回答していない問題があります。\n${unanswered.length}問のこっています。\n未回答：${unanswered.join('、')}番`);
+      const firstCard = document.querySelector(`#quizCards .card[data-card-idx="${unanswered[0] - 1}"]`);
+      if (firstCard && typeof firstCard.scrollIntoView === 'function') {
+        firstCard.scrollIntoView({behavior:'smooth', block:'center'});
+      }
+      return false;
+    }
+
+    const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
+    if (!studentName) {
+      showSubmitAlert('名前を入力してください。');
+      const input = document.getElementById('studentName');
+      if (input) input.focus();
+      return false;
+    }
+
+    if (typeof previousSubmitHomeworkToGoogleForm === 'function') {
+      return previousSubmitHomeworkToGoogleForm(event);
+    }
+    showSubmitAlert('提出処理が見つかりません。');
+    return false;
+  };
+})();
+
 init();
 
 function formCorrectMarkFromAnswer(a){
@@ -4591,6 +4682,50 @@ function formCorrectMarkFromAnswer(a){
   return ok ? "〇" : "×";
 }
 
+</script>
+
+
+
+
+<script id="dedupeSubmitAlertPatch">
+(function(){
+  window.__lastSubmitAlertMessage = "";
+  window.__lastSubmitAlertAt = 0;
+
+  window.showSubmitAlert = function(message){
+    const now = Date.now();
+    const msg = String(message || "");
+    if (msg === window.__lastSubmitAlertMessage && (now - window.__lastSubmitAlertAt) < 1500) {
+      return;
+    }
+    window.__lastSubmitAlertMessage = msg;
+    window.__lastSubmitAlertAt = now;
+    window.alert(msg);
+  };
+
+  const btn = document.getElementById("btnSubmitHomework");
+  if (!btn) return;
+
+  const clean = btn.cloneNode(true);
+  btn.parentNode.replaceChild(clean, btn);
+
+  clean.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    if (window.__submitClickBusy) return false;
+    window.__submitClickBusy = true;
+    setTimeout(function(){ window.__submitClickBusy = false; }, 1200);
+
+    if (typeof window.submitHomeworkToGoogleForm === "function") {
+      window.submitHomeworkToGoogleForm(e);
+    } else if (typeof submitHomeworkToGoogleForm === "function") {
+      submitHomeworkToGoogleForm(e);
+    }
+    return false;
+  }, {capture:true});
+})();
 </script>
 
 </body>
