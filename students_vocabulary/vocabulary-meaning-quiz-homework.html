@@ -595,7 +595,7 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
             <div class="submitNote">とちゅうでやめるときは「今日はここまで」をおしてください。</div>
           </div>
           <div class="submitColumn">
-            <button class="btn primary submitActionButton" id="btnSubmitHomework" type="button">📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する</button>
+            <button class="btn primary submitActionButton" id="btnSubmitHomework" type="button" onclick="submitHomeworkToGoogleForm(event)">📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する</button>
           </div>
         </div>
       </div>
@@ -3892,7 +3892,7 @@ function buildHomeworkRows() {
       correctText: (getCorrectText(q) ?? "").toString(),
       isCorrect,
       starred: selected ? !isCorrect : false,
-        formCorrectMark: ((false) ? "〇" : "×"),
+        formCorrectMark: (selected ? (isCorrect ? "〇" : "×") : "未回答"),
       viewedAnswer: viewed
     };
   });
@@ -3928,32 +3928,87 @@ function buildHomeworkSubmitContent(rows) {
   return lines.join("\n");
 }
 
-async function submitHomeworkToGoogleForm() {
+let HOMEWORK_SUBMITTING = false;
+
+function submitHomeworkByHiddenForm(studentName, content) {
+  const iframeName = "hiddenHomeworkSubmitFrame";
+  let iframe = document.getElementById(iframeName);
+  if (!iframe) {
+    iframe = document.createElement("iframe");
+    iframe.name = iframeName;
+    iframe.id = iframeName;
+    iframe.style.display = "none";
+    document.body.appendChild(iframe);
+  }
+
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = GOOGLE_FORM_URL;
+  form.target = iframeName;
+  form.style.display = "none";
+
+  const nameInput = document.createElement("input");
+  nameInput.type = "hidden";
+  nameInput.name = GOOGLE_FORM_ENTRY.name;
+  nameInput.value = studentName;
+  form.appendChild(nameInput);
+
+  const contentInput = document.createElement("textarea");
+  contentInput.name = GOOGLE_FORM_ENTRY.content;
+  contentInput.value = content;
+  form.appendChild(contentInput);
+
+  document.body.appendChild(form);
+  form.submit();
+  setTimeout(() => form.remove(), 1000);
+}
+
+async function submitHomeworkToGoogleForm(event) {
+  if (event && typeof event.preventDefault === "function") event.preventDefault();
+  if (HOMEWORK_SUBMITTING) return;
+
+  // 念のため、提出ボタンが押された時点でも宿題モードとして扱う。
+  state.isStudentMode = true;
+  document.body.classList.add("homework-mode");
+
   if (isHomeworkSubmitted()) { applySubmittedLockIfNeeded(); return; }
+
   const rows = buildHomeworkRows();
   if (!rows.length) { alert("提出する問題がありません。"); return; }
+
   const studentName = ((document.getElementById("studentName") || {}).value || "").trim();
-  if (!studentName) { alert("名前を入力してください。"); const input = document.getElementById("studentName"); if (input) input.focus(); return; }
+  if (!studentName) {
+    alert("名前を入力してください。");
+    const input = document.getElementById("studentName");
+    if (input) input.focus();
+    return;
+  }
+
   const content = buildHomeworkSubmitContent(rows);
-  const fd = new FormData();
-  fd.append(GOOGLE_FORM_ENTRY.name, studentName);
-  fd.append(GOOGLE_FORM_ENTRY.content, content);
   const btn = document.getElementById("btnSubmitHomework");
+  HOMEWORK_SUBMITTING = true;
   if (btn) { btn.disabled = true; btn.innerHTML = "📩 <ruby>提出中<rt>ていしゅつちゅう</rt></ruby>…"; }
   setSubmitStatus(`Googleフォームに提出中です（${rows.length}問を1件にまとめて送信）…`, false);
+
   try {
-    await fetch(GOOGLE_FORM_URL, { method:"POST", mode:"no-cors", body:fd });
-    markHomeworkSubmitted();
-    clearHomeworkProgress();
-    setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。`, false);
-    setHomeworkUiSubmitted();
-    alert("提出しました。保存データを削除しました。");
+    // fetch の no-cors は環境によって反応が分かりにくいため、Googleフォームへは通常のHTMLフォーム送信で送る。
+    submitHomeworkByHiddenForm(studentName, content);
+
+    // Googleフォームは外部ページなので完了レスポンスを読めない。送信開始後に提出済みとしてロックする。
+    setTimeout(() => {
+      markHomeworkSubmitted();
+      clearHomeworkProgress();
+      setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。`, false);
+      setHomeworkUiSubmitted();
+      HOMEWORK_SUBMITTING = false;
+      alert("提出しました。保存データを削除しました。");
+    }, 700);
   } catch (err) {
     console.error(err);
+    HOMEWORK_SUBMITTING = false;
     setSubmitStatus("提出できませんでした。通信状態を確認してください。", true);
-    alert("提出できませんでした。通信状態を確認してください。");
-  } finally {
     if (btn && !isHomeworkSubmitted()) { btn.disabled = false; btn.innerHTML = "📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する"; }
+    alert("提出できませんでした。通信状態を確認してください。");
   }
 }
 
@@ -3972,6 +4027,11 @@ function bindHomeworkAndJudgement(container, picked) {
 }
 
 function renderQuiz() {
+  // 問題画面では必ず宿題提出UIを有効にする。
+  // URLで配布した課題だけでなく、HTMLを直接開いて選んだ課題でも提出できるようにする。
+  state.isStudentMode = true;
+  document.body.classList.add("homework-mode");
+
   $("#home").style.display = "none";
   $("#quiz").style.display = "";
   $("#btnGoHome").style.display = "";
@@ -4127,6 +4187,11 @@ async function init() {
   // Homework submit/save buttons
   const submitHomeworkBtn = document.getElementById("btnSubmitHomework");
   if (submitHomeworkBtn) submitHomeworkBtn.addEventListener("click", submitHomeworkToGoogleForm);
+  // 固定フッター内のボタンでも確実に反応するよう、document側でも拾う。
+  document.addEventListener("click", (e) => {
+    const btn = e.target && e.target.closest ? e.target.closest("#btnSubmitHomework") : null;
+    if (btn) submitHomeworkToGoogleForm(e);
+  });
   const saveForLaterBtn = document.getElementById("btnSaveForLater");
   if (saveForLaterBtn) saveForLaterBtn.addEventListener("click", () => { if (isHomeworkSubmitted()) { applySubmittedLockIfNeeded(); return; } saveHomeworkProgress(state.homeworkCurrentIndex); alert("つづきはここからできます。"); });
 
@@ -4159,7 +4224,365 @@ async function init() {
 }
 
 
+/* === FINAL V4 SUBMIT BUTTON FIX ===
+   目的：固定フッターの提出ボタンがクリックを受け取れない／反応しない問題を防ぐ。
+   - 問題画面では提出バーを必ず前面に出す
+   - disabled が残っていても、提出済みでない限り押せる状態に戻す
+   - capture段階でもクリックを拾う
+*/
+(function(){
+  const css = document.createElement('style');
+  css.textContent = `
+    @media screen {
+      body.homework-mode #submitFixedBar,
+      body.force-submitbar #submitFixedBar {
+        display:block !important;
+        visibility:visible !important;
+        opacity:1 !important;
+        pointer-events:auto !important;
+        z-index:2147483647 !important;
+      }
+      #btnSubmitHomework, #btnSaveForLater {
+        pointer-events:auto !important;
+        touch-action:manipulation !important;
+        position:relative !important;
+        z-index:2147483647 !important;
+      }
+      #submitFixedBar * { pointer-events:auto !important; }
+    }
+  `;
+  document.head.appendChild(css);
 
+  function currentPickedQuestions(){
+    try { return (typeof getSelectedQuestions === 'function') ? getSelectedQuestions() : []; }
+    catch(e){ return []; }
+  }
+
+  window.makeAssignmentSetId = function(){
+    const sp = new URLSearchParams(location.search);
+    const setName = (sp.get('set') || '').trim();
+    if (setName) return 'set_' + normalizeJsonFileName(setName);
+    const picked = currentPickedQuestions();
+    const ids = picked.map(q => (q[COL.id] || '').toString().trim()).filter(Boolean);
+    if (ids.length) return 'ids_' + ids.join('_');
+    const idsParam = (sp.get('ids') || '').trim();
+    if (idsParam) return 'ids_' + idsParam.replace(/[^a-zA-Z0-9_-]+/g, '_');
+    return ('url_' + location.pathname + location.search).replace(/[^a-zA-Z0-9_-]+/g, '_');
+  };
+
+  window.getHomeworkSubmittedKey = function(){
+    return 'submitted_' + window.makeAssignmentSetId();
+  };
+
+  window.isHomeworkSubmitted = function(){
+    try { return localStorage.getItem(window.getHomeworkSubmittedKey()) === '1'; }
+    catch(e){ return false; }
+  };
+
+  window.markHomeworkSubmitted = function(){
+    try { localStorage.setItem(window.getHomeworkSubmittedKey(), '1'); }
+    catch(e){}
+  };
+
+  window.enableSubmitButtonIfAllowed = function(){
+    const btn = document.getElementById('btnSubmitHomework');
+    const save = document.getElementById('btnSaveForLater');
+    if (!btn) return;
+    document.body.classList.add('homework-mode','force-submitbar');
+    if (window.isHomeworkSubmitted && window.isHomeworkSubmitted()) {
+      btn.disabled = true;
+      btn.textContent = '提出ずみ';
+      if (save) save.disabled = true;
+      if (typeof setSubmitStatus === 'function') setSubmitStatus('提出ずみです。この課題は再提出できません。', false);
+      return;
+    }
+    btn.disabled = false;
+    btn.innerHTML = '📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する';
+    if (save) save.disabled = false;
+  };
+
+  window.setHomeworkUiSubmitted = function(){
+    const btn = document.getElementById('btnSubmitHomework');
+    const save = document.getElementById('btnSaveForLater');
+    if (btn) { btn.disabled = true; btn.textContent = '提出ずみ'; }
+    if (save) save.disabled = true;
+    document.querySelectorAll("input[type='radio'][name^='q_']").forEach(r => { r.disabled = true; });
+    if (typeof setSubmitStatus === 'function') setSubmitStatus('提出ずみです。この課題は再提出できません。', false);
+  };
+
+  window.applySubmittedLockIfNeeded = function(){
+    document.body.classList.add('homework-mode','force-submitbar');
+    if (window.isHomeworkSubmitted && window.isHomeworkSubmitted()) window.setHomeworkUiSubmitted();
+    else window.enableSubmitButtonIfAllowed();
+  };
+
+  function submitByNativeForm(studentName, content){
+    const iframeName = 'hiddenHomeworkSubmitFrame_v4';
+    let iframe = document.getElementById(iframeName);
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.name = iframeName;
+      iframe.id = iframeName;
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = GOOGLE_FORM_URL;
+    form.target = iframeName;
+    form.style.display = 'none';
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'hidden';
+    nameInput.name = GOOGLE_FORM_ENTRY.name;
+    nameInput.value = studentName;
+    form.appendChild(nameInput);
+
+    const contentInput = document.createElement('textarea');
+    contentInput.name = GOOGLE_FORM_ENTRY.content;
+    contentInput.value = content;
+    form.appendChild(contentInput);
+
+    document.body.appendChild(form);
+    HTMLFormElement.prototype.submit.call(form);
+    setTimeout(() => { try { form.remove(); } catch(e){} }, 1500);
+  }
+
+  window.submitHomeworkToGoogleForm = function(event){
+    if (event && event.preventDefault) event.preventDefault();
+    if (event && event.stopPropagation) event.stopPropagation();
+
+    state.isStudentMode = true;
+    document.body.classList.add('homework-mode','force-submitbar');
+
+    if (window.isHomeworkSubmitted()) {
+      window.setHomeworkUiSubmitted();
+      return false;
+    }
+
+    const btn = document.getElementById('btnSubmitHomework');
+    if (btn) btn.disabled = false;
+
+    const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
+    if (!studentName) {
+      alert('名前を入力してください。');
+      const input = document.getElementById('studentName');
+      if (input) input.focus();
+      return false;
+    }
+
+    let rows = [];
+    try { rows = buildHomeworkRows(); } catch(e) { console.error(e); }
+    if (!rows || !rows.length) {
+      alert('提出する問題がありません。');
+      return false;
+    }
+
+    const content = buildHomeworkSubmitContent(rows);
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '📩 <ruby>提出中<rt>ていしゅつちゅう</rt></ruby>…';
+    }
+    if (typeof setSubmitStatus === 'function') setSubmitStatus(`Googleフォームに提出中です（${rows.length}問）…`, false);
+
+    try {
+      submitByNativeForm(studentName, content);
+      window.markHomeworkSubmitted();
+      if (typeof clearHomeworkProgress === 'function') clearHomeworkProgress();
+      if (typeof setSubmitStatus === 'function') setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。`, false);
+      window.setHomeworkUiSubmitted();
+      alert('提出しました。保存データを削除しました。');
+    } catch(e) {
+      console.error(e);
+      if (typeof setSubmitStatus === 'function') setSubmitStatus('提出できませんでした。通信状態を確認してください。', true);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する';
+      }
+      alert('提出できませんでした。通信状態を確認してください。');
+    }
+    return false;
+  };
+
+  document.addEventListener('click', function(e){
+    const btn = e.target && e.target.closest ? e.target.closest('#btnSubmitHomework') : null;
+    if (!btn) return;
+    window.submitHomeworkToGoogleForm(e);
+  }, true);
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('btnSubmitHomework');
+    if (btn) {
+      btn.disabled = false;
+      btn.onclick = window.submitHomeworkToGoogleForm;
+    }
+    setInterval(function(){
+      if (document.getElementById('quiz') && document.getElementById('quiz').style.display !== 'none') {
+        window.enableSubmitButtonIfAllowed();
+      }
+    }, 500);
+  });
+})();
+
+
+
+/* === FINAL V5: submit rows must use the questions currently displayed on screen ===
+   v4では state.selectedIds が空になるケースがあり、画面に問題が表示されていても
+   buildHomeworkRows() が 0件を返して「提出する問題がありません」になっていました。
+   ここでは、まず画面上の .card[data-qid] から提出対象を作ります。
+*/
+(function(){
+  function getDisplayedQuestions(){
+    const cards = Array.from(document.querySelectorAll('#quizCards .card[data-qid]'));
+    const byId = new Map((ACTIVE_QUESTIONS || QUESTIONS || []).map(q => [(q[COL.id] || '').toString(), q]));
+    const out = [];
+    cards.forEach((card) => {
+      const qid = (card.getAttribute('data-qid') || '').toString();
+      if (qid && byId.has(qid)) out.push(byId.get(qid));
+    });
+    if (out.length) return out;
+    try {
+      const picked = getSelectedQuestions();
+      if (picked && picked.length) return picked;
+    } catch(e) {}
+    return [];
+  }
+
+  window.makeAssignmentSetId = function(){
+    const sp = new URLSearchParams(location.search);
+    const setName = (sp.get('set') || '').trim();
+    if (setName) return 'set_' + normalizeJsonFileName(setName);
+    const shown = getDisplayedQuestions();
+    const ids = shown.map(q => (q[COL.id] || '').toString().trim()).filter(Boolean);
+    if (ids.length) return 'ids_' + ids.join('_');
+    const idsParam = (sp.get('ids') || '').trim();
+    if (idsParam) return 'ids_' + idsParam.replace(/[^a-zA-Z0-9_-]+/g, '_');
+    return ('url_' + location.pathname + location.search).replace(/[^a-zA-Z0-9_-]+/g, '_');
+  };
+
+  window.getHomeworkSubmittedKey = function(){
+    return 'submitted_' + window.makeAssignmentSetId();
+  };
+  window.isHomeworkSubmitted = function(){
+    try { return localStorage.getItem(window.getHomeworkSubmittedKey()) === '1'; } catch(e){ return false; }
+  };
+  window.markHomeworkSubmitted = function(){
+    try { localStorage.setItem(window.getHomeworkSubmittedKey(), '1'); } catch(e){}
+  };
+
+  window.buildHomeworkRows = function(){
+    const picked = getDisplayedQuestions();
+    const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
+    const savedAt = new Date().toLocaleString('ja-JP');
+    return picked.map((q, idx) => {
+      const selected = getSelectedChoiceValue(idx);
+      const correctAnswer = getCorrectAnswer(q);
+      const selectedText = selected === '1' ? q[COL.c1] : selected === '2' ? q[COL.c2] : selected === '3' ? q[COL.c3] : '';
+      const isCorrect = selected ? selected === correctAnswer : false;
+      const card = document.querySelector(`#quizCards .card[data-card-idx="${idx}"]`);
+      const viewed = card ? card.getAttribute('data-answer-viewed') === '1' : false;
+      return {
+        savedAt,
+        studentName,
+        id: (q[COL.id] || '').toString(),
+        word: (q[COL.word] || '').toString(),
+        sentence: (q[COL.sentence] || '').toString(),
+        selected,
+        selectedText: (selectedText || '').toString(),
+        correctAnswer,
+        correctText: (getCorrectText(q) || '').toString(),
+        isCorrect,
+        starred: selected ? !isCorrect : false,
+        formCorrectMark: selected ? (isCorrect ? '〇' : '×') : '未回答',
+        viewedAnswer: viewed
+      };
+    });
+  };
+
+  window.submitHomeworkToGoogleForm = function(event){
+    if (event && event.preventDefault) event.preventDefault();
+    if (event && event.stopPropagation) event.stopPropagation();
+    state.isStudentMode = true;
+    document.body.classList.add('homework-mode','force-submitbar');
+
+    if (window.isHomeworkSubmitted()) {
+      if (typeof setHomeworkUiSubmitted === 'function') setHomeworkUiSubmitted();
+      return false;
+    }
+
+    const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
+    if (!studentName) {
+      alert('名前を入力してください。');
+      const input = document.getElementById('studentName');
+      if (input) input.focus();
+      return false;
+    }
+
+    const rows = window.buildHomeworkRows();
+    if (!rows.length) {
+      alert('画面上の問題を取得できませんでした。いったん「問題をはじめる」から開き直してください。');
+      return false;
+    }
+
+    const btn = document.getElementById('btnSubmitHomework');
+    const content = buildHomeworkSubmitContent(rows);
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '📩 <ruby>提出中<rt>ていしゅつちゅう</rt></ruby>…';
+    }
+    if (typeof setSubmitStatus === 'function') setSubmitStatus(`Googleフォームに提出中です（${rows.length}問）…`, false);
+
+    try {
+      const iframeName = 'hiddenHomeworkSubmitFrame_v5';
+      let iframe = document.getElementById(iframeName);
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.name = iframeName;
+        iframe.id = iframeName;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+      }
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = GOOGLE_FORM_URL;
+      form.target = iframeName;
+      form.style.display = 'none';
+      const nameInput = document.createElement('input');
+      nameInput.type = 'hidden';
+      nameInput.name = GOOGLE_FORM_ENTRY.name;
+      nameInput.value = studentName;
+      form.appendChild(nameInput);
+      const contentInput = document.createElement('textarea');
+      contentInput.name = GOOGLE_FORM_ENTRY.content;
+      contentInput.value = content;
+      form.appendChild(contentInput);
+      document.body.appendChild(form);
+      HTMLFormElement.prototype.submit.call(form);
+      setTimeout(() => { try { form.remove(); } catch(e){} }, 1500);
+
+      window.markHomeworkSubmitted();
+      if (typeof clearHomeworkProgress === 'function') clearHomeworkProgress();
+      if (typeof setSubmitStatus === 'function') setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。`, false);
+      if (typeof setHomeworkUiSubmitted === 'function') setHomeworkUiSubmitted();
+      alert('提出しました。保存データを削除しました。');
+    } catch(e) {
+      console.error(e);
+      if (typeof setSubmitStatus === 'function') setSubmitStatus('提出できませんでした。通信状態を確認してください。', true);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する';
+      }
+      alert('提出できませんでした。通信状態を確認してください。');
+    }
+    return false;
+  };
+
+  document.addEventListener('click', function(e){
+    const btn = e.target && e.target.closest ? e.target.closest('#btnSubmitHomework') : null;
+    if (!btn) return;
+    window.submitHomeworkToGoogleForm(e);
+  }, true);
+})();
 
 init();
 
