@@ -1065,7 +1065,6 @@ function buildRubyHTML(mixed, kana) {
   };
 
   const FULL_RUBY_EXCEPT = {
-    "毎日": "<ruby>毎<rt>まい</rt></ruby><ruby>日<rt>にち</rt></ruby>",
     "わが家の愛犬はとても人なつっこい。": "わが<ruby>家<rt>や</rt></ruby>の<ruby>愛犬<rt>あいけん</rt></ruby>はとても<ruby>人<rt>ひと</rt></ruby>なつっこい。",
     "大切にしている犬": "<ruby>大切<rt>たいせつ</rt></ruby>にしている<ruby>犬<rt>いぬ</rt></ruby>",
     "小さい犬": "<ruby>小<rt>ちい</rt></ruby>さい<ruby>犬<rt>いぬ</rt></ruby>",
@@ -1090,7 +1089,7 @@ function buildRubyHTML(mixed, kana) {
     "花のこまかい粉": "<ruby>花<rt>はな</rt></ruby>のこまかい<ruby>粉<rt>こな</rt></ruby>",
     "雪のつぶ": "<ruby>雪<rt>ゆき</rt></ruby>のつぶ",
     "砂のつぶ": "<ruby>砂<rt>すな</rt></ruby>のつぶ",
-    "毎日学校へ行って勉強をする。": "<ruby>毎<rt>まい</rt></ruby><ruby>日<rt>にち</rt></ruby><ruby>学校<rt>がっこう</rt></ruby>へ<ruby>行<rt>い</rt></ruby>って<ruby>勉強<rt>べんきょう</rt></ruby>をする。",
+    "毎日学校へ行って勉強をする。": "<ruby>毎日学校<rt>まいにちがっこう</rt></ruby>へ<ruby>行<rt>い</rt></ruby>って<ruby>勉強<rt>べんきょう</rt></ruby>をする。",
     "友だちと遊ぶだけの場所": "<ruby>友<rt>とも</rt></ruby>だちと<ruby>遊<rt>あそ</rt></ruby>ぶだけの<ruby>場所<rt>ばしょ</rt></ruby>",
     "勉強や生活を学ぶ場所": "<ruby>勉強<rt>べんきょう</rt></ruby>や<ruby>生活<rt>せいかつ</rt></ruby>を<ruby>学<rt>まな</rt></ruby>ぶ<ruby>場所<rt>ばしょ</rt></ruby>",
     "物を売る店": "<ruby>物<rt>もの</rt></ruby>を<ruby>売<rt>う</rt></ruby>る<ruby>店<rt>みせ</rt></ruby>",
@@ -3947,7 +3946,6 @@ function getTargetReadingInfo(q) {
   const TARGET_READING_EXCEPT = {
     "今年に入って、鉄道事故が次々に発生している。||鉄道": "てつどう",
     "日本には47の都道府県がある。||都道府県": "とどうふけん",
-    "毎日学校へ行って勉強をする。||学校": "がっこう",
     "朝は交通量が多く、道に車がたくさん走っていた。||交通": "こうつう"
   };
   if (mixed === "朝は交通量が多く、道に車がたくさん走っていた。" && target === "交通") {
