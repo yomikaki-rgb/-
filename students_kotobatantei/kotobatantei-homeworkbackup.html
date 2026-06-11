@@ -5046,11 +5046,20 @@ function setUnknownAnswer(targetId){
       fb.className='choiceFeedback hardJudge '+(ok?'ok':'ng');
       fb.textContent = ok ? 'せいかい' : 'おしい';
     }
-    try {
-      if (typeof speakText === 'function') speakText(ok ? 'せいかい' : 'おしい');
-    } catch(e) {}
     const ans=document.getElementById('answer_'+i);
     if(ans) ans.classList.add('show','revealed');
+    try {
+      const answerBtn = ans ? ans.querySelector('[data-action="speakAnswer"]') : null;
+      const word = answerBtn ? (answerBtn.getAttribute('data-word') || '') : '';
+      const readingText = answerBtn ? (answerBtn.getAttribute('data-reading') || '') : '';
+      const meaningText = answerBtn ? (answerBtn.getAttribute('data-meaning') || '') : '';
+      const answerText = `${readingText ? `読みは、${readingText}。` : ""}${meaningText ? `意味は、${meaningText}。` : ""}`;
+      if (typeof speakText === 'function') {
+        speakText(ok ? 'せいかい' : 'おしい', function(){
+          if (answerText) speakText(answerText);
+        });
+      }
+    } catch(e) {}
     const revealBtn=document.querySelector('[data-action="revealAnswerAfterResponse"][data-card-idx="'+i+'"]');
     if(revealBtn){ revealBtn.disabled=true; revealBtn.textContent='答えを表示中'; }
     try{ if(typeof saveHomeworkProgress === 'function') saveHomeworkProgress(i); }catch(e){}
