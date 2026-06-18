@@ -835,12 +835,13 @@ canvas#shooterCanvas{
 =============================== */
 .nativeInput{
   position:absolute;
-  left:-9999px;
-  top:auto;
-  width:1px;
-  height:1px;
-  opacity:0.01;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  opacity:0;
   pointer-events:none;
+  z-index:-1;
 }
 
 
@@ -936,6 +937,33 @@ canvas#shooterCanvas{
     white-space:nowrap;
   }
 
+
+/* 入力方法切替：左端にまとめ、色のコントラストを強くする */
+.inputMethodChoice{
+  border:2px solid transparent;
+  color:#ffffff;
+  box-shadow:0 6px 16px rgba(0,0,0,.12);
+}
+.buttonInputChoice{
+  background:#16A34A;
+  border-color:#15803D;
+}
+.keyboardInputChoice{
+  background:#F97316;
+  border-color:#C2410C;
+}
+.buttonInputChoice:not(.active),
+.keyboardInputChoice:not(.active){
+  opacity:.55;
+  filter:saturate(.85);
+}
+.buttonInputChoice.active,
+.keyboardInputChoice.active{
+  opacity:1;
+  transform:none;
+  box-shadow:0 0 0 3px rgba(17,24,39,.12), 0 8px 18px rgba(0,0,0,.16);
+}
+
 </style>
 
 </style>
@@ -946,6 +974,8 @@ canvas#shooterCanvas{
   <div class="top">
     <!-- ★左上：終了して最初から＋保存＋記録を見る＋しかけ得点 -->
     <div class="topLeftTools">
+    <button class="modeBtn active inputMethodChoice buttonInputChoice" id="inputMethodBtn" type="button">ボタンで入力</button>
+    <button class="modeBtn inputMethodChoice keyboardInputChoice" id="keyboardMethodBtn" type="button">キーボードで入力</button>
       <button class="ghost" id="restartBtn" type="button">やりなおし</button>
       <button class="ghost" id="saveProgressBtn" type="button">ほぞん</button>
       <button class="ghost" id="openLogBtn" type="button">きろくを見る</button>
@@ -2836,7 +2866,113 @@ if(tabWrongsEl){
 /* ========= 初期化 ========= */
 buildBase();
 buildDakuten();
+
 buildYouon();
+
+/* 入力方法切替 */
+let inputMethod = localStorage.getItem("inputMethodMode") || "buttons";
+
+function applyInputMethodUI(){
+  const btnMode = document.getElementById("inputMethodBtn");
+  const keyMode = document.getElementById("keyboardMethodBtn");
+  const kbd = document.querySelector(".kbd");
+
+  if(inputMethod === "keyboard"){
+    if(kbd) kbd.style.display = "none";
+    btnMode && btnMode.classList.remove("active");
+    keyMode && keyMode.classList.add("active");
+  }else{
+    if(kbd) kbd.style.display = "";
+    btnMode && btnMode.classList.add("active");
+    keyMode && keyMode.classList.remove("active");
+  }
+}
+
+document.getElementById("inputMethodBtn")?.addEventListener("click", ()=>{
+  inputMethod = "buttons";
+  localStorage.setItem("inputMethodMode","buttons");
+  
+applyInputMethodUI();
+
+
+/* キーボード入力時：表示欄タップで端末キーボードを出す */
+if(answerView && nativeInput){
+  answerView.addEventListener("click", ()=>{
+    if(inputMethod !== "keyboard") return;
+    nativeInput.focus();
+  });
+  answerView.addEventListener("touchend", ()=>{
+    if(inputMethod !== "keyboard") return;
+    nativeInput.focus();
+  });
+}
+
+/* キーボード入力の同期修正 */
+if(nativeInput){
+  nativeInput.addEventListener("beforeinput", (e)=>{
+    if(inputMethod !== "keyboard") return;
+    if(nextBtn && nextBtn.disabled === false) return;
+
+    if(e.inputType === "deleteContentBackward"){
+      e.preventDefault();
+      typed = typed.slice(0, -1);
+      nativeInput.value = typed;
+      renderAnswer();
+      return;
+    }
+
+    if(e.inputType === "deleteContentForward"){
+      e.preventDefault();
+      typed = "";
+      nativeInput.value = typed;
+      renderAnswer();
+      return;
+    }
+  });
+
+  nativeInput.addEventListener("input", ()=>{
+    if(inputMethod !== "keyboard") return;
+    if(nextBtn && nextBtn.disabled === false) return;
+    typed = nativeInput.value || "";
+    renderAnswer();
+  });
+
+  nativeInput.addEventListener("keydown", (e)=>{
+    if(inputMethod !== "keyboard") return;
+    if(nextBtn && nextBtn.disabled === false) return;
+
+    if(e.key === "Backspace"){
+      e.preventDefault();
+      typed = typed.slice(0, -1);
+      nativeInput.value = typed;
+      renderAnswer();
+      return;
+    }
+
+    if(e.key === "Delete"){
+      e.preventDefault();
+      typed = "";
+      nativeInput.value = typed;
+      renderAnswer();
+      return;
+    }
+  });
+}
+
+});
+
+document.getElementById("keyboardMethodBtn")?.addEventListener("click", ()=>{
+  inputMethod = "keyboard";
+  localStorage.setItem("inputMethodMode","keyboard");
+  applyInputMethodUI();
+  if(nativeInput){
+    nativeInput.value = typed || "";
+    nativeInput.focus();
+  }
+});
+
+applyInputMethodUI();
+
 applyPanelVisibility();
 updateRewardPointsUI();
 /* ===============================
