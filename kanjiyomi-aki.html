@@ -1746,7 +1746,16 @@ function appendChar(ch){
 }
 function onBackspace(){
   if(nextBtn.disabled === false) return;
-  typed = typed.slice(0, -1);
+
+  const keyboardMode = document.getElementById("keyboardMethodBtn")?.classList.contains("active");
+
+  if(keyboardMode && typeof nativeInput !== "undefined" && nativeInput){
+    nativeInput.value = String(nativeInput.value || "").slice(0, -1);
+    typed = nativeInput.value;
+  }else{
+    typed = typed.slice(0, -1);
+  }
+
   renderAnswer();
 }
 function onClear(){
