@@ -1188,26 +1188,44 @@ canvas#shooterCanvas{
 <script>
 /* 🔽 置き換え：デフォルト問題（初期値） */
 const WORDS_TEXT_DEFAULT = `
+［空気］	くうき　くうき
+［天気］	てんき　てんき
+［ふじ山］	ふじさん　さん
+［大せつ］	たいせつ　たい
+［下げる］	さげる　さ
+［目てき］	もくてき　もく
+［おく上］	おくじょう　じょう
+［はく手］	はくしゅ　しゅ
+［せい春］	せいしゅん　しゅん
+［早ちょう］	そうちょう　そう
+［文字］	もじ　もじ
+［親しい］	したしい　した
+［新しい］　　　	あたらしい　あたら
+［時］	とき　とき
+［直す］	なおす　なお
+［毎日］	まいにち　まいにち
+［愛犬］	あいけん　あいけん
+［出場］	しゅつじょう　しゅつじょう
+［入学］	にゅうがく　にゅうがく
+［き立］	きりつ　りつ
+［休日］	きゅうじつ　きゅうじつ
+［今夜］	こんや　こんや
+下がきをしたあと、えの具で［着色］した。	ちゃくしょく　ちゃくしょく
+［南きょく］	なんきょく　なん
+［東北］	とうほく　とうほく
+今年は［だん冬］で、雪が少なかった。	だんとう　とう
+［初夏］	しょか　しょか
+［土地］	とち　とち
+［秋分の日］は、昼と夜の長さがほぼおなじになる。　しゅうぶんのひ　しゅう
+夏休みの［計画］をたてて、いつなにをするか、かんがえた。
 駅で道を［案内］してもらった。 あんない あんない
-［秋分］の日 しゅうぶん　しゅうぶん
-［春分］の日　しゅんぶん　しゅんぶん
-［近所］ きんじょ　きんじょ
-［計る］ はかる　はか
-［相談］ そうだん　そうだん
-［詩人］ しじん　しじん
-ママは、インターネットで［商売］をしている しょうばい　しょうばい
-［動く］ うごく　うご
-りなちゃんは、カードのふくろを［開発］した かいはつ　かいはつ
-りなちゃんは工作の［実力］がある じつりょく　じつりょく
-［場面］ ばめん　ばめん
-［登］る のぼる　のぼ
-［仕事］ しごと　しごと
-朝６時のひこうきになるために［深夜］におきた しんや　しんや
-［意味］ いみ　いみ
-家に［到着］しました　とうちゃく　とうちゃく
-今日は［全く］宿題がありません　まったく　まった
-今日は［鉄道］に乗れなかった　てつどう　てつどう
-［定規］を落としてなくした
+山の上から下を見ると白い雲が一面に広がり海みたいに見えた。人はこんな景色を［雲海］と呼ぶ。 うんかい うんかい
+夏休みに［海外］へ行き、日本とは違う言葉を聞いた。 かいがい かいがい
+飛行機に乗って［外国］に行きたい がいこく がいこく
+広い［草原］に牛がたくさんいた。 そうげん そうげん
+ニュースで警察官のピストルから［だん丸］が出たと聞いた。 だんがん がん
+学校が終わった後、［昼食］を食べた。 ちゅうしょく ちゅうしょく
+［朝食］を食べてから学校へ行った。 ちょうしょく ちょうしょく
 `;
 
 /* ========= WORDS_TEXT → ITEMS に変換（他は変えない） ========= */
@@ -1728,7 +1746,16 @@ function appendChar(ch){
 }
 function onBackspace(){
   if(nextBtn.disabled === false) return;
-  typed = typed.slice(0, -1);
+
+  const keyboardMode = document.getElementById("keyboardMethodBtn")?.classList.contains("active");
+
+  if(keyboardMode && typeof nativeInput !== "undefined" && nativeInput){
+    nativeInput.value = String(nativeInput.value || "").slice(0, -1);
+    typed = nativeInput.value;
+  }else{
+    typed = typed.slice(0, -1);
+  }
+
   renderAnswer();
 }
 function onClear(){
@@ -2189,6 +2216,8 @@ function check(){
 function next(){
   if(studyMode === "flash"){
     if(order.length === 0){ showFlashFace(); return; }
+    hintLineEl.textContent = "";
+    hintLineEl.className = "hintLine";
     idx = (idx + 1) % order.length;
     flashIsBack = false;
     hintCount = 0;
@@ -2201,6 +2230,9 @@ function next(){
     msgEl.className = "msg ng";
     return;
   }
+
+  hintLineEl.textContent = "";
+  hintLineEl.className = "hintLine";
 
   if(rewardPlayedThisCharge){
     resetRewardGimmick(true);
@@ -3210,7 +3242,7 @@ function initShooterGame(){
   shooterRunning = false;
   shooterCoins = 0;
   shooterLane = 1;
-  shooterTimeLeft = 15_000; // 15秒
+  shooterTimeLeft = 30_000; // 30秒
   shooterLastTs = 0;
   shooterEnemies = [];
   shooterBullets = [];
