@@ -2216,6 +2216,8 @@ function check(){
 function next(){
   if(studyMode === "flash"){
     if(order.length === 0){ showFlashFace(); return; }
+    hintLineEl.textContent = "";
+    hintLineEl.className = "hintLine";
     idx = (idx + 1) % order.length;
     flashIsBack = false;
     hintCount = 0;
@@ -2228,6 +2230,9 @@ function next(){
     msgEl.className = "msg ng";
     return;
   }
+
+  hintLineEl.textContent = "";
+  hintLineEl.className = "hintLine";
 
   if(rewardPlayedThisCharge){
     resetRewardGimmick(true);
