@@ -3528,6 +3528,10 @@ function formatSentence(q) {
   const kana = (q[COL.sentenceKana] ?? "").toString();
   const target = (q[COL.word] ?? "").toString();
 
+  if (state.settings.ruby && mixed === "母は子どもにたくさんの愛情をそそいで育てた。" && target === "愛情") {
+    return `<ruby>母<rt>はは</rt></ruby>は<ruby>子<rt>こ</rt></ruby>どもにたくさんの<span class="target">愛情</span>をそそいで<ruby>育<rt>そだ</rt></ruby>てた。`;
+  }
+
   if (!target) {
     return state.settings.ruby ? buildRubyHTML(mixed, kana) : escapeHTML(mixed);
   }
