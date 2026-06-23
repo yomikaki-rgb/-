@@ -233,6 +233,19 @@
       }
     }
 
+
+    /* input method toggle */
+    .input-method-switch{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+    .keyboard-answer-input{width:100%;border:2px solid #d9e3f8;border-radius:14px;padding:12px 14px;background:#fff;font-weight:900;font-size:clamp(22px,3vw,32px);text-align:center;letter-spacing:.08em;text-transform:uppercase;margin-top:8px}
+    .keyboard-answer-input::placeholder{font-size:clamp(14px,2vw,20px);color:#8aa0d8;letter-spacing:0;text-transform:none}
+
+
+    /* keyboard mode: on-screen QWERTY is reference only */
+    body.keyboard-reference-only #qwertyKeyboard .qkey{
+      pointer-events:none;
+      cursor:default;
+    }
+
 </style>
 </head>
 <body>
@@ -316,7 +329,14 @@
         <button class="btn primary" id="nextWordBtn">つぎへ</button>
       </div>
 
-      <div class="kbd-layout" style="display:block;">
+      <div class="input-method-switch" id="inputMethodSwitch">
+        <button class="btn active" id="tapInputModeBtn" type="button">ボタンで入力</button>
+        <button class="btn" id="keyboardInputModeBtn" type="button">キーボードで入力</button>
+        <button class="btn secondary" id="toggleReferenceKeyboardBtn" type="button">見本キーボード表示</button>
+      </div>
+      <input type="text" id="keyboardAnswerInput" class="keyboard-answer-input hidden" inputmode="latin" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="キーボードでローマ字を入力" />
+
+      <div class="kbd-layout" id="tapKeyboardArea" style="display:block;">
         <h3 class="section-title consonant-title">QWERTYキーボード</h3>
         <div id="qwertyKeyboard" class="qwerty-layout"></div>
         <div class="keyboard-options">
@@ -1082,6 +1102,8 @@
       savedWords: loadJSON("romajiTapSavedWords", []),
       answeredCurrent: false,
       displayMode: loadJSON("romajiTapDisplayMode", "kanji_kana"),
+      inputMethod: loadJSON("romajiTapInputMethod", "tap"),
+      referenceKeyboardVisible: loadJSON("romajiTapReferenceKeyboardVisible", true),
       practiceStarted: false,
       highlightConsonants: ['K','S','T','N','H','M','Y','R','W','G','Z','D','B','P'],
       practicedWords: [],
@@ -1100,10 +1122,10 @@
 
 const els = {
       modeButtons:[...document.querySelectorAll('[data-mode]')],
-      currentWord:document.getElementById('currentWord'), currentWordInput:document.getElementById('currentWordInput'),
+      currentWord:document.getElementById('currentWord'), currentWordInput:document.getElementById('currentWordInput'), keyboardAnswerInput:document.getElementById('keyboardAnswerInput'),
       progressLabel:document.getElementById('progressLabel'), inputPreview:document.getElementById('inputPreview'),
       confirmPreview:document.getElementById('confirmPreview'), feedback:document.getElementById('feedback'),
-      consonantGrid:document.getElementById('consonantGrid'), vowelGrid:document.getElementById('vowelGrid'), qwertyKeyboard:document.getElementById('qwertyKeyboard'), consonantColorChoices:document.getElementById('consonantColorChoices'),
+      consonantGrid:document.getElementById('consonantGrid'), vowelGrid:document.getElementById('vowelGrid'), qwertyKeyboard:document.getElementById('qwertyKeyboard'), tapKeyboardArea:document.getElementById('tapKeyboardArea'), consonantColorChoices:document.getElementById('consonantColorChoices'),
       groupChecklist:document.getElementById('groupChecklist'), freePanel:document.getElementById('freePanel'),
       savedPanel:document.getElementById('savedPanel'),
       practiceSettingsCard:document.getElementById('practiceSettingsCard'), practiceCard:document.getElementById('practiceCard'), practiceIntroCard:document.getElementById('practiceIntroCard'), practiceSessionCard:document.getElementById('practiceSessionCard'),
@@ -1115,7 +1137,7 @@ const els = {
 
     function loadJSON(key, fallback){ try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }
     function saveJSON(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
-    function persistSettings(){ saveJSON('romajiTapLetterCase', state.letterCase); saveJSON('romajiTapConsonantGuide', state.showConsonantGuide); saveJSON('romajiTapExtendedConsonants', state.showExtendedConsonants); saveJSON('romajiTapAutoConfirm', state.autoConfirm); saveJSON('romajiTapDisplayMode', state.displayMode); saveJSON('romajiTapVowelColorOn', state.vowelColorOn); saveJSON('romajiTapConsonantColorOn', state.consonantColorOn); saveJSON('romajiTapColoredConsonants', Array.from(state.coloredConsonants)); }
+    function persistSettings(){ saveJSON('romajiTapLetterCase', state.letterCase); saveJSON('romajiTapConsonantGuide', state.showConsonantGuide); saveJSON('romajiTapExtendedConsonants', state.showExtendedConsonants); saveJSON('romajiTapAutoConfirm', state.autoConfirm); saveJSON('romajiTapDisplayMode', state.displayMode); saveJSON('romajiTapInputMethod', state.inputMethod); saveJSON('romajiTapReferenceKeyboardVisible', state.referenceKeyboardVisible); saveJSON('romajiTapVowelColorOn', state.vowelColorOn); saveJSON('romajiTapConsonantColorOn', state.consonantColorOn); saveJSON('romajiTapColoredConsonants', Array.from(state.coloredConsonants)); }
     function persistSavedWords(){ saveJSON('romajiTapSavedWords', state.savedWords); }
     function persistHistory(){ saveJSON('romajiTapHistory', state.history); }
     function persistFreeDoneWords(){ saveJSON('romajiTapFreeDoneWords', state.freeDoneWords); }
@@ -1340,6 +1362,29 @@ const els = {
       state.currentWord = current.word; state.currentTarget = toRomaji(getWordKana(current.word)); resetInput(false); renderPractice();
       setFeedback('', 'info');
     }
+    function renderInputMethodControls(){
+      const isKeyboard = state.inputMethod === 'keyboard';
+      const tapBtn = document.getElementById('tapInputModeBtn');
+      const keyboardBtn = document.getElementById('keyboardInputModeBtn');
+      const referenceBtn = document.getElementById('toggleReferenceKeyboardBtn');
+      if(tapBtn) tapBtn.classList.toggle('active', !isKeyboard);
+      if(keyboardBtn) keyboardBtn.classList.toggle('active', isKeyboard);
+      if(referenceBtn){
+        referenceBtn.classList.toggle('hidden', !isKeyboard || state.mode !== 'practice' || !state.practiceStarted);
+        referenceBtn.classList.toggle('active', state.referenceKeyboardVisible);
+        referenceBtn.textContent = state.referenceKeyboardVisible ? '見本キーボード表示' : '見本キーボード非表示';
+      }
+      if(els.tapKeyboardArea){
+        const hideReferenceKeyboard = isKeyboard && state.mode === 'practice' && !state.referenceKeyboardVisible;
+        els.tapKeyboardArea.classList.toggle('hidden', hideReferenceKeyboard);
+      }
+      if(els.keyboardAnswerInput){
+        const showKeyboardInput = state.mode === 'practice' && state.practiceStarted && isKeyboard;
+        els.keyboardAnswerInput.classList.toggle('hidden', !showKeyboardInput);
+        els.keyboardAnswerInput.readOnly = !showKeyboardInput;
+      }
+    }
+
     function renderMode(){
       els.modeButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === state.mode));
       els.freePanel.classList.toggle('hidden', state.mode !== 'free');
@@ -1352,6 +1397,7 @@ const els = {
       els.currentWord.classList.toggle('hidden', free);
       els.currentWordInput.classList.toggle('hidden', !free);
       els.currentWordInput.readOnly = !free;
+      renderInputMethodControls();
       document.getElementById('speakWordBtn').classList.remove('hidden');
       els.freeSaveWordBtn.classList.toggle('show', free);
       document.getElementById('backToStartFreeBtn').classList.toggle('show', free);
@@ -1365,6 +1411,7 @@ const els = {
       } else if(state.mode === 'practice') {
         if(state.practiceStarted && state.practiceList.length) {
           loadCurrentWord();
+          if(state.inputMethod === 'keyboard' && els.keyboardAnswerInput) setTimeout(() => els.keyboardAnswerInput.focus(), 0);
         } else {
           state.currentWord=''; state.currentTarget=''; resetInput(false); renderPractice(); setFeedback('「練習をはじめる」を押してください。', 'info');
         }
@@ -1410,11 +1457,17 @@ function renderKeyboard(){
         row.forEach(key => rowEl.appendChild(makeQwertyKey(key)));
         els.qwertyKeyboard.appendChild(rowEl);
       });
-      const actionRow=document.createElement('div'); actionRow.className='qwerty-row';
-      actionRow.appendChild(makeActionKey('さくじょ','back', backspaceInput));
-      actionRow.appendChild(makeActionKey('スペース','space', () => tapQwertyKey(' ')));
-      actionRow.appendChild(makeActionKey('できた','done', () => judgeByDoneButton()));
-      els.qwertyKeyboard.appendChild(actionRow);
+
+      // キーボードで入力モードでは、画面上のQWERTYは物理キーボード用の見本にする。
+      // そのため、さくじょ・スペース・できた は表示しない。
+      if(!(state.mode === 'practice' && state.inputMethod === 'keyboard')){
+        const actionRow=document.createElement('div'); actionRow.className='qwerty-row';
+        actionRow.appendChild(makeActionKey('さくじょ','back', backspaceInput));
+        actionRow.appendChild(makeActionKey('スペース','space', () => tapQwertyKey(' ')));
+        actionRow.appendChild(makeActionKey('できた','done', () => judgeByDoneButton()));
+        els.qwertyKeyboard.appendChild(actionRow);
+      }
+
       renderColorControls();
     }
     function makeQwertyKey(key){
@@ -1592,6 +1645,10 @@ function renderKeyboard(){
     }
 
     function tapQwertyKey(key){
+      // キーボードで入力モードでは、画面上のQWERTYは見本専用にする
+      if(state.mode === 'practice' && state.inputMethod === 'keyboard'){
+        return;
+      }
       if(key === 'DONE' || key === 'できた'){
         judgeByDoneButton();
         return;
@@ -1607,6 +1664,10 @@ function renderKeyboard(){
       setFeedback('', 'info');
     }
     function backspaceInput(){
+      // キーボードで入力モードでは、画面上の削除ボタンも見本扱いにする
+      if(state.mode === 'practice' && state.inputMethod === 'keyboard'){
+        return;
+      }
       state.currentInput = state.currentInput.slice(0, -1);
       state.inputTokens = state.currentInput.split('');
       renderPractice();
@@ -1629,6 +1690,8 @@ function renderKeyboard(){
       });
     }
     function renderPractice(){
+      document.body.classList.toggle('keyboard-reference-only', state.mode === 'practice' && state.inputMethod === 'keyboard');
+      renderKeyboard();
       const shownWord = state.mode === 'free'
         ? (state.freeDraft || tokensToKana(state.inputTokens) || '')
         : getDisplayWord(state.currentWord);
@@ -1636,6 +1699,11 @@ function renderKeyboard(){
       els.currentWordInput.value = shownWord || '';
       els.progressLabel.textContent = state.practiceList.length ? `${state.currentIndex+1} / ${state.practiceList.length}` : '0 / 0';
       els.inputPreview.textContent = state.currentInput ? displayCase(state.currentInput) : ' ';
+      if(els.keyboardAnswerInput && document.activeElement !== els.keyboardAnswerInput){
+        const v = displayCase(state.currentInput || '');
+        if(els.keyboardAnswerInput.value !== v) els.keyboardAnswerInput.value = v;
+      }
+      renderInputMethodControls();
       els.confirmPreview.style.display = state.autoConfirm ? 'none' : 'flex';
       els.confirmPreview.textContent = state.pendingToken ? displayCase(state.pendingToken) : '';
       renderKeyboard();
@@ -1885,6 +1953,41 @@ document.getElementById('nextWordBtn').addEventListener('click', ()=>{
     document.getElementById('toggleConsonantColorBtn').addEventListener('click', e=>{ state.consonantColorOn=!state.consonantColorOn; persistSettings(); renderKeyboard(); });
     document.getElementById('toggleExtendedBtn').addEventListener('click', e=>{ state.showExtendedConsonants=!state.showExtendedConsonants; e.currentTarget.textContent=`GZDBP ${state.showExtendedConsonants?'ON':'OFF'}`; persistSettings(); renderKeyboard(); });
     document.getElementById('showHowBtn').addEventListener('click', ()=> alert('【つかいかた】\n1. 「練習をはじめる」を押してから始めます。\n2. 子音を押してから母音を押すと、自動で入力されます。\n3. 母音だけの文字は A・I・U・E・O を押します。\n4. ん は W 列の一番下の NN を押します。\n5. K・S・T・D・N・H・M・Y・G・Z・B・P のあとに Y を押してから A・U・O を押すと、拗音が作れます。\n6. 自由入力では、上の大きな枠にひらがなを直接入力します。'));
+
+    document.getElementById('tapInputModeBtn').addEventListener('click', ()=>{
+      state.inputMethod = 'tap';
+      persistSettings();
+      renderPractice();
+    });
+    document.getElementById('keyboardInputModeBtn').addEventListener('click', ()=>{
+      state.inputMethod = 'keyboard';
+      persistSettings();
+      renderPractice();
+      if(state.mode === 'practice' && state.practiceStarted && els.keyboardAnswerInput) setTimeout(() => els.keyboardAnswerInput.focus(), 0);
+    });
+    document.getElementById('toggleReferenceKeyboardBtn')?.addEventListener('click', ()=>{
+      state.referenceKeyboardVisible = !state.referenceKeyboardVisible;
+      persistSettings();
+      renderPractice();
+      if(state.mode === 'practice' && state.inputMethod === 'keyboard' && state.practiceStarted && els.keyboardAnswerInput){
+        setTimeout(() => els.keyboardAnswerInput.focus(), 0);
+      }
+    });
+    if(els.keyboardAnswerInput){
+      els.keyboardAnswerInput.addEventListener('input', e=>{
+        if(state.mode !== 'practice' || state.inputMethod !== 'keyboard') return;
+        const normalized = String(e.target.value || '').toUpperCase().replace(/[^A-Z]/g, '');
+        state.currentInput = normalized;
+        state.inputTokens = normalized.split('');
+        if(e.target.value !== normalized) e.target.value = normalized;
+        setFeedback('', 'info');
+        renderPractice();
+      });
+      els.keyboardAnswerInput.addEventListener('keydown', e=>{
+        if(state.mode !== 'practice' || state.inputMethod !== 'keyboard') return;
+        if(e.key === 'Enter'){ e.preventDefault(); judgeByDoneButton(); }
+      });
+    }
 
     els.currentWordInput.addEventListener('input', e=>{ const sanitized=sanitizeHiragana(e.target.value); state.freeDraft=sanitized; if(e.target.value!==sanitized) e.target.value=sanitized; if(state.mode==='free'){ state.currentTarget=toRomaji(sanitized); state.inputTokens=[]; state.currentInput=''; clearPendingToken(); renderPractice(); } });
     document.getElementById('freePracticeBtn').addEventListener('click', ()=>{ const word=sanitizeHiragana(state.freeDraft); if(!word){ alert('上の大きな枠に、ひらがなを入力してください。'); els.currentWordInput.focus(); return; } state.currentWord=word; state.currentTarget=toRomaji(word); resetInput(false); renderPractice(); setFeedback('入力したことばで練習できます。', 'info'); });
@@ -2314,7 +2417,7 @@ document.getElementById('nextWordBtn').addEventListener('click', ()=>{
     renderPracticedCount();
     els.toggleGuideBtn.textContent = `カタカナ表示 ${state.showConsonantGuide ? 'ON' : 'OFF'}`;
     els.toggleExtendedBtn.textContent = `GZDBP ${state.showExtendedConsonants ? 'ON' : 'OFF'}`;
-    document.getElementById('startPracticeBtn').addEventListener('click', ()=>{ state.mode='practice'; state.practiceStarted = true; state.practicedWords = []; renderMode(); renderPracticedCount(); });
+    document.getElementById('startPracticeBtn').addEventListener('click', ()=>{ state.mode='practice'; state.practiceStarted = true; state.practicedWords = []; renderMode(); renderPracticedCount(); if(state.inputMethod === 'keyboard' && els.keyboardAnswerInput) setTimeout(() => els.keyboardAnswerInput.focus(), 0); });
     document.getElementById('printPracticedBtn').addEventListener('click', printPracticedWords);
     document.getElementById('backToStartBtn').addEventListener('click', ()=>{ state.freeDoneWords = []; try { persistFreeDoneWords(); } catch(e) {} location.reload(); });
     renderMode(); renderGroups(); renderSaved(); renderKeyboard(); buildPracticeList('groups');
