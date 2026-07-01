@@ -1004,7 +1004,6 @@ canvas#shooterCanvas{
 </div>
 
       <div class="btns">
-        <button class="ghost" id="hintBtn">ヒント（ひともじ）</button>
         <button class="ghost" id="hintExampleBtn" type="button">ヒント（れいぶん）</button>
         <!-- ★「せいかいを見る」ボタン削除 -->
         <button class="primary" id="checkBtn">できた</button>
@@ -1188,19 +1187,19 @@ canvas#shooterCanvas{
 <script>
 /* 🔽 置き換え：デフォルト問題（初期値） */
 const WORDS_TEXT_DEFAULT = `
-［空気］	くうき　くうき
-［天気］	てんき　てんき
-［ふじ山］	ふじさん　さん
-［大せつ］	たいせつ　たい
+［左右］	さゆう　さゆう
+びじゅつかんに、きれいな［絵画］がかざってあった。	かいが　かいが
+にんきのみせのまえに、長い［行れつ］ができていた。	ぎょうれつ　ぎょう
+りんごが３こ、みかんが２こ。［合計］は５こだ。	ごうけい　ごうけい
 ［下げる］	さげる　さ
 ［目てき］	もくてき　もく
-［おく上］	おくじょう　じょう
+本を読んで、たくさんの［知しき］がふえた。	ちしき　ち
 ［はく手］	はくしゅ　しゅ
 ［せい春］	せいしゅん　しゅん
 ［早ちょう］	そうちょう　そう
-［文字］	もじ　もじ
+手をあげて、［発言］した。	はつげん　はつげん
 ［親しい］	したしい　した
-［新しい］　　　	あたらしい　あたら
+夏休みに、家ぞくで［りょ行］に行った。　　　	りょこう　こう
 ［時］	とき　とき
 ［直す］	なおす　なお
 ［毎日］	まいにち　まいにち
@@ -1868,7 +1867,7 @@ function applyModeUI(){
   if(underRowEl) underRowEl.style.display = isFlash ? "none" : "";
   if(nativeInputEl) nativeInputEl.style.display = isFlash ? "none" : "";
 
-  hintBtn.style.display = "";
+  if(hintBtn) hintBtn.style.display = "none";
   if(hintExampleBtn) hintExampleBtn.style.display = "";
   checkBtn.style.display = isFlash ? "none" : "";
 
@@ -1960,7 +1959,7 @@ function showFlashFace(){
     markLearningBtn.disabled = true;
     markMasteredBtn.disabled = true;
     shuffleFlashBtn.disabled = true;
-    hintBtn.disabled = true;
+    if(hintBtn) hintBtn.disabled = true;
     if(hintExampleBtn) hintExampleBtn.disabled = true;
     if(studyMode !== "flash") updateBadges();
     updateFlashToggle();
@@ -1972,7 +1971,7 @@ function showFlashFace(){
   markLearningBtn.disabled = false;
   markMasteredBtn.disabled = false;
   shuffleFlashBtn.disabled = false;
-  hintBtn.disabled = false;
+  if(hintBtn) hintBtn.disabled = false;
   if(hintExampleBtn) hintExampleBtn.disabled = false;
 
   // カードモードも、表面は赤字部分だけを表示する。例文全体は「ヒント（れいぶん）」で表示する。
@@ -1983,8 +1982,8 @@ function showFlashFace(){
   hintLineEl.className = "hintLine";
   answerView.className = "answer";
 
-  // カードモードでは答えを一気に全文表示しない。
-  // 「めくる」や「ヒント（ひともじ）」で showHint() を呼び、1文字ずつ表示する。
+  // カードモードでは、表面では答え欄を空にする。
+  // 「めくる」で裏面に完全読みを表示する。
   answerView.textContent = "";
 
   if(studyMode !== "flash") updateBadges();
@@ -2046,7 +2045,7 @@ function loadQuestion(){
     msgEl.className = "msg ng";
     nextBtn.disabled = true;
     checkBtn.disabled = true;
-    hintBtn.disabled = true;
+    if(hintBtn) hintBtn.disabled = true;
     if(hintExampleBtn) hintExampleBtn.disabled = true;
     return;
   }
@@ -2072,7 +2071,7 @@ function loadQuestion(){
 
   nextBtn.disabled = true;
   checkBtn.disabled = false;
-  hintBtn.disabled = false;
+  if(hintBtn) hintBtn.disabled = false;
   if(hintExampleBtn) hintExampleBtn.disabled = false;
 
   if(studyMode !== "flash") updateBadges();
@@ -2706,7 +2705,9 @@ function revealTreasureAndHoldResult(){
   }
 }
 /* ========= イベント ========= */
-hintBtn.addEventListener("click", showHint);
+if(hintBtn){
+  hintBtn.addEventListener("click", showHint);
+}
 if(hintExampleBtn){
   hintExampleBtn.addEventListener("click", showExampleHint);
 }
@@ -2747,7 +2748,12 @@ clearFlashBtn.addEventListener("click", ()=>{
 });
 flipBtn.addEventListener("click", ()=>{
   if(studyMode === "flash"){
-    showHint();
+    const item = ITEMS[order[idx]];
+    if(!item) return;
+    flashIsBack = !flashIsBack;
+    hintLineEl.textContent = "";
+    hintLineEl.className = "hintLine";
+    answerView.textContent = flashIsBack ? (item.fullReading || currentAnswers()[0] || "") : "";
     return;
   }
   flashIsBack = !flashIsBack;
