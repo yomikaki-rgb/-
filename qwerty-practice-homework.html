@@ -1480,9 +1480,12 @@ const els = {
         els.tapKeyboardArea.classList.toggle('hidden', hideReferenceKeyboard);
       }
       if(els.keyboardAnswerInput){
-        const showKeyboardInput = state.mode === 'practice' && state.practiceStarted && isKeyboard;
+        // 宿題モードでは「ボタンで入力」でも、キーボード入力時と同じ場所に
+        // ローマ字入力欄を表示する（ボタン入力時は直接編集不可）。
+        const showKeyboardInput = state.mode === 'practice' && state.practiceStarted && (isKeyboard || !!state.homework?.active);
         els.keyboardAnswerInput.classList.toggle('hidden', !showKeyboardInput);
-        els.keyboardAnswerInput.readOnly = !showKeyboardInput;
+        els.keyboardAnswerInput.readOnly = !isKeyboard;
+        els.keyboardAnswerInput.placeholder = isKeyboard ? 'キーボードでローマ字を入力' : 'ボタンでローマ字を入力';
       }
     }
 
