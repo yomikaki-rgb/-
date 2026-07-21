@@ -5259,10 +5259,7 @@ function setUnknownAnswer(targetId){
       const btn=document.getElementById('btnSubmitHomework');
       if(btn){ btn.disabled=true; btn.innerHTML='📩 <ruby>提出中<rt>ていしゅつちゅう</rt></ruby>…'; }
       await oldSubmit.apply(this, arguments);
-      markSubmitted();
-      if(btn){ btn.disabled=true; btn.innerHTML='✅ 提出済みです'; }
-      const status=document.getElementById('submitStatus');
-      if(status){ status.style.display='block'; status.textContent='提出ずみです。もう一度提出することはできません。'; }
+      refresh(activeIndex);
     };
   }
 
