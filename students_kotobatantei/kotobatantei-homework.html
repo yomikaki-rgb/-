@@ -4248,6 +4248,13 @@ function buildHomeworkRows() {
     const selected = document.querySelector(`input[name="q_${idx}"]:checked`);
     const selectedChoice = selected ? selected.value : "";
     const correctChoice = (q[COL.ans] ?? "").toString().trim();
+    const choiceTexts = {
+      "1": (q[COL.c1] ?? "").toString().trim(),
+      "2": (q[COL.c2] ?? "").toString().trim(),
+      "3": (q[COL.c3] ?? "").toString().trim()
+    };
+    const selectedChoiceText = selectedChoice ? (choiceTexts[selectedChoice] || "") : "";
+    const correctChoiceText = correctChoice ? (choiceTexts[correctChoice] || getCorrectMeaning(q) || "") : "";
     const readingCorrect = normalizeAnswerText(readingInput) && normalizeAnswerText(readingInput) === normalizeAnswerText(correctReading) ? "○" : "";
     const choiceCorrect = selectedChoice ? (selectedChoice === correctChoice ? "○" : "×") : "";
     return {
@@ -4255,7 +4262,10 @@ function buildHomeworkRows() {
       id: q[COL.id] ?? "", word: q[COL.word] ?? "", sentence: q[COL.sentence] ?? "",
       readingInput, correctReading, readingCorrect,
       meaningInput, correctMeaning: getCorrectMeaning(q),
-      choiceUsed: choiceUsed ? "はい" : "いいえ", selectedChoice, correctChoice, choiceCorrect
+      choiceUsed: choiceUsed ? "はい" : "いいえ",
+      selectedChoice, selectedChoiceText,
+      correctChoice, correctChoiceText,
+      choiceCorrect
     };
   });
 }
@@ -4523,7 +4533,9 @@ function buildHomeworkSubmitContent(rows) {
     lines.push(`3択使用：${r.choiceUsed}`);
     if (r.selectedChoice) {
       lines.push(`3択で選んだ番号：${r.selectedChoice}`);
+      lines.push(`3択で選んだ内容：${r.selectedChoiceText || "（取得できません）"}`);
       lines.push(`3択の正解番号：${r.correctChoice || "（未設定）"}`);
+      lines.push(`3択の正解内容：${r.correctChoiceText || "（取得できません）"}`);
       lines.push(`3択の正誤：${r.choiceCorrect || "（未判定）"}`);
     }
     lines.push("");
@@ -5259,7 +5271,10 @@ function setUnknownAnswer(targetId){
       const btn=document.getElementById('btnSubmitHomework');
       if(btn){ btn.disabled=true; btn.innerHTML='📩 <ruby>提出中<rt>ていしゅつちゅう</rt></ruby>…'; }
       await oldSubmit.apply(this, arguments);
-      refresh(activeIndex);
+      markSubmitted();
+      if(btn){ btn.disabled=true; btn.innerHTML='✅ 提出済みです'; }
+      const status=document.getElementById('submitStatus');
+      if(status){ status.style.display='block'; status.textContent='提出ずみです。もう一度提出することはできません。'; }
     };
   }
 
