@@ -994,6 +994,9 @@ function normalize(str) {
 
 function isKanji(ch) {
   if (!ch) return false;
+  // 「々」は漢字の繰り返しとして読みを持つが、Unicode上は漢字範囲外。
+  // 漢字相当として扱わないと「人々」などを含む文の読み位置推定が失敗する。
+  if (ch === "々") return true;
   const code = ch.codePointAt(0);
   return (code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF);
 }
