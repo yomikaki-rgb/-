@@ -5272,13 +5272,32 @@ function setUnknownAnswer(targetId){
         alert('まだ、答えていない問題があります');
         return;
       }
+      // 名前未入力なら、元の提出処理を呼ぶ前に止める。
+      // ここでロックしないことで、名前入力後に再提出できる。
+      const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
+      if(!studentName){
+        alert('名前を入力してください。');
+        const nameInput=document.getElementById('studentName');
+        if(nameInput) nameInput.focus();
+        return;
+      }
+
       const btn=document.getElementById('btnSubmitHomework');
       if(btn){ btn.disabled=true; btn.innerHTML='📩 <ruby>提出中<rt>ていしゅつちゅう</rt></ruby>…'; }
+
       await oldSubmit.apply(this, arguments);
-      markSubmitted();
-      if(btn){ btn.disabled=true; btn.innerHTML='✅ 提出済みです'; }
-      const status=document.getElementById('submitStatus');
-      if(status){ status.style.display='block'; status.textContent='提出ずみです。もう一度提出することはできません。'; }
+
+      // 元の提出処理が実際に成功したときだけ提出済みにする。
+      // isHomeworkSubmitted() は送信成功時にだけ true になる。
+      if(typeof isHomeworkSubmitted === 'function' && isHomeworkSubmitted()){
+        markSubmitted();
+        if(btn){ btn.disabled=true; btn.innerHTML='✅ 提出済みです'; }
+        const status=document.getElementById('submitStatus');
+        if(status){ status.style.display='block'; status.textContent='提出ずみです。もう一度提出することはできません。'; }
+      } else {
+        // 送信失敗などではロックを解除し、再試行できるようにする。
+        if(btn){ btn.disabled=false; btn.innerHTML='📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する'; }
+      }
     };
   }
 
