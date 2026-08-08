@@ -4547,6 +4547,20 @@ function buildHomeworkSubmitContent(rows) {
   return lines.join("\n");
 }
 
+function isHomeworkAllCompleteForSubmit() {
+  const cards = Array.from(document.querySelectorAll('#quizCards .card[data-qidx]'));
+  if (!cards.length) return true;
+  return cards.every(card => {
+    const i = card.getAttribute('data-qidx');
+    const reading = ((document.getElementById('readingInput_' + i) || {}).value || '').trim();
+    const meaning = ((document.getElementById('meaningInput_' + i) || {}).value || '').trim();
+    const selected = document.querySelector('input[name="q_' + i + '"]:checked');
+    const choicePanel = card.querySelector('.choicePanel');
+    const judged = !!(choicePanel && choicePanel.dataset.hardJudged === '1');
+    return !!(reading && meaning && selected && judged);
+  });
+}
+
 async function submitHomeworkToGoogleForm() {
   if (isHomeworkSubmitted()) {
     lockHomeworkSubmitUI();
@@ -4557,6 +4571,11 @@ async function submitHomeworkToGoogleForm() {
 
   const rows = buildHomeworkRows();
   if (!rows.length) { alert("提出する問題がありません。"); return; }
+
+  if (!isHomeworkAllCompleteForSubmit()) {
+    alert("まだ、答えていない問題があります");
+    return;
+  }
 
   const studentName = ((document.getElementById("studentName") || {}).value || "").trim();
   if (!studentName) {
@@ -5002,8 +5021,9 @@ function setUnknownAnswer(targetId){
   function submittedKey(){
     return SUBMITTED_PREFIX + submittedSource();
   }
-  function isSubmitted(){ try{return localStorage.getItem(submittedKey()) === '1';}catch(e){return false;} }
-  function markSubmitted(){ try{localStorage.setItem(submittedKey(),'1');}catch(e){} }
+  // 提出済み状態は上の isHomeworkSubmitted / markHomeworkSubmitted に一本化する。
+  function isSubmitted(){ return (typeof isHomeworkSubmitted === 'function') ? isHomeworkSubmitted() : false; }
+  function markSubmitted(){ if(typeof markHomeworkSubmitted === 'function') markHomeworkSubmitted(); }
 
   function ensureChoiceButton(i){
     const p=panel(i); if(!p) return;
@@ -5173,7 +5193,7 @@ function setUnknownAnswer(targetId){
     if(progress && pos>=0) progress.textContent=(pos+1)+'/'+cs.length+'問';
     const submit=document.getElementById('btnSubmitHomework');
     if(submit){
-      if((typeof isHomeworkSubmitted === 'function' && isHomeworkSubmitted()) || isSubmitted()){
+      if(typeof isHomeworkSubmitted === 'function' && isHomeworkSubmitted()){
         submit.disabled=true; submit.innerHTML='✅ <ruby>提出<rt>ていしゅつ</rt></ruby>ずみ';
       }else if(allComplete()){
         submit.disabled=false; submit.innerHTML='📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する';
@@ -5258,48 +5278,8 @@ function setUnknownAnswer(targetId){
     }
   }, true);
 
-  // 提出前チェックと二重提出防止
-  const oldSubmit = window.submitHomeworkToGoogleForm;
-  if(typeof oldSubmit === 'function'){
-    window.submitHomeworkToGoogleForm = async function(){
-      if(isSubmitted()){
-        alert('提出ずみです。もう一度提出することはできません。'); refresh(activeIndex); return;
-      }
-      if(!allComplete()){
-        const first=cards().find(c=>!complete(idxOf(c)));
-        if(first) activeIndex=idxOf(first);
-        refresh(activeIndex);
-        alert('まだ、答えていない問題があります');
-        return;
-      }
-      // 名前未入力なら、元の提出処理を呼ぶ前に止める。
-      // ここでロックしないことで、名前入力後に再提出できる。
-      const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
-      if(!studentName){
-        alert('名前を入力してください。');
-        const nameInput=document.getElementById('studentName');
-        if(nameInput) nameInput.focus();
-        return;
-      }
-
-      const btn=document.getElementById('btnSubmitHomework');
-      if(btn){ btn.disabled=true; btn.innerHTML='📩 <ruby>提出中<rt>ていしゅつちゅう</rt></ruby>…'; }
-
-      await oldSubmit.apply(this, arguments);
-
-      // 元の提出処理が実際に成功したときだけ提出済みにする。
-      // isHomeworkSubmitted() は送信成功時にだけ true になる。
-      if(typeof isHomeworkSubmitted === 'function' && isHomeworkSubmitted()){
-        markSubmitted();
-        if(btn){ btn.disabled=true; btn.innerHTML='✅ 提出済みです'; }
-        const status=document.getElementById('submitStatus');
-        if(status){ status.style.display='block'; status.textContent='提出ずみです。もう一度提出することはできません。'; }
-      } else {
-        // 送信失敗などではロックを解除し、再試行できるようにする。
-        if(btn){ btn.disabled=false; btn.innerHTML='📩 先生に<ruby>提出<rt>ていしゅつ</rt></ruby>する'; }
-      }
-    };
-  }
+  // 提出処理は submitHomeworkToGoogleForm() に一本化。
+  // 未回答・名前未入力・通信失敗では提出済みを記録せず、送信成功時だけロックする。
 
   const oldRender = window.renderQuiz;
   if(typeof oldRender === 'function'){
