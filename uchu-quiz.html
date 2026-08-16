@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>キッズ向け 宇宙クイズ！</title>
+    <!-- Google BudouX（分かち書きライブラリ） -->
+    <script src="https://unpkg.com/budoux/bundle/budoux-ja.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #0b0d1b;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            width: 92%;
+            max-width: 680px;
+            background: rgba(20, 24, 56, 0.92);
+            border: 4px solid #ff007f;
+            box-shadow: 0 0 25px #ff007f, inset 0 0 15px rgba(255, 0, 127, 0.5);
+            border-radius: 24px;
+            padding: 20px;
+            backdrop-filter: blur(8px);
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        /* ヘッダー・ナビ */
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px dashed #00f0ff;
+        }
+
+        .badge {
+            background: #00f0ff;
+            color: #0b0d1b;
+            font-weight: 900;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 1rem;
+        }
+
+        .score-display {
+            font-size: 1.1rem;
+            color: #ffe600;
+            font-weight: 800;
+        }
+
+        .mode-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #00f0ff;
+            background: rgba(0, 240, 255, 0.1);
+            color: #00f0ff;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            font-weight: 900;
+            font-size: 0.95rem;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .nav-btn.active {
+            background: #00f0ff;
+            color: #0b0d1b;
+            box-shadow: 0 0 12px #00f0ff;
+        }
+
+        /* 問題エリア */
+        .question-box {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .question-title {
+            font-size: 1.3rem;
+            line-height: 1.8;
+            font-weight: 800;
+            color: #ffffff;
+            text-align: left;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+        }
+
+        budoux-ja {
+            display: inline-block;
+        }
+
+        .sound-btn {
+            background: #ffe600;
+            border: none;
+            color: #0b0d1b;
+            font-size: 0.95rem;
+            font-weight: 900;
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 3px 0 #b3a200;
+        }
+
+        .sound-btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        /* 選択肢 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-btn {
+            flex: 1;
+            background: linear-gradient(135deg, #2b32b2, #1488cc);
+            border: 3px solid #00f0ff;
+            color: white;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            padding: 14px 16px;
+            border-radius: 16px;
+            cursor: pointer;
+            text-align: left;
+            line-height: 1.6;
+        }
+
+        .option-sound-btn {
+            background: #ffe600;
+            border: none;
+            color: #0b0d1b;
+            font-size: 1.1rem;
+            padding: 12px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #b3a200;
+            flex-shrink: 0;
+        }
+
+        .option-sound-btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        .option-btn.correct {
+            background: linear-gradient(135deg, #11998e, #38ef7d) !important;
+            border-color: #00ff66 !important;
+        }
+
+        .option-btn.wrong {
+            background: linear-gradient(135deg, #cb2d3e, #ef473a) !important;
+            border-color: #ff3366 !important;
+            opacity: 0.7;
+        }
+
+        /* 解説 */
+        .explanation-card {
+            display: none;
+            background: rgba(255, 230, 0, 0.15);
+            border: 2px solid #ffe600;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .explanation-title {
+            font-size: 1.1rem;
+            color: #ffe600;
+            font-weight: 900;
+            margin-bottom: 6px;
+        }
+
+        .explanation-text {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: #f0f0f0;
+        }
+
+        .action-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #ff007f, #7928ca);
+            border: none;
+            color: white;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 900;
+            padding: 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 15px #ff007f;
+        }
+
+        /* フォーム */
+        .form-group {
+            text-align: left;
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: #00f0ff;
+            margin-bottom: 4px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #00f0ff;
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        /* クイズ編集・削除リスト */
+        .quiz-manage-list {
+            margin-top: 25px;
+            text-align: left;
+            border-top: 2px dashed #00f0ff;
+            padding-top: 15px;
+        }
+
+        .quiz-manage-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quiz-manage-title {
+            font-size: 0.9rem;
+            font-weight: 800;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: none;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-edit { background: #ffe600; color: #0b0d1b; }
+        .btn-delete { background: #ff3366; color: white; }
+
+        /* 結果画面 */
+        .result-screen {
+            display: none;
+        }
+
+        .result-title {
+            font-size: 1.8rem;
+            color: #ffe600;
+            margin-bottom: 10px;
+        }
+
+        .result-score {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #00f0ff;
+            margin-bottom: 10px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-bg"></canvas>
+
+    <div class="container">
+        <!-- ナビゲーション -->
+        <div class="mode-nav">
+            <button class="nav-btn active" id="nav-play-btn" onclick="switchMode('play')">🎮 クイズであそぶ</button>
+            <button class="nav-btn" id="nav-create-btn" onclick="switchMode('create')">✏️ クイズの作成・編集</button>
+        </div>
+
+        <!-- 1. クイズプレイ画面 -->
+        <div id="play-screen">
+            <div class="quiz-header">
+                <span class="badge" id="question-number">第 1 問</span>
+                <span class="score-display" id="score-display">スコア: 0 点</span>
+            </div>
+
+            <div class="question-box">
+                <div class="question-title" id="question-text"></div>
+                <button class="sound-btn" onclick="readCurrentQuestion()">🔊 もんだいをよむ</button>
+            </div>
+
+            <div class="options-grid" id="options-container"></div>
+
+            <div class="explanation-card" id="explanation-card">
+                <div class="explanation-title">💡 解説</div>
+                <div class="explanation-text" id="explanation-text"></div>
+                <button class="sound-btn" onclick="readExplanation()" style="margin-top:10px;">🔊 かいせつをよむ</button>
+            </div>
+
+            <button class="action-btn" id="next-btn" style="display:none;">つぎの問題へ 🚀</button>
+        </div>
+
+        <!-- 2. クイズ作成・編集画面 -->
+        <div id="create-screen" style="display: none;">
+            <h3 id="form-header-title" style="color: #ffe600; margin-bottom: 12px;">🚀 もんだいをつくる</h3>
+            <input type="hidden" id="edit-index" value="-1">
+            
+            <div class="form-group">
+                <label>① もんだい文</label>
+                <input type="text" id="input-q" class="form-control" placeholder="例：太陽のまわりをまわる星は？">
+            </div>
+
+            <div class="form-group">
+                <label>② せんたくし（3つ）</label>
+                <input type="text" id="input-opt0" class="form-control" placeholder="選択肢 1" style="margin-bottom: 4px;">
+                <input type="text" id="input-opt1" class="form-control" placeholder="選択肢 2" style="margin-bottom: 4px;">
+                <input type="text" id="input-opt2" class="form-control" placeholder="選択肢 3">
+            </div>
+
+            <div class="form-group">
+                <label>③ せいかい</label>
+                <select id="input-ans" class="form-control">
+                    <option value="0">選択肢 1</option>
+                    <option value="1">選択肢 2</option>
+                    <option value="2">選択肢 3</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>④ かいせつ</label>
+                <textarea id="input-exp" class="form-control" rows="2" placeholder="例：地球や火星などがまわっているよ！"></textarea>
+            </div>
+
+            <div class="btn-group">
+                <button class="action-btn" id="save-btn" onclick="saveCustomQuiz()">保存してあそぶ！ 💾</button>
+                <button class="action-btn" id="cancel-edit-btn" style="display:none; background:#777;" onclick="clearForm()">キャンセル</button>
+            </div>
+
+            <!-- クイズ管理リスト -->
+            <div class="quiz-manage-list">
+                <h4 style="color:#00f0ff; margin-bottom:10px;">📋 登録されているクイズ（編集・削除）</h4>
+                <div id="quiz-list-container"></div>
+            </div>
+        </div>
+
+        <!-- 3. 結果画面 -->
+        <div class="result-screen" id="result-screen">
+            <h1 class="result-title">ミッション完了！ 🌌</h1>
+            <div class="result-score" id="final-score">0 点</div>
+            <div id="result-rank" style="margin-bottom:15px; font-size:1.1rem; border: 2px solid #00f0ff; padding:10px; border-radius:12px;"></div>
+            <div class="btn-group">
+                <button class="action-btn" onclick="restartQuiz()">もう一度挑戦 🔄</button>
+                <button class="action-btn" style="background: linear-gradient(135deg, #00f0ff, #0072ff);" onclick="resetToDefault()">初期化 🗑️</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // BudouX（自然な分かち書き折り返しのみ保持）
+        let parser;
+        if (typeof BudouX !== 'undefined') {
+            parser = BudouX.loadDefaultJapaneseParser();
+        }
+
+        function formatText(text) {
+            if (!text) return "";
+            if (parser) {
+                return parser.translateHTMLString(text);
+            }
+            return text;
+        }
+
+        // 音声読み上げ関数
+        function speak(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+
+            const div = document.createElement('div');
+            div.innerHTML = text;
+            const plainText = div.textContent || div.innerText || "";
+
+            const uttr = new SpeechSynthesisUtterance(plainText);
+            uttr.lang = 'ja-JP';
+            uttr.rate = 0.85;
+            uttr.pitch = 1.1;
+            window.speechSynthesis.speak(uttr);
+        }
+
+        function readCurrentQuestion() {
+            const currentQuiz = globalQuizData[currentQuestionIndex];
+            speak(currentQuiz.question);
+        }
+
+        function readExplanation() {
+            const currentQuiz = globalQuizData[currentQuestionIndex];
+            speak(currentQuiz.explanation);
+        }
+
+        // 背景アニメーション
+        const canvas = document.getElementById('canvas-bg');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const stars = Array.from({ length: 80 }, () => ({
+            x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+            radius: Math.random() * 2 + 0.5,
+            color: ['#ffffff', '#00f0ff', '#ffe600', '#ff007f'][Math.floor(Math.random() * 4)],
+            speed: Math.random() * 0.3 + 0.1, alpha: Math.random(), alphaSpeed: Math.random() * 0.02 + 0.005
+        }));
+
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(star => {
+                star.y -= star.speed;
+                if (star.y < 0) star.y = canvas.height;
+                star.alpha += star.alphaSpeed;
+                if (star.alpha > 1 || star.alpha < 0.2) star.alphaSpeed = -star.alphaSpeed;
+                ctx.save(); ctx.globalAlpha = Math.abs(star.alpha);
+                ctx.beginPath(); ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = star.color; ctx.shadowBlur = 6; ctx.shadowColor = star.color; ctx.fill(); ctx.restore();
+            });
+            requestAnimationFrame(animateStars);
+        }
+        animateStars();
+
+        // 初期問題データ
+        const defaultQuizData = [
+            {
+                question: "ブラックホールの中に人間が入っちゃうと、どうなっちゃう？",
+                options: ["① カチコチに凍りつく", "② スパゲッティみたいに伸びる", "③ 煙になって消える"],
+                answer: 1,
+                explanation: "正解は「スパゲッティみたいに伸びる」！重力の差で体がビヨーンと伸ばされます。科学用語でも本当に『スパゲッティ化現象』と言うんだよ！"
+            },
+            {
+                question: "空気のない宇宙空間で「わー！」って大声を出したらどうなる？",
+                options: ["① 遠くまで声がひびく", "② なにも聞こえない", "③ 声が高くなる"],
+                answer: 1,
+                explanation: "正解は「なにも聞こえない」！音は空気の振動で伝わるので、空気が無い宇宙では声が届かないんだ。"
+            },
+            {
+                question: "太陽の表面の温度はどれくらい？",
+                options: ["① およそ 100 度", "② およそ 6,000 度", "③ およそ 100 万度"],
+                answer: 1,
+                explanation: "正解は「およそ 6,000度」！沸騰したお湯が 100度だから、とんでもない熱さだね！ちなみに太陽の中心部はなんと約 1,500万度もあるんだ。"
+            }
+        ];
+
+        let globalQuizData = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuizData() {
+            try {
+                const saved = localStorage.getItem('myCustomSpaceQuiz_clean');
+                if (saved) {
+                    globalQuizData = JSON.parse(saved);
+                } else {
+                    globalQuizData = JSON.parse(JSON.stringify(defaultQuizData));
+                }
+            } catch (e) {
+                if (globalQuizData.length === 0) {
+                    globalQuizData = JSON.parse(JSON.stringify(defaultQuizData));
+                }
+            }
+        }
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem('myCustomSpaceQuiz_clean', JSON.stringify(globalQuizData));
+            } catch (e) {}
+        }
+
+        function switchMode(mode) {
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            document.getElementById('play-screen').style.display = mode === 'play' ? 'block' : 'none';
+            document.getElementById('create-screen').style.display = mode === 'create' ? 'block' : 'none';
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('nav-play-btn').className = `nav-btn ${mode === 'play' ? 'active' : ''}`;
+            document.getElementById('nav-create-btn').className = `nav-btn ${mode === 'create' ? 'active' : ''}`;
+            
+            if (mode === 'play') {
+                restartQuiz();
+            } else if (mode === 'create') {
+                renderQuizManageList();
+            }
+        }
+
+        function loadQuestion() {
+            if (!globalQuizData || globalQuizData.length === 0) {
+                document.getElementById('question-text').textContent = "クイズがありません。「クイズの作成・編集」で作ってね！";
+                document.getElementById('options-container').innerHTML = '';
+                return;
+            }
+
+            const currentQuiz = globalQuizData[currentQuestionIndex];
+
+            document.getElementById('question-number').textContent = `第 ${currentQuestionIndex + 1} / ${globalQuizData.length} 問`;
+            document.getElementById('question-text').innerHTML = formatText(currentQuiz.question);
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            document.getElementById('explanation-card').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+
+            currentQuiz.options.forEach((optText, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'option-item';
+
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerHTML = formatText(optText);
+                btn.onclick = () => selectOption(index);
+
+                const soundBtn = document.createElement('button');
+                soundBtn.className = 'option-sound-btn';
+                soundBtn.innerHTML = '🔊';
+                soundBtn.title = 'この選択肢を読み上げる';
+                soundBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    speak(optText);
+                };
+
+                itemDiv.appendChild(btn);
+                itemDiv.appendChild(soundBtn);
+                optionsContainer.appendChild(itemDiv);
+            });
+        }
+
+        function selectOption(selectedIndex) {
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            const currentQuiz = globalQuizData[currentQuestionIndex];
+            const optionBtns = document.querySelectorAll('.option-btn');
+
+            optionBtns.forEach(btn => btn.disabled = true);
+
+            if (selectedIndex === currentQuiz.answer) {
+                optionBtns[selectedIndex].classList.add('correct');
+                score += Math.round(100 / globalQuizData.length);
+                document.getElementById('score-display').textContent = `スコア: ${score} 点`;
+                speak("正解！ピンポン！");
+            } else {
+                optionBtns[selectedIndex].classList.add('wrong');
+                optionBtns[currentQuiz.answer].classList.add('correct');
+                speak("ざんねん！不正解！");
+            }
+
+            document.getElementById('explanation-text').innerHTML = formatText(currentQuiz.explanation);
+            document.getElementById('explanation-card').style.display = 'block';
+            document.getElementById('next-btn').style.display = 'block';
+        }
+
+        document.getElementById('next-btn').addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < globalQuizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        });
+
+        function showResults() {
+            document.getElementById('play-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'block';
+            document.getElementById('final-score').textContent = `${score} 点`;
+            const rank = score >= 80 ? "🌟 宇宙マスター" : "🚀 見習い宇宙飛行士";
+            document.getElementById('result-rank').innerHTML = formatText(`ランク：${rank}`);
+            speak(`ミッション完了！スコアは ${score} 点です！`);
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0; score = 0;
+            document.getElementById('score-display').textContent = `スコア: 0 点`;
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('play-screen').style.display = 'block';
+            loadQuestion();
+        }
+
+        // 保存・編集・削除機能
+        function saveCustomQuiz() {
+            const editIdx = parseInt(document.getElementById('edit-index').value);
+            const q = document.getElementById('input-q').value.trim();
+            const opt0 = document.getElementById('input-opt0').value.trim();
+            const opt1 = document.getElementById('input-opt1').value.trim();
+            const opt2 = document.getElementById('input-opt2').value.trim();
+            const ans = parseInt(document.getElementById('input-ans').value);
+            const exp = document.getElementById('input-exp').value.trim();
+
+            if (!q || !opt0 || !opt1 || !opt2) {
+                alert("「問題」と「3つの選択肢」をすべて入力してください！");
+                return;
+            }
+
+            const quizObj = {
+                question: q,
+                options: [opt0, opt1, opt2],
+                answer: ans,
+                explanation: exp || "解説はありません。"
+            };
+
+            if (editIdx >= 0) {
+                globalQuizData[editIdx] = quizObj;
+                alert("クイズを修正しました！");
+            } else {
+                globalQuizData.push(quizObj);
+                alert("新しい宇宙クイズを追加したよ！");
+            }
+
+            saveToStorage();
+            clearForm();
+            switchMode('play');
+        }
+
+        function editQuiz(index) {
+            const quiz = globalQuizData[index];
+            document.getElementById('edit-index').value = index;
+            document.getElementById('input-q').value = quiz.question;
+            document.getElementById('input-opt0').value = quiz.options[0];
+            document.getElementById('input-opt1').value = quiz.options[1];
+            document.getElementById('input-opt2').value = quiz.options[2];
+            document.getElementById('input-ans').value = quiz.answer;
+            document.getElementById('input-exp').value = quiz.explanation;
+
+            document.getElementById('form-header-title').textContent = "✏️ クイズをなおす（編集）";
+            document.getElementById('save-btn').textContent = "修正して保存 💾";
+            document.getElementById('cancel-edit-btn').style.display = "inline-block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteQuiz(index) {
+            if (confirm("このクイズを削除しますか？")) {
+                globalQuizData.splice(index, 1);
+                saveToStorage();
+                renderQuizManageList();
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('edit-index').value = "-1";
+            document.getElementById('input-q').value = '';
+            document.getElementById('input-opt0').value = '';
+            document.getElementById('input-opt1').value = '';
+            document.getElementById('input-opt2').value = '';
+            document.getElementById('input-exp').value = '';
+
+            document.getElementById('form-header-title').textContent = "🚀 もんだいをつくる";
+            document.getElementById('save-btn').textContent = "保存してあそぶ！ 💾";
+            document.getElementById('cancel-edit-btn').style.display = "none";
+        }
+
+        function renderQuizManageList() {
+            const container = document.getElementById('quiz-list-container');
+            container.innerHTML = '';
+
+            if (globalQuizData.length === 0) {
+                container.innerHTML = '<div style="font-size:0.85rem; color:#aaa;">登録されているクイズはありません。</div>';
+                return;
+            }
+
+            globalQuizData.forEach((quiz, idx) => {
+                const item = document.createElement('div');
+                item.className = 'quiz-manage-item';
+                item.innerHTML = `
+                    <div class="quiz-manage-title">第${idx + 1}問: ${quiz.question}</div>
+                    <div>
+                        <button class="btn-sm btn-edit" onclick="editQuiz(${idx})">編集</button>
+                        <button class="btn-sm btn-delete" onclick="deleteQuiz(${idx})">削除</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function resetToDefault() {
+            if (confirm("作成したクイズをすべて削除して最初に戻しますか？")) {
+                try {
+                    localStorage.removeItem('myCustomSpaceQuiz_clean');
+                } catch (e) {}
+                globalQuizData = JSON.parse(JSON.stringify(defaultQuizData));
+                restartQuiz();
+            }
+        }
+
+        // 起動処理
+        loadQuizData();
+        loadQuestion();
+    </script>
+</body>
+</html>
