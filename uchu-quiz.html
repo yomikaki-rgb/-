@@ -268,9 +268,44 @@
             outline: none;
         }
 
+        /* CSV関連ボタンエリア */
+        .csv-box {
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px dashed #00f0ff;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .csv-box-title {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: #00f0ff;
+            margin-bottom: 8px;
+        }
+
+        .csv-btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-csv {
+            flex: 1;
+            padding: 8px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            border: none;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            font-weight: 800;
+            cursor: pointer;
+            background: #00f0ff;
+            color: #0b0d1b;
+        }
+
         /* クイズ編集・削除リスト */
         .quiz-manage-list {
-            margin-top: 25px;
+            margin-top: 20px;
             text-align: left;
             border-top: 2px dashed #00f0ff;
             padding-top: 15px;
@@ -370,6 +405,16 @@
 
         <!-- 2. クイズ作成・編集画面 -->
         <div id="create-screen" style="display: none;">
+            <!-- CSV保存・読み込みエリア -->
+            <div class="csv-box">
+                <div class="csv-box-title">📁 CSVファイルの出し入れ</div>
+                <div class="csv-btn-group">
+                    <button class="btn-csv" onclick="exportToCSV()">📥 CSVでダウンロード</button>
+                    <button class="btn-csv" onclick="document.getElementById('csv-file-input').click()">📤 CSVから読み込む</button>
+                    <input type="file" id="csv-file-input" accept=".csv" style="display:none;" onchange="importFromCSV(event)">
+                </div>
+            </div>
+
             <h3 id="form-header-title" style="color: #ffe600; margin-bottom: 12px;">🚀 もんだいをつくる</h3>
             <input type="hidden" id="edit-index" value="-1">
             
@@ -424,7 +469,7 @@
     </div>
 
     <script>
-        // BudouX（自然な分かち書き折り返しのみ保持）
+        // BudouX（分かち書き）
         let parser;
         if (typeof BudouX !== 'undefined') {
             parser = BudouX.loadDefaultJapaneseParser();
@@ -748,6 +793,90 @@
                 globalQuizData = JSON.parse(JSON.stringify(defaultQuizData));
                 restartQuiz();
             }
+        }
+
+        // --- CSVの書き出し（ダウンロード） ---
+        function exportToCSV() {
+            if (globalQuizData.length === 0) {
+                alert("書き出すクイズがありません。");
+                return;
+            }
+
+            // CSVヘッダー
+            let csvContent = "\uFEFF問題文,選択肢1,選択肢2,選択肢3,正解番号(1~3),解説\n";
+
+            globalQuizData.forEach(q => {
+                // セル内のカンマやダブルクォーテーションのエスケープ処理
+                const escapeCSV = (text) => `"${text.replace(/"/g, '""')}"`;
+
+                const row = [
+                    escapeCSV(q.question),
+                    escapeCSV(q.options[0]),
+                    escapeCSV(q.options[1]),
+                    escapeCSV(q.options[2]),
+                    q.answer + 1, // 画面表示上は 1~3
+                    escapeCSV(q.explanation)
+                ].join(",");
+
+                csvContent += row + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "space_quiz_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- CSVの読み込み（インポート） ---
+        function importFromCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split(/\r\n|\n/);
+                const newQuizzes = [];
+
+                // 2行目（インデックス1）からデータ処理
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    // 簡易CSVパース（ダブルクォーテーション対応）
+                    const matches = line.match(/(?:"([^"]*)"|([^,]+))/g);
+                    if (matches) {
+                        const cols = matches.map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
+                        if (cols.length >= 5) {
+                            const ansNum = parseInt(cols[4]) - 1; // 1~3 を 0~2 に変換
+                            newQuizzes.push({
+                                question: cols[0],
+                                options: [cols[1], cols[2], cols[3]],
+                                answer: (ansNum >= 0 && ansNum <= 2) ? ansNum : 0,
+                                explanation: cols[5] || "解説はありません。"
+                            });
+                        }
+                    }
+                }
+
+                if (newQuizzes.length > 0) {
+                    globalQuizData = newQuizzes;
+                    saveToStorage();
+                    alert(`${newQuizzes.length}件のクイズを読み込みました！`);
+                    renderQuizManageList();
+                    switchMode('play');
+                } else {
+                    alert("正しい形式のCSVデータが見つかりませんでした。");
+                }
+
+                // 入力リセット
+                event.target.value = '';
+            };
+            reader.readAsText(file, "UTF-8");
         }
 
         // 起動処理
