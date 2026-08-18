@@ -108,6 +108,41 @@
             margin-top: 5px;
         }
 
+        .speed-setting {
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid #DEE2E6;
+        }
+
+        .speed-setting label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .speed-setting output {
+            color: #1971C2;
+            background: #E7F5FF;
+            border-radius: 8px;
+            padding: 3px 8px;
+            min-width: 56px;
+            text-align: center;
+        }
+
+        .speed-setting input[type="range"] {
+            width: 100%;
+            margin: 12px 0 4px;
+            accent-color: #4DABF7;
+        }
+
+        .speed-labels {
+            display: flex;
+            justify-content: space-between;
+            color: #868E96;
+            font-size: 0.82rem;
+        }
+
         .close-btn {
             width: 100%;
             padding: 10px;
@@ -622,6 +657,14 @@
                     <option value="ブッブー！" selected>「ブッブー！」（効果音風）</option>
                     <option value="ちがうよ！">「ちがうよ！」（分かりやすい）</option>
                 </select>
+                <div class="speed-setting">
+                    <label for="jankenSpeedRange">
+                        じゃんけんのテンポ
+                        <output id="jankenSpeedOutput">ふつう</output>
+                    </label>
+                    <input type="range" id="jankenSpeedRange" min="1" max="5" step="1" value="3" oninput="updateJankenSpeed(this.value)">
+                    <div class="speed-labels"><span>とてもゆっくり</span><span>ふつう</span><span>とてもはやい</span></div>
+                </div>
                 <button class="close-btn" onclick="toggleSettings()">とじる</button>
             </div>
         </div>
@@ -891,9 +934,39 @@
         let isPlaying = false;
         let isWaitingForInput = false;
         let lastPraise = '';
+        let jankenSpeed = 3;
 
         const synth = window.speechSynthesis;
         const praiseMessages = ['せいかい！', 'すごい！', 'ぴったり！', 'そのちょうし！', 'やったね！'];
+        const tempoSettings = {
+            1: { label: 'とてもゆっくり', rate: 0.75, gap: 350 },
+            2: { label: 'ゆっくり',       rate: 0.9,  gap: 220 },
+            3: { label: 'ふつう',         rate: 1.05, gap: 120 },
+            4: { label: 'はやめ',         rate: 1.25, gap: 55 },
+            5: { label: 'とてもはやい',   rate: 1.5,  gap: 10 }
+        };
+
+        function updateJankenSpeed(value, save = true) {
+            const parsed = Math.round(Number(value));
+            jankenSpeed = Math.min(5, Math.max(1, Number.isFinite(parsed) ? parsed : 3));
+            document.getElementById('jankenSpeedRange').value = jankenSpeed;
+            document.getElementById('jankenSpeedOutput').value = tempoSettings[jankenSpeed].label;
+
+            if (save) {
+                try {
+                    localStorage.setItem('jankenTempoLevel', String(jankenSpeed));
+                } catch (e) {
+                    // 保存できない環境でも、その場の速度変更は有効
+                }
+            }
+        }
+
+        try {
+            const savedSpeed = Number(localStorage.getItem('jankenTempoLevel'));
+            updateJankenSpeed(savedSpeed >= 1 && savedSpeed <= 5 ? savedSpeed : 3, false);
+        } catch (e) {
+            updateJankenSpeed(3, false);
+        }
 
         function speak(text, speed = 1.1, callback) {
             if (!synth) {
@@ -943,25 +1016,56 @@
             if (!synth) { callback(); return; }
             synth.cancel();
 
+            const tempo = tempoSettings[jankenSpeed];
             const phrases = [
-                { text: targetTotal === 10 ? 'じゅうの' : 'ごの', speed: 1.3, delay: 0 },
-                { text: 'じゃん', speed: 1.3, delay: 280 },
-                { text: 'けん', speed: 1.3, delay: 280 },
-                { text: 'ぽん！', speed: 1.2, delay: 280 }
+                { text: targetTotal === 10 ? 'じゅうの' : 'ごの', speed: tempo.rate },
+                { text: 'じゃん', speed: tempo.rate },
+                { text: 'けん', speed: tempo.rate },
+                { text: 'ぽん！', speed: Math.max(0.7, tempo.rate - 0.05) }
             ];
 
-            phrases.forEach((p, index) => {
-                setTimeout(() => {
-                    const u = new SpeechSynthesisUtterance(p.text);
-                    u.lang = 'ja-JP';
-                    u.rate = p.speed;
-                    u.pitch = 1.3;
-                    if (index === phrases.length - 1 && callback) {
-                        u.onend = callback;
+            // 短い言葉でも違いが分かるよう、テンポごとに間隔を大きく変える
+            const phraseGap = tempo.gap;
+
+            let index = 0;
+
+            function speakNextPhrase() {
+                if (index >= phrases.length) {
+                    if (callback) callback();
+                    return;
+                }
+
+                const phrase = phrases[index];
+                const u = new SpeechSynthesisUtterance(phrase.text);
+                u.lang = 'ja-JP';
+                u.rate = phrase.speed;
+                u.pitch = 1.2;
+
+                let advanced = false;
+                let safetyTimer;
+                const advance = () => {
+                    if (advanced) return;
+                    advanced = true;
+                    clearTimeout(safetyTimer);
+                    index++;
+
+                    if (index >= phrases.length) {
+                        if (callback) callback();
+                    } else {
+                        setTimeout(speakNextPhrase, phraseGap);
                     }
-                    synth.speak(u);
-                }, p.delay * index);
-            });
+                };
+
+                u.onend = advance;
+                u.onerror = advance;
+                synth.speak(u);
+
+                // 一部のスマホで終了イベントが来ない場合も止まらないようにする
+                safetyTimer = setTimeout(advance, 1800);
+            }
+
+            // cancel直後に読み上げが消える端末があるため、少し待って開始する
+            setTimeout(speakNextPhrase, 80);
         }
 
         function selectMode(total) {
