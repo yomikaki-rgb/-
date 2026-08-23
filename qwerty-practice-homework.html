@@ -405,10 +405,10 @@
 
     <section class="card hidden" id="homeworkPanel">
       <h2 class="section-title">宿題モード</h2>
-      <div class="inline-note">先生は上のカードで宿題コードを作ります。生徒は下のカードで「名前・宿題コード」を入れて始めます。</div>
+      <div class="inline-note">先生は上のカードで宿題コードを作ります。生徒は下のカードで宿題コードを入れて始めます。</div>
       <div class="homework-field homework-hidden-url">
         <label for="homeworkScriptUrl">Apps Script ウェブアプリURL</label>
-        <input type="text" id="homeworkScriptUrl" value="https://script.google.com/macros/s/AKfycbxtyC4XvxIF-Kt382P1Ai3H8txg_a9mBxCk7haZD6OqkoFA32p8jYqy2G-N7VGUpHOI/exec" />
+        <input type="text" id="homeworkScriptUrl" value="https://script.google.com/macros/s/AKfycbxnUwbVBuyMEd6B1DGxy0H3Xlep8g8GcNMVzMyhfIkIxEfWhTl3SdQnRqN__AVIDH88/exec" />
       </div>
 
       <div class="homework-role-card teacher">
@@ -440,24 +440,20 @@
 
       <div class="homework-role-card student">
         <h3 class="homework-step-title"><span class="homework-step-badge">生</span>生徒用：宿題をする</h3>
-        <div class="inline-note">① 名前を書く → ② 宿題コードを書く → ③「宿題をはじめる」を押します。終わると、右の大きな場所に「先生にていしゅつする」ボタンが出ます。</div>
+        <div class="inline-note">① 宿題コードを書く → ②「宿題をはじめる」を押します。終わると、右の大きな場所に「先生にていしゅつする」ボタンが出ます。</div>
         <div class="homework-grid" style="margin-top:8px;">
           <div class="homework-field">
-            <label for="homeworkStudentName">① なまえ</label>
-            <input type="text" id="homeworkStudentName" placeholder="なまえを入れる" />
-          </div>
-          <div class="homework-field">
-            <label for="homeworkCodeInput">② 宿題コード</label>
-            <input type="text" id="homeworkCodeInput" placeholder="先生にもらったコード" maxlength="12" />
+            <label for="homeworkCodeInput">① 宿題コード（数字4桁）</label>
+            <input type="text" id="homeworkCodeInput" placeholder="例：4826" maxlength="12" inputmode="numeric" autocomplete="one-time-code" />
           </div>
           <div>
             <div class="homework-submit-row" style="margin-top:22px;">
-              <button class="btn primary homework-big-btn" id="loadHomeworkBtn" type="button">③ 宿題をはじめる</button>
+              <button class="btn primary homework-big-btn" id="loadHomeworkBtn" type="button">② 宿題をはじめる</button>
               <button class="btn warn homework-big-btn hidden" id="reviewHomeworkBtn" type="button">間違えた問題だけ復習</button>
             </div>
           </div>
         </div>
-        <div class="homework-status" id="homeworkStatus">まだ宿題は始まっていません。名前・宿題コードを入れて「宿題をはじめる」を押してください。</div>
+        <div class="homework-status" id="homeworkStatus">まだ宿題は始まっていません。宿題コードを入れて「宿題をはじめる」を押してください。</div>
       </div>
     </section>
 
@@ -1489,6 +1485,15 @@ const els = {
       }
     }
 
+    function focusKeyboardAnswerIfNeeded(){
+      if(state.mode !== 'practice' || state.inputMethod !== 'keyboard' || !state.practiceStarted || !els.keyboardAnswerInput) return;
+      setTimeout(()=>{
+        if(!els.keyboardAnswerInput.classList.contains('hidden') && !els.keyboardAnswerInput.readOnly){
+          els.keyboardAnswerInput.focus();
+        }
+      }, 0);
+    }
+
     function renderMode(){
       els.modeButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === state.mode));
       els.freePanel.classList.toggle('hidden', state.mode !== 'free');
@@ -1881,6 +1886,7 @@ document.getElementById('nextWordBtn').addEventListener('click', ()=>{
           const ok = isCurrentAnswerCorrect();
           judgeByDoneButton();
           if(!ok){
+            focusKeyboardAnswerIfNeeded();
             return;
           }
         }
@@ -1889,6 +1895,7 @@ document.getElementById('nextWordBtn').addEventListener('click', ()=>{
       if(!state.practiceList.length) return;
       state.currentIndex=(state.currentIndex+1)%state.practiceList.length;
       loadCurrentWord();
+      focusKeyboardAnswerIfNeeded();
     });
     document.getElementById('speakWordBtn').addEventListener('click', ()=>{ const kana = state.mode === 'practice' ? getWordKana(state.currentWord) : (state.freeDraft || ''); if(kana){ speak(kana); } else { setFeedback('読む単語がまだありません。', 'info'); } });
 
@@ -2529,7 +2536,7 @@ document.getElementById('nextWordBtn').addEventListener('click', ()=>{
     /* homework mode additions: appended only */
     const HOMEWORK_STORAGE_KEYS = {
       scriptUrl: 'romajiHomeworkScriptUrl',
-      fixedScriptUrl: 'https://script.google.com/macros/s/AKfycbxtyC4XvxIF-Kt382P1Ai3H8txg_a9mBxCk7haZD6OqkoFA32p8jYqy2G-N7VGUpHOI/exec',
+      fixedScriptUrl: 'https://script.google.com/macros/s/AKfycbxnUwbVBuyMEd6B1DGxy0H3Xlep8g8GcNMVzMyhfIkIxEfWhTl3SdQnRqN__AVIDH88/exec',
       teacherShuffle: 'romajiHomeworkTeacherShuffle'
     };
     state.homework = {
@@ -2549,7 +2556,7 @@ document.getElementById('nextWordBtn').addEventListener('click', ()=>{
     const hwEls = {
       panel: document.getElementById('homeworkPanel'),
       scriptUrl: document.getElementById('homeworkScriptUrl'),
-      studentName: document.getElementById('homeworkStudentName'),
+      studentName: null,
       studentId: null,
       selectAllGroupsBtn: document.getElementById('homeworkSelectAllGroupsBtn'),
       clearAllGroupsBtn: document.getElementById('homeworkClearAllGroupsBtn'),
@@ -2569,7 +2576,9 @@ document.getElementById('nextWordBtn').addEventListener('click', ()=>{
     function setHomeworkStatus(msg){ if(hwEls.status) hwEls.status.textContent = msg; }
     function saveHomeworkScriptUrl(){ if(hwEls.scriptUrl) saveJSON(HOMEWORK_STORAGE_KEYS.scriptUrl, HOMEWORK_STORAGE_KEYS.fixedScriptUrl); }
     function normalizeHomeworkCode(code){ return String(code || '').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12); }
-    function makeHomeworkCode(){ const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let out=''; for(let i=0;i<6;i++) out += chars[Math.floor(Math.random()*chars.length)]; return out; }
+    // 新しく発行するコードは、子どもが入力しやすい1000～9999の数字4桁。
+    // normalizeHomeworkCodeは旧コードとの互換性のため英数字にも対応したままにする。
+    function makeHomeworkCode(){ return String(Math.floor(1000 + Math.random() * 9000)); }
     function getHomeworkScriptUrl(){ return HOMEWORK_STORAGE_KEYS.fixedScriptUrl; }
     function postToAppsScript(payload){
       const url = getHomeworkScriptUrl();
@@ -2771,8 +2780,7 @@ document.getElementById('nextWordBtn').addEventListener('click', ()=>{
     }
     async function loadHomework(){
       const code = normalizeHomeworkCode(hwEls.codeInput?.value || '');
-      const name = (hwEls.studentName?.value || '').trim();
-      if(!name || !code){ alert('名前・宿題コードを入れてください。'); return; }
+      if(!code){ alert('宿題コードを入れてください。'); return; }
 
       const loadBtn = hwEls.loadBtn;
       const originalLoadText = loadBtn ? loadBtn.textContent : '';
@@ -2782,22 +2790,23 @@ document.getElementById('nextWordBtn').addEventListener('click', ()=>{
       }
       setHomeworkStatus('じゅんび中… 宿題を読み込んでいます。');
 
-      state.homework.studentName = name;
-      state.homework.studentId = name;
+      // 個人名は取得せず、宿題コードを進捗と提出先シートの識別子にする。
+      state.homework.studentName = code;
+      state.homework.studentId = code;
       if(hwEls.codeInput) hwEls.codeInput.value = code;
       try{
         const configRes = await jsonpAppsScript({action:'getConfig', code});
         if(!configRes?.ok){
           alert(configRes?.error || '宿題コードが見つかりません。');
-          if(loadBtn){ loadBtn.disabled = false; loadBtn.textContent = originalLoadText || '③ 宿題をはじめる'; }
-          setHomeworkStatus('宿題コードが見つかりません。名前・宿題コードを確認してください。');
+          if(loadBtn){ loadBtn.disabled = false; loadBtn.textContent = originalLoadText || '② 宿題をはじめる'; }
+          setHomeworkStatus('宿題コードが見つかりません。コードを確認してください。');
           return;
         }
-        const progressRes = await jsonpAppsScript({action:'getProgress', code, studentId: name, name});
+        const progressRes = await jsonpAppsScript({action:'getProgress', code, studentId: code, name: code});
         startHomeworkPractice(configRes.config, progressRes?.ok ? progressRes : {submittedCount:0, wrongItems:[]});
       }catch(e){
         alert('宿題を読み込めませんでした。Apps ScriptのURLや公開設定を確認してください。');
-        if(loadBtn){ loadBtn.disabled = false; loadBtn.textContent = originalLoadText || '③ 宿題をはじめる'; }
+        if(loadBtn){ loadBtn.disabled = false; loadBtn.textContent = originalLoadText || '② 宿題をはじめる'; }
         setHomeworkStatus('宿題を読み込めませんでした。もう一度ためしてください。');
       }
     }
