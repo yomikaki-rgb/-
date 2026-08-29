@@ -336,6 +336,24 @@
 
         .pause-overlay.show { display: flex; }
 
+        .pause-wide-btn {
+            width: 100%;
+            min-height: 46px;
+            margin: 0 0 8px;
+            border: 3px solid #495057;
+            border-radius: 14px;
+            color: #343A40;
+            background: #F1F3F5;
+            box-shadow: 0 3px 0 #ADB5BD;
+            font-size: 1.05rem;
+            font-weight: bold;
+        }
+
+        .pause-wide-btn:active {
+            transform: translateY(3px);
+            box-shadow: none;
+        }
+
         @keyframes speed-bounce {
             0% { transform: translate(-50%, -50%) scale(.25); opacity: 0; }
             35% { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
@@ -946,10 +964,10 @@
                 <div class="progress-box">だい <span id="currentRound">1</span> / 10 もん</div>
                 <div class="score-box">⭐️ <span id="score">0</span></div>
                 <div class="score-box">⚡ <span id="speedScore">0</span></div>
-                <button class="settings-btn" onclick="togglePause()" aria-label="いちじていし">⏸️</button>
                 <button class="settings-btn" onclick="toggleRules()" aria-label="あそびかた">？</button>
                 <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
             </div>
+            <button class="pause-wide-btn" onclick="togglePause()">⏸️ いちじていし</button>
 
             <div class="reward-track" id="rewardTrack" aria-label="あつめたスター 0こ">
                 <span class="reward-star">★</span><span class="reward-star">★</span>
@@ -1041,8 +1059,8 @@
                 <span>あと <span id="shootingTime">10</span>びょう</span>
                 <span>⭐ <span id="shootingScore">0</span></span>
                 <span>コンボ×<span id="shootingCombo">1</span></span>
-                <button class="settings-btn" onclick="togglePause()" aria-label="いちじていし">⏸️</button>
             </div>
+            <button class="pause-wide-btn" onclick="togglePause()">⏸️ いちじていし</button>
             <div class="shooting-arena" id="shootingArena" aria-label="宇宙船を動かして敵を撃とう">
                 <div class="shooting-cannon" id="shootingCannon">🚀</div>
                 <div class="shooting-finish" id="shootingFinish">
@@ -1234,6 +1252,12 @@
         let shootingLastFrame = 0;
         let shootingLastShot = 0;
         let shootingPaused = false;
+        let jankenPlaybackToken = 0;
+        let isJankenSpeaking = false;
+        let restartJankenOnResume = false;
+        let speechPlaybackToken = 0;
+        let activeSpeechRequest = null;
+        let restartSpeechOnResume = false;
 
         const synth = window.speechSynthesis;
         const praiseMessages = ['せいかい！', 'すごい！', 'ぴったり！', 'そのちょうし！', 'やったね！'];
@@ -1273,11 +1297,23 @@
                 return;
             }
             synth.cancel();
+            const speechToken = ++speechPlaybackToken;
+            activeSpeechRequest = { text, speed, callback };
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'ja-JP';
             utterance.rate = speed;
             utterance.pitch = 1.2;
-            if (callback) utterance.onend = callback;
+            const complete = () => {
+                if (speechToken !== speechPlaybackToken) return;
+                if (isPaused) {
+                    setTimeout(complete, 200);
+                    return;
+                }
+                activeSpeechRequest = null;
+                if (callback) callback();
+            };
+            utterance.onend = complete;
+            utterance.onerror = complete;
             synth.speak(utterance);
         }
 
@@ -1314,6 +1350,8 @@
         function playRhythmicJanken(callback) {
             if (!synth) { callback(); return; }
             synth.cancel();
+            const playbackToken = ++jankenPlaybackToken;
+            isJankenSpeaking = true;
 
             const tempo = tempoSettings[jankenSpeed];
             const u = new SpeechSynthesisUtterance(`${targetTotal === 10 ? 'じゅうの' : 'ごの'}、じゃん、けん、ぽん！`);
@@ -1324,11 +1362,13 @@
             let finished = false;
             const finish = () => {
                 if (finished) return;
+                if (playbackToken !== jankenPlaybackToken) return;
                 if (isPaused) {
                     setTimeout(finish, 200);
                     return;
                 }
                 finished = true;
+                isJankenSpeaking = false;
                 clearTimeout(safetyTimer);
                 if (callback) callback();
             };
@@ -1377,7 +1417,14 @@
                 isPaused = true;
                 shootingPaused = true;
                 pauseStartedAt = performance.now();
-                synth.pause();
+                restartJankenOnResume = isJankenSpeaking;
+                restartSpeechOnResume = !isJankenSpeaking && Boolean(activeSpeechRequest);
+                if (restartJankenOnResume) {
+                    jankenPlaybackToken++;
+                    isJankenSpeaking = false;
+                }
+                if (restartSpeechOnResume) speechPlaybackToken++;
+                synth.cancel();
                 overlay.classList.add('show');
             } else {
                 const pausedFor = performance.now() - pauseStartedAt;
@@ -1385,15 +1432,27 @@
                 isPaused = false;
                 shootingPaused = false;
                 shootingLastFrame = performance.now();
-                synth.resume();
                 overlay.classList.remove('show');
+                if (restartJankenOnResume) {
+                    restartJankenOnResume = false;
+                    setTimeout(nextQuestion, 80);
+                } else if (restartSpeechOnResume && activeSpeechRequest) {
+                    const request = activeSpeechRequest;
+                    restartSpeechOnResume = false;
+                    setTimeout(() => speak(request.text, request.speed, request.callback), 80);
+                }
             }
         }
 
         function resetPauseState() {
             isPaused = false;
             shootingPaused = false;
-            synth.resume();
+            restartJankenOnResume = false;
+            restartSpeechOnResume = false;
+            activeSpeechRequest = null;
+            jankenPlaybackToken++;
+            speechPlaybackToken++;
+            synth.cancel();
             document.getElementById('pauseOverlay').classList.remove('show');
         }
 
@@ -1608,10 +1667,11 @@
 
         function getShootingSettings() {
             const learningPoints = score + speedBonusTotal;
-            if (learningPoints >= 32) return { seconds: 20, spawnMs: 430, goldChance: .30, boss: true };
-            if (learningPoints >= 24) return { seconds: 17, spawnMs: 500, goldChance: .23, boss: true };
-            if (learningPoints >= 15) return { seconds: 14, spawnMs: 580, goldChance: .14, boss: false };
-            return { seconds: 10, spawnMs: 760, goldChance: 0, boss: false };
+            const seconds = Math.max(10, Math.min(30, learningPoints));
+            if (learningPoints >= 30) return { seconds, spawnMs: 430, goldChance: .30, boss: true };
+            if (learningPoints >= 20) return { seconds, spawnMs: 500, goldChance: .23, boss: true };
+            if (learningPoints >= 15) return { seconds, spawnMs: 580, goldChance: .14, boss: false };
+            return { seconds, spawnMs: 760, goldChance: 0, boss: false };
         }
 
         function updateShootingRewardAvailability() {
@@ -1623,7 +1683,7 @@
                 button.innerText = '✅ ごほうびゲーム クリア';
                 button.disabled = true;
             } else {
-                hint.innerText = `ごうけい ${score + speedBonusTotal}てん！ ${settings.seconds}びょう あそべるよ`;
+                hint.innerText = `ごうけい ${score + speedBonusTotal}てんだから ${settings.seconds}びょう あそべるよ（10〜30びょう）`;
                 button.innerText = `🚀 ごほうびゲーム（${settings.seconds}びょう）`;
                 button.disabled = false;
             }
