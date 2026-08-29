@@ -371,6 +371,33 @@
             padding: 20px 0;
         }
 
+        .result-action-btn {
+            width: 88%;
+            min-height: 50px;
+            margin: 5px auto;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            background: #FF922B;
+            box-shadow: 0 4px 0 #E8590C;
+            font-size: 1.05rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .result-action-btn:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .result-action-btn:disabled {
+            color: #495057;
+            background: #DEE2E6;
+            box-shadow: 0 4px 0 #ADB5BD;
+            cursor: default;
+        }
+
         .shooting-screen {
             display: none;
             flex-direction: column;
@@ -940,6 +967,14 @@
                 padding: 2px 5px;
             }
 
+            .result-action-btn {
+                width: 88%;
+                min-height: 42px;
+                margin: 3px auto;
+                padding: 7px 12px;
+                font-size: 0.92rem;
+            }
+
             .shooting-screen {
                 gap: 4px;
             }
@@ -1111,9 +1146,9 @@
             <div style="font-size: 3.5rem; margin-bottom: 15px;" id="resultStars">⭐️⭐️⭐️</div>
             <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 20px;" id="resultMsg"></div>
             <div id="shootingRewardHint" style="font-weight:bold; color:#5F3DC4; margin-bottom:6px;"></div>
-            <button class="primary-btn" id="shootingStartBtn" onclick="startShootingGame()">🌟 ごほうびゲーム</button>
-            <button class="primary-btn" onclick="resetGame()">おなじゲームを もういちど</button>
-            <button class="back-btn" onclick="backToModeSelect()">5・10を えらぶ画面へ</button>
+            <button class="result-action-btn" id="shootingStartBtn" onclick="startShootingGame()">🌟 ごほうびゲーム</button>
+            <button class="result-action-btn" onclick="resetGame()">おなじゲームを もういちど</button>
+            <button class="result-action-btn" onclick="backToModeSelect()">5・10を えらぶ画面へ</button>
             <a class="clinic-logo-link" href="https://sakurakids-clinic.com/" target="_blank" rel="noopener noreferrer" aria-label="さくらキッズくりにっく公式サイトをひらく">
                 <img class="clinic-logo" alt="さくらキッズくりにっく sakura kids clinic">
             </a>
@@ -1133,7 +1168,6 @@
                 <div class="shooting-finish" id="shootingFinish">
                     <div id="shootingFinishMessage"></div>
                     <div id="shootingFinishStars" style="font-size:2.4rem;"></div>
-                    <button class="primary-btn" onclick="finishShootingAndReturn()">けっかに もどる</button>
                 </div>
             </div>
             <button class="back-btn" onclick="finishShootingAndReturn()">けっかに もどる</button>
