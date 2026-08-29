@@ -1418,7 +1418,7 @@ function buildRubyHTML(mixed, kana) {
     "母は台所で料理をしている。": "<ruby>母<rt>母</rt></ruby>は<ruby>台所<rt>だいどころ</rt></ruby>で<ruby>料理<rt>りょうり</rt></ruby>をしている。",
     "勉強するへや": "<ruby>勉強<rt>べんきょう</rt></ruby>するへや",
     "料理をするへや": "<ruby>料理<rt>りょうり</rt></ruby>をするへや",
-    "友だちは、わたしにとってとても大切な人だ。": "<ruby>友<rt>とも</rt></ruby>だちは、わたしにとってとても<ruby>大切<rt>たいせつ</rt></ruby>な<ruby>人<rt>ひと</rt></ruby>だ。",
+    "友だちは、わたしにとってとても大切な人だ。": "<ruby>友<rt>とも</rt></ruby>だちは、わたしにとってとても<ruby>大切<rt>たいせつ</rt></ruby>な<ruby>人<rt>にん</rt></ruby>だ。",
     "動物園からサルが脱走した。": "<ruby>動物園<rt>どうぶつえん</rt></ruby>からサルが<ruby>脱走<rt>だっそう</rt></ruby>した。",
     "ニュースで、警察官のピストルから弾丸が出たと聞いた。": "ニュースで、<ruby>警察官<rt>けいさつかん</rt></ruby>のピストルから<ruby>弾丸<rt>だんがん</rt></ruby>が<ruby>出<rt>で</rt></ruby>たと<ruby>聞<rt>き</rt></ruby>いた。",
     "ピストルから出る小さなたま": "ピストルから<ruby>出<rt>で</rt></ruby>る<ruby>小<rt>ちい</rt></ruby>さなたま",
@@ -3529,22 +3529,9 @@ function formatChoice(text, kana) {
   return buildRubyHTML(t, k);
 }
 
-function getCorrectedSentenceKana(q) {
-  const kana = (q[COL.sentenceKana] ?? "").toString();
-  // G2-062: この文脈の「人」は「ひと」。元データの「にん」を補正する。
-  if ((q[COL.id] ?? "").toString() === "G2-062" && (q[COL.word] ?? "").toString() === "大切") {
-    return kana.replace(/たいせつなにんだ。$/, "たいせつなひとだ。");
-  }
-  // G2-067: 「下がき」は「したがき」。元データの脱字を表示時に補正する。
-  if ((q[COL.id] ?? "").toString() === "G2-067" && (q[COL.word] ?? "").toString() === "着色") {
-    return kana.replace(/^さがき/, "したがき");
-  }
-  return kana;
-}
-
 function formatSentence(q) {
   const mixed = (q[COL.sentence] ?? "").toString();
-  const kana = getCorrectedSentenceKana(q);
+  const kana = (q[COL.sentenceKana] ?? "").toString();
   const target = (q[COL.word] ?? "").toString();
 
   if (state.settings.ruby && mixed === "母は子どもにたくさんの愛情をそそいで育てた。" && target === "愛情") {
@@ -3960,7 +3947,7 @@ function alignMixedToKana(mixedRaw, kanaRaw) {
 
 function getTargetReadingInfo(q) {
   const mixed = (q[COL.sentence] ?? "").toString();
-  const kana = normalizeKanaForAlign(getCorrectedSentenceKana(q));
+  const kana = normalizeKanaForAlign(q[COL.sentenceKana] ?? "");
   const target = (q[COL.word] ?? "").toString();
   const explicit = (q["読み"] ?? q["よみ"] ?? q["読み方"] ?? q["熟語読み"] ?? "").toString().trim();
   const idx = mixed.indexOf(target);
@@ -3969,7 +3956,6 @@ function getTargetReadingInfo(q) {
   // 対象語が後続の熟語と連結している場合の読み上げ・ハイライト位置固定。
   // 例：鉄道事故 → 対象語「鉄道」だけを無音化し、「事故」から読み上げを再開する。
   const TARGET_READING_EXCEPT = {
-    "ニュースで、警察官のピストルから弾丸が出たと聞いた。||弾丸": "だんがん",
     "今年に入って、鉄道事故が次々に発生している。||鉄道": "てつどう",
     "日本には47の都道府県がある。||都道府県": "とどうふけん",
     "朝は交通量が多く、道に車がたくさん走っていた。||交通": "こうつう",
