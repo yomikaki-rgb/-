@@ -340,7 +340,7 @@
                 radial-gradient(circle at 76% 30%, rgba(255,255,255,.8) 0 2px, transparent 3px),
                 radial-gradient(circle at 45% 70%, rgba(255,255,255,.8) 0 2px, transparent 3px),
                 linear-gradient(#364FC7, #845EF7 58%, #B197FC);
-            touch-action: manipulation;
+            touch-action: none;
         }
 
         .shooting-target {
@@ -353,8 +353,7 @@
             filter: drop-shadow(0 4px 3px rgba(0,0,0,.25));
             font-size: 3rem;
             line-height: 1;
-            cursor: crosshair;
-            animation: target-float var(--duration, 3.4s) linear forwards;
+            pointer-events: none;
         }
 
         .shooting-target.gold { font-size: 3.35rem; }
@@ -362,7 +361,6 @@
             width: 110px;
             height: 110px;
             font-size: 5.8rem;
-            animation-duration: 5s;
         }
 
         .shooting-target.hit {
@@ -387,15 +385,49 @@
         .shooting-cannon {
             position: absolute;
             z-index: 3;
-            left: 50%;
+            left: 0;
             bottom: 7px;
-            transform: translateX(-50%);
+            width: 64px;
+            text-align: center;
             font-size: 3.4rem;
             filter: drop-shadow(0 4px 3px rgba(0,0,0,.3));
             pointer-events: none;
         }
 
         @keyframes laser-shot { to { opacity: 0; filter: brightness(2); } }
+
+        .player-shot {
+            position: absolute;
+            z-index: 4;
+            width: 9px;
+            height: 25px;
+            border-radius: 8px;
+            background: linear-gradient(#FFF, #FFD43B, #FF6B6B);
+            box-shadow: 0 0 8px #FFF, 0 0 15px #FFD43B;
+            pointer-events: none;
+        }
+
+        .shooting-controls {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .shoot-control {
+            min-height: 48px;
+            border: 0;
+            border-radius: 14px;
+            color: white;
+            background: #5F3DC4;
+            box-shadow: 0 4px 0 #3B2B82;
+            font-size: 1.15rem;
+            font-weight: bold;
+            touch-action: none;
+        }
+
+        .shoot-control.fire { background: #F03E3E; box-shadow: 0 4px 0 #C92A2A; }
+        .shoot-control:active { transform: translateY(3px); box-shadow: none; }
 
         .shot-pop {
             position: absolute;
@@ -959,13 +991,13 @@
 
         <!-- ごほうび：おほしさまシューティング -->
         <div class="shooting-screen" id="shootingScreen">
-            <div style="font-size:1.35rem; font-weight:bold; color:#5F3DC4;">🌟 おほしさまシューティング</div>
+            <div style="font-size:1.35rem; font-weight:bold; color:#5F3DC4;">🚀 スターバトル</div>
             <div class="shooting-header">
                 <span>あと <span id="shootingTime">10</span>びょう</span>
                 <span>⭐ <span id="shootingScore">0</span></span>
                 <span>コンボ×<span id="shootingCombo">1</span></span>
             </div>
-            <div class="shooting-arena" id="shootingArena" aria-label="うごくほしをタップしてね">
+            <div class="shooting-arena" id="shootingArena" aria-label="宇宙船を動かして敵を撃とう">
                 <div class="shooting-cannon" id="shootingCannon">🚀</div>
                 <div class="shooting-finish" id="shootingFinish">
                     <div id="shootingFinishMessage"></div>
@@ -973,7 +1005,12 @@
                     <button class="primary-btn" onclick="startShootingGame()">もういちど！</button>
                 </div>
             </div>
-            <div style="font-weight:bold; color:#495057;">うごく ほしを タップ！</div>
+            <div class="shooting-controls">
+                <button class="shoot-control" data-move="-1">⬅️ ひだり</button>
+                <button class="shoot-control fire" id="shootButton">🔥 ビーム！</button>
+                <button class="shoot-control" data-move="1">みぎ ➡️</button>
+            </div>
+            <div style="font-weight:bold; color:#495057; font-size:.88rem;">PC：← → と スペース　タブレット：ボタンか指で操作</div>
             <button class="back-btn" onclick="finishShootingAndReturn()">けっかに もどる</button>
         </div>
 
@@ -1136,6 +1173,11 @@
         let shootingBossAppeared = false;
         let shootingCombo = 1;
         let lastShootingHit = 0;
+        let shootingFrame = null;
+        let shootingShipX = 0;
+        let shootingMoveDirection = 0;
+        let shootingLastFrame = 0;
+        let shootingLastShot = 0;
 
         const synth = window.speechSynthesis;
         const praiseMessages = ['せいかい！', 'すごい！', 'ぴったり！', 'そのちょうし！', 'やったね！'];
@@ -1218,55 +1260,24 @@
             synth.cancel();
 
             const tempo = tempoSettings[jankenSpeed];
-            const phrases = [
-                { text: targetTotal === 10 ? 'じゅうの' : 'ごの', speed: tempo.rate },
-                { text: 'じゃん', speed: tempo.rate },
-                { text: 'けん', speed: tempo.rate },
-                { text: 'ぽん！', speed: Math.max(0.7, tempo.rate - 0.05) }
-            ];
+            const u = new SpeechSynthesisUtterance(`${targetTotal === 10 ? 'じゅうの' : 'ごの'}、じゃん、けん、ぽん！`);
+            u.lang = 'ja-JP';
+            u.rate = tempo.rate;
+            u.pitch = 1.2;
 
-            // 短い言葉でも違いが分かるよう、テンポごとに間隔を大きく変える
-            const phraseGap = tempo.gap;
+            let finished = false;
+            const finish = () => {
+                if (finished) return;
+                finished = true;
+                clearTimeout(safetyTimer);
+                if (callback) callback();
+            };
+            u.onend = finish;
+            u.onerror = finish;
 
-            let index = 0;
-
-            function speakNextPhrase() {
-                if (index >= phrases.length) {
-                    if (callback) callback();
-                    return;
-                }
-
-                const phrase = phrases[index];
-                const u = new SpeechSynthesisUtterance(phrase.text);
-                u.lang = 'ja-JP';
-                u.rate = phrase.speed;
-                u.pitch = 1.2;
-
-                let advanced = false;
-                let safetyTimer;
-                const advance = () => {
-                    if (advanced) return;
-                    advanced = true;
-                    clearTimeout(safetyTimer);
-                    index++;
-
-                    if (index >= phrases.length) {
-                        if (callback) callback();
-                    } else {
-                        setTimeout(speakNextPhrase, phraseGap);
-                    }
-                };
-
-                u.onend = advance;
-                u.onerror = advance;
-                synth.speak(u);
-
-                // 一部のスマホで終了イベントが来ない場合も止まらないようにする
-                safetyTimer = setTimeout(advance, 1800);
-            }
-
-            // cancel直後に読み上げが消える端末があるため、少し待って開始する
-            setTimeout(speakNextPhrase, 80);
+            // PCで短い音声を何度も開始すると遅延するため、一つの音声として再生する
+            const safetyTimer = setTimeout(finish, Math.max(2200, 4300 - jankenSpeed * 380));
+            setTimeout(() => synth.speak(u), 50);
         }
 
         function selectMode(total) {
@@ -1474,8 +1485,18 @@
         function clearShootingTimers() {
             clearInterval(shootingTimer);
             clearInterval(shootingSpawner);
+            cancelAnimationFrame(shootingFrame);
             shootingTimer = null;
             shootingSpawner = null;
+            shootingFrame = null;
+            shootingMoveDirection = 0;
+            const arena = document.getElementById('shootingArena');
+            if (arena) {
+                arena.onpointerdown = null;
+                arena.onpointermove = null;
+            }
+            document.onkeydown = null;
+            document.onkeyup = null;
         }
 
         function startShootingGame() {
@@ -1484,7 +1505,7 @@
 
             const settings = getShootingSettings();
             const arena = document.getElementById('shootingArena');
-            arena.querySelectorAll('.shooting-target, .shot-pop').forEach(el => el.remove());
+            arena.querySelectorAll('.shooting-target, .player-shot, .shot-pop').forEach(el => el.remove());
             document.getElementById('shootingFinish').classList.remove('show');
             document.getElementById('resultScreen').style.display = 'none';
             document.getElementById('shootingScreen').style.display = 'flex';
@@ -1497,7 +1518,9 @@
             document.getElementById('shootingScore').innerText = shootingPoints;
             document.getElementById('shootingTime').innerText = shootingTimeLeft;
             document.getElementById('shootingCombo').innerText = shootingCombo;
-            arena.onpointerdown = shootAtEmptySpace;
+            shootingShipX = Math.max(0, (arena.clientWidth - 64) / 2);
+            updateShootingShip();
+            setupShootingControls();
 
             spawnShootingTarget(settings);
             shootingSpawner = setInterval(() => spawnShootingTarget(settings), settings.spawnMs);
@@ -1513,37 +1536,33 @@
                 if (shootingTimeLeft <= 0) endShootingGame();
             }, 1000);
 
-            speak('おほしさまを、タップしてね！', 1.2);
+            shootingLastFrame = performance.now();
+            shootingFrame = requestAnimationFrame(updateShootingGame);
+            speak('宇宙船をうごかして、ビームでねらおう！', 1.25);
         }
 
         function spawnShootingTarget(settings, isBoss = false) {
             if (shootingTimeLeft <= 0) return;
 
             const arena = document.getElementById('shootingArena');
-            const target = document.createElement('button');
+            const target = document.createElement('div');
             const isGold = !isBoss && Math.random() < settings.goldChance;
             const size = isBoss ? 110 : 58;
-            target.type = 'button';
             target.className = `shooting-target${isGold ? ' gold' : ''}${isBoss ? ' boss' : ''}`;
-            target.innerText = isBoss ? '🌈' : (isGold ? '🌟' : '⭐');
-            target.setAttribute('aria-label', isBoss ? 'にじいろのボススター' : 'ほし');
+            target.innerText = isBoss ? '👹' : (isGold ? '🛸' : '👾');
+            target.setAttribute('aria-label', isBoss ? 'ボス' : '宇宙の敵');
             target.dataset.points = isBoss ? '10' : (isGold ? '3' : '1');
-            target.dataset.hp = isBoss ? '5' : '1';
-            target.style.left = `${Math.random() * Math.max(1, arena.clientWidth - size)}px`;
-            target.style.top = `${Math.max(35, Math.random() * Math.max(40, arena.clientHeight - size - 20))}px`;
-            target.style.setProperty('--duration', `${2.7 + Math.random() * 1.8}s`);
-            target.addEventListener('pointerdown', hitShootingTarget);
-            target.addEventListener('animationend', () => target.remove(), { once: true });
+            target.dataset.hp = isBoss ? '12' : (isGold ? '2' : '1');
+            target.dataset.x = String(Math.random() * Math.max(1, arena.clientWidth - size));
+            target.dataset.y = String(isBoss ? 8 : -size);
+            target.dataset.speed = String(isBoss ? 24 : 48 + Math.random() * 38);
+            target.dataset.size = String(size);
+            target.style.left = `${target.dataset.x}px`;
+            target.style.top = `${target.dataset.y}px`;
             arena.appendChild(target);
         }
 
-        function hitShootingTarget(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            const target = event.currentTarget;
-            if (target.classList.contains('hit') || shootingTimeLeft <= 0) return;
-
-            shootLaser(target.offsetLeft + target.offsetWidth / 2, target.offsetTop + target.offsetHeight / 2);
+        function registerShootingHit(target) {
             const now = performance.now();
             shootingCombo = now - lastShootingHit <= 1300 ? Math.min(5, shootingCombo + 1) : 1;
             lastShootingHit = now;
@@ -1576,30 +1595,96 @@
             else if (gained >= 3) makeConfetti(8);
         }
 
-        function shootLaser(x, y) {
+        function firePlayerShot() {
+            if (shootingTimeLeft <= 0) return;
+            const now = performance.now();
+            if (now - shootingLastShot < 190) return;
+            shootingLastShot = now;
             const arena = document.getElementById('shootingArena');
-            const cannon = document.getElementById('shootingCannon');
-            const startX = cannon.offsetLeft + cannon.offsetWidth / 2;
-            const startY = cannon.offsetTop + 10;
-            const dx = x - startX;
-            const dy = y - startY;
-            const laser = document.createElement('div');
-            laser.className = 'laser-shot';
-            laser.style.left = `${startX}px`;
-            laser.style.top = `${startY}px`;
-            laser.style.width = `${Math.hypot(dx, dy)}px`;
-            laser.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
-            arena.appendChild(laser);
-            setTimeout(() => laser.remove(), 220);
+            const shot = document.createElement('div');
+            shot.className = 'player-shot';
+            shot.dataset.x = String(shootingShipX + 28);
+            shot.dataset.y = String(arena.clientHeight - 76);
+            shot.style.left = `${shot.dataset.x}px`;
+            shot.style.top = `${shot.dataset.y}px`;
+            arena.appendChild(shot);
         }
 
-        function shootAtEmptySpace(event) {
-            if (shootingTimeLeft <= 0 || event.target.closest('.shooting-finish')) return;
+        function updateShootingShip() {
+            const ship = document.getElementById('shootingCannon');
+            if (ship) ship.style.left = `${shootingShipX}px`;
+        }
+
+        function setupShootingControls() {
             const arena = document.getElementById('shootingArena');
-            const rect = arena.getBoundingClientRect();
-            shootLaser(event.clientX - rect.left, event.clientY - rect.top);
-            shootingCombo = 1;
-            document.getElementById('shootingCombo').innerText = shootingCombo;
+            arena.onpointermove = event => {
+                if (event.buttons === 0 && event.pointerType === 'mouse') return;
+                const rect = arena.getBoundingClientRect();
+                shootingShipX = Math.max(0, Math.min(arena.clientWidth - 64, event.clientX - rect.left - 32));
+                updateShootingShip();
+            };
+            arena.onpointerdown = event => {
+                const rect = arena.getBoundingClientRect();
+                shootingShipX = Math.max(0, Math.min(arena.clientWidth - 64, event.clientX - rect.left - 32));
+                updateShootingShip();
+                firePlayerShot();
+            };
+
+            document.querySelectorAll('[data-move]').forEach(button => {
+                button.onpointerdown = event => { event.preventDefault(); shootingMoveDirection = Number(button.dataset.move); };
+                button.onpointerup = button.onpointercancel = button.onpointerleave = () => { shootingMoveDirection = 0; };
+            });
+            document.getElementById('shootButton').onpointerdown = event => { event.preventDefault(); firePlayerShot(); };
+            document.onkeydown = event => {
+                if (event.key === 'ArrowLeft') shootingMoveDirection = -1;
+                if (event.key === 'ArrowRight') shootingMoveDirection = 1;
+                if (event.code === 'Space') { event.preventDefault(); firePlayerShot(); }
+            };
+            document.onkeyup = event => {
+                if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') shootingMoveDirection = 0;
+            };
+        }
+
+        function updateShootingGame(now) {
+            if (shootingTimeLeft <= 0) return;
+            const arena = document.getElementById('shootingArena');
+            const dt = Math.min(.04, (now - shootingLastFrame) / 1000);
+            shootingLastFrame = now;
+            shootingShipX = Math.max(0, Math.min(arena.clientWidth - 64, shootingShipX + shootingMoveDirection * 260 * dt));
+            updateShootingShip();
+
+            const shots = [...arena.querySelectorAll('.player-shot')];
+            const targets = [...arena.querySelectorAll('.shooting-target:not(.hit)')];
+            shots.forEach(shot => {
+                const y = Number(shot.dataset.y) - 500 * dt;
+                shot.dataset.y = String(y);
+                shot.style.top = `${y}px`;
+                if (y < -30) shot.remove();
+            });
+            targets.forEach(target => {
+                const size = Number(target.dataset.size);
+                const y = Number(target.dataset.y) + Number(target.dataset.speed) * dt;
+                target.dataset.y = String(y);
+                target.style.top = `${y}px`;
+                if (y > arena.clientHeight - 64 && !target.classList.contains('boss')) {
+                    target.remove();
+                    shootingCombo = 1;
+                    document.getElementById('shootingCombo').innerText = shootingCombo;
+                    return;
+                }
+
+                for (const shot of shots) {
+                    if (!shot.isConnected || !target.isConnected) continue;
+                    const sx = Number(shot.dataset.x), sy = Number(shot.dataset.y);
+                    const tx = Number(target.dataset.x), ty = Number(target.dataset.y);
+                    if (sx + 9 >= tx && sx <= tx + size && sy + 25 >= ty && sy <= ty + size) {
+                        shot.remove();
+                        registerShootingHit(target);
+                        break;
+                    }
+                }
+            });
+            shootingFrame = requestAnimationFrame(updateShootingGame);
         }
 
         function endShootingGame() {
