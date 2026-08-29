@@ -1125,7 +1125,7 @@
             <div class="shooting-header">
                 <span>あと <span id="shootingTime">10</span>びょう</span>
                 <span>⭐ <span id="shootingScore">0</span></span>
-                <span>コンボ×<span id="shootingCombo">1</span></span>
+                <span>れんぞく <span id="shootingCombo">0</span>！</span>
             </div>
             <button class="pause-wide-btn" onclick="togglePause()">⏸️ いちじていし</button>
             <div class="shooting-arena" id="shootingArena" aria-label="宇宙船を動かして敵を撃とう">
@@ -1792,7 +1792,7 @@
             lastShootingHit = 0;
             document.getElementById('shootingScore').innerText = shootingPoints;
             document.getElementById('shootingTime').innerText = shootingTimeLeft;
-            document.getElementById('shootingCombo').innerText = shootingCombo;
+            document.getElementById('shootingCombo').innerText = '0';
             shootingShipX = Math.max(0, (arena.clientWidth - 64) / 2);
             updateShootingShip();
             setupShootingControls();
@@ -1947,7 +1947,7 @@
                 if (y > arena.clientHeight - 64 && !target.classList.contains('boss')) {
                     target.remove();
                     shootingCombo = 1;
-                    document.getElementById('shootingCombo').innerText = shootingCombo;
+                    document.getElementById('shootingCombo').innerText = '0';
                     return;
                 }
 
