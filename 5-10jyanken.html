@@ -265,6 +265,41 @@
             transform: translate(-50%, -50%) scale(1);
         }
 
+        .speed-feedback {
+            position: absolute;
+            left: 50%;
+            top: 42%;
+            z-index: 60;
+            display: none;
+            min-width: 210px;
+            padding: 12px 18px;
+            border: 4px solid white;
+            border-radius: 20px;
+            color: white;
+            background: linear-gradient(135deg, #FF922B, #F03E3E);
+            box-shadow: 0 8px 20px rgba(0,0,0,.24);
+            transform: translate(-50%, -50%);
+            font-size: 1.15rem;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        .speed-feedback.show {
+            display: block;
+            animation: speed-bounce .8s ease-out;
+        }
+
+        .speed-feedback strong {
+            display: block;
+            font-size: 1.8rem;
+        }
+
+        @keyframes speed-bounce {
+            0% { transform: translate(-50%, -50%) scale(.25); opacity: 0; }
+            35% { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
         .result-screen {
             display: none;
             flex-direction: column;
@@ -334,6 +369,33 @@
             pointer-events: none;
             animation: target-hit .24s ease-out forwards;
         }
+
+        .shooting-target.boss-flash { filter: brightness(2) drop-shadow(0 0 14px #FFF); }
+
+        .laser-shot {
+            position: absolute;
+            z-index: 4;
+            height: 7px;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #74C0FC, #FFF, #FFD43B);
+            box-shadow: 0 0 12px #FFF, 0 0 18px #4DABF7;
+            transform-origin: 0 50%;
+            pointer-events: none;
+            animation: laser-shot .2s ease-out forwards;
+        }
+
+        .shooting-cannon {
+            position: absolute;
+            z-index: 3;
+            left: 50%;
+            bottom: 7px;
+            transform: translateX(-50%);
+            font-size: 3.4rem;
+            filter: drop-shadow(0 4px 3px rgba(0,0,0,.3));
+            pointer-events: none;
+        }
+
+        @keyframes laser-shot { to { opacity: 0; filter: brightness(2); } }
 
         .shot-pop {
             position: absolute;
@@ -809,6 +871,7 @@
                 <button class="back-btn" onclick="backToModeSelect()">← もどる</button>
                 <div class="progress-box">だい <span id="currentRound">1</span> / 10 もん</div>
                 <div class="score-box">⭐️ <span id="score">0</span></div>
+                <div class="score-box">⚡ <span id="speedScore">0</span></div>
                 <button class="settings-btn" onclick="toggleRules()" aria-label="あそびかた">？</button>
                 <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
             </div>
@@ -900,8 +963,10 @@
             <div class="shooting-header">
                 <span>あと <span id="shootingTime">10</span>びょう</span>
                 <span>⭐ <span id="shootingScore">0</span></span>
+                <span>コンボ×<span id="shootingCombo">1</span></span>
             </div>
             <div class="shooting-arena" id="shootingArena" aria-label="うごくほしをタップしてね">
+                <div class="shooting-cannon" id="shootingCannon">🚀</div>
                 <div class="shooting-finish" id="shootingFinish">
                     <div id="shootingFinishMessage"></div>
                     <div id="shootingFinishStars" style="font-size:2.4rem;"></div>
@@ -913,6 +978,7 @@
         </div>
 
         <div class="feedback-pop" id="feedbackPop">⭕️</div>
+        <div class="speed-feedback" id="speedFeedback" aria-live="assertive"></div>
     </div>
 
     <script>
@@ -1060,11 +1126,16 @@
         let isWaitingForInput = false;
         let lastPraise = '';
         let jankenSpeed = 3;
+        let responseStartTime = 0;
+        let roundHadMistake = false;
+        let speedBonusTotal = 0;
         let shootingPoints = 0;
         let shootingTimeLeft = 10;
         let shootingTimer = null;
         let shootingSpawner = null;
         let shootingBossAppeared = false;
+        let shootingCombo = 1;
+        let lastShootingHit = 0;
 
         const synth = window.speechSynthesis;
         const praiseMessages = ['せいかい！', 'すごい！', 'ぴったり！', 'そのちょうし！', 'やったね！'];
@@ -1220,6 +1291,7 @@
             renderAnswerHands();
             resetDots(0);
             score = 0;
+            speedBonusTotal = 0;
             currentRound = 1;
             updateUI();
         }
@@ -1246,6 +1318,7 @@
         function startGame() {
             document.getElementById('startBtn').style.display = 'none';
             score = 0;
+            speedBonusTotal = 0;
             currentRound = 1;
             isPlaying = true;
             updateUI();
@@ -1259,6 +1332,7 @@
             }
 
             isWaitingForInput = false;
+            roundHadMistake = false;
             updateUI();
             document.getElementById('messageBox').innerText = `${targetTotal}のじゃんけん...`;
             document.getElementById('handIconContainer').innerHTML = createHandsForMode(0);
@@ -1276,8 +1350,28 @@
                     document.getElementById('promptNumber').classList.add('show');
                 }
                 if (targetTotal === 5) resetDots(appHandValue);
+                responseStartTime = performance.now();
                 isWaitingForInput = true;
             });
+        }
+
+        function getSpeedBonus(elapsedSeconds) {
+            const limits = targetTotal === 10 ? [1.5, 2.5, 4] : [1, 2, 3];
+            if (elapsedSeconds <= limits[0]) return 3;
+            if (elapsedSeconds <= limits[1]) return 2;
+            if (elapsedSeconds <= limits[2]) return 1;
+            return 0;
+        }
+
+        function showSpeedFeedback(elapsedSeconds, bonus) {
+            const badge = document.getElementById('speedFeedback');
+            const label = bonus === 3 ? 'スーパーはやい！' : bonus === 2 ? 'はやい！' : bonus === 1 ? 'いいペース！' : 'じっくりできた！';
+            badge.innerHTML = `<strong>${elapsedSeconds.toFixed(1)}びょう！</strong>${label}　⚡＋${bonus}`;
+            badge.classList.remove('show');
+            void badge.offsetWidth;
+            badge.classList.add('show');
+            setTimeout(() => badge.classList.remove('show'), 1050);
+            return label;
         }
 
         function resetDots(count) {
@@ -1299,15 +1393,20 @@
             const feedbackPop = document.getElementById('feedbackPop');
 
             if (userChoice === targetChoice) {
+                const elapsedSeconds = Math.max(0, (performance.now() - responseStartTime) / 1000);
+                const speedBonus = roundHadMistake ? 0 : getSpeedBonus(elapsedSeconds);
+                const speedLabel = roundHadMistake ? 'つぎは一回でチャレンジ！' : showSpeedFeedback(elapsedSeconds, speedBonus);
                 score += 1;
+                speedBonusTotal += speedBonus;
                 updateUI();
                 feedbackPop.innerText = '⭕️';
                 feedbackPop.classList.add('show');
 
                 const praise = getPraise();
-                document.getElementById('messageBox').innerText = praise;
+                document.getElementById('messageBox').innerText = speedBonus > 0 ? `${speedLabel} ⚡＋${speedBonus}` : praise;
                 makeConfetti(14);
-                speak(praise, 1.2, () => {
+                const voiceText = speedBonus > 0 ? `${elapsedSeconds.toFixed(1)}びょう。${speedLabel}` : praise;
+                speak(voiceText, 1.2, () => {
                     setTimeout(() => {
                         feedbackPop.classList.remove('show');
                         currentRound++;
@@ -1315,6 +1414,7 @@
                     }, 400);
                 });
             } else {
+                roundHadMistake = true;
                 feedbackPop.innerText = '❌';
                 feedbackPop.classList.add('show');
 
@@ -1335,6 +1435,7 @@
 
         function updateUI() {
             document.getElementById('score').innerText = score;
+            document.getElementById('speedScore').innerText = speedBonusTotal;
             document.getElementById('currentRound').innerText = Math.min(currentRound, maxRounds);
             updateRewardStars();
         }
@@ -1345,13 +1446,13 @@
             document.getElementById('resultScreen').style.display = 'flex';
 
             let stars = '⭐️⭐️⭐️';
-            let msg = `10もんちゅう ${score}もん せいかい！<br>パーフェクト！`;
+            let msg = `せいかい ⭐ ${score}てん<br>スピード ⚡ ${speedBonusTotal}てん<br><strong>ごうけい ${score + speedBonusTotal}てん！</strong><br>パーフェクト！`;
             if (score < 10 && score >= 7) {
                 stars = '⭐️⭐️';
-                msg = `10もんちゅう ${score}もん せいかい！<br>よくできました！`;
+                msg = `せいかい ⭐ ${score}てん<br>スピード ⚡ ${speedBonusTotal}てん<br><strong>ごうけい ${score + speedBonusTotal}てん！</strong><br>よくできました！`;
             } else if (score < 7) {
                 stars = '⭐️';
-                msg = `10もんちゅう ${score}もん せいかい！<br>がんばったね！`;
+                msg = `せいかい ⭐ ${score}てん<br>スピード ⚡ ${speedBonusTotal}てん<br><strong>ごうけい ${score + speedBonusTotal}てん！</strong><br>がんばったね！`;
             }
 
             document.getElementById('resultStars').innerText = stars;
@@ -1359,13 +1460,14 @@
 
             makeConfetti(score === 10 ? 36 : 22);
 
-            speak(`ゲームクリア！${score}てんとれたよ！`, 1.1);
+            speak(`ゲームクリア！ごうけい${score + speedBonusTotal}てんとれたよ！`, 1.1);
         }
 
         function getShootingSettings() {
-            if (score === 10) return { seconds: 18, spawnMs: 480, goldChance: .26, boss: true };
-            if (score >= 8) return { seconds: 15, spawnMs: 560, goldChance: .20, boss: false };
-            if (score >= 5) return { seconds: 12, spawnMs: 650, goldChance: .10, boss: false };
+            const learningPoints = score + speedBonusTotal;
+            if (learningPoints >= 32) return { seconds: 20, spawnMs: 430, goldChance: .30, boss: true };
+            if (learningPoints >= 24) return { seconds: 17, spawnMs: 500, goldChance: .23, boss: true };
+            if (learningPoints >= 15) return { seconds: 14, spawnMs: 580, goldChance: .14, boss: false };
             return { seconds: 10, spawnMs: 760, goldChance: 0, boss: false };
         }
 
@@ -1390,8 +1492,12 @@
             shootingPoints = 0;
             shootingTimeLeft = settings.seconds;
             shootingBossAppeared = false;
+            shootingCombo = 1;
+            lastShootingHit = 0;
             document.getElementById('shootingScore').innerText = shootingPoints;
             document.getElementById('shootingTime').innerText = shootingTimeLeft;
+            document.getElementById('shootingCombo').innerText = shootingCombo;
+            arena.onpointerdown = shootAtEmptySpace;
 
             spawnShootingTarget(settings);
             shootingSpawner = setInterval(() => spawnShootingTarget(settings), settings.spawnMs);
@@ -1422,6 +1528,7 @@
             target.innerText = isBoss ? '🌈' : (isGold ? '🌟' : '⭐');
             target.setAttribute('aria-label', isBoss ? 'にじいろのボススター' : 'ほし');
             target.dataset.points = isBoss ? '10' : (isGold ? '3' : '1');
+            target.dataset.hp = isBoss ? '5' : '1';
             target.style.left = `${Math.random() * Math.max(1, arena.clientWidth - size)}px`;
             target.style.top = `${Math.max(35, Math.random() * Math.max(40, arena.clientHeight - size - 20))}px`;
             target.style.setProperty('--duration', `${2.7 + Math.random() * 1.8}s`);
@@ -1432,13 +1539,29 @@
 
         function hitShootingTarget(event) {
             event.preventDefault();
+            event.stopPropagation();
             const target = event.currentTarget;
             if (target.classList.contains('hit') || shootingTimeLeft <= 0) return;
 
-            const gained = Number(target.dataset.points);
+            shootLaser(target.offsetLeft + target.offsetWidth / 2, target.offsetTop + target.offsetHeight / 2);
+            const now = performance.now();
+            shootingCombo = now - lastShootingHit <= 1300 ? Math.min(5, shootingCombo + 1) : 1;
+            lastShootingHit = now;
+            document.getElementById('shootingCombo').innerText = shootingCombo;
+
+            const hp = Number(target.dataset.hp) - 1;
+            target.dataset.hp = hp;
+            const basePoints = target.classList.contains('boss') ? 2 : Number(target.dataset.points);
+            const gained = basePoints * shootingCombo;
             shootingPoints += gained;
             document.getElementById('shootingScore').innerText = shootingPoints;
-            target.classList.add('hit');
+
+            if (target.classList.contains('boss') && hp > 0) {
+                target.classList.add('boss-flash');
+                setTimeout(() => target.classList.remove('boss-flash'), 100);
+            } else {
+                target.classList.add('hit');
+            }
 
             const pop = document.createElement('div');
             pop.className = 'shot-pop';
@@ -1447,10 +1570,36 @@
             pop.style.top = `${target.offsetTop}px`;
             document.getElementById('shootingArena').appendChild(pop);
             pop.addEventListener('animationend', () => pop.remove(), { once: true });
-            setTimeout(() => target.remove(), 240);
+            if (hp <= 0) setTimeout(() => target.remove(), 240);
 
-            if (gained >= 10) makeConfetti(30);
+            if (target.classList.contains('boss') && hp <= 0) makeConfetti(30);
             else if (gained >= 3) makeConfetti(8);
+        }
+
+        function shootLaser(x, y) {
+            const arena = document.getElementById('shootingArena');
+            const cannon = document.getElementById('shootingCannon');
+            const startX = cannon.offsetLeft + cannon.offsetWidth / 2;
+            const startY = cannon.offsetTop + 10;
+            const dx = x - startX;
+            const dy = y - startY;
+            const laser = document.createElement('div');
+            laser.className = 'laser-shot';
+            laser.style.left = `${startX}px`;
+            laser.style.top = `${startY}px`;
+            laser.style.width = `${Math.hypot(dx, dy)}px`;
+            laser.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+            arena.appendChild(laser);
+            setTimeout(() => laser.remove(), 220);
+        }
+
+        function shootAtEmptySpace(event) {
+            if (shootingTimeLeft <= 0 || event.target.closest('.shooting-finish')) return;
+            const arena = document.getElementById('shootingArena');
+            const rect = arena.getBoundingClientRect();
+            shootLaser(event.clientX - rect.left, event.clientY - rect.top);
+            shootingCombo = 1;
+            document.getElementById('shootingCombo').innerText = shootingCombo;
         }
 
         function endShootingGame() {
@@ -1483,6 +1632,7 @@
             renderAnswerHands();
             resetDots(0);
             score = 0;
+            speedBonusTotal = 0;
             currentRound = 1;
             updateUI();
         }
