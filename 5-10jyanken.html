@@ -594,6 +594,33 @@
             margin: 8px 0 20px;
         }
 
+        .clinic-logo-link {
+            display: block;
+            width: min(92%, 330px);
+            margin: 18px auto 0;
+            padding: 5px 8px;
+            border-radius: 12px;
+            background: white;
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+
+        .clinic-logo-link:hover,
+        .clinic-logo-link:focus-visible {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(73, 80, 87, .16);
+        }
+
+        .clinic-logo {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .result-screen .clinic-logo-link {
+            width: min(76%, 270px);
+            margin-top: 14px;
+        }
+
         .mode-buttons {
             display: grid;
             gap: 14px;
@@ -955,6 +982,9 @@
                 <button class="mode-btn ten" onclick="selectMode(10)">🙌 10のじゃんけんぽん</button>
             </div>
             <button class="howto-btn" onclick="toggleRules()">？ あそびかた</button>
+            <a class="clinic-logo-link" href="https://sakurakids-clinic.com/" target="_blank" rel="noopener noreferrer" aria-label="さくらキッズくりにっく公式サイトをひらく">
+                <img class="clinic-logo" src="sakura-kids-clinic-logo.png" alt="さくらキッズくりにっく sakura kids clinic">
+            </a>
         </div>
 
         <!-- メイン画面 -->
@@ -1050,6 +1080,9 @@
             <button class="primary-btn" id="shootingStartBtn" onclick="startShootingGame()">🌟 ごほうびゲーム</button>
             <button class="primary-btn" onclick="resetGame()">もういちど あそぶ</button>
             <button class="back-btn" onclick="backToModeSelect()">ゲームを えらびなおす</button>
+            <a class="clinic-logo-link" href="https://sakurakids-clinic.com/" target="_blank" rel="noopener noreferrer" aria-label="さくらキッズくりにっく公式サイトをひらく">
+                <img class="clinic-logo" src="sakura-kids-clinic-logo.png" alt="さくらキッズくりにっく sakura kids clinic">
+            </a>
         </div>
 
         <!-- ごほうび：おほしさまシューティング -->
