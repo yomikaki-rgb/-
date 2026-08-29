@@ -32,7 +32,9 @@
             min-height: 100vh;
             min-height: 100dvh;
             padding: 10px;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
+            scrollbar-width: none;
         }
 
         .container {
@@ -46,7 +48,9 @@
             position: relative;
             border: 4px solid var(--accent);
             max-height: calc(100dvh - 12px);
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
+            scrollbar-width: none;
         }
 
         .header {
@@ -466,28 +470,6 @@
             box-shadow: 0 0 8px #FFF, 0 0 15px #FFD43B;
             pointer-events: none;
         }
-
-        .shooting-controls {
-            display: grid;
-            grid-template-columns: 1fr 1.5fr 1fr;
-            gap: 8px;
-            width: 100%;
-        }
-
-        .shoot-control {
-            min-height: 48px;
-            border: 0;
-            border-radius: 14px;
-            color: white;
-            background: #5F3DC4;
-            box-shadow: 0 4px 0 #3B2B82;
-            font-size: 1.15rem;
-            font-weight: bold;
-            touch-action: none;
-        }
-
-        .shoot-control.fire { background: #F03E3E; box-shadow: 0 4px 0 #C92A2A; }
-        .shoot-control:active { transform: translateY(3px); box-shadow: none; }
 
         .shot-pop {
             position: absolute;
@@ -927,6 +909,58 @@
                 font-size: 1rem;
                 margin: 4px auto;
             }
+
+            .result-screen {
+                padding: 5px 0;
+            }
+
+            .result-screen > div:first-child {
+                font-size: 1.45rem !important;
+                margin-bottom: 2px !important;
+            }
+
+            #resultStars {
+                font-size: 2.3rem !important;
+                margin-bottom: 3px !important;
+            }
+
+            #resultMsg {
+                font-size: 0.95rem !important;
+                margin-bottom: 5px !important;
+            }
+
+            #shootingRewardHint {
+                font-size: 0.82rem;
+                margin-bottom: 2px !important;
+            }
+
+            .result-screen .clinic-logo-link {
+                width: min(62%, 230px);
+                margin-top: 4px;
+                padding: 2px 5px;
+            }
+
+            .shooting-screen {
+                gap: 4px;
+            }
+
+            .shooting-arena {
+                height: min(44dvh, 280px);
+                min-height: 205px;
+                border-width: 3px;
+                border-radius: 14px;
+            }
+
+            .shooting-header {
+                padding: 5px 8px;
+                font-size: 0.9rem;
+            }
+
+            .shooting-screen .pause-wide-btn {
+                min-height: 36px;
+                margin-bottom: 2px;
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
@@ -1079,7 +1113,7 @@
             <div id="shootingRewardHint" style="font-weight:bold; color:#5F3DC4; margin-bottom:6px;"></div>
             <button class="primary-btn" id="shootingStartBtn" onclick="startShootingGame()">🌟 ごほうびゲーム</button>
             <button class="primary-btn" onclick="resetGame()">もういちど あそぶ</button>
-            <button class="back-btn" onclick="backToModeSelect()">ゲームを えらびなおす</button>
+            <button class="back-btn" onclick="backToModeSelect()">ごほうびゲームを しないで もどる</button>
             <a class="clinic-logo-link" href="https://sakurakids-clinic.com/" target="_blank" rel="noopener noreferrer" aria-label="さくらキッズくりにっく公式サイトをひらく">
                 <img class="clinic-logo" src="sakura-kids-clinic-logo.png" alt="さくらキッズくりにっく sakura kids clinic">
             </a>
@@ -1102,12 +1136,7 @@
                     <button class="primary-btn" onclick="finishShootingAndReturn()">けっかに もどる</button>
                 </div>
             </div>
-            <div class="shooting-controls">
-                <button class="shoot-control" data-move="-1">⬅️ ひだり</button>
-                <button class="shoot-control fire" id="shootButton">🔥 ビーム！</button>
-                <button class="shoot-control" data-move="1">みぎ ➡️</button>
-            </div>
-            <div style="font-weight:bold; color:#495057; font-size:.88rem;">PC：← → と スペース　タブレット：ボタンか指で操作</div>
+            <div style="font-weight:bold; color:#495057; font-size:.88rem;">タップ・クリックで いどう＆ビーム！　ゆびでスライドもできるよ</div>
             <button class="back-btn" onclick="finishShootingAndReturn()">けっかに もどる</button>
         </div>
 
@@ -1876,11 +1905,6 @@
                 firePlayerShot();
             };
 
-            document.querySelectorAll('[data-move]').forEach(button => {
-                button.onpointerdown = event => { event.preventDefault(); shootingMoveDirection = Number(button.dataset.move); };
-                button.onpointerup = button.onpointercancel = button.onpointerleave = () => { shootingMoveDirection = 0; };
-            });
-            document.getElementById('shootButton').onpointerdown = event => { event.preventDefault(); firePlayerShot(); };
             document.onkeydown = event => {
                 if (event.key === 'ArrowLeft') shootingMoveDirection = -1;
                 if (event.key === 'ArrowRight') shootingMoveDirection = 1;
