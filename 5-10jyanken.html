@@ -272,6 +272,112 @@
             padding: 20px 0;
         }
 
+        .shooting-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .shooting-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 14px;
+            background: #FFF9DB;
+            color: #D9480F;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .shooting-arena {
+            position: relative;
+            width: 100%;
+            height: min(58vh, 430px);
+            min-height: 300px;
+            overflow: hidden;
+            border: 4px solid #74C0FC;
+            border-radius: 20px;
+            background:
+                radial-gradient(circle at 15% 18%, rgba(255,255,255,.9) 0 2px, transparent 3px),
+                radial-gradient(circle at 76% 30%, rgba(255,255,255,.8) 0 2px, transparent 3px),
+                radial-gradient(circle at 45% 70%, rgba(255,255,255,.8) 0 2px, transparent 3px),
+                linear-gradient(#364FC7, #845EF7 58%, #B197FC);
+            touch-action: manipulation;
+        }
+
+        .shooting-target {
+            position: absolute;
+            width: 58px;
+            height: 58px;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            filter: drop-shadow(0 4px 3px rgba(0,0,0,.25));
+            font-size: 3rem;
+            line-height: 1;
+            cursor: crosshair;
+            animation: target-float var(--duration, 3.4s) linear forwards;
+        }
+
+        .shooting-target.gold { font-size: 3.35rem; }
+        .shooting-target.boss {
+            width: 110px;
+            height: 110px;
+            font-size: 5.8rem;
+            animation-duration: 5s;
+        }
+
+        .shooting-target.hit {
+            pointer-events: none;
+            animation: target-hit .24s ease-out forwards;
+        }
+
+        .shot-pop {
+            position: absolute;
+            z-index: 5;
+            pointer-events: none;
+            color: #FFF3BF;
+            font-size: 1.35rem;
+            font-weight: bold;
+            text-shadow: 0 2px 2px #5F3DC4;
+            animation: shot-pop .55s ease-out forwards;
+        }
+
+        .shooting-finish {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 18px;
+            color: white;
+            background: rgba(38, 22, 92, .82);
+            font-size: 1.45rem;
+            font-weight: bold;
+        }
+
+        .shooting-finish.show { display: flex; }
+
+        @keyframes target-float {
+            from { transform: translateY(55px) rotate(-8deg); }
+            50% { transform: translateY(-18px) rotate(9deg); }
+            to { transform: translateY(-105px) rotate(-5deg); }
+        }
+
+        @keyframes target-hit {
+            to { transform: scale(1.8) rotate(35deg); opacity: 0; }
+        }
+
+        @keyframes shot-pop {
+            to { transform: translateY(-45px) scale(1.3); opacity: 0; }
+        }
+
         .hand-svg {
             width: 105px;
             height: 105px;
@@ -783,8 +889,27 @@
             <div style="font-size: 2rem; color: var(--primary); font-weight: bold; margin-bottom: 10px;">クリア！🎉</div>
             <div style="font-size: 3.5rem; margin-bottom: 15px;" id="resultStars">⭐️⭐️⭐️</div>
             <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 20px;" id="resultMsg"></div>
+            <button class="primary-btn" id="shootingStartBtn" onclick="startShootingGame()">🌟 ごほうびゲーム</button>
             <button class="primary-btn" onclick="resetGame()">もういちど あそぶ</button>
             <button class="back-btn" onclick="backToModeSelect()">ゲームを えらびなおす</button>
+        </div>
+
+        <!-- ごほうび：おほしさまシューティング -->
+        <div class="shooting-screen" id="shootingScreen">
+            <div style="font-size:1.35rem; font-weight:bold; color:#5F3DC4;">🌟 おほしさまシューティング</div>
+            <div class="shooting-header">
+                <span>あと <span id="shootingTime">10</span>びょう</span>
+                <span>⭐ <span id="shootingScore">0</span></span>
+            </div>
+            <div class="shooting-arena" id="shootingArena" aria-label="うごくほしをタップしてね">
+                <div class="shooting-finish" id="shootingFinish">
+                    <div id="shootingFinishMessage"></div>
+                    <div id="shootingFinishStars" style="font-size:2.4rem;"></div>
+                    <button class="primary-btn" onclick="startShootingGame()">もういちど！</button>
+                </div>
+            </div>
+            <div style="font-weight:bold; color:#495057;">うごく ほしを タップ！</div>
+            <button class="back-btn" onclick="finishShootingAndReturn()">けっかに もどる</button>
         </div>
 
         <div class="feedback-pop" id="feedbackPop">⭕️</div>
@@ -935,6 +1060,11 @@
         let isWaitingForInput = false;
         let lastPraise = '';
         let jankenSpeed = 3;
+        let shootingPoints = 0;
+        let shootingTimeLeft = 10;
+        let shootingTimer = null;
+        let shootingSpawner = null;
+        let shootingBossAppeared = false;
 
         const synth = window.speechSynthesis;
         const praiseMessages = ['せいかい！', 'すごい！', 'ぴったり！', 'そのちょうし！', 'やったね！'];
@@ -1232,7 +1362,117 @@
             speak(`ゲームクリア！${score}てんとれたよ！`, 1.1);
         }
 
+        function getShootingSettings() {
+            if (score === 10) return { seconds: 18, spawnMs: 480, goldChance: .26, boss: true };
+            if (score >= 8) return { seconds: 15, spawnMs: 560, goldChance: .20, boss: false };
+            if (score >= 5) return { seconds: 12, spawnMs: 650, goldChance: .10, boss: false };
+            return { seconds: 10, spawnMs: 760, goldChance: 0, boss: false };
+        }
+
+        function clearShootingTimers() {
+            clearInterval(shootingTimer);
+            clearInterval(shootingSpawner);
+            shootingTimer = null;
+            shootingSpawner = null;
+        }
+
+        function startShootingGame() {
+            synth.cancel();
+            clearShootingTimers();
+
+            const settings = getShootingSettings();
+            const arena = document.getElementById('shootingArena');
+            arena.querySelectorAll('.shooting-target, .shot-pop').forEach(el => el.remove());
+            document.getElementById('shootingFinish').classList.remove('show');
+            document.getElementById('resultScreen').style.display = 'none';
+            document.getElementById('shootingScreen').style.display = 'flex';
+
+            shootingPoints = 0;
+            shootingTimeLeft = settings.seconds;
+            shootingBossAppeared = false;
+            document.getElementById('shootingScore').innerText = shootingPoints;
+            document.getElementById('shootingTime').innerText = shootingTimeLeft;
+
+            spawnShootingTarget(settings);
+            shootingSpawner = setInterval(() => spawnShootingTarget(settings), settings.spawnMs);
+            shootingTimer = setInterval(() => {
+                shootingTimeLeft--;
+                document.getElementById('shootingTime').innerText = Math.max(0, shootingTimeLeft);
+
+                if (settings.boss && !shootingBossAppeared && shootingTimeLeft <= 4) {
+                    shootingBossAppeared = true;
+                    spawnShootingTarget(settings, true);
+                }
+
+                if (shootingTimeLeft <= 0) endShootingGame();
+            }, 1000);
+
+            speak('おほしさまを、タップしてね！', 1.2);
+        }
+
+        function spawnShootingTarget(settings, isBoss = false) {
+            if (shootingTimeLeft <= 0) return;
+
+            const arena = document.getElementById('shootingArena');
+            const target = document.createElement('button');
+            const isGold = !isBoss && Math.random() < settings.goldChance;
+            const size = isBoss ? 110 : 58;
+            target.type = 'button';
+            target.className = `shooting-target${isGold ? ' gold' : ''}${isBoss ? ' boss' : ''}`;
+            target.innerText = isBoss ? '🌈' : (isGold ? '🌟' : '⭐');
+            target.setAttribute('aria-label', isBoss ? 'にじいろのボススター' : 'ほし');
+            target.dataset.points = isBoss ? '10' : (isGold ? '3' : '1');
+            target.style.left = `${Math.random() * Math.max(1, arena.clientWidth - size)}px`;
+            target.style.top = `${Math.max(35, Math.random() * Math.max(40, arena.clientHeight - size - 20))}px`;
+            target.style.setProperty('--duration', `${2.7 + Math.random() * 1.8}s`);
+            target.addEventListener('pointerdown', hitShootingTarget);
+            target.addEventListener('animationend', () => target.remove(), { once: true });
+            arena.appendChild(target);
+        }
+
+        function hitShootingTarget(event) {
+            event.preventDefault();
+            const target = event.currentTarget;
+            if (target.classList.contains('hit') || shootingTimeLeft <= 0) return;
+
+            const gained = Number(target.dataset.points);
+            shootingPoints += gained;
+            document.getElementById('shootingScore').innerText = shootingPoints;
+            target.classList.add('hit');
+
+            const pop = document.createElement('div');
+            pop.className = 'shot-pop';
+            pop.innerText = `＋${gained}`;
+            pop.style.left = `${target.offsetLeft + target.offsetWidth / 2 - 14}px`;
+            pop.style.top = `${target.offsetTop}px`;
+            document.getElementById('shootingArena').appendChild(pop);
+            pop.addEventListener('animationend', () => pop.remove(), { once: true });
+            setTimeout(() => target.remove(), 240);
+
+            if (gained >= 10) makeConfetti(30);
+            else if (gained >= 3) makeConfetti(8);
+        }
+
+        function endShootingGame() {
+            clearShootingTimers();
+            document.querySelectorAll('.shooting-target').forEach(el => el.remove());
+            document.getElementById('shootingFinishMessage').innerText = `${shootingPoints}この おほしさまを ゲット！`;
+            document.getElementById('shootingFinishStars').innerText = shootingPoints >= 20 ? '🌟🌟🌟' : shootingPoints >= 10 ? '🌟🌟' : '🌟';
+            document.getElementById('shootingFinish').classList.add('show');
+            makeConfetti(shootingPoints >= 20 ? 28 : 16);
+            speak(`${shootingPoints}この、おほしさまを、ゲットしたよ！`, 1.15);
+        }
+
+        function finishShootingAndReturn() {
+            clearShootingTimers();
+            synth.cancel();
+            document.getElementById('shootingScreen').style.display = 'none';
+            document.getElementById('resultScreen').style.display = 'flex';
+        }
+
         function resetGame() {
+            clearShootingTimers();
+            document.getElementById('shootingScreen').style.display = 'none';
             document.getElementById('resultScreen').style.display = 'none';
             document.getElementById('gameView').style.display = 'block';
             document.getElementById('startBtn').style.display = 'block';
