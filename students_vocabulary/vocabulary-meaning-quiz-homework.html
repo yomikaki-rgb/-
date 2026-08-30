@@ -575,13 +575,15 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
         <div class="row" style="justify-content:space-between; align-items:flex-end;">
           <div style="flex:1; min-width:220px;">
             <label class="muted" for="homeworkCode">宿題コード</label><br>
-            <input id="homeworkCode" type="text" placeholder="例：1234" maxlength="12" inputmode="numeric" autocomplete="one-time-code" />
+            <input id="homeworkCode" type="text" placeholder="宿題コードを入力" />
           </div>
           <div class="homeworkSaveNotice">最後に画面下の「先生に提出する」を押すと、先生のGoogleフォームに送信されます。</div>
         </div>
         <div class="homeworkProgressBox">
           <div id="homeworkProgress" class="homeworkProgressCount">0/0問</div>
           <div id="homeworkResumeNotice" class="homeworkResumeNotice" style="display:none;">つづきから再開します</div>
+          <button class="btn" id="btnLoadHomeworkProgress" type="button">保存データから続ける</button>
+          <input id="homeworkProgressFile" type="file" accept="application/json,.json" style="display:none;" />
         </div>
       </div>
       <div id="submitStatus" class="notice noPrint homeworkOnly" style="display:none; margin:10px 0;"></div>
@@ -3664,30 +3666,10 @@ function speakQuestion(q) {
 
 const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd3PWXSFpCaUHbN99L0vBSgnOybd1_UrIhIWZoUVT2CmW27yQ/formResponse";
 const GOOGLE_FORM_ENTRY = {
-  name: "entry.1766127711",
+  homeworkCode: "entry.1766127711",
   content: "entry.1678137157"
 };
 const HOMEWORK_STORAGE_PREFIX = "vocabulary_meaning_quiz_homework_v1::";
-const HOMEWORK_LAST_CODE_PREFIX = "vocabulary_meaning_quiz_last_code_v1::";
-
-function normalizeHomeworkCode(value) {
-  return String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
-}
-
-function getHomeworkCode() {
-  return normalizeHomeworkCode(((document.getElementById("homeworkCode") || {}).value || ""));
-}
-
-function getStoredLastHomeworkCode_() {
-  try { return normalizeHomeworkCode(localStorage.getItem(HOMEWORK_LAST_CODE_PREFIX + getHomeworkStorageSource()) || ""); }
-  catch (err) { return ""; }
-}
-
-function rememberHomeworkCode_() {
-  const code = getHomeworkCode();
-  if (!code) return;
-  try { localStorage.setItem(HOMEWORK_LAST_CODE_PREFIX + getHomeworkStorageSource(), code); } catch (err) {}
-}
 
 function isStudentHomeworkMode() {
   return !!state.isStudentMode;
@@ -3703,8 +3685,7 @@ function getHomeworkStorageSource() {
 }
 
 function getHomeworkStorageKey() {
-  return HOMEWORK_STORAGE_PREFIX + getHomeworkStorageSource() + "::code:" +
-    (getHomeworkCode() || getStoredLastHomeworkCode_() || "コード未入力");
+  return HOMEWORK_STORAGE_PREFIX + getHomeworkStorageSource();
 }
 
 function makeAssignmentSetId() {
@@ -3718,7 +3699,7 @@ function makeAssignmentSetId() {
 }
 
 function getHomeworkSubmittedKey() {
-  return `submitted_${makeAssignmentSetId()}_code_${getHomeworkCode() || 'コード未入力'}`;
+  return `submitted_${makeAssignmentSetId()}`;
 }
 
 function isHomeworkSubmitted() {
@@ -3736,7 +3717,7 @@ function setHomeworkUiSubmitted() {
     submitBtn.textContent = "提出ずみ";
   }
   const saveBtn = document.getElementById("btnSaveForLater");
-  if (saveBtn) saveBtn.disabled = true;
+  if (saveBtn) saveBtn.disabled = false;
   document.querySelectorAll("input[type='radio'][name^='q_']").forEach(r => { r.disabled = true; });
   setSubmitStatus("提出ずみです。この課題は再提出できません。", false);
 }
@@ -3821,7 +3802,8 @@ function buildHomeworkSaveData() {
     const qid = (q[COL.id] ?? "").toString();
     const selected = getSelectedChoiceValue(idx);
     const correctAnswer = getCorrectAnswer(q);
-    const viewed = ((document.querySelector(`[data-card-idx="${idx}"]`) || {}).getAttribute || (()=>""))("data-answer-viewed") === "1";
+    const card = document.querySelector(`[data-card-idx="${idx}"]`);
+    const viewed = card ? card.getAttribute("data-answer-viewed") === "1" : false;
     answers[qid] = {
       selected,
       correctAnswer,
@@ -3838,18 +3820,76 @@ function buildHomeworkSaveData() {
     storageSource: getHomeworkStorageSource(),
     setLabel: ACTIVE_SET_LABEL || "",
     questionIds: picked.map(q => (q[COL.id] ?? "").toString()),
-    homeworkCode: getHomeworkCode(),
+    homeworkCode: ((document.getElementById("homeworkCode") || {}).value || ""),
     currentIndex: Number(state.homeworkCurrentIndex) || 0,
     answers
   };
 }
 
 function saveHomeworkProgress(idx) {
-  if (!isStudentHomeworkMode()) return;
-  if (isHomeworkSubmitted()) return;
+  if (!isStudentHomeworkMode()) return false;
+  if (isHomeworkSubmitted()) return false;
   if (Number.isFinite(Number(idx))) state.homeworkCurrentIndex = Number(idx);
-  try { localStorage.setItem(getHomeworkStorageKey(), JSON.stringify(buildHomeworkSaveData())); } catch (err) { console.warn(err); }
+  try {
+    const serialized = JSON.stringify(buildHomeworkSaveData());
+    localStorage.setItem(getHomeworkStorageKey(), serialized);
+    if (localStorage.getItem(getHomeworkStorageKey()) !== serialized) return false;
+  } catch (err) {
+    console.warn(err);
+    return false;
+  }
   updateHomeworkProgress();
+  return true;
+}
+
+function downloadHomeworkProgressBackup() {
+  const data = buildHomeworkSaveData();
+  const code = String(data.homeworkCode || "宿題").trim().replace(/[\\/:*?"<>|]/g, "_");
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${code || "宿題"}_途中保存.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function loadHomeworkProgressFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(String(reader.result || ""));
+      if (!data || data.mode !== "vocabulary-meaning-quiz" || !data.answers) throw new Error("invalid");
+      const currentIds = getSelectedQuestions().map(q => (q[COL.id] ?? "").toString());
+      const savedIds = Array.isArray(data.questionIds) ? data.questionIds : [];
+      if (savedIds.length && currentIds.join("|") !== savedIds.join("|")) {
+        showSubmitAlert("この保存データは、現在の宿題と一致しません。");
+        return;
+      }
+      try { localStorage.setItem(getHomeworkStorageKey(), JSON.stringify(data)); } catch {}
+      const homeworkCodeInput = document.getElementById("homeworkCode");
+      if (homeworkCodeInput && typeof data.homeworkCode === "string") homeworkCodeInput.value = data.homeworkCode;
+      getSelectedQuestions().forEach((q, idx) => {
+        const saved = data.answers[(q[COL.id] ?? "").toString()];
+        if (!saved || !saved.selected) return;
+        const radio = document.querySelector(`input[name="q_${idx}"][value="${CSS.escape(saved.selected)}"]`);
+        if (radio) radio.checked = true;
+        handleChoiceSelected(idx, saved.selected, q, false);
+        if (saved.viewedAnswer) markAnswerViewed(idx);
+      });
+      state.homeworkCurrentIndex = Number(data.currentIndex) || 0;
+      updateHomeworkProgress();
+      const notice = document.getElementById("homeworkResumeNotice");
+      if (notice) notice.style.display = "block";
+      showSubmitAlert("保存した続きから再開しました。");
+    } catch {
+      showSubmitAlert("保存データを読み込めませんでした。");
+    }
+  };
+  reader.readAsText(file);
 }
 
 function readHomeworkProgress() {
@@ -3858,14 +3898,13 @@ function readHomeworkProgress() {
 
 function restoreHomeworkProgressIfAny(picked) {
   if (!isStudentHomeworkMode()) return false;
-  const codeInput = document.getElementById("homeworkCode");
-  if (codeInput && !getHomeworkCode()) codeInput.value = getStoredLastHomeworkCode_();
   const data = readHomeworkProgress();
   if (!data || !data.answers) { updateHomeworkProgress(); return false; }
   const currentIds = picked.map(q => (q[COL.id] ?? "").toString());
   const savedIds = Array.isArray(data.questionIds) ? data.questionIds : [];
   if (savedIds.length && currentIds.join("|") !== savedIds.join("|")) { updateHomeworkProgress(); return false; }
-  if (codeInput && typeof data.homeworkCode === "string") codeInput.value = normalizeHomeworkCode(data.homeworkCode);
+  const homeworkCodeInput = document.getElementById("homeworkCode");
+  if (homeworkCodeInput && typeof data.homeworkCode === "string") homeworkCodeInput.value = data.homeworkCode;
   picked.forEach((q, idx) => {
     const qid = (q[COL.id] ?? "").toString();
     const a = data.answers[qid];
@@ -3894,14 +3933,15 @@ function clearHomeworkProgress() {
 
 function buildHomeworkRows() {
   const picked = getSelectedQuestions();
-  const homeworkCode = getHomeworkCode();
+  const homeworkCode = ((document.getElementById("homeworkCode") || {}).value || "").trim();
   const savedAt = new Date().toLocaleString("ja-JP");
   return picked.map((q, idx) => {
     const selected = getSelectedChoiceValue(idx);
     const correctAnswer = getCorrectAnswer(q);
     const selectedText = selected === "1" ? q[COL.c1] : selected === "2" ? q[COL.c2] : selected === "3" ? q[COL.c3] : "";
     const isCorrect = selected ? selected === correctAnswer : false;
-    const viewed = ((document.querySelector(`[data-card-idx="${idx}"]`) || {}).getAttribute || (()=>""))("data-answer-viewed") === "1";
+    const card = document.querySelector(`[data-card-idx="${idx}"]`);
+    const viewed = card ? card.getAttribute("data-answer-viewed") === "1" : false;
     return {
       savedAt,
       homeworkCode,
@@ -3931,11 +3971,9 @@ function setSubmitStatus(message, isError) {
 
 function buildHomeworkSubmitContent(rows) {
   const submittedAt = new Date().toLocaleString("ja-JP");
-  const homeworkCode = getHomeworkCode();
   const ids = rows.map(r => r.id).filter(Boolean).join(" / ");
   const lines = [];
   lines.push(`提出日時：${submittedAt}`);
-  lines.push(`宿題コード：${homeworkCode}`);
   if (ids) lines.push(`課題：${ids}`);
   lines.push(`問題数：${rows.length}問`);
   lines.push("");
@@ -3971,11 +4009,11 @@ function submitHomeworkByHiddenForm(homeworkCode, content) {
   form.target = iframeName;
   form.style.display = "none";
 
-  const nameInput = document.createElement("input");
-  nameInput.type = "hidden";
-  nameInput.name = GOOGLE_FORM_ENTRY.name;
-  nameInput.value = homeworkCode;
-  form.appendChild(nameInput);
+  const homeworkCodeInput = document.createElement("input");
+  homeworkCodeInput.type = "hidden";
+  homeworkCodeInput.name = GOOGLE_FORM_ENTRY.homeworkCode;
+  homeworkCodeInput.value = homeworkCode;
+  form.appendChild(homeworkCodeInput);
 
   const contentInput = document.createElement("textarea");
   contentInput.name = GOOGLE_FORM_ENTRY.content;
@@ -4012,7 +4050,7 @@ async function submitHomeworkToGoogleForm(event) {
     return;
   }
 
-  const homeworkCode = getHomeworkCode();
+  const homeworkCode = ((document.getElementById("homeworkCode") || {}).value || "").trim();
   if (!homeworkCode) {
     showSubmitAlert("宿題コードを入力してください。");
     const input = document.getElementById("homeworkCode");
@@ -4058,12 +4096,8 @@ function bindHomeworkAndJudgement(container, picked) {
       handleChoiceSelected(idx, e.target.value, q, true);
     });
   });
-  const codeInput = document.getElementById("homeworkCode");
-  if (codeInput) codeInput.addEventListener("input", () => {
-    codeInput.value = normalizeHomeworkCode(codeInput.value);
-    rememberHomeworkCode_();
-    saveHomeworkProgress(state.homeworkCurrentIndex);
-  });
+  const homeworkCodeInput = document.getElementById("homeworkCode");
+  if (homeworkCodeInput) homeworkCodeInput.addEventListener("input", () => saveHomeworkProgress(state.homeworkCurrentIndex));
 }
 
 function renderQuiz() {
@@ -4233,7 +4267,22 @@ async function init() {
     if (btn) submitHomeworkToGoogleForm(e);
   });
   const saveForLaterBtn = document.getElementById("btnSaveForLater");
-  if (saveForLaterBtn) saveForLaterBtn.addEventListener("click", () => { if (isHomeworkSubmitted()) { applySubmittedLockIfNeeded(); return; } saveHomeworkProgress(state.homeworkCurrentIndex); showSubmitAlert("つづきはここからできます。"); });
+  if (saveForLaterBtn) saveForLaterBtn.addEventListener("click", () => {
+    const savedInBrowser = saveHomeworkProgress(state.homeworkCurrentIndex);
+    downloadHomeworkProgressBackup();
+    setSubmitStatus(savedInBrowser
+      ? "保存しました。続きから再開できます。途中保存ファイルも作成しました。"
+      : "ブラウザ内に保存できなかったため、途中保存ファイルを作成しました。", !savedInBrowser);
+  });
+  const loadHomeworkProgressBtn = document.getElementById("btnLoadHomeworkProgress");
+  const homeworkProgressFile = document.getElementById("homeworkProgressFile");
+  if (loadHomeworkProgressBtn && homeworkProgressFile) {
+    loadHomeworkProgressBtn.addEventListener("click", () => homeworkProgressFile.click());
+    homeworkProgressFile.addEventListener("change", () => {
+      loadHomeworkProgressFile(homeworkProgressFile.files && homeworkProgressFile.files[0]);
+      homeworkProgressFile.value = "";
+    });
+  }
 
   // Keep export UI in sync
   const st = document.getElementById("setTitle");
@@ -4311,7 +4360,9 @@ async function init() {
   };
 
   window.getHomeworkSubmittedKey = function(){
-    return 'submitted_' + window.makeAssignmentSetId() + '_code_' + (getHomeworkCode() || 'コード未入力');
+    const code = ((document.getElementById('homeworkCode') || {}).value || '').trim();
+    const codeKey = code ? code.replace(/[^a-zA-Z0-9ぁ-んァ-ヶ一-龠々ー_-]+/g, '_') : 'no_code';
+    return 'submitted_' + window.makeAssignmentSetId() + '_' + codeKey;
   };
 
   window.isHomeworkSubmitted = function(){
@@ -4332,7 +4383,7 @@ async function init() {
     if (window.isHomeworkSubmitted && window.isHomeworkSubmitted()) {
       btn.disabled = true;
       btn.textContent = '提出ずみ';
-      if (save) save.disabled = true;
+      if (save) save.disabled = false;
       if (typeof setSubmitStatus === 'function') setSubmitStatus('提出ずみです。この課題は再提出できません。', false);
       return;
     }
@@ -4345,7 +4396,7 @@ async function init() {
     const btn = document.getElementById('btnSubmitHomework');
     const save = document.getElementById('btnSaveForLater');
     if (btn) { btn.disabled = true; btn.textContent = '提出ずみ'; }
-    if (save) save.disabled = true;
+    if (save) save.disabled = false;
     document.querySelectorAll("input[type='radio'][name^='q_']").forEach(r => { r.disabled = true; });
     if (typeof setSubmitStatus === 'function') setSubmitStatus('提出ずみです。この課題は再提出できません。', false);
   };
@@ -4372,11 +4423,11 @@ async function init() {
     form.target = iframeName;
     form.style.display = 'none';
 
-    const nameInput = document.createElement('input');
-    nameInput.type = 'hidden';
-    nameInput.name = GOOGLE_FORM_ENTRY.name;
-    nameInput.value = homeworkCode;
-    form.appendChild(nameInput);
+    const homeworkCodeInput = document.createElement('input');
+    homeworkCodeInput.type = 'hidden';
+    homeworkCodeInput.name = GOOGLE_FORM_ENTRY.homeworkCode;
+    homeworkCodeInput.value = homeworkCode;
+    form.appendChild(homeworkCodeInput);
 
     const contentInput = document.createElement('textarea');
     contentInput.name = GOOGLE_FORM_ENTRY.content;
@@ -4403,7 +4454,7 @@ async function init() {
     const btn = document.getElementById('btnSubmitHomework');
     if (btn) btn.disabled = false;
 
-    const homeworkCode = getHomeworkCode();
+    const homeworkCode = ((document.getElementById('homeworkCode') || {}).value || '').trim();
     if (!homeworkCode) {
       showSubmitAlert('宿題コードを入力してください。');
       const input = document.getElementById('homeworkCode');
@@ -4501,7 +4552,9 @@ async function init() {
   };
 
   window.getHomeworkSubmittedKey = function(){
-    return 'submitted_' + window.makeAssignmentSetId() + '_code_' + (getHomeworkCode() || 'コード未入力');
+    const code = ((document.getElementById('homeworkCode') || {}).value || '').trim();
+    const codeKey = code ? code.replace(/[^a-zA-Z0-9ぁ-んァ-ヶ一-龠々ー_-]+/g, '_') : 'no_code';
+    return 'submitted_' + window.makeAssignmentSetId() + '_' + codeKey;
   };
   window.isHomeworkSubmitted = function(){
     try { return localStorage.getItem(window.getHomeworkSubmittedKey()) === '1'; } catch(e){ return false; }
@@ -4512,7 +4565,7 @@ async function init() {
 
   window.buildHomeworkRows = function(){
     const picked = getDisplayedQuestions();
-    const homeworkCode = getHomeworkCode();
+    const homeworkCode = ((document.getElementById('homeworkCode') || {}).value || '').trim();
     const savedAt = new Date().toLocaleString('ja-JP');
     return picked.map((q, idx) => {
       const selected = getSelectedChoiceValue(idx);
@@ -4550,7 +4603,7 @@ async function init() {
       return false;
     }
 
-    const homeworkCode = getHomeworkCode();
+    const homeworkCode = ((document.getElementById('homeworkCode') || {}).value || '').trim();
     if (!homeworkCode) {
       showSubmitAlert('宿題コードを入力してください。');
       const input = document.getElementById('homeworkCode');
@@ -4587,11 +4640,11 @@ async function init() {
       form.action = GOOGLE_FORM_URL;
       form.target = iframeName;
       form.style.display = 'none';
-      const nameInput = document.createElement('input');
-      nameInput.type = 'hidden';
-      nameInput.name = GOOGLE_FORM_ENTRY.name;
-      nameInput.value = homeworkCode;
-      form.appendChild(nameInput);
+      const homeworkCodeInput = document.createElement('input');
+      homeworkCodeInput.type = 'hidden';
+      homeworkCodeInput.name = GOOGLE_FORM_ENTRY.homeworkCode;
+      homeworkCodeInput.value = homeworkCode;
+      form.appendChild(homeworkCodeInput);
       const contentInput = document.createElement('textarea');
       contentInput.name = GOOGLE_FORM_ENTRY.content;
       contentInput.value = content;
@@ -4687,7 +4740,7 @@ async function init() {
       return false;
     }
 
-    const homeworkCode = getHomeworkCode();
+    const homeworkCode = ((document.getElementById('homeworkCode') || {}).value || '').trim();
     if (!homeworkCode) {
       showSubmitAlert('宿題コードを入力してください。');
       const input = document.getElementById('homeworkCode');
