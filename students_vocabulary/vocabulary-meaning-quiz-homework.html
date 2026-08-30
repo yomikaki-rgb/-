@@ -574,8 +574,8 @@ body { font-size: 12px !important; line-height: 1.30 !important; }
       <div class="homeworkTop noPrint homeworkOnly" id="homeworkTop">
         <div class="row" style="justify-content:space-between; align-items:flex-end;">
           <div style="flex:1; min-width:220px;">
-            <label class="muted" for="studentName">名前</label><br>
-            <input id="studentName" type="text" placeholder="名前を入力" />
+            <label class="muted" for="homeworkCode">宿題コード</label><br>
+            <input id="homeworkCode" type="text" placeholder="宿題コードを入力" />
           </div>
           <div class="homeworkSaveNotice">最後に画面下の「先生に提出する」を押すと、先生のGoogleフォームに送信されます。</div>
         </div>
@@ -3664,7 +3664,7 @@ function speakQuestion(q) {
 
 const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd3PWXSFpCaUHbN99L0vBSgnOybd1_UrIhIWZoUVT2CmW27yQ/formResponse";
 const GOOGLE_FORM_ENTRY = {
-  name: "entry.1766127711",
+  homeworkCode: "entry.1766127711",
   content: "entry.1678137157"
 };
 const HOMEWORK_STORAGE_PREFIX = "vocabulary_meaning_quiz_homework_v1::";
@@ -3817,7 +3817,7 @@ function buildHomeworkSaveData() {
     storageSource: getHomeworkStorageSource(),
     setLabel: ACTIVE_SET_LABEL || "",
     questionIds: picked.map(q => (q[COL.id] ?? "").toString()),
-    studentName: ((document.getElementById("studentName") || {}).value || ""),
+    homeworkCode: ((document.getElementById("homeworkCode") || {}).value || ""),
     currentIndex: Number(state.homeworkCurrentIndex) || 0,
     answers
   };
@@ -3842,8 +3842,8 @@ function restoreHomeworkProgressIfAny(picked) {
   const currentIds = picked.map(q => (q[COL.id] ?? "").toString());
   const savedIds = Array.isArray(data.questionIds) ? data.questionIds : [];
   if (savedIds.length && currentIds.join("|") !== savedIds.join("|")) { updateHomeworkProgress(); return false; }
-  const nameInput = document.getElementById("studentName");
-  if (nameInput && typeof data.studentName === "string") nameInput.value = data.studentName;
+  const homeworkCodeInput = document.getElementById("homeworkCode");
+  if (homeworkCodeInput && typeof data.homeworkCode === "string") homeworkCodeInput.value = data.homeworkCode;
   picked.forEach((q, idx) => {
     const qid = (q[COL.id] ?? "").toString();
     const a = data.answers[qid];
@@ -3872,7 +3872,7 @@ function clearHomeworkProgress() {
 
 function buildHomeworkRows() {
   const picked = getSelectedQuestions();
-  const studentName = ((document.getElementById("studentName") || {}).value || "").trim();
+  const homeworkCode = ((document.getElementById("homeworkCode") || {}).value || "").trim();
   const savedAt = new Date().toLocaleString("ja-JP");
   return picked.map((q, idx) => {
     const selected = getSelectedChoiceValue(idx);
@@ -3882,7 +3882,7 @@ function buildHomeworkRows() {
     const viewed = ((document.querySelector(`[data-card-idx="${idx}"]`) || {}).getAttribute || (()=>""))("data-answer-viewed") === "1";
     return {
       savedAt,
-      studentName,
+      homeworkCode,
       id: (q[COL.id] ?? "").toString(),
       word: (q[COL.word] ?? "").toString(),
       sentence: (q[COL.sentence] ?? "").toString(),
@@ -3930,7 +3930,7 @@ function buildHomeworkSubmitContent(rows) {
 
 let HOMEWORK_SUBMITTING = false;
 
-function submitHomeworkByHiddenForm(studentName, content) {
+function submitHomeworkByHiddenForm(homeworkCode, content) {
   const iframeName = "hiddenHomeworkSubmitFrame";
   let iframe = document.getElementById(iframeName);
   if (!iframe) {
@@ -3947,11 +3947,11 @@ function submitHomeworkByHiddenForm(studentName, content) {
   form.target = iframeName;
   form.style.display = "none";
 
-  const nameInput = document.createElement("input");
-  nameInput.type = "hidden";
-  nameInput.name = GOOGLE_FORM_ENTRY.name;
-  nameInput.value = studentName;
-  form.appendChild(nameInput);
+  const homeworkCodeInput = document.createElement("input");
+  homeworkCodeInput.type = "hidden";
+  homeworkCodeInput.name = GOOGLE_FORM_ENTRY.homeworkCode;
+  homeworkCodeInput.value = homeworkCode;
+  form.appendChild(homeworkCodeInput);
 
   const contentInput = document.createElement("textarea");
   contentInput.name = GOOGLE_FORM_ENTRY.content;
@@ -3988,10 +3988,10 @@ async function submitHomeworkToGoogleForm(event) {
     return;
   }
 
-  const studentName = ((document.getElementById("studentName") || {}).value || "").trim();
-  if (!studentName) {
-    showSubmitAlert("名前を入力してください。");
-    const input = document.getElementById("studentName");
+  const homeworkCode = ((document.getElementById("homeworkCode") || {}).value || "").trim();
+  if (!homeworkCode) {
+    showSubmitAlert("宿題コードを入力してください。");
+    const input = document.getElementById("homeworkCode");
     if (input) input.focus();
     return;
   }
@@ -4004,7 +4004,7 @@ async function submitHomeworkToGoogleForm(event) {
 
   try {
     // fetch の no-cors は環境によって反応が分かりにくいため、Googleフォームへは通常のHTMLフォーム送信で送る。
-    submitHomeworkByHiddenForm(studentName, content);
+    submitHomeworkByHiddenForm(homeworkCode, content);
 
     // Googleフォームは外部ページなので完了レスポンスを読めない。送信開始後に提出済みとしてロックする。
     setTimeout(() => {
@@ -4034,8 +4034,8 @@ function bindHomeworkAndJudgement(container, picked) {
       handleChoiceSelected(idx, e.target.value, q, true);
     });
   });
-  const nameInput = document.getElementById("studentName");
-  if (nameInput) nameInput.addEventListener("input", () => saveHomeworkProgress(state.homeworkCurrentIndex));
+  const homeworkCodeInput = document.getElementById("homeworkCode");
+  if (homeworkCodeInput) homeworkCodeInput.addEventListener("input", () => saveHomeworkProgress(state.homeworkCurrentIndex));
 }
 
 function renderQuiz() {
@@ -4328,7 +4328,7 @@ async function init() {
     else window.enableSubmitButtonIfAllowed();
   };
 
-  function submitByNativeForm(studentName, content){
+  function submitByNativeForm(homeworkCode, content){
     const iframeName = 'hiddenHomeworkSubmitFrame_v4';
     let iframe = document.getElementById(iframeName);
     if (!iframe) {
@@ -4344,11 +4344,11 @@ async function init() {
     form.target = iframeName;
     form.style.display = 'none';
 
-    const nameInput = document.createElement('input');
-    nameInput.type = 'hidden';
-    nameInput.name = GOOGLE_FORM_ENTRY.name;
-    nameInput.value = studentName;
-    form.appendChild(nameInput);
+    const homeworkCodeInput = document.createElement('input');
+    homeworkCodeInput.type = 'hidden';
+    homeworkCodeInput.name = GOOGLE_FORM_ENTRY.homeworkCode;
+    homeworkCodeInput.value = homeworkCode;
+    form.appendChild(homeworkCodeInput);
 
     const contentInput = document.createElement('textarea');
     contentInput.name = GOOGLE_FORM_ENTRY.content;
@@ -4375,10 +4375,10 @@ async function init() {
     const btn = document.getElementById('btnSubmitHomework');
     if (btn) btn.disabled = false;
 
-    const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
-    if (!studentName) {
-      showSubmitAlert('名前を入力してください。');
-      const input = document.getElementById('studentName');
+    const homeworkCode = ((document.getElementById('homeworkCode') || {}).value || '').trim();
+    if (!homeworkCode) {
+      showSubmitAlert('宿題コードを入力してください。');
+      const input = document.getElementById('homeworkCode');
       if (input) input.focus();
       return false;
     }
@@ -4398,7 +4398,7 @@ async function init() {
     if (typeof setSubmitStatus === 'function') setSubmitStatus(`Googleフォームに提出中です（${rows.length}問）…`, false);
 
     try {
-      submitByNativeForm(studentName, content);
+      submitByNativeForm(homeworkCode, content);
       window.markHomeworkSubmitted();
       if (typeof clearHomeworkProgress === 'function') clearHomeworkProgress();
       if (typeof setSubmitStatus === 'function') setSubmitStatus(`提出しました。Googleフォームの回答1件に、${rows.length}問分がまとまっています。`, false);
@@ -4484,7 +4484,7 @@ async function init() {
 
   window.buildHomeworkRows = function(){
     const picked = getDisplayedQuestions();
-    const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
+    const homeworkCode = ((document.getElementById('homeworkCode') || {}).value || '').trim();
     const savedAt = new Date().toLocaleString('ja-JP');
     return picked.map((q, idx) => {
       const selected = getSelectedChoiceValue(idx);
@@ -4495,7 +4495,7 @@ async function init() {
       const viewed = card ? card.getAttribute('data-answer-viewed') === '1' : false;
       return {
         savedAt,
-        studentName,
+        homeworkCode,
         id: (q[COL.id] || '').toString(),
         word: (q[COL.word] || '').toString(),
         sentence: (q[COL.sentence] || '').toString(),
@@ -4522,10 +4522,10 @@ async function init() {
       return false;
     }
 
-    const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
-    if (!studentName) {
-      showSubmitAlert('名前を入力してください。');
-      const input = document.getElementById('studentName');
+    const homeworkCode = ((document.getElementById('homeworkCode') || {}).value || '').trim();
+    if (!homeworkCode) {
+      showSubmitAlert('宿題コードを入力してください。');
+      const input = document.getElementById('homeworkCode');
       if (input) input.focus();
       return false;
     }
@@ -4559,11 +4559,11 @@ async function init() {
       form.action = GOOGLE_FORM_URL;
       form.target = iframeName;
       form.style.display = 'none';
-      const nameInput = document.createElement('input');
-      nameInput.type = 'hidden';
-      nameInput.name = GOOGLE_FORM_ENTRY.name;
-      nameInput.value = studentName;
-      form.appendChild(nameInput);
+      const homeworkCodeInput = document.createElement('input');
+      homeworkCodeInput.type = 'hidden';
+      homeworkCodeInput.name = GOOGLE_FORM_ENTRY.homeworkCode;
+      homeworkCodeInput.value = homeworkCode;
+      form.appendChild(homeworkCodeInput);
       const contentInput = document.createElement('textarea');
       contentInput.name = GOOGLE_FORM_ENTRY.content;
       contentInput.value = content;
@@ -4659,10 +4659,10 @@ async function init() {
       return false;
     }
 
-    const studentName = ((document.getElementById('studentName') || {}).value || '').trim();
-    if (!studentName) {
-      showSubmitAlert('名前を入力してください。');
-      const input = document.getElementById('studentName');
+    const homeworkCode = ((document.getElementById('homeworkCode') || {}).value || '').trim();
+    if (!homeworkCode) {
+      showSubmitAlert('宿題コードを入力してください。');
+      const input = document.getElementById('homeworkCode');
       if (input) input.focus();
       return false;
     }
