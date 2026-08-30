@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
@@ -17,8 +17,7 @@
 .remove-ruby-button{width:100%;margin:-7px 0 10px;color:#8b4239;border-color:#dfbbb5;background:#fff8f6}.override-chip.no-ruby{background:#fff0ed;border-color:#e4c2bc}
 .image-pick.dragging{border-color:var(--teal);background:#dff2ed;box-shadow:0 0 0 3px rgba(24,107,98,.15);color:#0f5c53}
 .bulk-form{padding:12px;background:#f2f8f6;border:1px solid #d8e7e3;border-radius:11px;margin-bottom:12px}.bulk-form label{margin-bottom:8px}.bulk-form textarea{min-height:88px;resize:vertical}.bulk-form .button{width:100%}.bulk-result{min-height:1.4em;margin:7px 0 0;color:var(--teal);font-size:12px;font-weight:700}.single-add{margin:0 0 12px;border:1px solid var(--line);border-radius:10px;padding:8px 10px}.single-add summary{cursor:pointer;color:var(--teal);font-size:13px;font-weight:700}.single-add .inline-form{margin:10px 0 0}.image-pick{line-height:1.25;text-align:center}
-
-</style>
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -88,11 +87,11 @@ TNTがドカーンと爆発すると、空を飛んでいたウィザーが、�
         </div>
         <details class="single-add">
           <summary>1語だけ追加する</summary>
-        <div class="inline-form">
-          <input id="newKanji" placeholder="例：爆発" />
-          <input id="newReading" placeholder="読み：ばくはつ" />
-          <button class="button small" id="addKanji">追加</button>
-        </div>
+          <div class="inline-form">
+            <input id="newKanji" placeholder="例：爆発" />
+            <input id="newReading" placeholder="読み：ばくはつ" />
+            <button class="button small" id="addKanji">追加</button>
+          </div>
         </details>
         <p class="help">追加後は、下の各行で漢字・読み・画像をそれぞれ編集できます。画像欄には、PC内の画像ファイルを直接ドラッグ＆ドロップできます。クリックして選ぶこともできます。</p>
         <div id="kanjiList" class="kanji-list"></div>
@@ -102,6 +101,7 @@ TNTがドカーンと爆発すると、空を飛んでいたウィザーが、�
       <section class="tab-pane" id="tab-style">
         <div class="section-heading"><div><span class="step-number">3</span><h2>文字とルビ</h2></div></div>
         <div class="notice" id="fontNotice">UDデジタル教科書体を最優先で使用します。端末にない場合はメイリオで表示します。</div>
+
         <label>本文フォント<select id="fontFamily">
           <option value="N-regular" data-font-name="UD Digi Kyokasho N" data-font-family="'UD Digi Kyokasho N','Yu Gothic',Meiryo,sans-serif" data-weight="400">UDデジタル教科書体 N（標準）</option>
           <option value="NP-regular" data-font-name="UD Digi Kyokasho NP" data-font-family="'UD Digi Kyokasho NP','Yu Gothic',Meiryo,sans-serif" data-weight="400">UDデジタル教科書体 NP（標準）</option>
@@ -110,14 +110,21 @@ TNTがドカーンと爆発すると、空を飛んでいたウィザーが、�
           <option value="NP-bold" data-font-name="UD Digi Kyokasho NP" data-font-family="'UD Digi Kyokasho NP','Yu Gothic',Meiryo,sans-serif" data-weight="700">UDデジタル教科書体 NP（太字）</option>
           <option value="NK-bold" data-font-name="UD Digi Kyokasho NK" data-font-family="'UD Digi Kyokasho NK','Yu Gothic',Meiryo,sans-serif" data-weight="700">UDデジタル教科書体 NK（太字）</option>
         </select></label>
+
         <div class="two-cols">
           <label>本文サイズ<input id="fontSize" type="number" min="10" max="32" value="16" /><span>pt</span></label>
           <label>ルビサイズ<input id="rubySize" type="number" min="5" max="16" value="8" /><span>pt</span></label>
         </div>
+
         <label>対象学年<select id="grade">
-          <option value="1">小学1年生</option><option value="2" selected>小学2年生</option><option value="3">小学3年生</option>
-          <option value="4">小学4年生</option><option value="5">小学5年生</option><option value="6">小学6年生</option>
+          <option value="1">小学1年生</option>
+          <option value="2" selected>小学2年生</option>
+          <option value="3">小学3年生</option>
+          <option value="4">小学4年生</option>
+          <option value="5">小学5年生</option>
+          <option value="6">小学6年生</option>
         </select></label>
+
         <label>ルビの付け方<select id="rubyMode">
           <option value="storyGrade" selected>物語全体：対象学年より上の漢字語</option>
           <option value="storyAll">物語全体：すべての漢字語</option>
@@ -125,7 +132,11 @@ TNTがドカーンと爆発すると、空を飛んでいたウィザーが、�
           <option value="above">登録語のうち配当学年を超える語だけ</option>
           <option value="none">ルビなし</option>
         </select></label>
-        <div class="notice ruby-check" id="rubyNotice">本文全体から漢字語を探しています。</div>
+
+        <div class="notice ruby-check" id="rubyNotice">簡易ルビで表示しています。</div>
+        <button class="button ghost wide" id="enableAdvancedRuby" type="button">高精度ルビ解析を開始</button>
+        <p class="help" id="advancedRubyHelp">通常は内蔵辞書で軽く動作します。必要なときだけ高精度解析を開始できます。</p>
+
         <div class="ruby-correction">
           <h3>ルビを修正</h3>
           <p class="help">間違っている語と、正しい読みを入力してください。同じ語すべてに反映されます。</p>
@@ -137,11 +148,17 @@ TNTがドカーンと爆発すると、空を飛んでいたウィザーが、�
           <button class="button remove-ruby-button" id="removeRubyForWord">入力した語のルビを削除</button>
           <div id="rubyOverrideList" class="override-list"></div>
         </div>
-        <label>ルビの表示<select id="rubyOccurrence"><option value="all">すべての出現</option><option value="first">最初の出現だけ</option></select></label>
+
+        <label>ルビの表示<select id="rubyOccurrence">
+          <option value="all">すべての出現</option>
+          <option value="first">最初の出現だけ</option>
+        </select></label>
+
         <div class="color-row">
           <label>漢字の色<input id="accentColor" type="color" value="#175f9b" /></label>
           <label>背景色<input id="highlightColor" type="color" value="#fff0bd" /></label>
         </div>
+
         <h3 class="setting-subhead">ページ余白（mm）</h3>
         <div class="margin-grid">
           <label>上<input id="marginTop" type="number" min="5" max="40" value="17" /></label>
@@ -149,6 +166,7 @@ TNTがドカーンと爆発すると、空を飛んでいたウィザーが、�
           <label>左<input id="marginLeft" type="number" min="5" max="40" value="18" /></label>
           <label>右<input id="marginRight" type="number" min="5" max="40" value="18" /></label>
         </div>
+
         <button class="button primary wide" id="applySettings">プレビューに反映</button>
       </section>
     </aside>
@@ -156,198 +174,1466 @@ TNTがドカーンと爆発すると、空を飛んでいたウィザーが、�
     <section class="preview-panel">
       <div class="preview-toolbar">
         <div><strong>A4プレビュー</strong><span id="pageEstimate">1ページ目安</span></div>
-        <div class="zoom-control"><button id="zoomOut" aria-label="縮小">−</button><span id="zoomLabel">72%</span><button id="zoomIn" aria-label="拡大">＋</button></div>
+        <div class="zoom-control">
+          <button id="zoomOut" aria-label="縮小">−</button>
+          <span id="zoomLabel">72%</span>
+          <button id="zoomIn" aria-label="拡大">＋</button>
+        </div>
       </div>
       <div class="paper-stage">
         <article class="paper" id="paperPreview"></article>
       </div>
     </section>
   </main>
-  <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
-  <script data-app-code>
-const defaultKanji=[
-  ['音声','おんせい',2],['頭痛','ずつう',2],['先頭','せんとう',2],['多数決','たすうけつ',3],['細かい','こまかい',2],['後','あと',2],['弱点','じゃくてん',3],
-  ['兄弟','きょうだい',2],['前後','ぜんご',2],['爆発','ばくはつ',3],['地面','じめん',3],['日光','にっこう',2],['首都','しゅと',3],['中古車','ちゅうこしゃ',3],['両親','りょうしん',3]
-].map((x,i)=>({id:crypto.randomUUID(),word:x[0],reading:x[1],grade:x[2],image:null,index:i+1}));
-let items=structuredClone(defaultKanji),rubyOverrides=[],zoom=.72,tokenizer=null,tokenizerState='loading',kanjiGrades=new Map(),gradeDataState='loading';
-const storyRubyDictionary=[
-  ['ある朝','あるあさ',2],['村','むら',1],['近く','ちかく',2],['洞くつ','どうくつ',7],['探して','さがして',6],['大きな','おおきな',1],['二人','ふたり',1],['外','そと',2],['飛び出す','とびだす',3],['空','そら',1],['三つ','みっつ',1],['頭','あたま',2],['村人','むらびと',2],['家','いえ',2],['中','なか',1],['立った','たった',1],['守る','まもる',3],
-  ['作戦','さくせん',3],['会議','かいぎ',4],['決めました','きめました',3],['動き','うごき',3],['黒い','くろい',2],['玉','たま',1],['少し','すこし',2],['止まります','とまります',2],['本当','ほんとう',3],['息','いき',3],['置きました','おきました',4],['落ちて','おちて',3],['雲','くも',2],['強い','つよい',2],['照らしました','てらしました',4],
-  ['最後','さいご',3],['一撃','いちげき',7],['消えました','きえました',3],['大喜び','おおよろこび',3],['村長','そんちょう',3],['勝利','しょうり',4],['世界','せかい',3],['知らせよう','しらせよう',2],['倉庫','そうこ',4],['古い','ふるい',2],['一台','いちだい',2],['車','くるま',1],['大笑い','おおわらい',2],['夜','よる',2],['帰る','かえる',2],['無事','ぶじ',4],['音','おと',1],['窓','まど',6],['向こう','むこう',3],['冒険','ぼうけん',3],['続きそう','つづきそう',4],['爆発','ばくはつ',3],['地面','じめん',3],
-  ['見て','みて',1],['見ました','みました',1],['向かって','むかって',3],['走ります','はしります',2],['相手','あいて',3],['飛んで','とんで',4],['黒い玉','くろいたま',2],['畑','はたけ',3],['山','やま',1],['逃げる','にげる',4],['飛ばした後','とばしたあと',4],['今','いま',2],['下がりました','さがりました',1],['一発','いっぱつ',3],['開ける','あける',3]
-].map(x=>({word:x[0],reading:x[1],grade:x[2],general:true}));
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const esc=s=>(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-function switchTab(name){$$('.tab,.tab-pane').forEach(x=>x.classList.remove('active'));$(`.tab[data-tab="${name}"]`).classList.add('active');$(`#tab-${name}`).classList.add('active')}
-$$('.tab').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));$$('[data-next]').forEach(b=>b.onclick=()=>switchTab(b.dataset.next));
+<script data-app-code>
+const defaultKanji=[
+  ['音声','おんせい',2],
+  ['頭痛','ずつう',2],
+  ['先頭','せんとう',2],
+  ['多数決','たすうけつ',3],
+  ['細かい','こまかい',2],
+  ['後','あと',2],
+  ['弱点','じゃくてん',3],
+  ['兄弟','きょうだい',2],
+  ['前後','ぜんご',2],
+  ['爆発','ばくはつ',3],
+  ['地面','じめん',3],
+  ['日光','にっこう',2],
+  ['首都','しゅと',3],
+  ['中古車','ちゅうこしゃ',3],
+  ['両親','りょうしん',3]
+].map((x,i)=>({
+  id:crypto.randomUUID(),
+  word:x[0],
+  reading:x[1],
+  grade:x[2],
+  image:null,
+  index:i+1
+}));
+
+let items=structuredClone(defaultKanji),
+    rubyOverrides=[],
+    zoom=.72,
+    tokenizer=null,
+    tokenizerState='idle',
+    kanjiGrades=new Map(),
+    gradeDataState='idle',
+    advancedRubyStarted=false;
+
+const storyRubyDictionary=[
+  ['ある朝','あるあさ',2],
+  ['村','むら',1],
+  ['近く','ちかく',2],
+  ['洞くつ','どうくつ',7],
+  ['探して','さがして',6],
+  ['大きな','おおきな',1],
+  ['二人','ふたり',1],
+  ['外','そと',2],
+  ['飛び出す','とびだす',3],
+  ['空','そら',1],
+  ['三つ','みっつ',1],
+  ['頭','あたま',2],
+  ['村人','むらびと',2],
+  ['家','いえ',2],
+  ['中','なか',1],
+  ['立った','たった',1],
+  ['守る','まもる',3],
+  ['作戦','さくせん',3],
+  ['会議','かいぎ',4],
+  ['決めました','きめました',3],
+  ['動き','うごき',3],
+  ['黒い','くろい',2],
+  ['玉','たま',1],
+  ['少し','すこし',2],
+  ['止まります','とまります',2],
+  ['本当','ほんとう',3],
+  ['息','いき',3],
+  ['置きました','おきました',4],
+  ['落ちて','おちて',3],
+  ['雲','くも',2],
+  ['強い','つよい',2],
+  ['照らしました','てらしました',4],
+  ['最後','さいご',3],
+  ['一撃','いちげき',7],
+  ['消えました','きえました',3],
+  ['大喜び','おおよろこび',3],
+  ['村長','そんちょう',3],
+  ['勝利','しょうり',4],
+  ['世界','せかい',3],
+  ['知らせよう','しらせよう',2],
+  ['倉庫','そうこ',4],
+  ['古い','ふるい',2],
+  ['一台','いちだい',2],
+  ['車','くるま',1],
+  ['大笑い','おおわらい',2],
+  ['夜','よる',2],
+  ['帰る','かえる',2],
+  ['無事','ぶじ',4],
+  ['音','おと',1],
+  ['窓','まど',6],
+  ['向こう','むこう',3],
+  ['冒険','ぼうけん',3],
+  ['続きそう','つづきそう',4],
+  ['爆発','ばくはつ',3],
+  ['地面','じめん',3],
+  ['見て','みて',1],
+  ['見ました','みました',1],
+  ['向かって','むかって',3],
+  ['走ります','はしります',2],
+  ['相手','あいて',3],
+  ['飛んで','とんで',4],
+  ['黒い玉','くろいたま',2],
+  ['畑','はたけ',3],
+  ['山','やま',1],
+  ['逃げる','にげる',4],
+  ['飛ばした後','とばしたあと',4],
+  ['今','いま',2],
+  ['下がりました','さがりました',1],
+  ['一発','いっぱつ',3],
+  ['開ける','あける',3]
+].map(x=>({
+  word:x[0],
+  reading:x[1],
+  grade:x[2],
+  general:true
+}));
+
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+
+const esc=s=>(s||'').replace(
+  /[&<>"']/g,
+  c=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[c])
+);
+
+function switchTab(name){
+  $$('.tab,.tab-pane').forEach(x=>x.classList.remove('active'));
+  $(`.tab[data-tab="${name}"]`).classList.add('active');
+  $(`#tab-${name}`).classList.add('active');
+  if(name==='style')setTimeout(update,0);
+}
+
+$$('.tab').forEach(b=>{
+  b.onclick=()=>switchTab(b.dataset.tab);
+});
+
+$$('[data-next]').forEach(b=>{
+  b.onclick=()=>switchTab(b.dataset.next);
+});
 
 function renderList(){
   const story=$('#storyInput').value;
-  $('#kanjiList').innerHTML=items.map((it,i)=>`<div class="kanji-card ${story.includes(it.word)?'found':'missing'}" data-id="${it.id}">
-    <span class="num">${i+1}</span><input class="word" value="${esc(it.word)}" aria-label="漢字語${i+1}"><input class="reading" value="${esc(it.reading)}" aria-label="読み${i+1}">
-    <label class="image-pick" title="PC内の画像をドロップ、またはクリックして選択">${it.image?`<img src="${it.image}" alt="${esc(it.word)}の挿絵">`:'PC画像を<br>ドロップ'}<input class="image" type="file" accept="image/*"></label><button class="remove" aria-label="削除">×</button></div>`).join('');
-  const found=items.filter(x=>story.includes(x.word)).length;$('#kanjiStatus').textContent=`本文内 ${found}/${items.length}`;
+
+  $('#kanjiList').innerHTML=items.map((it,i)=>`
+    <div class="kanji-card ${story.includes(it.word)?'found':'missing'}" data-id="${it.id}">
+      <span class="num">${i+1}</span>
+      <input class="word" value="${esc(it.word)}" aria-label="漢字語${i+1}">
+      <input class="reading" value="${esc(it.reading)}" aria-label="読み${i+1}">
+      <label class="image-pick" title="PC内の画像をドロップ、またはクリックして選択">
+        ${
+          it.image
+            ? `<img src="${it.image}" alt="${esc(it.word)}の挿絵">`
+            : 'PC画像を<br>ドロップ'
+        }
+        <input class="image" type="file" accept="image/*">
+      </label>
+      <button class="remove" aria-label="削除">×</button>
+    </div>
+  `).join('');
+
+  const found=items.filter(x=>story.includes(x.word)).length;
+  $('#kanjiStatus').textContent=`本文内 ${found}/${items.length}`;
+
   $$('.kanji-card').forEach(card=>{
     const it=items.find(x=>x.id===card.dataset.id);
-    card.querySelector('.word').oninput=e=>{it.word=e.target.value;update()};card.querySelector('.reading').oninput=e=>{it.reading=e.target.value;update()};
-    card.querySelector('.remove').onclick=()=>{items=items.filter(x=>x.id!==it.id);renderList();update()};
-    card.querySelector('.image').onchange=e=>{const f=e.target.files[0];if(f)setImageFile(it,f)};
-    const drop=card.querySelector('.image-pick');drop.ondragover=e=>{e.preventDefault();drop.classList.add('dragging')};drop.ondragleave=()=>drop.classList.remove('dragging');drop.ondrop=e=>handleImageDrop(e,it,drop);
+
+    card.querySelector('.word').oninput=e=>{
+      it.word=e.target.value;
+      update();
+    };
+
+    card.querySelector('.reading').oninput=e=>{
+      it.reading=e.target.value;
+      update();
+    };
+
+    card.querySelector('.remove').onclick=()=>{
+      items=items.filter(x=>x.id!==it.id);
+      renderList();
+      update();
+    };
+
+    card.querySelector('.image').onchange=e=>{
+      const f=e.target.files[0];
+      if(f)setImageFile(it,f);
+    };
+
+    const drop=card.querySelector('.image-pick');
+
+    drop.ondragover=e=>{
+      e.preventDefault();
+      drop.classList.add('dragging');
+    };
+
+    drop.ondragleave=()=>{
+      drop.classList.remove('dragging');
+    };
+
+    drop.ondrop=e=>handleImageDrop(e,it,drop);
   });
 }
 
 function setImageFile(it,file){
-  if(!file.type.startsWith('image/'))return;const reader=new FileReader();reader.onload=()=>{it.image=reader.result;it.imageSource='file';renderList();update()};reader.readAsDataURL(file);
+  if(!file.type.startsWith('image/'))return;
+
+  const reader=new FileReader();
+
+  reader.onload=()=>{
+    it.image=reader.result;
+    it.imageSource='file';
+    renderList();
+    update();
+  };
+
+  reader.readAsDataURL(file);
 }
 
 async function handleImageDrop(event,it,drop){
-  event.preventDefault();drop.classList.remove('dragging');
-  const file=[...(event.dataTransfer.files||[])].find(f=>f.type.startsWith('image/'));if(file){setImageFile(it,file);return;}
-  const html=event.dataTransfer.getData('text/html'),uri=event.dataTransfer.getData('text/uri-list')||event.dataTransfer.getData('text/plain');
-  let url='';if(html){const parsed=new DOMParser().parseFromString(html,'text/html');url=parsed.querySelector('img')?.src||''}if(!url)url=(uri||'').split(/\r?\n/).find(x=>/^https?:\/\//i.test(x))||'';
-  if(!url){alert('画像を認識できませんでした。画像そのものをドラッグするか、画像ファイルを保存して選択してください。');return;}
+  event.preventDefault();
+  drop.classList.remove('dragging');
+
+  const file=[...(event.dataTransfer.files||[])]
+    .find(f=>f.type.startsWith('image/'));
+
+  if(file){
+    setImageFile(it,file);
+    return;
+  }
+
+  const html=event.dataTransfer.getData('text/html');
+  const uri=
+    event.dataTransfer.getData('text/uri-list')||
+    event.dataTransfer.getData('text/plain');
+
+  let url='';
+
+  if(html){
+    const parsed=new DOMParser()
+      .parseFromString(html,'text/html');
+
+    url=parsed.querySelector('img')?.src||'';
+  }
+
+  if(!url){
+    url=(uri||'')
+      .split(/\r?\n/)
+      .find(x=>/^https?:\/\//i.test(x))||'';
+  }
+
+  if(!url){
+    alert(
+      '画像を認識できませんでした。画像そのものをドラッグするか、画像ファイルを保存して選択してください。'
+    );
+    return;
+  }
+
   try{
-    const response=await fetch(url);if(!response.ok)throw new Error('download');const blob=await response.blob();if(!blob.type.startsWith('image/'))throw new Error('not image');setImageFile(it,new File([blob],'web-image',{type:blob.type}));
+    const response=await fetch(url);
+
+    if(!response.ok)throw new Error('download');
+
+    const blob=await response.blob();
+
+    if(!blob.type.startsWith('image/')){
+      throw new Error('not image');
+    }
+
+    setImageFile(
+      it,
+      new File(
+        [blob],
+        'web-image',
+        {type:blob.type}
+      )
+    );
   }catch{
-    it.image=url;it.imageSource='web';renderList();update();alert('Web画像を参照形式で追加しました。元サイトが画像表示を制限すると表示できない場合があります。');
+    it.image=url;
+    it.imageSource='web';
+    renderList();
+    update();
+
+    alert(
+      'Web画像を参照形式で追加しました。元サイトが画像表示を制限すると表示できない場合があります。'
+    );
   }
 }
 
 function highlighted(text,unknownSet,seen){
-  const mode=$('#rubyMode').value,occ=$('#rubyOccurrence').value,grade=Number($('#grade').value);
-  const wholeStory=mode==='storyGrade'||mode==='storyAll',merged=new Map();
-  if(wholeStory&&tokenizer)return analyzedHighlight(text,unknownSet,seen,mode,occ,grade);
-  storyRubyDictionary.forEach(x=>merged.set(x.word,x));items.forEach(x=>x.word&&merged.set(x.word,{...x,general:false}));
-  const words=[...(wholeStory?merged.values():items)].filter(x=>x.word).sort((a,b)=>b.word.length-a.word.length);
+  const mode=$('#rubyMode').value;
+  const occ=$('#rubyOccurrence').value;
+  const grade=Number($('#grade').value);
+
+  const wholeStory=
+    mode==='storyGrade'||
+    mode==='storyAll';
+
+  const merged=new Map();
+
+  if(wholeStory&&tokenizer){
+    return analyzedHighlight(
+      text,
+      unknownSet,
+      seen,
+      mode,
+      occ,
+      grade
+    );
+  }
+
+  storyRubyDictionary.forEach(x=>{
+    merged.set(x.word,x);
+  });
+
+  items.forEach(x=>{
+    if(x.word){
+      merged.set(
+        x.word,
+        {...x,general:false}
+      );
+    }
+  });
+
+  const words=[
+    ...(wholeStory?merged.values():items)
+  ]
+    .filter(x=>x.word)
+    .sort((a,b)=>b.word.length-a.word.length);
+
   if(!words.length)return esc(text);
-  const re=new RegExp(words.map(x=>x.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g');
-  let last=0,out='';
+
+  const re=new RegExp(
+    words
+      .map(x=>x.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))
+      .join('|'),
+    'g'
+  );
+
+  let last=0;
+  let out='';
+
   for(const m of text.matchAll(re)){
-    out+=esc(text.slice(last,m.index));const it=words.find(x=>x.word===m[0]);
-    const useRuby=mode==='storyAll'||mode==='target'||((mode==='storyGrade'||mode==='above')&&it.grade>grade);
-    const show=useRuby&&it.reading&&(occ==='all'||!seen.has(it.word));seen.add(it.word);
-    const content=show?rubyMarkup(it.word,it.reading):esc(it.word);
-    out+=items.some(x=>x.word===it.word)?`<span class="target-word">${content}</span>`:content;last=m.index+m[0].length;
+    out+=esc(text.slice(last,m.index));
+
+    const it=words.find(x=>x.word===m[0]);
+
+    const useRuby=
+      mode==='storyAll'||
+      mode==='target'||
+      (
+        (mode==='storyGrade'||mode==='above')&&
+        it.grade>grade
+      );
+
+    const show=
+      useRuby&&
+      it.reading&&
+      (
+        occ==='all'||
+        !seen.has(it.word)
+      );
+
+    seen.add(it.word);
+
+    const content=
+      show
+        ? rubyMarkup(it.word,it.reading)
+        : esc(it.word);
+
+    out+=items.some(x=>x.word===it.word)
+      ? `<span class="target-word">${content}</span>`
+      : content;
+
+    last=m.index+m[0].length;
   }
+
   out+=esc(text.slice(last));
-  if(wholeStory){let rest=text;words.forEach(x=>rest=rest.split(x.word).join(''));(rest.match(/[一-龯々]+/g)||[]).forEach(w=>unknownSet.add(w));}
-  return out;
-}
 
-function analyzedHighlight(text,unknownSet,seen,mode,occ,grade){
-  const tokens=tokenizer.tokenize(text);let out='';
-  for(const token of tokens){
-    const surface=token.surface_form||'',hasKanji=/[一-龯々]/.test(surface);
-    if(!hasKanji){out+=esc(surface);continue;}
-    const override=rubyOverrides.find(x=>x.word===surface)||items.find(x=>x.word===surface&&x.reading),reading=override?.noRuby?'':override?.reading||kataToHira(token.reading||'');
-    if(override?.noRuby){out+=items.some(x=>x.word===surface)?`<span class="target-word">${esc(surface)}</span>`:esc(surface);continue;}
-    if(!reading){unknownSet.add(surface);out+=`<span class="ruby-missing">${esc(surface)}</span>`;continue;}
-    const known=storyRubyDictionary.find(x=>x.word===surface)||override;
-    const surfaceGrade=gradeDataState==='ready'?kanjiGradeOf(surface):Number(known?.grade||7);
-    const shouldRuby=mode==='storyAll'||surfaceGrade>grade;
-    const show=shouldRuby&&(occ==='all'||!seen.has(surface));seen.add(surface);
-    const content=show?rubyMarkup(surface,reading):esc(surface);
-    out+=items.some(x=>x.word===surface)?`<span class="target-word">${content}</span>`:content;
+  if(wholeStory){
+    let rest=text;
+
+    words.forEach(x=>{
+      rest=rest.split(x.word).join('');
+    });
+
+    (rest.match(/[一-龯々]+/g)||[])
+      .forEach(w=>unknownSet.add(w));
   }
+
   return out;
 }
 
-function kataToHira(value){return value.replace(/[ァ-ヶ]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0x60));}
+function analyzedHighlight(
+  text,
+  unknownSet,
+  seen,
+  mode,
+  occ,
+  grade
+){
+  const tokens=tokenizer.tokenize(text);
+  let out='';
+
+  for(const token of tokens){
+    const surface=token.surface_form||'';
+    const hasKanji=/[一-龯々]/.test(surface);
+
+    if(!hasKanji){
+      out+=esc(surface);
+      continue;
+    }
+
+    const override=
+      rubyOverrides.find(x=>x.word===surface)||
+      items.find(x=>x.word===surface&&x.reading);
+
+    const reading=
+      override?.noRuby
+        ? ''
+        : override?.reading||
+          kataToHira(token.reading||'');
+
+    if(override?.noRuby){
+      out+=items.some(x=>x.word===surface)
+        ? `<span class="target-word">${esc(surface)}</span>`
+        : esc(surface);
+
+      continue;
+    }
+
+    if(!reading){
+      unknownSet.add(surface);
+      out+=`<span class="ruby-missing">${esc(surface)}</span>`;
+      continue;
+    }
+
+    const known=
+      storyRubyDictionary.find(x=>x.word===surface)||
+      override;
+
+    const surfaceGrade=
+      gradeDataState==='ready'
+        ? kanjiGradeOf(surface)
+        : Number(known?.grade||7);
+
+    const shouldRuby=
+      mode==='storyAll'||
+      surfaceGrade>grade;
+
+    const show=
+      shouldRuby&&
+      (
+        occ==='all'||
+        !seen.has(surface)
+      );
+
+    seen.add(surface);
+
+    const content=
+      show
+        ? rubyMarkup(surface,reading)
+        : esc(surface);
+
+    out+=items.some(x=>x.word===surface)
+      ? `<span class="target-word">${content}</span>`
+      : content;
+  }
+
+  return out;
+}
+
+function kataToHira(value){
+  return value.replace(
+    /[ァ-ヶ]/g,
+    ch=>String.fromCharCode(
+      ch.charCodeAt(0)-0x60
+    )
+  );
+}
+
 function kanjiGradeOf(value){
-  const chars=[...value].filter(ch=>/[一-龯]/.test(ch));
-  return chars.length?Math.max(...chars.map(ch=>kanjiGrades.get(ch)||7)):0;
+  const chars=[...value]
+    .filter(ch=>/[一-龯]/.test(ch));
+
+  return chars.length
+    ? Math.max(
+        ...chars.map(
+          ch=>kanjiGrades.get(ch)||7
+        )
+      )
+    : 0;
 }
 
 function rubyMarkup(word,reading){
-  const parts=word.match(/[一-龯々]+|[ぁ-んー]+|[^一-龯々ぁ-んー]+/g)||[word];let cursor=0,out='';
+  const parts=
+    word.match(
+      /[一-龯々]+|[ぁ-んー]+|[^一-龯々ぁ-んー]+/g
+    )||[word];
+
+  let cursor=0;
+  let out='';
+
   for(let i=0;i<parts.length;i++){
     const part=parts[i];
+
     if(/^[ぁ-んー]+$/.test(part)){
-      if(reading.startsWith(part,cursor))cursor+=part.length;
-      out+=esc(part);continue;
+      if(reading.startsWith(part,cursor)){
+        cursor+=part.length;
+      }
+
+      out+=esc(part);
+      continue;
     }
+
     if(/^[一-龯々]+$/.test(part)){
-      const nextKana=parts.slice(i+1).find(x=>/^[ぁ-んー]+$/.test(x));
-      const end=nextKana?reading.indexOf(nextKana,cursor):reading.length;
-      if(end<cursor)return `<ruby>${esc(word)}<rt>${esc(reading)}</rt></ruby>`;
-      const segmentReading=reading.slice(cursor,end);cursor=end;
-      out+=segmentReading?`<ruby>${esc(part)}<rt>${esc(segmentReading)}</rt></ruby>`:esc(part);
-    }else out+=esc(part);
+      const nextKana=
+        parts
+          .slice(i+1)
+          .find(x=>/^[ぁ-んー]+$/.test(x));
+
+      const end=
+        nextKana
+          ? reading.indexOf(nextKana,cursor)
+          : reading.length;
+
+      if(end<cursor){
+        return `<ruby>${esc(word)}<rt>${esc(reading)}</rt></ruby>`;
+      }
+
+      const segmentReading=
+        reading.slice(cursor,end);
+
+      cursor=end;
+
+      out+=segmentReading
+        ? `<ruby>${esc(part)}<rt>${esc(segmentReading)}</rt></ruby>`
+        : esc(part);
+    }else{
+      out+=esc(part);
+    }
   }
+
   return out;
 }
 
 function update(){
-  const story=$('#storyInput').value,title=$('#titleInput').value;
-  $('#charCount').textContent=`${story.replace(/\s/g,'').length}字`;
-  const paras=story.split(/\n\s*\n/).filter(Boolean),unknownSet=new Set(),seen=new Set();let output=`<h1>${esc(title)}</h1>`;
+  const story=$('#storyInput').value;
+  const title=$('#titleInput').value;
+
+  $('#charCount').textContent=
+    `${story.replace(/\s/g,'').length}字`;
+
+  const paras=
+    story
+      .split(/\n\s*\n/)
+      .filter(Boolean);
+
+  const unknownSet=new Set();
+  const seen=new Set();
+
+  let output=
+    `<h1>${esc(title)}</h1>`;
+
   paras.forEach((p,i)=>{
-    output+=`<p class="story-paragraph">${highlighted(p,unknownSet,seen)}</p>`;
-    const matches=items.filter(x=>x.word&&p.includes(x.word));
-    matches.forEach(it=>output+=it.image?`<img class="story-image" src="${it.image}" alt="${esc(it.word)}の挿絵">`:`<div class="empty-image">${esc(it.word)}：画像未登録</div>`);
-    if(i&&i%6===0)output+='<div class="page-break-hint"></div>';
+    output+=
+      `<p class="story-paragraph">${
+        highlighted(
+          p,
+          unknownSet,
+          seen
+        )
+      }</p>`;
+
+    const matches=
+      items.filter(
+        x=>x.word&&p.includes(x.word)
+      );
+
+    matches.forEach(it=>{
+      output+=it.image
+        ? `<img class="story-image" src="${it.image}" alt="${esc(it.word)}の挿絵">`
+        : `<div class="empty-image">${esc(it.word)}：画像未登録</div>`;
+    });
+
+    if(i&&i%6===0){
+      output+=
+        '<div class="page-break-hint"></div>';
+    }
   });
-  const paper=$('#paperPreview'),fontSelect=$('#fontFamily'),fontOption=fontSelect.selectedOptions[0];paper.innerHTML=output;paper.style.fontFamily=fontOption?.dataset.fontFamily||"'UD Digi Kyokasho N','Yu Gothic',Meiryo,sans-serif";paper.style.fontWeight=fontOption?.dataset.weight||'400';paper.style.padding=`${$('#marginTop').value}mm ${$('#marginRight').value}mm ${$('#marginBottom').value}mm ${$('#marginLeft').value}mm`;paper.style.setProperty('--body-size',$('#fontSize').value+'pt');paper.style.setProperty('--ruby-size',$('#rubySize').value+'pt');paper.style.setProperty('--accent',$('#accentColor').value);paper.style.setProperty('--highlight',$('#highlightColor').value);paper.style.transform=`scale(${zoom})`;
-  const fontName=fontOption?.dataset.fontName||'UD Digi Kyokasho N',fontReady=document.fonts?document.fonts.check(`16px "${fontName}"`):true;$('#fontNotice').textContent=fontReady?`プレビューに「${fontName}」を使用しています。`:`「${fontName}」を読み込めません。端末へのインストールを確認してください。`;
-  const notice=$('#rubyNotice'),print=$('#printPdf');if($('#rubyMode').value.startsWith('story')){const unknown=[...unknownSet];if(tokenizerState==='loading'){notice.textContent='日本語解析を準備しています…';print.disabled=true}else if(tokenizerState==='error'){notice.textContent='日本語解析を読み込めません。インターネット接続を確認してください。';print.disabled=true}else if($('#rubyMode').value==='storyGrade'&&gradeDataState==='loading'){notice.textContent='学年別漢字データを準備しています…';print.disabled=true}else if($('#rubyMode').value==='storyGrade'&&gradeDataState==='error'){notice.textContent='学年別漢字データを読み込めません。インターネット接続を確認してください。';print.disabled=true}else{notice.textContent=unknown.length?`読みを確認してください：${unknown.slice(0,8).join('、')}${unknown.length>8?' ほか':''}。「漢字と絵」で読みを登録すると完成できます。`:`小学${$('#grade').value}年生までに習う漢字を除き、それより後の漢字にルビを設定しました。`;print.disabled=unknown.length>0;print.title=unknown.length?'未確認の読みを解消してください':''}}else{notice.textContent='現在は登録した漢字語だけを対象にしています。';print.disabled=false;print.title=''}
-  $('#exportWord').disabled=print.disabled;$('#exportWord').title=print.title;
-  $('#pageEstimate').textContent=`約${Math.max(1,Math.ceil(paper.scrollHeight/(297/25.4*96)))}ページ`;
+
+  const paper=$('#paperPreview');
+  const fontSelect=$('#fontFamily');
+  const fontOption=fontSelect.selectedOptions[0];
+
+  paper.innerHTML=output;
+
+  paper.style.fontFamily=
+    fontOption?.dataset.fontFamily||
+    "'UD Digi Kyokasho N','Yu Gothic',Meiryo,sans-serif";
+
+  paper.style.fontWeight=
+    fontOption?.dataset.weight||
+    '400';
+
+  paper.style.padding=
+    `${$('#marginTop').value}mm ${$('#marginRight').value}mm ${$('#marginBottom').value}mm ${$('#marginLeft').value}mm`;
+
+  paper.style.setProperty(
+    '--body-size',
+    $('#fontSize').value+'pt'
+  );
+
+  paper.style.setProperty(
+    '--ruby-size',
+    $('#rubySize').value+'pt'
+  );
+
+  paper.style.setProperty(
+    '--accent',
+    $('#accentColor').value
+  );
+
+  paper.style.setProperty(
+    '--highlight',
+    $('#highlightColor').value
+  );
+
+  paper.style.transform=
+    `scale(${zoom})`;
+
+  const fontName=
+    fontOption?.dataset.fontName||
+    'UD Digi Kyokasho N';
+
+  const fontReady=
+    document.fonts
+      ? document.fonts.check(
+          `16px "${fontName}"`
+        )
+      : true;
+
+  $('#fontNotice').textContent=
+    fontReady
+      ? `プレビューに「${fontName}」を使用しています。`
+      : `「${fontName}」を読み込めません。端末へのインストールを確認してください。`;
+
+  const notice=$('#rubyNotice');
+  const print=$('#printPdf');
+  const advancedBtn=$('#enableAdvancedRuby');
+
+  if($('#rubyMode').value.startsWith('story')){
+    const unknown=[...unknownSet];
+
+    if(
+      tokenizerState==='loading'||
+      gradeDataState==='loading'
+    ){
+      notice.textContent=
+        '高精度ルビ解析を準備しています…（ほかの編集操作はそのまま使えます）';
+
+      print.disabled=true;
+      print.title='高精度ルビ解析の準備中です';
+
+      if(advancedBtn){
+        advancedBtn.disabled=true;
+      }
+    }else if(tokenizerState==='ready'){
+      notice.textContent=
+        unknown.length
+          ? `読みを確認してください：${unknown.slice(0,8).join('、')}${unknown.length>8?' ほか':''}。「漢字と絵」で読みを登録すると完成できます。`
+          : `小学${$('#grade').value}年生までに習う漢字を除き、それより後の漢字にルビを設定しました。`;
+
+      print.disabled=unknown.length>0;
+
+      print.title=
+        unknown.length
+          ? '未確認の読みを解消してください'
+          : '';
+
+      if(advancedBtn){
+        advancedBtn.disabled=false;
+        advancedBtn.textContent=
+          '高精度ルビ解析を再読み込み';
+      }
+    }else{
+      const reason=
+        tokenizerState==='error'
+          ? '高精度解析を読み込めなかったため'
+          : '外部解析をまだ読み込んでいないため';
+
+      notice.textContent=
+        `${reason}、内蔵辞書の簡易ルビで表示しています。${
+          unknown.length
+            ? ` 未確認：${unknown.slice(0,8).join('、')}${unknown.length>8?' ほか':''}`
+            : ''
+        }`;
+
+      print.disabled=unknown.length>0;
+
+      print.title=
+        unknown.length
+          ? '未確認の読みを解消してください'
+          : '';
+
+      if(advancedBtn){
+        advancedBtn.disabled=false;
+
+        advancedBtn.textContent=
+          tokenizerState==='error'
+            ? '高精度ルビ解析を再試行'
+            : '高精度ルビ解析を開始';
+      }
+    }
+  }else{
+    notice.textContent=
+      '現在は登録した漢字語だけを対象にしています。';
+
+    print.disabled=false;
+    print.title='';
+
+    if(advancedBtn){
+      advancedBtn.disabled=false;
+    }
+  }
+
+  $('#exportWord').disabled=
+    print.disabled;
+
+  $('#exportWord').title=
+    print.title;
+
+  $('#pageEstimate').textContent=
+    `約${
+      Math.max(
+        1,
+        Math.ceil(
+          paper.scrollHeight/
+          (297/25.4*96)
+        )
+      )
+    }ページ`;
 }
 
-$('#storyInput').oninput=()=>{renderList();update()};$('#titleInput').oninput=update;['fontFamily','fontSize','rubySize','grade','rubyMode','rubyOccurrence','accentColor','highlightColor','marginTop','marginBottom','marginLeft','marginRight'].forEach(id=>$(`#${id}`).oninput=update);
-$('#grade').addEventListener('change',()=>{$('#rubyMode').value='storyGrade';update()});
+$('#storyInput').oninput=()=>{
+  renderList();
+  update();
+};
+
+$('#titleInput').oninput=update;
+
+[
+  'fontFamily',
+  'fontSize',
+  'rubySize',
+  'grade',
+  'rubyMode',
+  'rubyOccurrence',
+  'accentColor',
+  'highlightColor',
+  'marginTop',
+  'marginBottom',
+  'marginLeft',
+  'marginRight'
+].forEach(id=>{
+  $(`#${id}`).oninput=update;
+});
+
+$('#grade').addEventListener(
+  'change',
+  ()=>{
+    $('#rubyMode').value='storyGrade';
+    update();
+  }
+);
+
 $('#applySettings').onclick=update;
+
 $('#addBulkKanji').onclick=()=>{
-  const words=$('#bulkKanji').value.split(/[\r\n、,，\t　 ]+/).map(x=>x.trim()).filter(Boolean);
-  if(!words.length){$('#bulkResult').textContent='漢字語を入力してください。';return;}
-  const existing=new Set(items.map(x=>x.word));let added=0,skipped=0;
+  const words=
+    $('#bulkKanji').value
+      .split(/[\r\n、,，\t　 ]+/)
+      .map(x=>x.trim())
+      .filter(Boolean);
+
+  if(!words.length){
+    $('#bulkResult').textContent=
+      '漢字語を入力してください。';
+
+    return;
+  }
+
+  const existing=
+    new Set(
+      items.map(x=>x.word)
+    );
+
+  let added=0;
+  let skipped=0;
+
   words.forEach(word=>{
-    if(existing.has(word)){skipped++;return;}
-    const known=storyRubyDictionary.find(x=>x.word===word);
-    items.push({id:crypto.randomUUID(),word,reading:known?.reading||'',grade:known?.grade||Number($('#grade').value)+1,image:null,index:items.length+1});
-    existing.add(word);added++;
+    if(existing.has(word)){
+      skipped++;
+      return;
+    }
+
+    const known=
+      storyRubyDictionary.find(
+        x=>x.word===word
+      );
+
+    items.push({
+      id:crypto.randomUUID(),
+      word,
+      reading:known?.reading||'',
+      grade:
+        known?.grade||
+        Number($('#grade').value)+1,
+      image:null,
+      index:items.length+1
+    });
+
+    existing.add(word);
+    added++;
   });
+
   $('#bulkKanji').value='';
-  $('#bulkResult').textContent=`${added}語を追加しました。${skipped?` 重複した${skipped}語は追加していません。`:''}`;
-  renderList();update();
+
+  $('#bulkResult').textContent=
+    `${added}語を追加しました。${
+      skipped
+        ? ` 重複した${skipped}語は追加していません。`
+        : ''
+    }`;
+
+  renderList();
+  update();
 };
-$('#addKanji').onclick=()=>{const word=$('#newKanji').value.trim(),reading=$('#newReading').value.trim();if(!word)return;items.push({id:crypto.randomUUID(),word,reading,grade:Number($('#grade').value)+1,image:null,index:items.length+1});$('#newKanji').value='';$('#newReading').value='';renderList();update()};
-$('#saveRubyOverride').onclick=()=>{const word=$('#rubyWord').value.trim(),reading=$('#rubyReading').value.trim();if(!word||!reading)return;const old=rubyOverrides.find(x=>x.word===word);if(old){old.reading=reading;old.noRuby=false}else rubyOverrides.push({id:crypto.randomUUID(),word,reading,noRuby:false});$('#rubyWord').value='';$('#rubyReading').value='';renderOverrideList();update()};
-$('#removeRubyForWord').onclick=()=>{const word=$('#rubyWord').value.trim();if(!word)return;const old=rubyOverrides.find(x=>x.word===word);if(old){old.noRuby=true;old.reading=''}else rubyOverrides.push({id:crypto.randomUUID(),word,reading:'',noRuby:true});$('#rubyWord').value='';$('#rubyReading').value='';renderOverrideList();update()};
-$('#zoomIn').onclick=()=>{zoom=Math.min(1,zoom+.08);$('#zoomLabel').textContent=Math.round(zoom*100)+'%';update()};$('#zoomOut').onclick=()=>{zoom=Math.max(.4,zoom-.08);$('#zoomLabel').textContent=Math.round(zoom*100)+'%';update()};
-$('#printPdf').onclick=()=>window.print();
+
+$('#addKanji').onclick=()=>{
+  const word=
+    $('#newKanji').value.trim();
+
+  const reading=
+    $('#newReading').value.trim();
+
+  if(!word)return;
+
+  items.push({
+    id:crypto.randomUUID(),
+    word,
+    reading,
+    grade:Number($('#grade').value)+1,
+    image:null,
+    index:items.length+1
+  });
+
+  $('#newKanji').value='';
+  $('#newReading').value='';
+
+  renderList();
+  update();
+};
+
+$('#saveRubyOverride').onclick=()=>{
+  const word=
+    $('#rubyWord').value.trim();
+
+  const reading=
+    $('#rubyReading').value.trim();
+
+  if(!word||!reading)return;
+
+  const old=
+    rubyOverrides.find(
+      x=>x.word===word
+    );
+
+  if(old){
+    old.reading=reading;
+    old.noRuby=false;
+  }else{
+    rubyOverrides.push({
+      id:crypto.randomUUID(),
+      word,
+      reading,
+      noRuby:false
+    });
+  }
+
+  $('#rubyWord').value='';
+  $('#rubyReading').value='';
+
+  renderOverrideList();
+  update();
+};
+
+$('#removeRubyForWord').onclick=()=>{
+  const word=
+    $('#rubyWord').value.trim();
+
+  if(!word)return;
+
+  const old=
+    rubyOverrides.find(
+      x=>x.word===word
+    );
+
+  if(old){
+    old.noRuby=true;
+    old.reading='';
+  }else{
+    rubyOverrides.push({
+      id:crypto.randomUUID(),
+      word,
+      reading:'',
+      noRuby:true
+    });
+  }
+
+  $('#rubyWord').value='';
+
+  renderOverrideList();
+  update();
+};
+
+$('#zoomIn').onclick=()=>{
+  zoom=Math.min(
+    1,
+    zoom+.08
+  );
+
+  $('#zoomLabel').textContent=
+    Math.round(zoom*100)+'%';
+
+  update();
+};
+
+$('#zoomOut').onclick=()=>{
+  zoom=Math.max(
+    .4,
+    zoom-.08
+  );
+
+  $('#zoomLabel').textContent=
+    Math.round(zoom*100)+'%';
+
+  update();
+};
+
+$('#printPdf').onclick=()=>{
+  window.print();
+};
+
 $('#exportWord').onclick=()=>{
-  const paper=$('#paperPreview'),option=$('#fontFamily').selectedOptions[0],fontName=option?.dataset.fontName||'UD Digi Kyokasho N';
-  const margins={top:$('#marginTop').value,bottom:$('#marginBottom').value,left:$('#marginLeft').value,right:$('#marginRight').value};
-  const html=`<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${esc($('#titleInput').value)}</title><style>@page Section1{size:595.3pt 841.9pt;margin:${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm}div.Section1{page:Section1}body{font-family:'${fontName}';font-size:${$('#fontSize').value}pt;line-height:1.9;color:#26343a}h1{text-align:center;color:#186b62;font-size:1.55em;margin-bottom:1.4em}p{margin:0 0 .72em}.target-word{font-weight:bold;color:${$('#accentColor').value};background:${$('#highlightColor').value}}rt{font-family:'${fontName}';font-size:${$('#rubySize').value}pt}.story-image{display:block;width:34mm;max-height:38mm;margin:3mm auto}.empty-image,.page-break-hint{display:none}</style></head><body><div class="Section1">${paper.innerHTML}</div></body></html>`;
-  const blob=new Blob(['\ufeff',html],{type:'application/msword'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=($('#titleInput').value||'漢字イラスト物語').replace(/[\\/:*?"<>|]/g,'_')+'.doc';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  const paper=$('#paperPreview');
+  const option=$('#fontFamily').selectedOptions[0];
+
+  const fontName=
+    option?.dataset.fontName||
+    'UD Digi Kyokasho N';
+
+  const margins={
+    top:$('#marginTop').value,
+    bottom:$('#marginBottom').value,
+    left:$('#marginLeft').value,
+    right:$('#marginRight').value
+  };
+
+  const html=
+`<!doctype html>
+<html
+  xmlns:o="urn:schemas-microsoft-com:office:office"
+  xmlns:w="urn:schemas-microsoft-com:office:word"
+  xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>${esc($('#titleInput').value)}</title>
+<style>
+@page Section1{
+  size:595.3pt 841.9pt;
+  margin:${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm
+}
+div.Section1{page:Section1}
+body{
+  font-family:'${fontName}';
+  font-size:${$('#fontSize').value}pt;
+  line-height:1.9;
+  color:#26343a
+}
+h1{
+  text-align:center;
+  color:#186b62;
+  font-size:1.55em;
+  margin-bottom:1.4em
+}
+p{margin:0 0 .72em}
+.target-word{
+  font-weight:bold;
+  color:${$('#accentColor').value};
+  background:${$('#highlightColor').value}
+}
+rt{
+  font-family:'${fontName}';
+  font-size:${$('#rubySize').value}pt
+}
+.story-image{
+  display:block;
+  width:34mm;
+  max-height:38mm;
+  margin:3mm auto
+}
+.empty-image,
+.page-break-hint{
+  display:none
+}
+</style>
+</head>
+<body>
+<div class="Section1">
+${paper.innerHTML}
+</div>
+</body>
+</html>`;
+
+  const blob=
+    new Blob(
+      ['\ufeff',html],
+      {type:'application/msword'}
+    );
+
+  const a=
+    document.createElement('a');
+
+  a.href=
+    URL.createObjectURL(blob);
+
+  a.download=
+    (
+      $('#titleInput').value||
+      '漢字イラスト物語'
+    )
+      .replace(
+        /[\\/:*?"<>|]/g,
+        '_'
+      )+'.doc';
+
+  a.click();
+
+  setTimeout(
+    ()=>URL.revokeObjectURL(a.href),
+    1000
+  );
 };
-$('#saveProject').onclick=()=>{const data={title:$('#titleInput').value,story:$('#storyInput').value,items,rubyOverrides,settings:Object.fromEntries(['fontFamily','fontSize','rubySize','grade','rubyMode','rubyOccurrence','accentColor','highlightColor','marginTop','marginBottom','marginLeft','marginRight'].map(k=>[k,$(`#${k}`).value]))};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='漢字イラスト物語_作業データ.json';a.click();URL.revokeObjectURL(a.href)};
-$('#loadProject').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);$('#titleInput').value=d.title||'';$('#storyInput').value=d.story||'';items=d.items||[];rubyOverrides=d.rubyOverrides||[];Object.entries(d.settings||{}).forEach(([k,v])=>{const el=$(`#${k}`);if(el)el.value=v});renderList();renderOverrideList();update()}catch{alert('設定ファイルを読み込めませんでした。')}};r.readAsText(f)};
+
+$('#saveProject').onclick=()=>{
+  const data={
+    title:$('#titleInput').value,
+    story:$('#storyInput').value,
+    items,
+    rubyOverrides,
+    settings:Object.fromEntries(
+      [
+        'fontFamily',
+        'fontSize',
+        'rubySize',
+        'grade',
+        'rubyMode',
+        'rubyOccurrence',
+        'accentColor',
+        'highlightColor',
+        'marginTop',
+        'marginBottom',
+        'marginLeft',
+        'marginRight'
+      ].map(
+        k=>[
+          k,
+          $(`#${k}`).value
+        ]
+      )
+    )
+  };
+
+  const a=
+    document.createElement('a');
+
+  a.href=
+    URL.createObjectURL(
+      new Blob(
+        [
+          JSON.stringify(
+            data,
+            null,
+            2
+          )
+        ],
+        {type:'application/json'}
+      )
+    );
+
+  a.download=
+    '漢字イラスト物語_作業データ.json';
+
+  a.click();
+
+  URL.revokeObjectURL(a.href);
+};
+
+$('#loadProject').onchange=e=>{
+  const f=e.target.files[0];
+
+  if(!f)return;
+
+  const r=
+    new FileReader();
+
+  r.onload=()=>{
+    try{
+      const d=
+        JSON.parse(r.result);
+
+      $('#titleInput').value=
+        d.title||'';
+
+      $('#storyInput').value=
+        d.story||'';
+
+      items=
+        d.items||[];
+
+      rubyOverrides=
+        d.rubyOverrides||[];
+
+      Object.entries(
+        d.settings||{}
+      ).forEach(
+        ([k,v])=>{
+          const el=$(`#${k}`);
+          if(el)el.value=v;
+        }
+      );
+
+      renderList();
+      renderOverrideList();
+      update();
+    }catch{
+      alert(
+        '設定ファイルを読み込めませんでした。'
+      );
+    }
+  };
+
+  r.readAsText(f);
+};
 
 function renderOverrideList(){
-  $('#rubyOverrideList').innerHTML=rubyOverrides.map(x=>`<div class="override-chip ${x.noRuby?'no-ruby':''}" data-id="${x.id}"><strong>${esc(x.word)}</strong><span>${x.noRuby?'ルビなし':esc(x.reading)}</span><button aria-label="${esc(x.word)}の設定を解除">×</button></div>`).join('');
-  $$('.override-chip button').forEach(button=>button.onclick=()=>{rubyOverrides=rubyOverrides.filter(x=>x.id!==button.parentElement.dataset.id);renderOverrideList();update()});
+  $('#rubyOverrideList').innerHTML=
+    rubyOverrides.map(
+      x=>`
+        <div
+          class="override-chip ${x.noRuby?'no-ruby':''}"
+          data-id="${x.id}"
+        >
+          <strong>${esc(x.word)}</strong>
+          <span>
+            ${
+              x.noRuby
+                ? 'ルビなし'
+                : esc(x.reading)
+            }
+          </span>
+          <button
+            aria-label="${esc(x.word)}の設定を解除"
+          >×</button>
+        </div>
+      `
+    ).join('');
+
+  $$('.override-chip button').forEach(
+    button=>{
+      button.onclick=()=>{
+        rubyOverrides=
+          rubyOverrides.filter(
+            x=>
+              x.id!==
+              button.parentElement.dataset.id
+          );
+
+        renderOverrideList();
+        update();
+      };
+    }
+  );
 }
 
-function initTokenizer(){
-  if(!window.kuromoji){tokenizerState='error';update();return;}
-  window.kuromoji.builder({dicPath:'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/'}).build((err,built)=>{
-    if(err){tokenizerState='error'}else{tokenizer=built;tokenizerState='ready'}update();
-  });
+function loadScriptOnce(
+  src,
+  timeoutMs=12000
+){
+  return new Promise(
+    (resolve,reject)=>{
+      if(window.kuromoji){
+        resolve();
+        return;
+      }
+
+      const existing=
+        document.querySelector(
+          `script[data-dynamic-src="${src}"]`
+        );
+
+      if(existing){
+        existing.addEventListener(
+          'load',
+          ()=>resolve(),
+          {once:true}
+        );
+
+        existing.addEventListener(
+          'error',
+          ()=>reject(
+            new Error('script load')
+          ),
+          {once:true}
+        );
+
+        return;
+      }
+
+      const script=
+        document.createElement('script');
+
+      script.src=src;
+      script.async=true;
+      script.dataset.dynamicSrc=src;
+
+      const timer=
+        setTimeout(
+          ()=>{
+            script.remove();
+
+            reject(
+              new Error('script timeout')
+            );
+          },
+          timeoutMs
+        );
+
+      script.onload=()=>{
+        clearTimeout(timer);
+        resolve();
+      };
+
+      script.onerror=()=>{
+        clearTimeout(timer);
+        script.remove();
+
+        reject(
+          new Error('script load')
+        );
+      };
+
+      document.head.appendChild(script);
+    }
+  );
 }
 
-async function loadGradeData(){
+async function initTokenizer(){
+  tokenizerState='loading';
+  update();
+
   try{
-    const results=await Promise.all([1,2,3,4,5,6].map(async grade=>({grade,list:await fetch(`https://kanjiapi.dev/v1/kanji/grade-${grade}`).then(r=>{if(!r.ok)throw new Error('grade data');return r.json()})})));
-    results.forEach(({grade,list})=>list.forEach(ch=>kanjiGrades.set(ch,grade)));gradeDataState='ready';
-  }catch{gradeDataState='error'}
+    await loadScriptOnce(
+      'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js',
+      12000
+    );
+
+    if(!window.kuromoji){
+      throw new Error(
+        'kuromoji unavailable'
+      );
+    }
+
+    const built=
+      await new Promise(
+        (resolve,reject)=>{
+          let done=false;
+
+          const timer=
+            setTimeout(
+              ()=>{
+                if(!done){
+                  done=true;
+
+                  reject(
+                    new Error(
+                      'dictionary timeout'
+                    )
+                  );
+                }
+              },
+              15000
+            );
+
+          window.kuromoji
+            .builder({
+              dicPath:'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/'
+            })
+            .build(
+              (err,result)=>{
+                if(done)return;
+
+                done=true;
+                clearTimeout(timer);
+
+                if(err){
+                  reject(err);
+                }else{
+                  resolve(result);
+                }
+              }
+            );
+        }
+      );
+
+    tokenizer=built;
+    tokenizerState='ready';
+  }catch(err){
+    console.warn(
+      '高精度ルビ解析を読み込めませんでした。簡易ルビを継続します。',
+      err
+    );
+
+    tokenizer=null;
+    tokenizerState='error';
+  }
+
   update();
 }
 
-renderList();renderOverrideList();update();initTokenizer();loadGradeData();
+async function fetchJsonWithTimeout(
+  url,
+  timeoutMs=8000
+){
+  const controller=
+    new AbortController();
 
+  const timer=
+    setTimeout(
+      ()=>controller.abort(),
+      timeoutMs
+    );
+
+  try{
+    const r=
+      await fetch(
+        url,
+        {signal:controller.signal}
+      );
+
+    if(!r.ok){
+      throw new Error(
+        'grade data'
+      );
+    }
+
+    return await r.json();
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+async function loadGradeData(){
+  gradeDataState='loading';
+  update();
+
+  try{
+    const results=
+      await Promise.all(
+        [1,2,3,4,5,6].map(
+          async grade=>({
+            grade,
+            list:await fetchJsonWithTimeout(
+              `https://kanjiapi.dev/v1/kanji/grade-${grade}`,
+              8000
+            )
+          })
+        )
+      );
+
+    results.forEach(
+      ({grade,list})=>
+        list.forEach(
+          ch=>
+            kanjiGrades.set(
+              ch,
+              grade
+            )
+        )
+    );
+
+    gradeDataState='ready';
+  }catch(err){
+    console.warn(
+      '学年別漢字データを読み込めませんでした。内蔵データを使います。',
+      err
+    );
+
+    gradeDataState='error';
+  }
+
+  update();
+}
+
+async function startAdvancedRuby(){
+  if(
+    advancedRubyStarted&&
+    (
+      tokenizerState==='loading'||
+      gradeDataState==='loading'
+    )
+  ){
+    return;
+  }
+
+  advancedRubyStarted=true;
+
+  tokenizer=null;
+  kanjiGrades.clear();
+
+  tokenizerState='loading';
+  gradeDataState='loading';
+
+  update();
+
+  await Promise.allSettled([
+    initTokenizer(),
+    loadGradeData()
+  ]);
+}
+
+$('#enableAdvancedRuby').onclick=
+  startAdvancedRuby;
+
+renderList();
+renderOverrideList();
+update();
 </script>
 </body>
 </html>
