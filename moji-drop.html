@@ -32,9 +32,9 @@ body{background:radial-gradient(circle at 5% 15%,#f8e8c766,transparent 35%),radi
 @media(max-width:650px){.app{padding:18px 12px}.header{padding:0 6px 18px}h1{font-size:23px;white-space:nowrap}.header-right .text-button{font-size:11px;padding:8px 9px}.workspace{gap:18px}.sidebar{padding:22px;border-radius:20px}.game{padding:15px 10px;border-radius:20px}.app:not([data-stage=setup]) .sidebar{padding:14px 16px}.app:not([data-stage=setup]) .listen-again{font-size:13px;margin:0}.control{min-height:46px}.control.pause{min-width:116px;font-size:13px}.control.arrow{width:43px;font-size:21px}.control.fast{font-size:12px}.app:not([data-stage=setup]) .bgm-status{margin-top:5px;font-size:11px}.app:not([data-stage=setup]) .bgm-row{margin-top:10px}.footer{padding:17px 6px 0;font-size:10px}}
 .clear-row{animation:clear-line .55s ease-out forwards}@keyframes clear-line{0%,35%{opacity:1;filter:brightness(1.4)}100%{opacity:0;transform:scaleY(.1)}}@media(prefers-reduced-motion:reduce){.clear-row{animation:none}}@media(max-width:650px){.header{flex-wrap:wrap;gap:12px}.header-right{flex-wrap:wrap}.header-right .text-button{font-size:12px}}
 .brand-title{display:flex;align-items:center;gap:10px}.brand-icon{display:block;flex:none;border-radius:8px}.bgm-status:empty{display:none}@media(max-width:650px){.brand-icon{width:29px;height:29px}.brand-title{gap:7px}}
-.board{touch-action:manipulation;-webkit-user-select:none;user-select:none}.control.fast{min-width:112px}
+.board{touch-action:manipulation;-webkit-user-select:none;user-select:none}.control{touch-action:manipulation}.control.fast{min-width:112px;touch-action:none}
 
-.board{--columns:10;--cell-width:10%;aspect-ratio:var(--columns) / 12;background-size:var(--cell-width) calc(100% / 12);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.board{--columns:10;--cell-width:10%;aspect-ratio:var(--columns) / 12;background-size:var(--cell-width) calc(100% / 12);touch-action:pan-y pinch-zoom;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .piece,.slot{width:var(--cell-width)}
 .board{container-type:inline-size}.piece>span{font-size:clamp(14px,calc(66cqw / var(--columns)),27px)}
 .question-card{border:1px solid var(--line);border-radius:16px;padding:16px;margin:16px 0;background:#fffdf7;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}
@@ -267,7 +267,7 @@ function updateSource(){cancelSpeech();$('presetFields').hidden=$('source').valu
 $('source').onchange=updateSource;
 document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>{game.speed=Number(b.dataset.speed);game.log('速度変更',String(game.speed));document.querySelectorAll('[data-speed]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
 let boardTap=null;
-for(const event of ['gesturestart','gesturechange','gestureend'])$('board').addEventListener(event,e=>e.preventDefault(),{passive:false});
+// Vertical swipes scroll the page; pointercancel discards the pending game tap.
 $('board').onpointerdown=e=>{
  if(e.pointerType!=='touch'&&e.pointerType!=='pen')return;
  if(!e.isPrimary||game.phase!=='playing'){boardTap=null;return;}
