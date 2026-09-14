@@ -41,6 +41,7 @@ body{background:radial-gradient(circle at 5% 15%,#f8e8c766,transparent 35%),radi
 .question-card legend{font-weight:700;color:#427c68;padding:0 8px}.question-card label{display:block;min-width:0}.question-card input,.question-card select{font-size:16px;box-sizing:border-box;width:100%;margin-top:6px}.question-card .secondary{align-self:end}.editor-dialog #addQuestion{width:100%;margin:4px 0 16px}
 @media(max-width:650px){input,textarea,select,.select{font-size:16px!important}.question-card{grid-template-columns:1fr}.question-card .secondary{width:100%}.game{padding-left:6px;padding-right:6px}.board-shell,.game-top,.controls{max-width:450px}}
 @media(pointer:coarse),(max-width:1024px){input,textarea,select,.select{font-size:16px!important}}
+.preset-groups{border:1px solid var(--line);border-radius:14px;padding:12px;margin:0}.preset-groups legend{font-size:13px;font-weight:600;padding:0 5px}.preset-choice{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;font-size:14px}.preset-choice input{width:21px;height:21px;flex:none;accent-color:#427c68}.preset-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.preset-actions button{font-size:13px;padding:9px 12px}#presetCount{font-weight:700;color:#427c68;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -52,7 +53,7 @@ body{background:radial-gradient(circle at 5% 15%,#f8e8c766,transparent 35%),radi
     <p class="eyebrow">あそぶ じゅんび</p><h2 class="section-title">ことばを ならべよう！</h2>
     <label class="label" for="source">あそぶ問題</label><select class="select source-select" id="source"><option value="registered">登録した問題</option><option value="preset">用意された問題</option></select>
     <p id="libraryNotice" class="library-notice"></p>
-    <div id="presetFields" hidden><p class="preset-note">12問のことばを音声で出題します。完成すると、その行が消えます。</p></div>
+    <div id="presetFields" hidden><fieldset class="preset-groups"><legend>練習するグループ（複数選択できます）</legend><label class="preset-choice"><input type="checkbox" id="preset-basic" checked><span>基本の音（23問）</span></label><label class="preset-choice"><input type="checkbox" id="preset-long"><span>長音（11問）</span></label><label class="preset-choice"><input type="checkbox" id="preset-sokuon"><span>促音（14問）</span></label><label class="preset-choice"><input type="checkbox" id="preset-youon"><span>拗音（14問）</span></label><label class="preset-choice"><input type="checkbox" id="preset-youlong"><span>拗長音（9問）</span></label><label class="preset-choice"><input type="checkbox" id="preset-yousoku"><span>拗促音（9問）</span></label></fieldset><div class="preset-actions"><button type="button" class="secondary" id="selectAllPresets">全部選ぶ</button><button type="button" class="secondary" id="clearPresets">選択を解除</button></div><p class="preset-note" id="presetCount" aria-live="polite"></p><p class="note">選んだ問題を、毎回ランダムな順番で出題します。</p></div>
     <div class="field"><label for="firstLetter">最初の1文字</label><select class="select" id="firstLetter"><option value="show">置いておく（ヒントあり）</option><option value="hide">置かない（全部自分で）</option></select></div>
     <div class="field"><label for="letterCase">英字の表示</label><select class="select" id="letterCase"><option value="original">登録した通り</option><option value="upper">すべて大文字</option><option value="lower">すべて小文字</option></select><p class="note">英字の答えに適用します。読み上げは変わりません。</p></div>
     <button class="primary" id="start"><span>音声を聞いて はじめる</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button>
@@ -89,7 +90,7 @@ if(typeof location!=='undefined'&&/^https?:$/.test(location.protocol)){
 }
 
 const split=s=>Array.from(s.normalize('NFC'));
-const presets=['さかな','しろくま','かえる','たけのこ','ホッチキス','スキップ','せんせい','おとうさん','にんじゃ','しゅくだい','ちょきん','きょじん'];
+const presetGroups=[{"id":"basic","label":"基本の音","words":["すいか","さかな","しろくま","かえる","たけのこ","しまうま","こども","つくえ","えほん","さる","にわとり","てぶくろ","みず","いぬ","ひんと","にんじん","だいこん","しんぶん","せんざい","ずかん","うどん","りんご","みかん"]},{"id":"long","label":"長音","words":["おかあさん","おとうさん","さんすう","せんせい","そうじき","ゆうやけ","ろうそく","くうき","こおり","おねえさん","れいぞうこ"]},{"id":"sokuon","label":"促音","words":["きって","コロッケ","スキップ","ロボット","えにっき","もっきん","かっぱ","せっけん","しっぽ","ポケット","しっぷ","コップ","はっけん","きっちん"]},{"id":"youon","label":"拗音","words":["キャベツ","しゃしん","パジャマ","せんしゃ","かいしゃ","ちゃわん","おちゃ","じゃぐち","じゃんけん","にんじゃ","しゅくだい","ちょきん","きょじん","きかんしゃ"]},{"id":"youlong","label":"拗長音","words":["しょうゆ","きょうしつ","はくちょう","ぎゅうにゅう","きゅうしょく","ちゅうしゃ","べんきょう","うちゅう","きゅうり"]},{"id":"yousoku","label":"拗促音","words":["リュック","ケチャップ","キャップ","しゃっくり","ちょっかい","しょっぱい","ちょっかく","しゅっぱつ","しょっき"]}];
 function validate(word,reading=''){
  if(!word.trim())return 'ことばを1〜15文字で入力してください。';
  if(/[\s\p{Cc}]/u.test(word))return '空白や改行を入れずに入力してください。';
@@ -221,8 +222,27 @@ function speak(text,purpose='game',language='ja'){
  run(0);
 }
 function speakCurrent(){speak(game.current.speech,'game',game.current.language);}
-function selectedWords(){return $('source').value==='registered'?library.map(w=>gameQuestion(w,$('letterCase').value)):presets.map(word=>gameQuestion({word,reading:''}));}
-function start(){const words=selectedWords();let error=!words.length?'「問題を編集」から問題を登録してください。':words.map(w=>validate(w.word,w.reading)).find(Boolean);$('inputError').textContent=error||'';if(error)return;clearSound.prepare();clearSound.count=0;cancelSpeech();replay=false;game.start(words,'random',$('firstLetter').value!=='hide');lastPhase='';render();speakCurrent();}
+function chosenPresetWords(){return [...new Set(presetGroups.filter(g=>$('preset-'+g.id).checked).flatMap(g=>g.words))];}
+function selectedWords(){
+ if($('source').value==='registered')return library.map(w=>gameQuestion(w,$('letterCase').value));
+ const words=chosenPresetWords().map(word=>gameQuestion({word,reading:''}));
+ for(let i=words.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[words[i],words[j]]=[words[j],words[i]];}return words;
+}
+const presetSelectionKey='moji-drop-preset-groups-v1';
+function updatePresetSelection(save=false){
+ const count=chosenPresetWords().length;$('presetCount').textContent=`選択中：${count}問`;
+ const empty=$('source').value==='preset'&&!count;$('start').disabled=empty;
+ if(empty)$('inputError').textContent='グループを選んでください。';else if($('inputError').textContent==='グループを選んでください。')$('inputError').textContent='';
+ if(save){try{localStorage.setItem(presetSelectionKey,JSON.stringify(presetGroups.filter(g=>$('preset-'+g.id).checked).map(g=>g.id)));}catch{$('presetCount').textContent+= '（選択内容を保存できませんでした）';}}
+}
+function loadPresetSelection(){
+ let ids=['basic'];try{const saved=localStorage.getItem(presetSelectionKey);if(saved!==null){const parsed=JSON.parse(saved);if(Array.isArray(parsed)&&parsed.every(id=>presetGroups.some(g=>g.id===id)))ids=parsed;}}catch{}
+ for(const g of presetGroups){$('preset-'+g.id).checked=ids.includes(g.id);$('preset-'+g.id).onchange=()=>updatePresetSelection(true);}
+ $('selectAllPresets').onclick=()=>{presetGroups.forEach(g=>$('preset-'+g.id).checked=true);updatePresetSelection(true);};
+ $('clearPresets').onclick=()=>{presetGroups.forEach(g=>$('preset-'+g.id).checked=false);updatePresetSelection(true);};
+}
+
+function start(){const words=selectedWords();let error=!words.length?($('source').value==='preset'?'グループを選んでください。':'「問題を編集」から問題を登録してください。'):words.map(w=>validate(w.word,w.reading)).find(Boolean);$('inputError').textContent=error||'';if(error)return;clearSound.prepare();clearSound.count=0;cancelSpeech();replay=false;game.start(words,'random',$('firstLetter').value!=='hide');lastPhase='';render();speakCurrent();}
 function togglePause(){
  if(game.phase==='paused'){const wasListening=!!utterance||!!speechWait;cancelSpeech();game.resume();if(wasListening)game.phase='reading';if(game.phase==='reading')speakCurrent();}
  else{game.pause();if(game.phase==='paused')cancelSpeech();}render();
@@ -270,7 +290,7 @@ function render(){
 function frame(now){let dt=frameTime?(now-frameTime)/1000:0;frameTime=now;if(dt>.75&&['playing','delay'].includes(game.phase)){game.pause();cancelSpeech();}
  let old=game.phase;game.tick(game.phase==='paused'?dt:Math.min(dt,.1));if(old!=='reading'&&game.phase==='reading'){replay=false;speakCurrent();}render();requestAnimationFrame(frame);}
 $('home').onclick=back;$('start').onclick=start;$('pause').onclick=togglePause;$('back').onclick=back;$('listenAgain').onclick=replayWord;
-function updateSource(){cancelSpeech();$('presetFields').hidden=$('source').value!=='preset';$('libraryNotice').hidden=$('source').value!=='registered';$('libraryNotice').textContent=library.length?`${library.length}問を登録済み。上から順に出題します。完成した行は消え、間違えた行は積み上がります。12行でゲームオーバーです。`:'まだ問題がありません。右上の「問題を編集」から登録してください。';$('inputError').textContent=storageNotice;}
+function updateSource(){cancelSpeech();$('presetFields').hidden=$('source').value!=='preset';$('libraryNotice').hidden=$('source').value!=='registered';$('libraryNotice').textContent=library.length?`${library.length}問を登録済み。上から順に出題します。完成した行は消え、間違えた行は積み上がります。12行でゲームオーバーです。`:'まだ問題がありません。右上の「問題を編集」から登録してください。';$('inputError').textContent=storageNotice;updatePresetSelection();}
 $('source').onchange=updateSource;
 document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>{game.speed=Number(b.dataset.speed);game.log('速度変更',String(game.speed));document.querySelectorAll('[data-speed]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
 let boardTap=null;
@@ -327,7 +347,7 @@ $('saveQuestions').onclick=()=>{const data=checkDraft();if(!data)return;library=
 $('effectToggle').onclick=()=>{clearSound.enabled=!clearSound.enabled;if(clearSound.enabled)clearSound.prepare();else clearSound.stop();$('effectToggle').setAttribute('aria-pressed',String(clearSound.enabled));$('effectToggle').textContent=clearSound.enabled?'オン':'オフ';};
 $('bgmToggle').onclick=()=>{music.foreground=true;if(music.enabled){music.enabled=false;music.stop();music.button();}else music.enable();};
 $('export').onclick=()=>{const q=x=>'"'+String(x??'').replace(/^[=+@-]/,"'$&").replaceAll('"','""')+'"';let rows=[['日時','動作','問題番号','答え','読み上げ','読み上げ言語','速度','プレイ時間秒','回答時間秒','停止時間秒','詳細'],...game.events.map(e=>[e.date,e.event,e.number,e.word,e.reading,e.language,e.speed,e.time.toFixed(2),e.questionTime.toFixed(2),e.pauseTime.toFixed(2),e.detail])];let blob=new Blob(['\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});let url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='もじドロップ_'+new Date().toISOString().replace(/[:.]/g,'-')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-if(!library.length)$('source').value='preset';updateSource();render();requestAnimationFrame(frame);
+loadPresetSelection();if(!library.length)$('source').value='preset';updateSource();render();requestAnimationFrame(frame);
 </script>
 </body>
 </html>
