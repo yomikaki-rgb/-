@@ -964,6 +964,30 @@ canvas#shooterCanvas{
   box-shadow:0 0 0 3px rgba(17,24,39,.12), 0 8px 18px rgba(0,0,0,.16);
 }
 
+
+#gameRewardPanel{display:flex;flex-direction:column;gap:5px;background:#fff7d6;border:2px solid #edc45c;border-radius:14px;padding:10px 14px;max-width:340px;font-size:14px}
+#gameRewardPanel progress{width:100%;height:14px;accent-color:#d98a16}
+#gameRewardPanel button{font-size:14px;padding:8px}
+#gameSaveNotice:empty{display:none}
+#craneDialog{border:0;border-radius:22px;padding:22px;width:min(540px,calc(100vw - 36px));max-height:calc(100dvh - 24px);overflow:auto;box-sizing:border-box;color:#25364b;background:#fffdf5;box-shadow:0 22px 70px #12233a80}
+#craneDialog::backdrop{background:#142a47b8}
+#craneDialog h2{margin:0 0 10px;font-size:24px}
+#craneAttempts{display:inline-block;padding:5px 13px;margin-bottom:10px;border-radius:30px;background:#ffdb59;font-weight:800}
+#craneCollection{display:inline-block;margin-left:8px;font-weight:800;color:#9a4c0b}
+#craneStage{height:240px;position:relative;overflow:hidden;border:7px solid #e6a834;border-radius:18px;background:linear-gradient(145deg,#beecff,#e9faff 74%,#ffdc90 74%);box-shadow:inset 0 0 25px #599bc344,0 6px 0 #b97024}
+#craneStage:after{content:'▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰ ▰';position:absolute;bottom:0;left:0;right:0;text-align:center;color:#d58929;font-size:15px;letter-spacing:4px}
+.craneLights{position:absolute;top:8px;width:100%;text-align:center;letter-spacing:12px;opacity:.8;animation:craneTwinkle 1.1s alternate infinite}
+@keyframes craneTwinkle{to{opacity:.3}}
+#craneClaw{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:36px;line-height:1;transition:top .6s ease;z-index:2;text-align:center;filter:drop-shadow(0 3px 2px #28577d88)}
+#craneClaw:before{content:'';display:block;height:45px;width:3px;background:#657c95;margin:auto}
+#cranePrize{position:absolute;bottom:12px;left:70%;transform:translateX(-50%);font-size:52px;transition:bottom .6s ease,opacity .6s;filter:drop-shadow(0 5px 2px #a66b2970)}
+#craneSparkles{position:absolute;left:0;right:0;top:48%;text-align:center;font-size:25px;z-index:3;pointer-events:none;animation:craneTwinkle .4s alternate infinite}
+#craneStatus{min-height:3em;font-weight:bold;line-height:1.6}
+.craneActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.craneActions button{min-height:48px;min-width:0;flex:1;padding:10px 6px;font-size:16px}
+#craneExit{display:block;margin:14px auto 0}
+@media(max-width:420px){#craneStage{height:180px}#craneDialog{padding:16px}#craneDialog h2{font-size:20px}}
+@media(max-height:600px){#craneStage{height:170px}#craneDialog{padding:12px}#craneStatus{margin:6px 0}}
 </style>
 
 </style>
@@ -981,6 +1005,13 @@ canvas#shooterCanvas{
       <button class="ghost" id="openLogBtn" type="button">きろくを見る</button>
       <button class="ghost" id="manageBtn" type="button">問題管理</button>
       <div class="rewardPtsBadge" id="rewardPtsBadge">しかけ得点：0</div>
+      <section id="gameRewardPanel" aria-label="ゲームポイント">
+        <strong id="gamePointText"></strong>
+        <progress id="gameProgress" max="300" value="0" aria-label="次のクレーンゲームまでの進捗"></progress>
+        <span id="gameRewardHint" aria-live="polite"></span>
+        <button id="craneOpen" type="button" disabled>クレーンゲームであそぶ</button>
+        <small id="gameSaveNotice" role="status"></small>
+      </section>
     </div>
 
     <div class="badge" id="progressBadge">もんだい 1 / 1</div>
@@ -1895,7 +1926,7 @@ function applyModeUI(){
   const topLeftToolsEl = document.querySelector(".topLeftTools");
   if(topLeftToolsEl) topLeftToolsEl.style.display = isFlash ? "none" : "";
 
-  if(scoreEl) scoreEl.style.display = "none";
+  if(scoreEl) scoreEl.style.display = isFlash ? "none" : "";
 
   // hide reward area in flash mode
   const rewardEl = document.getElementById("rewardArea") || document.querySelector(".rewardWrap") || document.querySelector(".reward");
@@ -2022,7 +2053,7 @@ if(typeof flashBar !== "undefined" && flashBar){
 function start(){
   order = shuffle([...Array(ITEMS.length).keys()]);
   idx = 0;
-  score = 0;
+  loadStudyTotals();
 
   rewardCounter = 0;
   rewardReady = false;
@@ -2031,7 +2062,6 @@ function start(){
 
   kusudamaShown = false;
 
-  rewardPoints = 0;
   updateRewardPointsUI();
 
   if(studyMode !== "flash") updateBadges();
@@ -2088,7 +2118,7 @@ function updateBadges(){
     progressBadge.textContent = `もんだい ${cur} / ${total}`;
   }
   if(scoreBadge){
-    scoreBadge.textContent = `せいかい ${score}`;
+    scoreBadge.textContent = `せいかい累計 ${score}`;
   }
 }
 function renderAnswer(){
@@ -2118,11 +2148,12 @@ const kusudamaPlayedAt = new Set(); // 30,60,90…を1回ずつ
 function showKusudamaIfNeeded(){
   if(!Number.isFinite(rewardPoints)) return;
 
-  const milestones = [30, 60, 90, 120, 150];
+  const milestones = Array.from({length: Math.floor(rewardPoints / 30)}, (_, i) => (i + 1) * 30);
 
   for(const m of milestones){
     if(rewardPoints >= m && !kusudamaPlayedAt.has(m)){
       kusudamaPlayedAt.add(m);
+      saveStudyTotals();
 
       // ① まずくす玉
       if(kusudamaOverlayEl){
@@ -2159,6 +2190,7 @@ function addRewardPointsFromText(t){
   const v = parseInt(m[m.length - 1], 10);
   if(!Number.isFinite(v)) return;
   rewardPoints += v;
+  saveStudyTotals();
   updateRewardPointsUI();
 
   showKusudamaIfNeeded();
@@ -2180,6 +2212,7 @@ function check(){
 
   if(ok){
     score += (revealedAnswer ? 0 : 1);
+    saveStudyTotals();
     answeredCorrectThisQ = true;
 
     showKusudamaIfNeeded();
@@ -2243,18 +2276,18 @@ function next(){
     updateRewardUI();
   }
 
-  if(idx < ITEMS.length-1){
+  if(idx < order.length-1){
     idx++;
     loadQuestion();
   }else{
-    promptEl.textContent = "おわり";
-    msgEl.textContent = `おつかれさま！ せいかいは ${score} こ`;
-    msgEl.className = "msg ok";
-    hintLineEl.textContent = "";
-    hintLineEl.className = "hintLine";
-    answerView.textContent = "";
-    nextBtn.disabled = true;
-    checkBtn.disabled = true;
+    // A finished deck starts a fresh round; keep all earned totals.
+    const lastItem = order[idx];
+    shuffle(order);
+    if(order.length > 1 && order[0] === lastItem) [order[0],order[1]] = [order[1],order[0]];
+    idx = 0;
+    loadQuestion();
+    msgEl.textContent = 'もう一周！ 点数はそのままつづくよ';
+    msgEl.className = 'msg ok';
   }
 }
 
@@ -3109,6 +3142,7 @@ function closeShooterOverlay(){
   stopShooterGame();
   const els = getShooterEls();
   if(els.overlay) els.overlay.style.display = "none";
+  if(typeof openPendingCrane === "function") openPendingCrane();
 }
 
 /* チップ更新は getShooterEls() を使うようにする */
@@ -3155,6 +3189,7 @@ function shooterLoop(ts){
         e.hp = 0;
         b.y = -9999;
         shooterCoins += 1;
+        addGamePoint();
       }
     }
   }
@@ -3177,7 +3212,7 @@ function shooterLoop(ts){
 function showShooterResult(){
   const els = getShooterEls();
   if(!els.resultEl || !els.resultText) return;
-  els.resultText.textContent = `コイン ${shooterCoins} まい ゲット！`;
+  els.resultText.textContent = `コイン ${shooterCoins} まい ゲット！ 累積ゲームポイント：${gameReward.total}点`;
   els.resultEl.style.display = "flex";
   els.resultEl.setAttribute("aria-hidden", "false");
 }
@@ -3247,6 +3282,8 @@ function hitCircle(a, b){
 
 /* 初期化 */
 function initShooterGame(){
+  const result = document.getElementById("shooterResult");
+  if(result){ result.style.display = "none"; result.setAttribute("aria-hidden", "true"); }
   shooterRunning = false;
   shooterCoins = 0;
   shooterLane = 1;
@@ -3816,6 +3853,24 @@ if(manageCsvExportBtn){
 /* 初回：保存があれば読み込む（デフォルトを上書き） */
 loadWordsFromLocalStorage();
 
+/* Cumulative study totals live beside the existing browser records. */
+const LS_STUDY_TOTALS = 'kanji_study_totals_v1';
+function loadStudyTotals(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(LS_STUDY_TOTALS) || '{}');
+    score = Number.isSafeInteger(saved.score) && saved.score >= 0 ? saved.score : 0;
+    rewardPoints = Number.isSafeInteger(saved.rewardPoints) && saved.rewardPoints >= 0 ? saved.rewardPoints : 0;
+    kusudamaPlayedAt.clear();
+    if(Array.isArray(saved.milestones)){
+      for(const m of saved.milestones){
+        if(Number.isSafeInteger(m) && m > 0 && m % 30 === 0) kusudamaPlayedAt.add(m);
+      }
+    }
+  }catch(e){ score=0;rewardPoints=0;kusudamaPlayedAt.clear(); }
+}
+function saveStudyTotals(){
+  try{localStorage.setItem(LS_STUDY_TOTALS, JSON.stringify({score,rewardPoints,milestones:[...kusudamaPlayedAt]}));}catch(e){}
+}
 start();
 </script>
 <!-- ★追加：30の倍数で起動するシューティング（オーバーレイ）
@@ -3854,6 +3909,191 @@ start();
     </div>
   </div>
 </div>
+<dialog id="craneDialog" aria-labelledby="craneTitle">
+  <h2 id="craneTitle">🎁 300点ごとの クレーンゲーム</h2>
+  <p>うごく景品をねらおう！ 1ゲームで10回チャレンジできるよ。</p>
+  <div id="craneAttempts" aria-live="polite">のこり 10回</div>
+  <div id="craneCollection" aria-live="polite">とれた景品：0個</div>
+  <div id="craneStage" aria-label="クレーンと景品">
+    <div class="craneLights" aria-hidden="true">✨ ⭐ ✨ ⭐ ✨</div>
+    <div id="craneClaw" aria-hidden="true">🪝</div>
+    <div id="cranePrize" aria-hidden="true">🧸</div>
+    <div id="craneSparkles" aria-hidden="true"></div>
+  </div>
+  <p id="craneStatus" role="status" aria-live="polite"></p>
+  <div class="craneActions">
+    <button id="craneLeft" type="button">← ひだり</button>
+    <button id="craneGrab" type="button">つかむ</button>
+    <button id="craneRight" type="button">みぎ →</button>
+  </div>
+  <button id="craneExit" class="ghost" type="button">おわって学習にもどる</button>
+</dialog>
+<script>
+/* Shooting coins are saved at acquisition, including early exit/reload.
+   Separate key preserves all existing learning records and reset behavior. */
+const LS_GAME_REWARD = 'kanji_game_reward_v1';
+let gameReward = {total:0, playsUsed:0, prizesWon:0, result:null};
+let gameSaveFailed = false;
+let pendingCraneAuto = false;
+try {
+  const saved = JSON.parse(localStorage.getItem(LS_GAME_REWARD) || 'null');
+  if(saved && typeof saved === 'object'){
+    gameReward.total = Number.isSafeInteger(saved.total) && saved.total >= 0 ? saved.total : 0;
+    // Migrate the previous one-time reward without granting a duplicate play.
+    gameReward.playsUsed = Number.isSafeInteger(saved.playsUsed) && saved.playsUsed >= 0
+      ? Math.min(saved.playsUsed, Math.floor(gameReward.total / 300))
+      : (saved.played === true ? 1 : 0);
+    gameReward.result = ['success','failure','ended'].includes(saved.result) ? saved.result : null;
+    gameReward.prizesWon = Number.isSafeInteger(saved.prizesWon) && saved.prizesWon >= 0
+      ? saved.prizesWon : (saved.result === 'success' ? 1 : 0);
+  }
+} catch(e){ gameSaveFailed = true; }
+function saveGameReward(){
+  try{ localStorage.setItem(LS_GAME_REWARD, JSON.stringify(gameReward)); gameSaveFailed=false; }
+  catch(e){ gameSaveFailed=true; }
+}
+function updateGameRewardUI(){
+  const earned = Math.floor(gameReward.total / 300);
+  const available = Math.max(0, earned - gameReward.playsUsed);
+  const next = (earned + 1) * 300;
+  document.getElementById('gamePointText').textContent = `🎮 累積ゲームポイント：${gameReward.total}点`;
+  document.getElementById('gameProgress').value = gameReward.total % 300;
+  document.getElementById('gameRewardHint').textContent = available > 0
+    ? `🎉 あと${available}回あそべるよ！ 次の${next}点まで あと${next-gameReward.total}点`
+    : `次の${next}点まで あと${next-gameReward.total}点（プレイ済み：${gameReward.playsUsed}回）`;
+  document.getElementById('craneOpen').disabled = available === 0;
+  document.getElementById('gameSaveNotice').textContent = gameSaveFailed ? '保存できませんでした。ブラウザーの保存設定を確認してください。' : '';
+}
+function addGamePoint(){
+  const before = Math.floor(gameReward.total / 300);
+  gameReward.total += 1;
+  if(Math.floor(gameReward.total / 300) > before) pendingCraneAuto = true;
+  saveGameReward();
+  updateGameRewardUI();
+}
+function openPendingCrane(){
+  if(!pendingCraneAuto || craneDialog.open) return;
+  pendingCraneAuto = false;
+  if(gameReward.playsUsed < Math.floor(gameReward.total / 300)) openCrane();
+}
+const craneDialog = document.getElementById('craneDialog');
+const craneClaw = document.getElementById('craneClaw');
+const cranePrize = document.getElementById('cranePrize');
+const craneStatus = document.getElementById('craneStatus');
+let craneX = 50, craneTarget = 70, cranePhase = 'closed', craneTimer = null;
+let craneTries=0, craneCaught=0, craneDirection=1, craneLastFrame=0, craneFrame=null;
+const cranePrizes=['🧸','🐼','🐰','🦊','🐻'];
+function stopCraneMotion(){if(craneFrame) cancelAnimationFrame(craneFrame);craneFrame=null;craneLastFrame=0;}
+function animateCrane(ts){
+  if(cranePhase!=='aim') return;
+  if(craneLastFrame){
+    craneTarget += Math.min((ts-craneLastFrame)/1000,.05)*18*craneDirection;
+    if(craneTarget>=86){craneTarget=86;craneDirection=-1;}
+    if(craneTarget<=14){craneTarget=14;craneDirection=1;}
+    cranePrize.style.left=craneTarget+'%';
+  }
+  craneLastFrame=ts;craneFrame=requestAnimationFrame(animateCrane);
+}
+function resumeCraneMotion(){craneLastFrame=0;craneFrame=requestAnimationFrame(animateCrane);}
+function setCraneControls(disabled){
+  for(const id of ['craneLeft','craneRight','craneGrab']) document.getElementById(id).disabled = disabled;
+}
+function moveCrane(delta){
+  if(cranePhase !== 'aim') return;
+  craneX = Math.max(10, Math.min(90, craneX + delta));
+  craneClaw.style.left = craneX+'%';
+  craneStatus.textContent = '景品がクレーンの下に来たら「つかむ」！';
+}
+function newCranePrize(){
+  craneTarget=20+Math.random()*60;
+  craneDirection=Math.random()<.5?-1:1;
+  cranePrize.textContent=cranePrizes[Math.floor(Math.random()*cranePrizes.length)];
+  cranePrize.style.left=craneTarget+'%';
+  cranePrize.style.bottom='12px';
+  cranePrize.style.opacity='1';
+  craneClaw.style.top='0px';
+  document.getElementById('craneSparkles').textContent='';
+}
+function openCrane(){
+  if(gameReward.playsUsed >= Math.floor(gameReward.total / 300) || craneDialog.open) return;
+  craneX=50;craneTries=0;craneCaught=0;
+  cranePhase='aim';
+  craneClaw.style.top='0px'; craneClaw.style.left='50%';
+  newCranePrize();
+  document.getElementById('craneAttempts').textContent='のこり 10回';
+  document.getElementById('craneCollection').textContent='とれた景品：0個';
+  setCraneControls(false); moveCrane(0);
+  craneDialog.showModal();
+  resumeCraneMotion();
+  document.getElementById('craneGrab').focus();
+}
+function grabCrane(){
+  if(cranePhase !== 'aim') return;
+  // The first grab starts this earned play. Closing before it leaves the play available.
+  if(craneTries===0){
+    gameReward.playsUsed += 1;
+    gameReward.result='ended';
+    saveGameReward();updateGameRewardUI();
+  }
+  cranePhase='grabbing'; setCraneControls(true);stopCraneMotion();craneTries++;
+  document.getElementById('craneAttempts').textContent=`のこり ${10-craneTries}回`;
+  const success = Math.abs(craneX-craneTarget) <= 4;
+  craneStatus.textContent='つかんでいるよ…';
+  craneClaw.style.top = Math.max(30,document.getElementById('craneStage').clientHeight-115)+'px';
+  craneTimer=setTimeout(()=>{
+    craneClaw.style.top='0px';
+    if(success) cranePrize.style.bottom='65%';
+    craneTimer=setTimeout(()=>{
+      if(success){
+        craneCaught++;gameReward.prizesWon++;gameReward.result='success';
+        saveGameReward();updateGameRewardUI();
+        document.getElementById('craneCollection').textContent=`とれた景品：${craneCaught}個 ${'🎁'.repeat(craneCaught)}`;
+        craneStatus.textContent=`🎉 ${cranePrize.textContent} をゲット！ あと${10-craneTries}回つかめるよ！`;
+        document.getElementById('craneSparkles').textContent='✨ 🎉 ✨ 🎊 ✨';
+      }
+      if(craneTries===10){
+        cranePhase='done';
+        if(!success){gameReward.result=craneCaught?'success':'failure';saveGameReward();updateGameRewardUI();}
+        craneStatus.textContent=craneCaught
+          ? `🎉 おしまい！ 景品を${craneCaught}個ゲット！`
+          : 'ざんねん！ 景品をつかめなかったよ。';
+        document.getElementById('craneExit').focus();
+      }else if(success){
+        craneTimer=setTimeout(()=>{
+          newCranePrize();cranePhase='aim';setCraneControls(false);
+          craneStatus.textContent=`次の景品をねらおう！ あと${10-craneTries}回。`;
+          resumeCraneMotion();document.getElementById('craneGrab').focus();
+        },700);
+      }else{
+        cranePhase='aim';setCraneControls(false);
+        craneStatus.textContent=`おしい！ あと${10-craneTries}回、ねらってみよう！`;
+        resumeCraneMotion();document.getElementById('craneGrab').focus();
+      }
+    },650);
+  },650);
+}
+function closeCrane(){
+  clearTimeout(craneTimer);stopCraneMotion();cranePhase='closed'; craneDialog.close();
+  document.getElementById('saveProgressBtn').focus();
+}
+document.getElementById('craneOpen').addEventListener('click',openCrane);
+document.getElementById('craneLeft').addEventListener('click',()=>moveCrane(-8));
+document.getElementById('craneRight').addEventListener('click',()=>moveCrane(8));
+document.getElementById('craneGrab').addEventListener('click',grabCrane);
+document.getElementById('craneExit').addEventListener('click',closeCrane);
+craneDialog.addEventListener('cancel',e=>{e.preventDefault();closeCrane();});
+window.addEventListener('keydown',e=>{
+  if(!craneDialog.open) return;
+  e.stopImmediatePropagation();
+  if(['ArrowLeft','ArrowRight','Enter',' '].includes(e.key) && e.target.id !== 'craneExit'){
+    e.preventDefault(); if(e.repeat) return;
+    if(e.key==='ArrowLeft') moveCrane(-8);
+    else if(e.key==='ArrowRight') moveCrane(8);
+    else grabCrane();
+  }
+},true);
+updateGameRewardUI();
+</script>
 
 </body>
 </html>
