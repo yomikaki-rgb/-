@@ -792,7 +792,10 @@ roomInputEl.addEventListener("keydown", (e)=>{
 });
 
 function makeRoomUrls(room){
-  const base = location.origin + location.pathname;
+  const baseUrl = new URL(location.href);
+  baseUrl.search = "";
+  baseUrl.hash = "";
+  const base = baseUrl.href;
   const r = encodeURIComponent(room);
   return {
     p1: `${base}?room=${r}&me=1`,
@@ -2974,7 +2977,7 @@ let showReadings = true;
 // ============================
 function canOperateNow(){
   if(!ONLINE.enabled) return true;        // オフラインは従来通り
-  if(!started) return false;
+  if(!ONLINE.ready || !started) return false;
   return (ME_ID === (current + 1));       // currentは0-based
 }
 
@@ -3126,8 +3129,8 @@ function updateTurnUI(){
 
     // ★オンライン：P1のみスタート/リセット
     if(online){
-      startBtn.disabled = (ME_ID !== 1);
-      resetBtn.disabled = (ME_ID !== 1);
+      startBtn.disabled = !ONLINE.ready || (ME_ID !== 1);
+      resetBtn.disabled = !ONLINE.ready || (ME_ID !== 1);
     }else{
       startBtn.disabled = false;
       resetBtn.disabled = false;
@@ -3428,7 +3431,7 @@ function checkWin(){
 
     started = false;
     setTopPill("終了");
-    pushStateIfOnline();
+    pushStateIfOnline(true);
     return true;
   }
   return false;
@@ -3620,7 +3623,8 @@ addFieldBtn.addEventListener("click", ()=>{
 startBtn.addEventListener("click", ()=>{
   if(ONLINE.enabled && ME_ID !== 1) return;
 
-  const pc = Number(playerCountSel.value);
+  const pc = ONLINE.enabled ? 2 : Number(playerCountSel.value);
+  if(ONLINE.enabled) playerCountSel.value = "2";
   targetPoints = Math.max(1, Number(targetPointsInp.value)||5);
   missLimit = Number(missLimitSel.value)||3;
 
@@ -3761,6 +3765,10 @@ function applyStateSnapshot(st){
 
   if(typeof st.showReadings === "boolean") showReadings = st.showReadings;
 
+  // リモートでも勝利の表示を揃える。
+  const winner = players.findIndex(p => p.points >= targetPoints);
+  winMsgEl.style.display = winner >= 0 ? "block" : "none";
+  if(winner >= 0) winMsgEl.textContent = "プレイヤー" + (winner + 1) + "の勝ち！";
   // 表示更新
   renderField();
   renderSlots();
@@ -3775,6 +3783,26 @@ function applyStateSnapshot(st){
     setTopPill(`プレイヤー${current+1}の番`);
   }
   updateTurnUI();
+}
+
+// 通信エラーはゲームのメッセージと分けて表示し、操作で消さない。
+function reportOnlineError(context, error){
+  console.error(context, error);
+  let notice = document.getElementById("onlineError");
+  if(!notice){
+    notice = document.createElement("div");
+    notice.id = "onlineError";
+    notice.className = "msg ng";
+    notice.setAttribute("role", "alert");
+    document.getElementById("roomMaker").appendChild(notice);
+  }
+  const code = String(error?.code || error?.message || "不明なエラー");
+  const guidance = /permission.?denied/i.test(code)
+    ? "FirebaseのRealtime Databaseのルールで、この部屋への読み書きが許可されているか確認してください。"
+    : /operation-not-allowed|admin-restricted-operation/i.test(code)
+      ? "Firebase Authenticationの匿名ログイン設定を確認してください。"
+      : "ネット接続と部屋番号を確認して、ページを再読み込みしてください。";
+  notice.textContent = context + "（" + code + "）。" + guidance;
 }
 
 function statePath(){
@@ -3806,10 +3834,13 @@ async function pushStateIfOnline(force=false){
 
   try{
     const st = makeStateSnapshot();
-    await ONLINE._update(ONLINE._ref(ONLINE._db, metaPath()), { rev, updatedAt: ONLINE._serverTimestamp() });
-    await ONLINE._set(ONLINE._ref(ONLINE._db, statePath()), st);
-  }catch(_){
-    // 失敗時は黙ってオフライン継続
+    await ONLINE._update(ONLINE._ref(ONLINE._db, "rooms/" + ROOM_ID), {
+      "meta/rev": rev,
+      "meta/updatedAt": ONLINE._serverTimestamp(),
+      state: st
+    });
+  }catch(error){
+    reportOnlineError("相手への状態送信に失敗しました", error);
   }
 }
 
@@ -3829,8 +3860,8 @@ function sendOnlineEvent(type, payload){
   try{
     const ev = { type, payload: payload || {}, from: ME_ID||0, ts: Date.now() };
     const p = ONLINE._push(ONLINE._ref(ONLINE._db, eventsPath()));
-    ONLINE._set(p, ev);
-  }catch(_){}
+    ONLINE._set(p, ev).catch(error => reportOnlineError("対戦イベントの送信に失敗しました", error));
+  }catch(error){ reportOnlineError("対戦イベントの送信に失敗しました", error); }
 }
 
 function initOnlineEvents(){
@@ -3849,8 +3880,8 @@ function initOnlineEvents(){
       // ★端末の時計ズレでイベントが捨てられるのを防ぐ（tsフィルタ無し）
       if(ev.from === ME_ID) return;
       handleOnlineEvent(ev);
-    });
-  }catch(_){}
+    }, error => reportOnlineError("相手のイベントを受信できません", error));
+  }catch(error){ reportOnlineError("相手のイベントを受信できません", error); }
 }
 
 function handleOnlineEvent(ev){
@@ -3933,6 +3964,7 @@ async function initOnlineIfNeeded(){
     ONLINE._onChildAdded = dbMod.onChildAdded;
 
     ONLINE.ready = true;
+    updateTurnUI();
 
     // state受信：常時追従
     ONLINE._onValue(ONLINE._ref(db, statePath()), (snap)=>{
@@ -3946,7 +3978,7 @@ async function initOnlineIfNeeded(){
       }finally{
         ONLINE.isApplyingRemote = false;
       }
-    });
+    }, error => reportOnlineError("相手の状態を受信できません", error));
 
     initOnlineEvents();
 
@@ -3959,12 +3991,117 @@ async function initOnlineIfNeeded(){
     setMsgLocal(`オンライン対戦：部屋「${ROOM_ID}」  プレイヤー${ME_ID}`, "ok");
 
   }catch(e){
+    console.warn("標準接続に失敗したため、REST接続を試します。", e);
+    try{ await initOnlineRest(); return; }catch(restError){
+      reportOnlineError("オンライン接続に失敗しました", restError);
+    }
     // Firebaseが読み込めない＝オフラインとして動かす
-    ONLINE.enabled = false;
     ONLINE.ready = false;
-    setMsgLocal("オンライン機能の読み込みに失敗しました（オフラインで動作します）。", "ng");
+    setMsgLocal("オンライン接続に失敗しました。部屋欄のエラーを確認してください。", "ng");
     updateTurnUI();
   }
+}
+
+// SDKの読み込み・接続が利用できない環境でのFirebase公式REST API接続。
+async function initOnlineRest(){
+  let token, refreshToken, expiresAt;
+  async function jsonRequest(url, options = {}){
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try{
+      const response = await fetch(url, {...options, signal: controller.signal, cache: "no-store"});
+      const data = await response.json();
+      if(!response.ok) throw new Error(data?.error?.message || data?.error || "HTTP " + response.status);
+      return data;
+    }finally{ clearTimeout(timeout); }
+  }
+  const auth = await jsonRequest("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + firebaseConfig.apiKey, {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({returnSecureToken: true})
+  });
+  token = auth.idToken;
+  refreshToken = auth.refreshToken;
+  expiresAt = Date.now() + Number(auth.expiresIn) * 1000;
+  let refreshing = null;
+  async function databaseRequest(path, method = "GET", data, query = ""){
+    if(Date.now() > expiresAt - 60000){
+      if(!refreshing) refreshing = jsonRequest("https://securetoken.googleapis.com/v1/token?key=" + firebaseConfig.apiKey, {
+        method: "POST", headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: new URLSearchParams({grant_type: "refresh_token", refresh_token: refreshToken}).toString()
+      }).then(result => {
+        token = result.id_token; refreshToken = result.refresh_token;
+        expiresAt = Date.now() + Number(result.expires_in) * 1000;
+      }).finally(() => { refreshing = null; });
+      await refreshing;
+    }
+    const encoded = path.split("/").map(encodeURIComponent).join("/");
+    return jsonRequest(firebaseConfig.databaseURL + "/" + encoded + ".json?auth=" + encodeURIComponent(token) + query, {
+      method, ...(data === undefined ? {} : {headers: {"Content-Type": "application/json"}, body: JSON.stringify(data)})
+    });
+  }
+  let pending = 0, generation = 0, writeChain = Promise.resolve();
+  const stateListeners = [], eventListeners = [];
+  function write(path, method, data){
+    pending++; generation++;
+    const operation = writeChain.catch(() => {}).then(() => databaseRequest(path, method, data));
+    writeChain = operation;
+    return operation.finally(() => { pending--; });
+  }
+  ONLINE._db = {};
+  ONLINE._ref = (_, path) => path;
+  ONLINE._set = (path, data) => write(path, "PUT", data);
+  ONLINE._update = (path, data) => write(path, "PATCH", data);
+  ONLINE._serverTimestamp = () => ({".sv": "timestamp"});
+  ONLINE._push = path => path + "/r" + String(Date.now()).padStart(13, "0") + "-" + crypto.randomUUID();
+  ONLINE._onValue = (path, callback, onError) => stateListeners.push({path, callback, onError});
+  ONLINE._onChildAdded = (path, callback, onError) => eventListeners.push({path, callback, onError});
+  // 初回の読み取りが成功してからスタートを許可する。
+  const initial = await databaseRequest(statePath());
+  if(initial){
+    ONLINE.isApplyingRemote = true;
+    try{ applyStateSnapshot(initial); }finally{ ONLINE.isApplyingRemote = false; }
+  }
+  let previousState = JSON.stringify(initial), busy = false, eventsStarted = false;
+  const eventKeys = new Set();
+  ONLINE.ready = true;
+  ONLINE._onValue(statePath(), snapshot => {
+    const state = snapshot.val();
+    if(!state) return;
+    ONLINE.isApplyingRemote = true;
+    try{ applyStateSnapshot(state); }finally{ ONLINE.isApplyingRemote = false; }
+  });
+  initOnlineEvents();
+  setMsgLocal("オンライン対戦：部屋「" + ROOM_ID + "」 プレイヤー" + ME_ID + "（接続済み）", "ok");
+  updateTurnUI();
+  async function poll(){
+    if(busy || pending) return;
+    busy = true;
+    const before = generation;
+    try{
+      const [state, events] = await Promise.all([
+        databaseRequest(statePath()),
+        databaseRequest(eventsPath(), "GET", undefined, '&orderBy=%22%24key%22&limitToLast=30')
+      ]);
+      if(before !== generation || pending) return;
+      if(!ONLINE.ready){ ONLINE.ready = true; updateTurnUI(); }
+      const serialized = JSON.stringify(state);
+      if(serialized !== previousState){
+        previousState = serialized;
+        for(const listener of stateListeners) listener.callback({val: () => state});
+      }
+      for(const key of Object.keys(events || {}).sort()){
+        if(eventKeys.has(key)) continue;
+        eventKeys.add(key);
+        if(eventsStarted) for(const listener of eventListeners) listener.callback({key, val: () => events[key]});
+      }
+      eventsStarted = true;
+    }catch(error){
+      ONLINE.ready = false;
+      updateTurnUI();
+      reportOnlineError("通信が途切れました。自動再接続しています", error);
+    }finally{ busy = false; }
+  }
+  await poll();
+  ONLINE._restTimer = setInterval(poll, 900);
 }
 
 // 起動
