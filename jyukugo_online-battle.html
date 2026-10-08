@@ -617,9 +617,10 @@
         <!-- ★必須：部屋UI -->
         <div id="roomMaker">
           <div class="title">オンライン対戦リンク作成</div>
+          <div id="onlineStatus" class="small" role="status" style="margin-bottom:8px;"></div>
           <div class="row" style="gap:8px; align-items:center;">
             <input id="roomInput" placeholder="部屋番号（例: class1）" style="width:160px;">
-            <button id="makeRoomUrlBtn" type="button">URL作成</button>
+            <button id="makeRoomUrlBtn" type="button">対戦URL作成・P1で入室</button>
           </div>
           <div style="margin-top:6px;" class="small">
             プレイヤー1用：
@@ -756,6 +757,7 @@ const firebaseConfig = {
 // ============================
 // ★オンライン判定（URLパラメータ）
 // ============================
+const ONLINE_BUILD = "20261008-2";
 const QS = new URLSearchParams(location.search);
 const ROOM_ID = (QS.get("room") || "").trim();
 const ME_ID = Number(QS.get("me") || 0);
@@ -783,6 +785,18 @@ const roomInputEl = document.getElementById("roomInput");
 const makeRoomUrlBtn = document.getElementById("makeRoomUrlBtn");
 const urlP1El = document.getElementById("urlP1");
 const urlP2El = document.getElementById("urlP2");
+function setOnlineStatus(text){
+  const node = document.getElementById("onlineStatus");
+  node.textContent = ONLINE.enabled
+    ? "部屋「" + ROOM_ID + "」・プレイヤー" + ME_ID + "・" + text + "（版 " + ONLINE_BUILD + "）"
+    : "オンライン未入室。部屋番号を入力し、対戦URLを作成してください。（版 " + ONLINE_BUILD + "）";
+}
+function onlineRecovered(){
+  const notice = document.getElementById("onlineError");
+  if(notice) notice.style.display = "none";
+  setOnlineStatus("接続済み");
+}
+setOnlineStatus("接続中");
 
 roomInputEl.addEventListener("keydown", (e)=>{
   if(e.key === "Enter"){
@@ -798,8 +812,8 @@ function makeRoomUrls(room){
   const base = baseUrl.href;
   const r = encodeURIComponent(room);
   return {
-    p1: `${base}?room=${r}&me=1`,
-    p2: `${base}?room=${r}&me=2`
+    p1: `${base}?room=${r}&me=1&v=${ONLINE_BUILD}`,
+    p2: `${base}?room=${r}&me=2&v=${ONLINE_BUILD}`
   };
 }
 makeRoomUrlBtn.addEventListener("click", ()=>{
@@ -826,6 +840,8 @@ makeRoomUrlBtn.addEventListener("click", ()=>{
       try{ document.execCommand("copy"); }catch(_3){}
     }
   }catch(_){}
+  // URLを作った画面自身も、同じ部屋のP1へ移動する。
+  if(ROOM_ID !== room || ME_ID !== 1) location.assign(u.p1);
 });
 
 // 初期表示：URLで入ってる部屋なら表示
@@ -2977,7 +2993,7 @@ let showReadings = true;
 // ============================
 function canOperateNow(){
   if(!ONLINE.enabled) return true;        // オフラインは従来通り
-  if(!ONLINE.ready || !started) return false;
+  if(!ONLINE.ready || ONLINE.statePending || !started) return false;
   return (ME_ID === (current + 1));       // currentは0-based
 }
 
@@ -3118,6 +3134,10 @@ function renderScoreboard(){
 
 function updateTurnUI(){
   const online = ONLINE.enabled;
+  if(online){
+    startBtn.disabled = !ONLINE.ready || !!ONLINE.statePending || ME_ID !== 1;
+    resetBtn.disabled = !ONLINE.ready || !!ONLINE.statePending || ME_ID !== 1;
+  }
 
   if(!started){
     drawBtn.disabled = true;
@@ -3129,8 +3149,8 @@ function updateTurnUI(){
 
     // ★オンライン：P1のみスタート/リセット
     if(online){
-      startBtn.disabled = !ONLINE.ready || (ME_ID !== 1);
-      resetBtn.disabled = !ONLINE.ready || (ME_ID !== 1);
+      startBtn.disabled = !ONLINE.ready || !!ONLINE.statePending || (ME_ID !== 1);
+      resetBtn.disabled = !ONLINE.ready || !!ONLINE.statePending || (ME_ID !== 1);
     }else{
       startBtn.disabled = false;
       resetBtn.disabled = false;
@@ -3788,6 +3808,7 @@ function applyStateSnapshot(st){
 // 通信エラーはゲームのメッセージと分けて表示し、操作で消さない。
 function reportOnlineError(context, error){
   console.error(context, error);
+  setOnlineStatus("通信エラー");
   let notice = document.getElementById("onlineError");
   if(!notice){
     notice = document.createElement("div");
@@ -3802,6 +3823,7 @@ function reportOnlineError(context, error){
     : /operation-not-allowed|admin-restricted-operation/i.test(code)
       ? "Firebase Authenticationの匿名ログイン設定を確認してください。"
       : "ネット接続と部屋番号を確認して、ページを再読み込みしてください。";
+  notice.style.display = "block";
   notice.textContent = context + "（" + code + "）。" + guidance;
 }
 
@@ -3834,13 +3856,22 @@ async function pushStateIfOnline(force=false){
 
   try{
     const st = makeStateSnapshot();
+    ONLINE.statePending = true;
+    setOnlineStatus("相手へ送信中");
+    updateTurnUI();
     await ONLINE._update(ONLINE._ref(ONLINE._db, "rooms/" + ROOM_ID), {
       "meta/rev": rev,
       "meta/updatedAt": ONLINE._serverTimestamp(),
       state: st
     });
+    onlineRecovered();
   }catch(error){
-    reportOnlineError("相手への状態送信に失敗しました", error);
+    ONLINE.ready = false;
+    ONLINE._restResync = true;
+    reportOnlineError("相手への状態送信に失敗しました。再読み込みしてください", error);
+  }finally{
+    ONLINE.statePending = false;
+    updateTurnUI();
   }
 }
 
@@ -3963,11 +3994,12 @@ async function initOnlineIfNeeded(){
     ONLINE._serverTimestamp = dbMod.serverTimestamp;
     ONLINE._onChildAdded = dbMod.onChildAdded;
 
-    ONLINE.ready = true;
-    updateTurnUI();
-
     // state受信：常時追従
     ONLINE._onValue(ONLINE._ref(db, statePath()), (snap)=>{
+      ONLINE.ready = true;
+      onlineRecovered();
+      initOnlineEvents();
+      updateTurnUI();
       const st = snap.val();
       if(!st) return;
 
@@ -3978,7 +4010,11 @@ async function initOnlineIfNeeded(){
       }finally{
         ONLINE.isApplyingRemote = false;
       }
-    }, error => reportOnlineError("相手の状態を受信できません", error));
+    }, error => {
+      ONLINE.ready = false;
+      updateTurnUI();
+      reportOnlineError("相手の状態を受信できません", error);
+    });
 
     initOnlineEvents();
 
@@ -3997,6 +4033,7 @@ async function initOnlineIfNeeded(){
     }
     // Firebaseが読み込めない＝オフラインとして動かす
     ONLINE.ready = false;
+    setOnlineStatus("接続失敗");
     setMsgLocal("オンライン接続に失敗しました。部屋欄のエラーを確認してください。", "ng");
     updateTurnUI();
   }
@@ -4063,6 +4100,7 @@ async function initOnlineRest(){
   let previousState = JSON.stringify(initial), busy = false, eventsStarted = false;
   const eventKeys = new Set();
   ONLINE.ready = true;
+  onlineRecovered();
   ONLINE._onValue(statePath(), snapshot => {
     const state = snapshot.val();
     if(!state) return;
@@ -4082,9 +4120,10 @@ async function initOnlineRest(){
         databaseRequest(eventsPath(), "GET", undefined, '&orderBy=%22%24key%22&limitToLast=30')
       ]);
       if(before !== generation || pending) return;
-      if(!ONLINE.ready){ ONLINE.ready = true; updateTurnUI(); }
+      if(!ONLINE.ready){ ONLINE.ready = true; onlineRecovered(); updateTurnUI(); }
       const serialized = JSON.stringify(state);
-      if(serialized !== previousState){
+      if(serialized !== previousState || ONLINE._restResync){
+        ONLINE._restResync = false;
         previousState = serialized;
         for(const listener of stateListeners) listener.callback({val: () => state});
       }
