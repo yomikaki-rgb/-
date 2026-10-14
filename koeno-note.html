@@ -13929,9 +13929,9 @@ function showReadingChunk(chunks,active){
 }
 $('read').onclick=()=>{
  if(speaking){stopReading();status('よむのを とめたよ。');return;}
- const text=window.personalDictionary.reading(editor.value);stopReading();const version=speechVersion;
+ const text=editor.value;stopReading();const version=speechVersion;
  const highlighting=$('highlight').value==='on';
- const chunks=highlighting?makeReadingChunks(text):(text.match(/[^。！？!?\n]{1,100}[。！？!?\n]?|[。！？!?\n]/g)||[]);
+ const chunks=highlighting?makeReadingChunks(text):(window.personalDictionary.reading(text).match(/[^。！？!?\n]{1,100}[。！？!?\n]?|[。！？!?\n]/g)||[]);
  if(!chunks.length)return;
  const voice=window.speechSynthesis.getVoices().find(v=>v.lang.startsWith('ja'));
  let index=0;speaking=true;update();status('よんでいるよ。');
@@ -13939,7 +13939,8 @@ $('read').onclick=()=>{
   if(version!==speechVersion)return;
   if(index>=chunks.length){speaking=false;if(highlighting){readingHighlight.hidden=true;editor.hidden=false;}update();status('よみおわったよ。');return;}
   if(highlighting)showReadingChunk(chunks,index);
-  const u=new SpeechSynthesisUtterance(chunks[index++]);u.lang='ja-JP';u.rate=Number($('rate').value);if(voice)u.voice=voice;
+  const chunk=chunks[index++];
+  const u=new SpeechSynthesisUtterance(highlighting?window.personalDictionary.reading(chunk):chunk);u.lang='ja-JP';u.rate=Number($('rate').value);if(voice)u.voice=voice;
   u.onend=next;
   u.onerror=()=>{if(version!==speechVersion)return;speaking=false;if(highlighting){readingHighlight.hidden=true;editor.hidden=false;}update();status('よみあげ できませんでした。おとなの ひとと にほんごの おんせいを たしかめてね。');};
   window.speechSynthesis.speak(u);
