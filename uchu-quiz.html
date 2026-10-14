@@ -4600,11 +4600,11 @@ THE SOFTWARE.
         }
         function speak(text,target=null) {
             if(!('speechSynthesis' in window))return;stopQuizSpeech();const version=speechVersion;
-            const plain=window.personalDictionary?window.personalDictionary.reading(String(text)):String(text);
+            const plain=String(text);
             const highlighting=document.getElementById('quiz-highlight')?.value!=='off'&&target;
-            const chunks=highlighting?quizReadingChunks(plain):(plain.match(/[^。！？!?\n]{1,100}[。！？!?\n]?|[。！？!?\n]/g)||[]);if(!chunks.length)return;
+            const spoken=highlighting?plain:(window.personalDictionary?window.personalDictionary.reading(plain):plain);const chunks=highlighting?quizReadingChunks(plain):(spoken.match(/[^。！？!?\n]{1,100}[。！？!?\n]?|[。！？!?\n]/g)||[]);if(!chunks.length)return;
             const voice=window.speechSynthesis.getVoices().find(v=>v.lang.startsWith('ja'));let index=0;
-            function next(){if(version!==speechVersion)return;if(index>=chunks.length){clearSpeechHighlight();return;}if(highlighting)showQuizSpeechChunk(target,chunks,index);const u=new SpeechSynthesisUtterance(chunks[index++]);u.lang='ja-JP';u.rate=Number(document.getElementById('quiz-rate')?.value||0.85);u.pitch=1.1;if(voice)u.voice=voice;u.onend=next;u.onerror=clearSpeechHighlight;window.speechSynthesis.speak(u);}next();
+            function next(){if(version!==speechVersion)return;if(index>=chunks.length){clearSpeechHighlight();return;}if(highlighting)showQuizSpeechChunk(target,chunks,index);const chunk=chunks[index++];const u=new SpeechSynthesisUtterance(highlighting&&window.personalDictionary?window.personalDictionary.reading(chunk):chunk);u.lang='ja-JP';u.rate=Number(document.getElementById('quiz-rate')?.value||0.85);u.pitch=1.1;if(voice)u.voice=voice;u.onend=next;u.onerror=clearSpeechHighlight;window.speechSynthesis.speak(u);}next();
         }
 
         function readCurrentQuestion() {
