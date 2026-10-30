@@ -20,6 +20,7 @@
 body{zoom:0.8}
 .hw-student{max-width:620px;margin:40px auto;text-align:center}.hw-student h2{font-size:28px}.hw-student input{display:block;width:200px;margin:16px auto;padding:12px;font-size:32px;text-align:center;letter-spacing:.18em;border:2px solid #a9bbd3;border-radius:12px}.hw-status{max-width:1200px;margin:12px auto;padding:0 20px;color:#29476b;font-size:16px;line-height:1.6}.hw-code{font-size:46px;font-weight:900;letter-spacing:.18em;margin:15px 0}.hw-submit{font-size:25px;background:#14894a;padding:16px 25px}#hwGroups{margin-top:14px}
 h1{display:flex;align-items:center;gap:10px}.app-icon{width:36px;height:36px;object-fit:contain;border-radius:9px;flex:none}#welcomeTitle:empty{display:none}
+.hw-update-result{margin:16px 0;padding:20px;border:3px solid #7290ab;border-radius:14px;background:#f0f6fc;color:#183a59}.hw-update-result h3{font-size:25px;margin:0 0 10px}.hw-update-result p{font-size:18px;line-height:1.8;white-space:pre-line;margin:0}.hw-update-result[data-state="success"]{border-color:#14894a;background:#edfff3;color:#095d30}.hw-update-result[data-state="error"]{border-color:#bf3434;background:#fff1f1;color:#862121}.hw-update-result:focus{outline:3px solid #245db2;outline-offset:4px}
 </style>
 </head>
 <body>
@@ -37,6 +38,7 @@ h1{display:flex;align-items:center;gap:10px}.app-icon{width:36px;height:36px;obj
 <main id="settingsView" hidden>
 <div class="settings-head"><h2>設定</h2><button class="primary" id="closeSettings">練習画面に戻る</button></div>
 <div class="settings-grid"><section class="settings registration-panel"><h2>先生用：宿題コードを作る・変更する</h2>
+<div id="hwUpdateResult" class="hw-update-result" hidden role="status" aria-live="polite" aria-atomic="true" tabindex="-1"><h3 id="hwUpdateResultTitle"></h3><p id="hwUpdateResultDetails"></p></div>
 <div><label class="toggle">変更する宿題コード<input id="hwEditCode" type="text" maxlength="12" autocomplete="off" placeholder="発行済みコード" style="width:160px"></label><button class="secondary" id="hwEditLoad">このコードの設定を読み込む</button><div id="hwEditPanel" hidden><p id="hwEditSummary"></p><label class="toggle">先生用の編集パスワード<input id="hwEditPassword" type="password" autocomplete="off" style="width:180px"></label><p class="hint">更新すると、このコードの進捗は最初からになります。過去の提出記録は残ります。同じコードを使う児童全員に反映されます。</p><button class="primary" id="hwUpdate">同じコードで更新する</button> <button class="secondary" id="hwEditCancel">編集をやめる</button></div></div><label class="toggle">練習<select id="hwPracticeMode"><option value="words">単語</option><option value="kana">一文字</option><option value="home">ホームポジション</option></select></label><div id="hwHomeOptions" hidden><label class="toggle">F・Jの出題<select id="hwHomeOrder"><option value="alternate">交互</option><option value="random">ランダム</option></select></label><label class="toggle">練習する個数<input id="hwHomeCount" type="number" min="1" max="1000" step="1" value="20" style="width:90px">個</label></div><div class="actions" id="hwGroupActions"><button class="secondary" id="hwSelectAll">すべて選ぶ</button><button class="secondary" id="hwClearAll">すべて外す</button></div><div class="row-choices" id="hwGroups"></div><label class="toggle">1セットの問題数<input id="hwDaily" type="number" min="1" max="50" step="1" value="5" style="width:90px"></label><label class="toggle" id="hwShuffleOption">シャッフル<input id="hwShuffle" type="checkbox" checked></label><button class="primary" id="hwCreate">宿題コードを作る</button><div class="hw-code" id="hwCreatedCode" hidden></div><p id="hwTeacherStatus" role="status"></p><p class="hint">名前の入力はありません。同じコードを使うと進捗も共有されます。児童ごとにコードを作ってください。</p></section>
 <section class="settings" id="normalLessonSettings" hidden><h2>練習の種類</h2><label class="toggle">練習<select id="practiceMode"><option value="words">単語</option><option value="kana">一文字</option><option value="home">ホームポジション</option></select></label><label class="toggle" id="questionOrderLabel">出題順<select id="questionOrder"><option value="ordered">順番どおり（あいうえお順）</option><option value="shuffle">シャッフル</option></select></label><label class="toggle" id="homeOrderLabel" hidden>F・Jの出題<select id="homeOrder"><option value="alternate">交互</option><option value="random">ランダム</option></select></label><div id="kanaLimits" hidden><label class="toggle">練習の長さ<select id="kanaLimit"><option value="all">選んだ文字を1周</option><option value="count">個数で決める</option><option value="time">時間で決める</option></select></label><label class="toggle" id="countOption" hidden>練習する個数<input id="kanaCount" type="number" min="1" max="1000" step="1" value="12" style="width:95px">個</label><label class="toggle" id="timeOption" hidden>練習時間<input id="kanaMinutes" type="number" min="0.5" max="60" step="0.5" value="1" style="width:95px">分</label></div><div id="rowSettings"><h3 id="rowTitle">練習する行</h3><div class="actions"><button class="secondary" id="selectAllRows">すべて選ぶ</button><button class="secondary" id="clearRows">すべて外す</button></div><div id="rowChoices" class="row-choices"></div><p id="selectionCount"></p></div></section>
 <section class="settings"><h2>表示・音声</h2>
@@ -278,14 +280,17 @@ function hwConfigSignature(config){return JSON.stringify([hwRevision(config),Num
 const hwBaseAvailableGroups=hwAvailableGroups;
 hwAvailableGroups=function(){const base=hwBaseAvailableGroups();return hwEditState.config&&hwEditState.mode===hwTeacherMode()?{...base,...hwEditState.available}:base;};
 function hwEditControls(){const locked=hw.active||hwEditState.busy;$('hwEditCode').disabled=locked;$('hwEditLoad').disabled=locked;$('hwUpdate').disabled=locked;$('hwEditCancel').disabled=locked;$('hwEditPassword').disabled=locked;$('hwDaily').disabled=locked;$('hwShuffle').disabled=locked;hwGroupOptions();for(const id of ['hwPracticeMode','hwHomeOrder','hwHomeCount','hwSelectAll','hwClearAll'])$(id).disabled=locked;for(const check of $('hwGroups').querySelectorAll('input'))check.disabled=locked;}
-function hwEditCancel(){if(hwEditState.busy)return;hwEditState.config=null;hwEditState.available=null;hwEditState.mode=null;$('hwEditPanel').hidden=true;$('hwEditPassword').value='';$('hwTeacherStatus').textContent='';hwEditControls();}
+function hwShowUpdateResult(kind,title,details){
+ const panel=$('hwUpdateResult');panel.hidden=false;panel.setAttribute('data-state',kind);panel.setAttribute('aria-busy',kind==='pending'?'true':'false');$('hwUpdateResultTitle').textContent=title;$('hwUpdateResultDetails').textContent=details;panel.focus({preventScroll:true});panel.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function hwEditCancel(){if(hwEditState.busy)return;hwEditState.config=null;hwEditState.available=null;hwEditState.mode=null;$('hwEditPanel').hidden=true;$('hwUpdateResult').hidden=true;$('hwUpdate').textContent='同じコードで更新する';$('hwEditPassword').value='';$('hwTeacherStatus').textContent='';hwEditControls();}
 async function hwEditLoad(){
  if(hw.active||hwEditState.busy)return;
  const code=hwCode($('hwEditCode').value);if(!/^[A-Z0-9]{4,12}$/.test(code)){$('hwTeacherStatus').textContent='変更する宿題コードを入力してください。';return;}
  hwEditCancel();hwEditState.busy=true;hwEditControls();
  try{
   const response=await hwGet({action:'getConfig',code});if(!response?.ok)throw Error(response?.error||'宿題コードが見つかりません。');
-  if(response.updateProtocol!==1)throw Error('保存先が設定変更に未対応です。Google Apps Scriptの更新後に利用できます。既存の宿題はそのまま使えます。');
+  if(response.updateProtocol!==1||response.configHistory!=='append')throw Error('保存先が履歴を残す設定変更に未対応です。今回のGoogle Apps Scriptへの更新後に利用できます。既存の宿題はそのまま使えます。');
   const config={...response.config,code},mode=hwModeFromConfig(config);hwItems(config.items,mode);
   const available={};for(const item of config.items){const group=String(item.group||'登録した問題');if(!available[group])available[group]=[];available[group].push({...item});}
   hwEditState.config=config;hwEditState.available=available;hwEditState.mode=mode;
@@ -306,7 +311,7 @@ async function hwUpdate(){
  const practiceSettings=hwCaptureSettings();items[0].practiceSettings=practiceSettings;
  const dailyCount=Math.max(1,Math.min(50,Math.floor(Number($('hwDaily').value)||5)));$('hwDaily').value=dailyCount;
  const requestId=crypto.randomUUID(),payload={action:'updateConfig',code,editorPassword:password,expectedRevision:hwRevision(config),requestId,groups,dailyCount,shuffle:mode==='home'?$('hwHomeOrder').value==='random':$('hwShuffle').checked,practiceMode:mode,totalCount:items.length,items,practiceSettings};
- hwEditState.busy=true;hwEditControls();let sent=false;
+ hwEditState.busy=true;hwEditControls();let sent=false,success=false;$('hwUpdate').textContent='更新中…';hwShowUpdateResult('pending','設定を更新しています…','宿題コード '+code+' の保存結果を確認しています。');
  try{
   $('hwTeacherStatus').textContent='コード '+code+' を更新しています…';await hwPost(payload);sent=true;
   const confirmed=await hwGet({action:'getUpdateStatus',code,requestId});
@@ -316,8 +321,10 @@ async function hwUpdate(){
   hwEditState.config={...current.config,code};hwEditState.mode=mode;hwEditState.available={};for(const item of items){(hwEditState.available[item.group]||=[]).push({...item});}
   $('hwCreatedCode').textContent=code;$('hwCreatedCode').hidden=false;$('hwCode').value=code;
   $('hwEditSummary').textContent='コード '+code+' を編集中（現在 '+items.length+'問・1セット'+dailyCount+'問）';
-  $('hwTeacherStatus').textContent='コード '+code+' を更新しました。進捗は最初からです。過去の提出記録は残っています。児童は宿題を開き直してください。';
- }catch(error){$('hwTeacherStatus').textContent=(sent?'更新要求は送信済みです。':'')+error.message;}finally{payload.editorPassword='';$('hwEditPassword').value='';hwEditState.busy=false;hwEditControls();}
+  success=true;
+  $('hwTeacherStatus').textContent='コード '+code+' の更新が完了しました。';
+  hwShowUpdateResult('success','✓ 更新が完了しました','宿題コード：'+code+'（変更なし）\n1セットの問題数：'+config.dailyCount+'問 → '+dailyCount+'問\n全体の問題数：'+items.length+'問\n保存確認：'+new Date().toLocaleString('ja-JP')+'\nこのコードの進捗は1セット目からです。設定履歴と過去の提出記録は残っています。児童は宿題を開き直してください。');
+ }catch(error){const message=(sent?'更新要求は送信済みです。':'')+error.message;$('hwTeacherStatus').textContent=message;hwShowUpdateResult('error','更新を確認できません',message);}finally{payload.editorPassword='';$('hwEditPassword').value='';hwEditState.busy=false;hwEditControls();$('hwUpdate').textContent=success?'同じコードで再更新する':'同じコードで更新する';}
 }
 async function hwEnsureLatest(){
  if(!hw.active)return true;
@@ -337,6 +344,7 @@ $('hwEditLoad').onclick=hwEditLoad;$('hwUpdate').onclick=hwUpdate;$('hwEditCance
 $('hwEditCode').oninput=()=>{$('hwEditCode').value=hwCode($('hwEditCode').value);};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)hwCheckOpenHomework();});
 window.addEventListener('focus',hwCheckOpenHomework);hwScheduleUpdateCheck();
+
 
 renderRows();renderConsonants();
 loadLesson(0);recolor();initVoices();if('speechSynthesis'in window)speechSynthesis.addEventListener('voiceschanged',initVoices);hwReady();
