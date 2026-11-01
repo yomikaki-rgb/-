@@ -42,6 +42,9 @@ body{background:radial-gradient(circle at 5% 15%,#f8e8c766,transparent 35%),radi
 @media(max-width:650px){input,textarea,select,.select{font-size:16px!important}.question-card{grid-template-columns:1fr}.question-card .secondary{width:100%}.game{padding-left:6px;padding-right:6px}.board-shell,.game-top,.controls{max-width:450px}}
 @media(pointer:coarse),(max-width:1024px){input,textarea,select,.select{font-size:16px!important}}
 .preset-groups{border:1px solid var(--line);border-radius:14px;padding:12px;margin:0}.preset-groups legend{font-size:13px;font-weight:600;padding:0 5px}.preset-choice{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;font-size:14px}.preset-choice input{width:21px;height:21px;flex:none;accent-color:#427c68}.preset-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.preset-actions button{font-size:13px;padding:9px 12px}#presetCount{font-weight:700;color:#427c68;margin-bottom:8px}
+
+.arrange-tiles{display:flex;flex-wrap:wrap;gap:9px;min-height:70px;margin:12px 0 20px}.arrange-answer{background:#f1f5eb;border:1px solid #dce5d4;border-radius:14px;padding:14px;min-height:96px}.arrange-label{font-size:14px;color:var(--muted);margin:20px 0 8px}.arrange-tile{display:inline-grid;place-items:center;flex:none;width:55px;height:62px;border:1px solid #dfc78e;border-bottom:4px solid #d4b77b;border-radius:10px;background:#ffe2a6;color:#5d4d2e;font-family:inherit;font-size:28px;font-weight:700;user-select:none;touch-action:manipulation;cursor:pointer}.arrange-tile.empty{border:2px dashed #bdcbb5;background:#fff;color:#a5b29d;font-size:14px}.arrange-tile.hint,.arrange-tile.correct{background:#dcebd5;border-color:#bdd1b2;color:#456440}.arrange-tile:disabled{opacity:1;cursor:default}.arrange-tile:focus-visible{outline:3px solid #327a69;outline-offset:3px}.arrange-actions{display:flex;flex-wrap:wrap;gap:10px}.arrange-actions button{flex:1;min-width:120px}.drag-over{outline:3px solid #427c68;outline-offset:3px}#arrangePanel{max-width:620px;margin:auto;padding:6px 8px 16px}#arrangeFeedback{min-height:42px;font-size:16px;line-height:1.8;color:#427c68;margin:12px 0}#arrangeStatus{font-size:14px;line-height:1.8;white-space:pre-line}#arrangeEnd{text-align:center;padding:25px 0}#arrangeEnd button{margin:10px 5px}#arrangeRetry{margin-top:12px}.app[data-mode=arrange] .board-shell,.app[data-mode=arrange] #down,.app[data-mode=arrange] #caption,.app[data-mode=arrange] #speedSection,.app[data-mode=arrange] #playInfo .stats{display:none}.app[data-mode=arrange] .controls{max-width:620px}.app[data-mode=arrange] .game-top{max-width:620px}.app[data-mode=arrange] #pause{margin:auto}.app[data-mode=arrange] .game{min-height:360px}.app[data-mode=arrange][data-stage=setup] .game{display:none}@media(max-width:650px){.arrange-tile{width:46px;height:54px;font-size:26px}.arrange-tiles{gap:7px}.arrange-answer{padding:10px}.app[data-mode=arrange] .game{min-height:0}#arrangePanel{padding:0 10px 10px}.arrange-actions button{min-width:110px;font-size:14px}}
+
 </style>
 </head>
 <body>
@@ -51,6 +54,7 @@ body{background:radial-gradient(circle at 5% 15%,#f8e8c766,transparent 35%),radi
   <aside class="sidebar">
    <section id="setup">
     <p class="eyebrow">あそぶ じゅんび</p><h2 class="section-title">ことばを ならべよう！</h2>
+<div class="field"><label for="playMode">あそび方</label><select class="select" id="playMode"><option value="drop">もじドロップ</option><option value="arrange">もじならべ（時間制限なし）</option></select></div>
     <label class="label" for="source">あそぶ問題</label><select class="select source-select" id="source"><option value="registered">登録した問題</option><option value="preset">用意された問題</option></select>
     <p id="libraryNotice" class="library-notice"></p>
     <div id="presetFields" hidden><fieldset class="preset-groups"><legend>練習するグループ（複数選択できます）</legend><label class="preset-choice"><input type="checkbox" id="preset-basic" checked><span>基本の音（23問）</span></label><label class="preset-choice"><input type="checkbox" id="preset-long"><span>長音（11問）</span></label><label class="preset-choice"><input type="checkbox" id="preset-sokuon"><span>促音（14問）</span></label><label class="preset-choice"><input type="checkbox" id="preset-youon"><span>拗音（14問）</span></label><label class="preset-choice"><input type="checkbox" id="preset-youlong"><span>拗長音（9問）</span></label><label class="preset-choice"><input type="checkbox" id="preset-yousoku"><span>拗促音（9問）</span></label></fieldset><div class="preset-actions"><button type="button" class="secondary" id="selectAllPresets">全部選ぶ</button><button type="button" class="secondary" id="clearPresets">選択を解除</button></div><p class="preset-note" id="presetCount" aria-live="polite"></p><p class="note">選んだ問題を、毎回ランダムな順番で出題します。</p></div>
@@ -58,16 +62,19 @@ body{background:radial-gradient(circle at 5% 15%,#f8e8c766,transparent 35%),radi
     <div class="field"><label for="letterCase">英字の表示</label><select class="select" id="letterCase"><option value="original">登録した通り</option><option value="upper">すべて大文字</option><option value="lower">すべて小文字</option></select><p class="note">英字の答えに適用します。読み上げは変わりません。</p></div>
     <button class="primary" id="start"><span>音声を聞いて はじめる</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button>
     <p class="error" id="inputError" role="alert"></p>
-    <p class="note">文字はランダムな順番で落ちてきます。</p>
+    <p class="note" id="modeNote">文字はランダムな順番で落ちてきます。</p>
    </section>
    <section id="playInfo" hidden><p class="eyebrow">ことばを きこう</p><h2 class="play-heading">聞こえたことばを、<br>ならべよう。</h2><div class="round"><span class="big-number" id="roundNo">01</span><span class="round-label" id="roundTotal">/ 01 問</span></div><div class="stats"><div><p class="stat-label">プレイ時間</p><p class="stat-value" id="elapsed">00:00</p></div><div><p class="stat-label">つぎの文字</p><p class="stat-value" id="nextLetter">—</p></div></div><button class="voice-test listen-again" id="listenAgain"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/></svg>もう一度聞く</button><button class="text-button back" id="back"><span aria-hidden="true">←</span>はじめに戻る</button></section>
    <hr class="separator"><section id="speedSection"><p class="label">落ちる速さ</p><div class="segments" aria-label="落ちる速さ"><button data-speed="0.5" aria-pressed="false">ゆっくり<small>0.5×</small></button><button data-speed="1" aria-pressed="true">ふつう<small>1×</small></button><button data-speed="1.5" aria-pressed="false">はやい<small>1.5×</small></button></div></section>
    <div class="bgm-row"><span class="label">BGM：アルプス一万尺</span><button class="bgm-toggle" id="bgmToggle" aria-pressed="false">オフ</button></div><div class="bgm-row"><span class="label">効果音</span><button class="bgm-toggle" id="effectToggle" aria-pressed="true">オン</button></div><p class="bgm-status" id="bgmStatus" role="status"></p>
   </aside>
-  <section class="game" aria-label="もじドロップの盤面"><div class="game-top"><span><i class="dot" id="stateDot"></i><span id="stateName">準備中</span></span><span id="boardMeta">10 列</span></div><div class="board-shell"><div class="board" id="board" tabindex="0" aria-label="10列12段の盤面。タッチ操作は左半分・右半分をタップ。パソコンは左右の矢印キーで移動します。"><div id="staticPieces"></div><div id="falling" class="piece falling" hidden><span></span></div></div><div class="status-panel" id="overlay" hidden><section class="status-card" aria-live="polite"><div class="sound-bars" id="soundBars" hidden aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><h2 id="overlayTitle"></h2><p id="overlayBody"></p><div class="status-actions" id="overlayActions"></div></section></div></div><p class="board-caption" id="caption">空いているマスに、文字をならべます。</p><div class="controls"><button class="control pause" id="pause" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg><span>一時停止</span></button><button class="control fast" id="down" aria-label="押している間速く落とす" disabled>↓ はやく</button></div></section>
- </main><footer class="footer"><span>イラストなし。ことばは音声で出題します。</span><button class="text-button" id="export" disabled>プレイ記録を保存</button></footer>
+  <section class="game" aria-label="もじドロップの盤面"><div class="game-top"><span><i class="dot" id="stateDot"></i><span id="stateName">準備中</span></span><span id="boardMeta">10 列</span></div><section id="arrangePanel" hidden aria-label="もじならべ">
+<div id="arrangePlay"><p class="arrange-label">こたえ</p><div class="arrange-tiles arrange-answer" id="arrangeAnswer" aria-label="答えの文字"></div><p class="arrange-label">もじ</p><div class="arrange-tiles" id="arrangeBank" aria-label="使う文字"></div><p id="arrangeFeedback" role="status" aria-live="polite"></p><div class="arrange-actions"><button class="secondary" id="arrangeReset">ならべなおす</button><button class="primary" id="arrangeCheck">こたえあわせ</button><button class="primary" id="arrangeNext" hidden>つぎへ</button></div></div>
+<div id="arrangeEnd" hidden><h2>終了</h2><p id="arrangeResult"></p><button class="primary" id="arrangeAgain">もう一度</button><button class="secondary" id="arrangeBack">はじめに戻る</button></div>
+<p id="arrangeStatus" role="status"></p><button class="secondary" id="arrangeRetry" hidden>もう一度聞く</button></section><div class="board-shell"><div class="board" id="board" tabindex="0" aria-label="10列12段の盤面。タッチ操作は左半分・右半分をタップ。パソコンは左右の矢印キーで移動します。"><div id="staticPieces"></div><div id="falling" class="piece falling" hidden><span></span></div></div><div class="status-panel" id="overlay" hidden><section class="status-card" aria-live="polite"><div class="sound-bars" id="soundBars" hidden aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><h2 id="overlayTitle"></h2><p id="overlayBody"></p><div class="status-actions" id="overlayActions"></div></section></div></div><p class="board-caption" id="caption">空いているマスに、文字をならべます。</p><div class="controls"><button class="control pause" id="pause" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg><span>一時停止</span></button><button class="control fast" id="down" aria-label="押している間速く落とす" disabled>↓ はやく</button></div></section>
+ </main><footer class="footer"><button class="text-button" id="export" disabled>プレイ記録を保存</button></footer>
 </div>
-<dialog class="help-dialog" id="helpDialog"><h2>あそびかた</h2><p>「問題を編集」でことばを登録するか、用意された問題を選んではじめます。音声が終わると、文字が落ちてきます。</p><p>iPad・iPhoneでは盤面の左半分・右半分をタップ、パソコンでは← →キーで文字を動かし、空いているマスにことばを完成させてください。文字を置かないマスは、無地のブロックで埋まっています。「↓ はやく」を押している間は速く落ちます。パソコンでは↓キーも使えます。</p><p>「もう一度聞く」で動きを止めて聞き直せます。一時停止中は盤面を隠さず、時間も止まります。別のタブやウィンドウへ移ると自動停止します。</p><p>右上の「問題を編集」で、ことばの一括登録とCSVの取り込み・書き出しができます。BGMは左側のボタンでオン・オフできます。</p><p>音声は端末の日本語・英語音声を使用します。英字の表示はホーム画面で変更できます。完成すると行が消えます。間違えた行は残り、12行まで積み上がるとゲームオーバーです。</p><button class="primary" id="closeHelp">閉じる</button></dialog>
+<dialog class="help-dialog" id="helpDialog"><h2>あそびかた</h2><p>「あそび方」で「もじドロップ」か「もじならべ」を選びます。もじならべは、文字をタップして左から順に入れ、「こたえあわせ」で確認します。答えの文字をタップすると戻せます。ドラッグで入れ替えることもできます。時間制限はありません。</p><p>「問題を編集」でことばを登録するか、用意された問題を選んではじめます。音声が終わると、文字が落ちてきます。</p><p>iPad・iPhoneでは盤面の左半分・右半分をタップ、パソコンでは← →キーで文字を動かし、空いているマスにことばを完成させてください。文字を置かないマスは、無地のブロックで埋まっています。「↓ はやく」を押している間は速く落ちます。パソコンでは↓キーも使えます。</p><p>「もう一度聞く」で動きを止めて聞き直せます。一時停止中は盤面を隠さず、時間も止まります。別のタブやウィンドウへ移ると自動停止します。</p><p>右上の「問題を編集」で、ことばの一括登録とCSVの取り込み・書き出しができます。BGMは左側のボタンでオン・オフできます。</p><p>音声は端末の日本語・英語音声を使用します。英字の表示はホーム画面で変更できます。完成すると行が消えます。間違えた行は残り、12行まで積み上がるとゲームオーバーです。</p><button class="primary" id="closeHelp">閉じる</button></dialog>
 <dialog class="help-dialog editor-dialog" id="editorDialog" aria-labelledby="editorTitle">
  <div class="editor-head"><h2 id="editorTitle">問題を編集</h2><button class="secondary" id="closeEditor" aria-label="編集を閉じる">閉じる</button></div>
  <p class="editor-note">答えと読み上げることばを、1問ずつ登録します。答えは15文字まで、最大500問です。読み上げることばが空欄なら答えを読みます。</p>
@@ -270,7 +277,7 @@ function renderPhase(){
  $('pause').disabled=!['playing','paused','reading','delay','clearing'].includes(phase);$('pause').querySelector('span').textContent=phase==='paused'?'つづける':'一時停止';
  $('down').disabled=phase!=='playing';$('listenAgain').disabled=!['playing','paused','delay','error'].includes(phase);
  $('export').disabled=!game.events.length;$('overlay').hidden=setup||phase==='playing'||phase==='paused'||phase==='clearing';$('soundBars').hidden=phase!=='reading';$('overlayActions').replaceChildren();
- const titles={reading:'ことばを、聞こう。',delay:'はじめます。',paused:'ひとやすみ。',error:'音声を確認してください',won:'できました。',gameover:'ゲームオーバー'};
+ const titles={reading:'ことばを、聞こう。',delay:'はじめます。',paused:'一時停止',error:'音声を確認してください',won:'できました。',gameover:'ゲームオーバー'};
  $('overlayTitle').textContent=titles[phase]||'';
  $('overlayBody').textContent=phase==='reading'?(game.failures?'もう一度、音声を聞いてみましょう。':'読み上げが終わると、文字が落ちてきます。'):phase==='paused'?'文字も時間も止まっています。\n同じところから再開できます。':phase==='error'?voiceMessage:phase==='gameover'?`12行まで積み上がりました。\n消した行 ${game.cleared}行` :phase==='won'?`${game.words.length}問のことばを完成しました。\nプレイ時間 ${time(game.time)}`:'';
  if(phase==='paused')action('つづける',togglePause,true);
@@ -347,6 +354,92 @@ $('saveQuestions').onclick=()=>{const data=checkDraft();if(!data)return;library=
 $('effectToggle').onclick=()=>{clearSound.enabled=!clearSound.enabled;if(clearSound.enabled)clearSound.prepare();else clearSound.stop();$('effectToggle').setAttribute('aria-pressed',String(clearSound.enabled));$('effectToggle').textContent=clearSound.enabled?'オン':'オフ';};
 $('bgmToggle').onclick=()=>{music.foreground=true;if(music.enabled){music.enabled=false;music.stop();music.button();}else music.enable();};
 $('export').onclick=()=>{const q=x=>'"'+String(x??'').replace(/^[=+@-]/,"'$&").replaceAll('"','""')+'"';let rows=[['日時','動作','問題番号','答え','読み上げ','読み上げ言語','速度','プレイ時間秒','回答時間秒','停止時間秒','詳細'],...game.events.map(e=>[e.date,e.event,e.number,e.word,e.reading,e.language,e.speed,e.time.toFixed(2),e.questionTime.toFixed(2),e.pauseTime.toFixed(2),e.detail])];let blob=new Blob(['\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});let url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='もじドロップ_'+new Date().toISOString().replace(/[:.]/g,'-')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+// The original dropping game remains the default; both modes share its settings,
+// question library, speech, CSV editor, music, and event export.
+const originalBegin=Game.prototype.begin,originalTick=Game.prototype.tick,originalHeard=Game.prototype.heard,originalPause=Game.prototype.pause;
+function isArrange(){return game.mode==='arrange';}
+Game.prototype.begin=function(){
+ if(!isArrange())return originalBegin.call(this);
+ this.letters=split(this.current.word);this.columns=Math.max(10,this.letters.length);this.offset=0;this.fixed=[];this.walls=[];this.queue=[];this.tile=null;
+ this.arrangeSlots=this.letters.map(()=>null);let ids=this.letters.map((_,i)=>i);
+ if(this.showFirst&&ids.length>1)this.arrangeSlots[0]=ids.shift();
+ this.arrangePool=[...ids];for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[this.arrangePool[i],this.arrangePool[j]]=[this.arrangePool[j],this.arrangePool[i]];}
+ if(this.arrangePool.map(i=>this.letters[i]).join('')===ids.map(i=>this.letters[i]).join('')){const j=this.arrangePool.findIndex(i=>this.letters[i]!==this.letters[this.arrangePool[0]]);if(j>0)[this.arrangePool[0],this.arrangePool[j]]=[this.arrangePool[j],this.arrangePool[0]];}
+ this.arrangeMessage='';this.phase='reading';this.fast=false;this.questionTime=0;this.revision++;this.log('出題','もじならべ');
+};
+Game.prototype.tick=function(dt){if(!isArrange())return originalTick.call(this,dt);};
+Game.prototype.heard=function(){if(!isArrange())return originalHeard.call(this);if(this.phase==='reading')this.phase=this.arrangeSolved?'solved':'playing';};
+Game.prototype.pause=function(){if(isArrange()&&this.phase==='solved'){this.before='solved';this.phase='paused';this.log('一時停止');}else originalPause.call(this);};
+const originalStart=start,originalRender=render,originalSource=updateSource,originalReplay=replayWord;
+const originalLoseFocus=loseFocus;
+loseFocus=function(){originalLoseFocus();if(isArrange()&&game.phase==='solved'){game.pause();cancelSpeech();render();}};
+start=function(){game.mode=$('playMode').value;game.arrangeSolved=false;originalStart();};
+replayWord=function(){if(isArrange()&&game.phase==='solved'){cancelSpeech();game.log('聞き直し');speak(game.current.speech,'paused',game.current.language);render();}else originalReplay();};
+function arrangeFixed(index){return game.showFirst&&game.letters.length>1&&index===0;}
+function arrangeChanged(){game.arrangeMessage='';game.revision++;game.log('文字を移動',game.arrangeSlots.map(i=>i===null?'□':game.letters[i]).join(''));drawArrange();}
+function arrangePut(id,index=game.arrangeSlots.indexOf(null)){
+ if(game.phase!=='playing'||!game.arrangePool.includes(id)||index<0||arrangeFixed(index))return;
+ const pos=game.arrangePool.indexOf(id),old=game.arrangeSlots[index];game.arrangePool.splice(pos,1);if(old!==null)game.arrangePool.splice(pos,0,old);game.arrangeSlots[index]=id;arrangeChanged();
+}
+function arrangeReturn(index){if(game.phase!=='playing'||arrangeFixed(index)||game.arrangeSlots[index]===null)return;game.arrangePool.push(game.arrangeSlots[index]);game.arrangeSlots[index]=null;arrangeChanged();}
+function arrangeSwap(from,to){if(game.phase!=='playing'||arrangeFixed(from)||arrangeFixed(to)||from===to)return;[game.arrangeSlots[from],game.arrangeSlots[to]]=[game.arrangeSlots[to],game.arrangeSlots[from]];arrangeChanged();}
+let arrangeDrag=null;
+function arrangeDraggable(el,item){el.draggable=true;el.addEventListener('dragstart',e=>{arrangeDrag=item;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',JSON.stringify(item));});el.addEventListener('dragend',()=>{arrangeDrag=null;document.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));});}
+function arrangeDrop(el,fn){el.addEventListener('dragover',e=>{if(game.phase==='playing'&&arrangeDrag){e.preventDefault();el.classList.add('drag-over');}});el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag-over');if(arrangeDrag){const item=arrangeDrag;arrangeDrag=null;fn(item);}});}
+function arrangeButton(text,label){const b=document.createElement('button');b.type='button';b.className='arrange-tile';b.textContent=text;b.setAttribute('aria-label',label);return b;}
+let arrangeDrawRevision=-1,arrangeDrawPhase='';
+function drawArrange(){
+ $('arrangeFeedback').textContent=game.arrangeMessage||'';
+ if(arrangeDrawRevision===game.revision&&arrangeDrawPhase===game.phase)return;
+ arrangeDrawRevision=game.revision;arrangeDrawPhase=game.phase;
+ const active=document.activeElement?.dataset?.arrangeFocus;
+ $('arrangeAnswer').replaceChildren();$('arrangeBank').replaceChildren();
+ game.arrangeSlots.forEach((id,index)=>{const fixed=arrangeFixed(index),b=arrangeButton(id===null?'・':game.letters[id],`${index+1}文字目：${id===null?'空き':game.letters[id]}${fixed?'（ヒント）':id===null?'':'（押すと戻す）'}`);b.dataset.arrangeFocus='slot-'+index;b.disabled=fixed||game.phase!=='playing';if(id===null)b.classList.add('empty');if(fixed)b.classList.add('hint');if(game.arrangeSolved)b.classList.add('correct');b.onclick=()=>arrangeReturn(index);if(!b.disabled){if(id!==null)arrangeDraggable(b,{kind:'slot',index});arrangeDrop(b,item=>item.kind==='pool'?arrangePut(item.id,index):arrangeSwap(item.index,index));}$('arrangeAnswer').append(b);});
+ game.arrangePool.forEach((id,index)=>{const b=arrangeButton(game.letters[id],`文字 ${game.letters[id]}（${index+1}枚目）を入れる`);b.dataset.arrangeFocus='pool-'+id;b.disabled=game.phase!=='playing';b.onclick=()=>arrangePut(id);if(!b.disabled)arrangeDraggable(b,{kind:'pool',id});$('arrangeBank').append(b);});
+ $('arrangeCheck').disabled=game.phase!=='playing'||game.arrangeSlots.includes(null);$('arrangeCheck').hidden=game.arrangeSolved;$('arrangeNext').hidden=!game.arrangeSolved;$('arrangeNext').disabled=game.phase!=='solved';$('arrangeReset').disabled=game.phase!=='playing';
+ if(active){const buttons=[...document.querySelectorAll('[data-arrange-focus]')],target=buttons.find(b=>b.dataset.arrangeFocus===active&&!b.disabled);(target||$('arrangeBank').querySelector('button:not(:disabled)')||$('arrangeCheck')).focus();}
+}
+function modeView(){
+ const mode=game.phase==='setup'?$('playMode').value:game.mode;
+ $('app').dataset.mode=mode;
+ $('modeNote').textContent=mode==='arrange'?'文字をタップして並べ、こたえあわせを押します。':'文字はランダムな順番で落ちてきます。';
+ if($('source').value==='registered'&&library.length)$('libraryNotice').textContent=`${library.length}問を登録済み。上から順に出題します。`;
+}
+updateSource=function(){originalSource();modeView();};
+render=function(){
+ originalRender();modeView();
+ const arrange=isArrange()&&game.phase!=='setup';$('arrangePanel').hidden=!arrange;
+ if(!arrange)return;
+ const phase=game.phase;
+ $('stateName').textContent={reading:'読み上げ中',playing:'もじならべ',solved:'正解',paused:'一時停止',error:'音声の確認',won:'終了'}[phase]||'';
+ $('boardMeta').textContent=`${game.index+1} / ${game.words.length} 問`;
+ $('pause').disabled=!['playing','paused','reading','solved'].includes(phase);
+ $('listenAgain').disabled=!['playing','paused','error','solved'].includes(phase);
+ $('arrangePlay').hidden=phase==='won';$('arrangeEnd').hidden=phase!=='won';
+ $('arrangeStatus').textContent=phase==='reading'?'読み上げ中':phase==='paused'?'一時停止':phase==='error'?voiceMessage:'';
+ $('arrangeRetry').hidden=phase!=='error';
+ if(phase==='won')$('arrangeResult').textContent=`${game.words.length}問終了`;
+ else drawArrange();
+};
+$('playMode').onchange=()=>{modeView();};
+$('arrangeCheck').onclick=()=>{
+ if(game.phase!=='playing'||game.arrangeSlots.includes(null))return;
+ const answer=game.arrangeSlots.map(i=>game.letters[i]).join('');
+ if(answer===game.current.word){cancelSpeech();game.arrangeSolved=true;game.cleared++;game.phase='solved';game.log('正解',answer);game.arrangeMessage='正解';clearSound.play();}
+ else{game.log('もう一度',answer);game.arrangeMessage='もう一度';}
+ game.revision++;render();if(game.phase==='solved')$('arrangeNext').focus();
+};
+$('arrangeReset').onclick=()=>{if(game.phase!=='playing')return;game.arrangeSlots.forEach((id,i)=>{if(id!==null&&!arrangeFixed(i)){game.arrangePool.push(id);game.arrangeSlots[i]=null;}});arrangeChanged();};
+$('arrangeNext').onclick=()=>{if(game.phase!=='solved')return;cancelSpeech();clearSound.stop();game.arrangeSolved=false;if(game.index+1<game.words.length){game.index++;game.begin();render();speakCurrent();$('listenAgain').focus();}else{game.phase='won';game.log('全問終了');render();$('arrangeAgain').focus();}};
+$('arrangeAgain').onclick=()=>start();$('arrangeBack').onclick=back;$('arrangeRetry').onclick=()=>replayWord();
+arrangeDrop($('arrangeBank'),item=>{if(item.kind==='slot')arrangeReturn(item.index);});
+// Rebind handlers previously assigned to the original functions.
+$('start').onclick=()=>start();$('listenAgain').onclick=()=>replayWord();$('source').onchange=()=>updateSource();
+// Let focused tile buttons handle Space/Enter in this mode.
+document.addEventListener('keydown',e=>{if(!isArrange()||game.phase==='setup'||$('helpDialog').open||$('editorDialog').open||e.target.matches('input,textarea,select'))return;if(e.code==='Space'||e.key.startsWith('Arrow'))e.stopImmediatePropagation();},true);
+window.addEventListener('blur',()=>{if(isArrange()&&game.phase==='solved'){game.pause();cancelSpeech();render();}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&isArrange()&&game.phase==='solved'){game.pause();cancelSpeech();render();}});
+
 loadPresetSelection();if(!library.length)$('source').value='preset';updateSource();render();requestAnimationFrame(frame);
 </script>
 </body>
