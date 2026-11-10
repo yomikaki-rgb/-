@@ -36,7 +36,7 @@ h1{display:flex;align-items:center;gap:10px}.app-icon{width:36px;height:36px;obj
 <main id="settingsView" hidden>
 <div class="settings-head"><h2>設定</h2><button class="primary" id="closeSettings">練習画面に戻る</button></div>
 <div class="settings-grid">
-<section class="settings"><h2>練習の種類</h2><label class="toggle">練習<select id="practiceMode"><option value="words">単語</option><option value="kana">一文字</option><option value="home">ホームポジション</option></select></label><label class="toggle" id="questionOrderLabel">出題順<select id="questionOrder"><option value="ordered">順番どおり（あいうえお順）</option><option value="shuffle">シャッフル</option></select></label><label class="toggle" id="homeOrderLabel" hidden>F・Jの出題<select id="homeOrder"><option value="alternate">交互</option><option value="random">ランダム</option></select></label><div id="kanaLimits" hidden><label class="toggle">練習の長さ<select id="kanaLimit"><option value="all">選んだ文字を1周</option><option value="count">個数で決める</option><option value="time">時間で決める</option></select></label><label class="toggle" id="countOption" hidden>練習する個数<input id="kanaCount" type="number" min="1" max="1000" step="1" value="12" style="width:95px">個</label><label class="toggle" id="timeOption" hidden>練習時間<input id="kanaMinutes" type="number" min="0.5" max="60" step="0.5" value="1" style="width:95px">分</label></div><div id="rowSettings"><h3 id="rowTitle">練習する行</h3><div class="actions"><button class="secondary" id="selectAllRows">すべて選ぶ</button><button class="secondary" id="clearRows">すべて外す</button></div><div id="rowChoices" class="row-choices"></div><p id="selectionCount"></p></div></section>
+<section class="settings"><h2>練習の種類</h2><label class="toggle">練習<select id="practiceMode"><option value="words">単語</option><option value="kana">一文字</option><option value="home">ホームポジション</option></select></label><label class="toggle" id="questionOrderLabel">出題順<select id="questionOrder"><option value="ordered">順番どおり（あいうえお順）</option><option value="shuffle">シャッフル</option></select></label><label class="toggle" id="homeOrderLabel" hidden>F・Jの出題<select id="homeOrder"><option value="alternate">交互</option><option value="random">ランダム</option></select></label><div><label class="toggle">練習の長さ<select id="practiceLimit"><option id="oneRound" value="all">選んだ問題を1周</option><option value="count">個数で決める</option><option value="time">時間で決める</option></select></label><label class="toggle" id="countOption" hidden>練習する個数<input id="practiceCount" type="number" min="1" max="1000" step="1" value="12" style="width:95px">個</label><label class="toggle" id="timeOption" hidden>練習時間<input id="practiceMinutes" type="number" min="0.5" max="60" step="0.5" value="1" style="width:95px">分</label></div><div id="rowSettings"><h3 id="rowTitle">練習する行</h3><div class="actions"><button class="secondary" id="selectAllRows">すべて選ぶ</button><button class="secondary" id="clearRows">すべて外す</button></div><div id="rowChoices" class="row-choices"></div><p id="selectionCount"></p></div></section>
 <section class="settings"><h2>表示・音声</h2>
 <label class="toggle">最初に読み上げ<input type="checkbox" id="autoSpeak" checked></label>
 
@@ -63,11 +63,11 @@ h1{display:flex;align-items:center;gap:10px}.app-icon{width:36px;height:36px;obj
 'use strict';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 const defaults={little:'#23bea8',ring:'#ef653f',middle:'#438bc9',index:'#f5b82f'};
-const kana={あ:['a'],い:['i','yi'],う:['u','wu'],え:['e'],お:['o'],か:['ka'],き:['ki'],く:['ku'],け:['ke'],こ:['ko'],さ:['sa'],し:['shi','si'],す:['su'],せ:['se'],そ:['so'],た:['ta'],ち:['chi','ti'],つ:['tsu','tu'],て:['te'],と:['to'],な:['na'],に:['ni'],ぬ:['nu'],ね:['ne'],の:['no'],は:['ha'],ひ:['hi'],ふ:['fu','hu'],へ:['he'],ほ:['ho'],ま:['ma'],み:['mi'],む:['mu'],め:['me'],も:['mo'],や:['ya'],ゆ:['yu'],よ:['yo'],ら:['ra'],り:['ri'],る:['ru'],れ:['re'],ろ:['ro'],わ:['wa'],を:['wo'],ん:['nn'],が:['ga'],ぎ:['gi'],ぐ:['gu'],げ:['ge'],ご:['go'],ざ:['za'],じ:['ji','zi'],ず:['zu'],ぜ:['ze'],ぞ:['zo'],だ:['da'],ぢ:['di'],づ:['du'],で:['de'],ど:['do'],ば:['ba'],び:['bi'],ぶ:['bu'],べ:['be'],ぼ:['bo'],ぱ:['pa'],ぴ:['pi'],ぷ:['pu'],ぺ:['pe'],ぽ:['po'],ぁ:['xa','la'],ぃ:['xi','li'],ぅ:['xu','lu'],ぇ:['xe','le'],ぉ:['xo','lo'],ゃ:['xya','lya'],ゅ:['xyu','lyu'],ょ:['xyo','lyo'],ゎ:['xwa','lwa'],ゔ:['vu'],'ー':['-']};
+const kana={あ:['a'],い:['i','yi'],う:['u','wu'],え:['e'],お:['o'],か:['ka'],き:['ki'],く:['ku'],け:['ke'],こ:['ko'],さ:['sa'],し:['shi','si'],す:['su'],せ:['se'],そ:['so'],た:['ta'],ち:['chi','ti'],つ:['tsu','tu'],て:['te'],と:['to'],な:['na'],に:['ni'],ぬ:['nu'],ね:['ne'],の:['no'],は:['ha'],ひ:['hi'],ふ:['fu','hu'],へ:['he'],ほ:['ho'],ま:['ma'],み:['mi'],む:['mu'],め:['me'],も:['mo'],や:['ya'],ゆ:['yu'],よ:['yo'],ら:['ra'],り:['ri'],る:['ru'],れ:['re'],ろ:['ro'],わ:['wa'],を:['wo'],ん:['nn'],が:['ga'],ぎ:['gi'],ぐ:['gu'],げ:['ge'],ご:['go'],ざ:['za'],じ:['zi'],ず:['zu'],ぜ:['ze'],ぞ:['zo'],だ:['da'],ぢ:['di'],づ:['du'],で:['de'],ど:['do'],ば:['ba'],び:['bi'],ぶ:['bu'],べ:['be'],ぼ:['bo'],ぱ:['pa'],ぴ:['pi'],ぷ:['pu'],ぺ:['pe'],ぽ:['po'],ぁ:['xa','la'],ぃ:['xi','li'],ぅ:['xu','lu'],ぇ:['xe','le'],ぉ:['xo','lo'],ゃ:['xya','lya'],ゅ:['xyu','lyu'],ょ:['xyo','lyo'],ゎ:['xwa','lwa'],ゔ:['vu'],'ー':['-']};
 const combos={ぢゃ:['dya'],ぢゅ:['dyu'],ぢょ:['dyo'],きゃ:['kya'],きゅ:['kyu'],きょ:['kyo'],しゃ:['sha','sya'],しゅ:['shu','syu'],しょ:['sho','syo'],ちゃ:['cha','tya','cya'],ちゅ:['chu','tyu','cyu'],ちょ:['cho','tyo','cyo'],にゃ:['nya'],にゅ:['nyu'],にょ:['nyo'],ひゃ:['hya'],ひゅ:['hyu'],ひょ:['hyo'],みゃ:['mya'],みゅ:['myu'],みょ:['myo'],りゃ:['rya'],りゅ:['ryu'],りょ:['ryo'],ぎゃ:['gya'],ぎゅ:['gyu'],ぎょ:['gyo'],じゃ:['ja','jya','zya'],じゅ:['ju','jyu','zyu'],じょ:['jo','jyo','zyo'],びゃ:['bya'],びゅ:['byu'],びょ:['byo'],ぴゃ:['pya'],ぴゅ:['pyu'],ぴょ:['pyo'],ふぁ:['fa'],ふぃ:['fi'],ふぇ:['fe'],ふぉ:['fo'],てぃ:['thi'],でぃ:['dhi'],うぃ:['wi'],うぇ:['we'],うぉ:['who']};
 function normalize(s){return s.trim().replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-96));}
 // A graph of kana segments accepts alternative spellings without enumerating whole words.
-const romanForms={hepburn:{ぢゃ:'ja',ぢゅ:'ju',ぢょ:'jo',し:'shi',ち:'chi',つ:'tsu',ふ:'fu',じ:'ji',ぢ:'ji',づ:'zu',しゃ:'sha',しゅ:'shu',しょ:'sho',ちゃ:'cha',ちゅ:'chu',ちょ:'cho',じゃ:'ja',じゅ:'ju',じょ:'jo'},kunrei:{ぢゃ:'zya',ぢゅ:'zyu',ぢょ:'zyo',し:'si',ち:'ti',つ:'tu',ふ:'hu',じ:'zi',ぢ:'zi',づ:'zu',しゃ:'sya',しゅ:'syu',しょ:'syo',ちゃ:'tya',ちゅ:'tyu',ちょ:'tyo',じゃ:'zya',じゅ:'zyu',じょ:'zyo'}};
+const romanForms={hepburn:{ぢゃ:'ja',ぢゅ:'ju',ぢょ:'jo',し:'shi',ち:'chi',つ:'tsu',ふ:'fu',しゃ:'sha',しゅ:'shu',しょ:'sho',ちゃ:'cha',ちゅ:'chu',ちょ:'cho',じゃ:'ja',じゅ:'ju',じょ:'jo'},kunrei:{ぢゃ:'zya',ぢゅ:'zyu',ぢょ:'zyo',し:'si',ち:'ti',つ:'tu',ふ:'hu',しゃ:'sya',しゅ:'syu',しょ:'syo',ちゃ:'tya',ちゅ:'tyu',ちょ:'tyo',じゃ:'zya',じゅ:'zyu',じょ:'zyo'}};
 function spellings(text,options){const preferred=romanForms[$('romanStyle').value||'hepburn'][text];return preferred?[preferred,...options.filter(x=>x!==preferred)]:options;}
 function segments(word){const s=normalize(word),out=[];for(let i=0;i<s.length;i++){const two=s.slice(i,i+2);if(combos[two]){const separate=(kana[s[i]]||[]).flatMap(a=>(kana[s[i+1]]||[]).map(b=>a+b));out.push(spellings(two,[...combos[two],...separate]));i++;}else if(s[i]==='っ'){const next=spellings(s.slice(i+1,i+3),combos[s.slice(i+1,i+3)]||spellings(s[i+1],kana[s[i+1]]||[]));out.push([...new Set([...next.filter(x=>/^[bcdfghjklmpqrstvwxyz]/.test(x)).map(x=>x[0]),'xtu','ltu','xtsu','ltsu'])]);}else if(s[i]==='ん'){out.push(['nn']);}else if(kana[s[i]])out.push(spellings(s[i],kana[s[i]]));else throw Error('「'+s[i]+'」はひらがなに直してください。');}if(!out.length)throw Error('言葉を入力してください。');return out;}
 function wordRecord(value){if(typeof value==='object'&&value!==null)return{text:String(value.text||value.kana||'').trim(),kana:normalize(String(value.kana||''))};const s=String(value).trim(),m=s.match(/^(.*?)\s*[（(]([^（）()]+)[）)]$/);return m?{text:m[1].trim(),kana:normalize(m[2])}:{text:s,kana:normalize(s)};}
@@ -106,8 +106,25 @@ const homeVoiceBuffers=new Map();
 function playHomeLetter(key,then){stopSpeech();busy=true;render();const token=speechToken;let ended=false;function end(error){if(ended||token!==speechToken)return;ended=true;clearTimeout(speechTimer);homeSpeechSource=null;busy=false;if(then)then();else{drainInputs();render();}if(error)$('status').textContent='音声を再生できません。「もういちど聞く」を押してください。';}try{unlockAudio();if(!audio||typeof audio.decodeAudioData!=='function')throw Error('音声再生に対応していません');speechTimer=setTimeout(()=>{if(token!==speechToken)return;const source=homeSpeechSource;if(source){source.onended=null;try{source.stop();}catch(error){}}end(new Error('音声の再生が時間切れになりました'));},7000);Promise.resolve(audio.resume()).then(()=>{if(token!==speechToken)return null;if(!homeVoiceBuffers.has(key)){const bytes=Uint8Array.from(atob(HOME_LETTER_AUDIO[key]),c=>c.charCodeAt(0));const decoded=audio.decodeAudioData(bytes.buffer);homeVoiceBuffers.set(key,decoded);decoded.catch(()=>homeVoiceBuffers.delete(key));}return homeVoiceBuffers.get(key);}).then(buffer=>{if(token!==speechToken||!buffer)return;const source=audio.createBufferSource();homeSpeechSource=source;source.buffer=buffer;source.connect(audio.destination);source.onended=()=>end();source.start();}).catch(error=>end(error));}catch(error){end(error);}}
 
 const settings=['showQuestion','autoSpeak','showRomaji','showKeyboard','showHands','sound','keySound','errorSound','showNextKey','highlightVowels','highlightConsonants'];
-function save(){try{localStorage.setItem('irodori-standalone-v1',JSON.stringify(Object.fromEntries([...settings.map(k=>[k,$(k).checked]),...Object.keys(defaults).map(k=>[k,$(k+'Color').value]),['rate',$('rate').value],['keyVolume',$('keyVolume').value],['romanStyle',$('romanStyle').value],['letterCase',$('letterCase').value],['chosenConsonants',[...chosenConsonants]],['practiceMode',$('practiceMode').value],['questionOrder',$('questionOrder').value],['kanaLimit',$('kanaLimit').value],['kanaCount',$('kanaCount').value],['kanaMinutes',$('kanaMinutes').value],['selectedKanaGroups',[...selectedKanaGroups]],['homeOrder',$('homeOrder').value]])));}catch(e){}}
-try{const s=JSON.parse(localStorage.getItem('irodori-standalone-v1')||'{}');settings.forEach(k=>{if(typeof s[k]==='boolean')$(k).checked=s[k];});Object.keys(defaults).forEach(k=>{if(/^#[0-9a-f]{6}$/i.test(s[k]||''))$(k+'Color').value=s[k];});if(s.rate)$('rate').value=s.rate;if(s.keyVolume!==undefined&&Number.isFinite(Number(s.keyVolume)))$('keyVolume').value=Math.max(0,Math.min(100,Number(s.keyVolume)));if(['hepburn','kunrei'].includes(s.romanStyle))$('romanStyle').value=s.romanStyle;if(['upper','lower'].includes(s.letterCase))$('letterCase').value=s.letterCase;if(['words','kana','home'].includes(s.practiceMode))$('practiceMode').value=s.practiceMode;if(['ordered','shuffle'].includes(s.questionOrder))$('questionOrder').value=s.questionOrder;if(['all','count','time'].includes(s.kanaLimit))$('kanaLimit').value=s.kanaLimit;if(Number(s.kanaCount)>0)$('kanaCount').value=Math.min(1000,Math.round(Number(s.kanaCount)));if(Number(s.kanaMinutes)>0)$('kanaMinutes').value=Math.max(.5,Math.min(60,Number(s.kanaMinutes)));if(Array.isArray(s.selectedKanaGroups))selectedKanaGroups=new Set(s.selectedKanaGroups.filter(k=>Object.hasOwn(kanaGroups,k)));if(['alternate','random'].includes(s.homeOrder))$('homeOrder').value=s.homeOrder;if(Array.isArray(s.chosenConsonants))chosenConsonants=new Set(s.chosenConsonants.filter(k=>consonantOrder.includes(k)));}catch(e){}
+const practiceLengths={
+  words:{limit:'all',count:12,minutes:1},
+  kana:{limit:'all',count:12,minutes:1},
+  home:{limit:'count',count:20,minutes:1}
+};
+function practiceLength(){return practiceLengths[$('practiceMode').value];}
+function normalizeCount(value,fallback){return Math.max(1,Math.min(1000,Math.round(Number(value)||fallback)));}
+function normalizeMinutes(value){return Math.max(.5,Math.min(60,Number(value)||1));}
+function restorePracticeLengths(saved){
+  const legacyKana={limit:saved.kanaLimit,count:saved.kanaCount,minutes:saved.kanaMinutes};
+  for(const [mode,length] of Object.entries(practiceLengths)){
+    const values=saved.practiceLengths?.[mode]??(mode==='kana'?legacyKana:{});
+    if(['count','time'].includes(values.limit)||(mode!=='home'&&values.limit==='all'))length.limit=values.limit;
+    length.count=normalizeCount(values.count,length.count);
+    length.minutes=normalizeMinutes(values.minutes);
+  }
+}
+function save(){try{localStorage.setItem('irodori-standalone-v1',JSON.stringify(Object.fromEntries([...settings.map(k=>[k,$(k).checked]),...Object.keys(defaults).map(k=>[k,$(k+'Color').value]),['rate',$('rate').value],['keyVolume',$('keyVolume').value],['romanStyle',$('romanStyle').value],['letterCase',$('letterCase').value],['chosenConsonants',[...chosenConsonants]],['practiceMode',$('practiceMode').value],['questionOrder',$('questionOrder').value],['practiceLengths',practiceLengths],['selectedKanaGroups',[...selectedKanaGroups]],['homeOrder',$('homeOrder').value]])));}catch(e){}}
+try{const s=JSON.parse(localStorage.getItem('irodori-standalone-v1')||'{}');settings.forEach(k=>{if(typeof s[k]==='boolean')$(k).checked=s[k];});Object.keys(defaults).forEach(k=>{if(/^#[0-9a-f]{6}$/i.test(s[k]||''))$(k+'Color').value=s[k];});if(s.rate)$('rate').value=s.rate;if(s.keyVolume!==undefined&&Number.isFinite(Number(s.keyVolume)))$('keyVolume').value=Math.max(0,Math.min(100,Number(s.keyVolume)));if(['hepburn','kunrei'].includes(s.romanStyle))$('romanStyle').value=s.romanStyle;if(['upper','lower'].includes(s.letterCase))$('letterCase').value=s.letterCase;if(['words','kana','home'].includes(s.practiceMode))$('practiceMode').value=s.practiceMode;if(['ordered','shuffle'].includes(s.questionOrder))$('questionOrder').value=s.questionOrder;restorePracticeLengths(s);if(Array.isArray(s.selectedKanaGroups))selectedKanaGroups=new Set(s.selectedKanaGroups.filter(k=>Object.hasOwn(kanaGroups,k)));if(['alternate','random'].includes(s.homeOrder))$('homeOrder').value=s.homeOrder;if(Array.isArray(s.chosenConsonants))chosenConsonants=new Set(s.chosenConsonants.filter(k=>consonantOrder.includes(k)));}catch(e){}
 function color(f){return $(f+'Color').value;}
 function element(tag,attrs={},parent){const el=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));if(parent)parent.append(el);return el;}
 const keyMap={},fingerMap={},physicalKeys={},wrongKeyTimers=new Map();
@@ -142,22 +159,50 @@ function statesFor(prefix,questionIndex=index){ensureQuestion(questionIndex);con
 function guideFor(states,questionIndex=index){const parts=questions[questionIndex].parts;return states.map(s=>s.rest+parts.slice(s.i).map(p=>p[0]).join(''))[0]||'';}
 function updateHands(next){const target=keyMap[next],info=fingerMap[next],dirty=new Set();for(const f of fingers){const active=!!(started&&!finished&&info&&f.side===info.side&&f.finger===info.finger),x=active&&target?target.x:f.home.x,y=active&&target?target.y:f.home.y;if(f.x!==x||f.y!==y)dirty.add(f.side);f.active=active;f.tx=f.x=x;f.ty=f.y=y;const stroke=active?keyPaint(next):'none';if(f.strokeColor!==stroke){f.p.setAttribute('stroke',stroke);f.strokeColor=stroke;}f.p.style.filter='';}for(const side of dirty)paintHand(side);}
 function showTarget(next){const key=started&&!finished&&$('showNextKey').checked?next:null;if(highlightedKey!==key){if(keyMap[highlightedKey]){keyMap[highlightedKey].g.classList.toggle('target',false);keyMap[highlightedKey].text.style.fill=keyLetterColor(highlightedKey,false);}if(keyMap[key]){keyMap[key].g.classList.toggle('target',true);keyMap[key].text.style.fill=keyLetterColor(key,true);}highlightedKey=key;}updateHands(next);}
-function visibleInputView(){let prefix=typed;if((busy||drainingInputs)&&!transitioning){for(const k of pendingKeys){if(isComplete(statesFor(prefix,index),index))break;const next=prefix+k;if(statesFor(next,index).length)prefix=next;}}return{qi:index,wordIndex:index,prefix,echo:prefix,remaining:transitioning?'':guideFor(statesFor(prefix,index),index)};}
+function visibleInputView(){if(!questions.length)return{wordIndex:0,prefix:'',echo:'',remaining:''};let prefix=typed;if((busy||drainingInputs)&&!transitioning){for(const k of pendingKeys){if(isComplete(statesFor(prefix,index),index))break;const next=prefix+k;if(statesFor(next,index).length)prefix=next;}}return{qi:index,wordIndex:index,prefix,echo:prefix,remaining:transitioning?'':guideFor(statesFor(prefix,index),index)};}
 function render(){const view=visibleInputView(),rem=view.remaining,next=rem[0]||'';document.documentElement.style.setProperty('--active',keyPaint(next));romanNext.style.backgroundColor=keyPaint(next);romanNext.style.color=boxTextColor(keyPaint(next));renderTyped(view);
 $('welcome').hidden=started;$('exercise').hidden=!started||finished;$('complete').hidden=!finished;
-putText($('welcomeTitle'),questions.length?'':'設定で練習する行を選んでください');if(!timedPractice()||!started||finished)putText($('questionCount'),(questions.length?(finished?questions.length:index+1):0)+' / '+questions.length+' 問');putText($('scores'),'正解 '+score+'　ミス '+misses);if(!timedPractice()||!started||finished)$('progressBar').style.width=(questions.length?score/questions.length*100:0)+'%';
+ putText($('welcomeTitle'),questions.length?'':'設定で練習する行を選んでください');
+ putText($('scores'),'正解 '+score+'　ミス '+misses);
+ if(timedPractice()){
+   if(!started)putText($('questionCount'),practiceLength().minutes*60+' 秒');
+   if(finished)putText($('questionCount'),'0 秒 ・ '+score+' 問正解');
+   if(!started||finished)$('progressBar').style.width=finished?'100%':'0%';
+ }else{
+   putText($('questionCount'),(questions.length?(finished?questions.length:index+1):0)+' / '+questions.length+' 問');
+   $('progressBar').style.width=(questions.length?score/questions.length*100:0)+'%';
+ }
 if(revealIndex!==view.wordIndex){revealIndex=view.wordIndex;questionRevealed=false;}const visibleQuestion=$('showQuestion').checked||questionRevealed;$('word').hidden=!visibleQuestion;$('revealQuestion').hidden=$('showQuestion').checked;$('revealQuestion').textContent=questionRevealed?'ことばをかくす':'ことばを見る';const q=questions[view.wordIndex];putText(wordLabel,q?.word||'');putText(wordReading,q?'（'+q.kana+'）':'');wordReading.hidden=$('practiceMode').value!=='words';const showGuide=$('showRomaji').checked&&$('practiceMode').value!=='home';$('romaji').hidden=false;paintTyped(romanDone,displayCase(showGuide?view.prefix:view.prefix),!showGuide);$('finalInput').hidden=!finished||showGuide;paintTyped($('finalInput'),displayCase(displayedInput),true);putText(romanNext,showGuide?displayCase(next):'');putText(romanTail,showGuide?displayCase(rem.slice(1)):'');romanNext.hidden=!showGuide||!next;
 $('status').textContent='';$('status').hidden=true;$('keyboard').hidden=!$('showKeyboard').checked;handGroup.style.display=$('showHands').checked?'':'none';showTarget(next);$('start').disabled=!questions.length;$('mobileInput').disabled=false;$('replay').disabled=transitioning;}
 function persistWords(){try{localStorage.setItem('irodori-word-groups-v2',JSON.stringify({groups:wordGroups,selected:[...selectedGroups]}));}catch(e){}}
 function shuffled(list){const copy=list.slice();for(let i=copy.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[copy[i],copy[j]]=[copy[j],copy[i]];}return copy;}
-function sourceQuestions(){const mode=$('practiceMode').value;let items;if(mode==='kana'){items=Object.keys(kanaGroups).filter(g=>selectedKanaGroups.has(g)).flatMap(g=>kanaGroups[g]).map(w=>make(w));}else if(mode==='home'){return Array.from({length:20},(_,i)=>{const k=$('homeOrder').value==='random'?homeKeys[Math.random()<.5?0:1]:homeKeys[i%2];const q=make({text:k.toUpperCase(),kana:homeReadings[k]},k);q.speech=k.toUpperCase();return q;});}else{items=Object.keys(wordGroups).filter(g=>selectedGroups.has(g)).flatMap(g=>wordGroups[g]).map(w=>make(w));}return $('questionOrder').value==='shuffle'?shuffled(items):items;}
+function sourceQuestions(homeCount=20){const mode=$('practiceMode').value;let items;if(mode==='kana'){items=Object.keys(kanaGroups).filter(g=>selectedKanaGroups.has(g)).flatMap(g=>kanaGroups[g]).map(w=>make(w));}else if(mode==='home'){return Array.from({length:homeCount},(_,i)=>{const k=$('homeOrder').value==='random'?homeKeys[Math.random()<.5?0:1]:homeKeys[i%2];const q=make({text:k.toUpperCase(),kana:homeReadings[k]},k);q.speech=k.toUpperCase();return q;});}else{items=Object.keys(wordGroups).filter(g=>selectedGroups.has(g)).flatMap(g=>wordGroups[g]).map(w=>make(w));}return $('questionOrder').value==='shuffle'?shuffled(items):items;}
 let sessionTimer=0,deadline=0,pausedRemaining=0,questionRevealed=false,revealIndex=-1;
-function timedPractice(){return $('practiceMode').value==='kana'&&$('kanaLimit').value==='time';}
-function buildQuestions(){const base=sourceQuestions();if(!base.length||$('practiceMode').value!=='kana'||$('kanaLimit').value!=='count')return base;const count=Math.max(1,Math.min(1000,Math.round(Number($('kanaCount').value)||12))),items=[];while(items.length<count)items.push(...sourceQuestions());return items.slice(0,count);}
+function timedPractice(){return practiceLength().limit==='time';}
+function buildQuestions(){
+  const {limit,count}=practiceLength();
+  if($('practiceMode').value==='home'&&limit==='count')return sourceQuestions(count);
+  const items=sourceQuestions();
+  if(!items.length||limit!=='count')return items;
+  while(items.length<count)items.push(...sourceQuestions());
+  return items.slice(0,count);
+}
 function ensureQuestion(qi){if(timedPractice()&&started&&!finished&&questions.length&&qi>=questions.length)questions.push(...sourceQuestions());}
-function limitControls(){$('rowSettings').hidden=$('practiceMode').value==='home';$('homeOrderLabel').hidden=$('practiceMode').value!=='home';$('questionOrderLabel').hidden=$('practiceMode').value==='home';$('kanaLimits').hidden=$('practiceMode').value!=='kana';$('countOption').hidden=$('kanaLimit').value!=='count';$('timeOption').hidden=$('kanaLimit').value!=='time';}
+function limitControls(){
+  const mode=$('practiceMode').value,home=mode==='home',{limit,count,minutes}=practiceLength();
+  $('rowSettings').hidden=home;
+  $('homeOrderLabel').hidden=!home;
+  $('questionOrderLabel').hidden=home;
+  $('oneRound').hidden=$('oneRound').disabled=home;
+  $('oneRound').textContent=mode==='words'?'選んだ単語を1周':'選んだ文字を1周';
+  $('practiceLimit').value=limit;
+  $('practiceCount').value=count;
+  $('practiceMinutes').value=minutes;
+  $('countOption').hidden=limit!=='count';
+  $('timeOption').hidden=limit!=='time';
+}
 function stopClock(){clearTimeout(sessionTimer);sessionTimer=0;}
-function clockTick(){stopClock();if(!timedPractice()||!started||finished||!$('settingsView').hidden)return;const remaining=Math.max(0,deadline-Date.now());putText($('questionCount'),Math.ceil(remaining/1000)+' 秒 ・ '+score+' 問正解');$('progressBar').style.width=Math.min(100,Math.max(0,1-remaining/(Number($('kanaMinutes').value)*60000))*100)+'%';if(!remaining){finishPractice();return;}sessionTimer=setTimeout(clockTick,100);}
+function clockTick(){stopClock();if(!timedPractice()||!started||finished||!$('settingsView').hidden)return;const remaining=Math.max(0,deadline-Date.now());putText($('questionCount'),Math.ceil(remaining/1000)+' 秒 ・ '+score+' 問正解');$('progressBar').style.width=Math.min(100,Math.max(0,1-remaining/(practiceLength().minutes*60000))*100)+'%';if(!remaining){finishPractice();return;}sessionTimer=setTimeout(clockTick,100);}
 function finishPractice(){clearTimeout(answerTimer);answerTimer=0;transitioning=false;finished=true;stopClock();pendingKeys=[];stopSpeech();const secs=Math.max(1,Math.round((Date.now()-startTime)/1000)),acc=strokes+misses?Math.round(100*strokes/(strokes+misses)):100;$('result').textContent=score+'問正解 ・ ミス'+misses+'回 ・ 正確さ'+acc+'% ・ '+secs+'秒';render();}
 function currentSelection(){return $('practiceMode').value==='kana'?selectedKanaGroups:$('practiceMode').value==='home'?selectedHomeKeys:selectedGroups;}
 function currentGroups(){return $('practiceMode').value==='kana'?kanaGroups:$('practiceMode').value==='home'?Object.fromEntries(homeKeys.map(k=>[k,[k]])):wordGroups;}
@@ -183,7 +228,7 @@ function flashWrongKey(k){const key=physicalKeys[k.toLowerCase()];if(!key)return
 function wrongInput(k){misses++;flashWrongKey(k);tone(false);putText($('scores'),'正解 '+score+'　ミス '+misses);}
 function clearWrongKeys(){for(const[k,timer]of wrongKeyTimers){clearTimeout(timer);physicalKeys[k]?.classList.toggle('mistake',false);}wrongKeyTimers.clear();}
 function reset(){clearTimeout(answerTimer);answerTimer=0;stopClock();pausedRemaining=0;questionRevealed=false;revealIndex=-1;clearWrongKeys();displayedInput='';stopSpeech();pendingKeys=[];index=0;typed='';started=false;finished=false;transitioning=false;score=0;misses=0;strokes=0;$('mobileInput').value='';render();}
-function start(){if(started||!questions.length)return;if($('keySound').checked||$('errorSound').checked||$('sound').checked)unlockAudio();started=true;startTime=Date.now();if(timedPractice())deadline=startTime+Number($('kanaMinutes').value)*60000;render();clockTick();if($('autoSpeak').checked)say(questions[index].speech);}
+function start(){if(started||!questions.length)return;if($('keySound').checked||$('errorSound').checked||$('sound').checked)unlockAudio();started=true;startTime=Date.now();if(timedPractice())deadline=startTime+practiceLength().minutes*60000;render();clockTick();if($('autoSpeak').checked)say(questions[index].speech);}
 function sayNextAfterInput(){stopSpeech();busy=true;render();const token=speechToken,questionIndex=index;speechTimer=setTimeout(()=>{speechTimer=0;if(token!==speechToken||!started||finished||index!==questionIndex)return;if($('autoSpeak').checked)say(questions[index].speech);else{busy=false;drainInputs();render();}},400);}
 function waitForLastLetter(){clearTimeout(answerTimer);answerTimer=setTimeout(()=>{answerTimer=0;if(started&&!finished&&transitioning)nextQuestion();},200);}
 function nextQuestion(){clearTimeout(answerTimer);answerTimer=0;if(!started||finished)return;transitioning=false;ensureQuestion(index+1);if(index===questions.length-1){finishPractice();}else{index++;displayedInput=String();typed='';if($('autoSpeak').checked&&!pendingKeys.length){render();sayNextAfterInput();}else{drainInputs();render();}clockTick();}}
@@ -195,12 +240,38 @@ $('word').onclick=focusTyping;$('romaji').onclick=focusTyping;$('romaji').addEve
 $('start').onclick=start;$('restart').onclick=reset;$('again').onclick=()=>{questions=buildQuestions();reset();start();};$('replay').onclick=()=>say(questions[index].speech);
 $('romanStyle').onchange=()=>{save();loadLesson(lesson);};
 settings.forEach(k=>$(k).addEventListener('change',()=>{if(k==='highlightConsonants')renderConsonants();if(['keySound','errorSound','sound'].includes(k)&&$(k).checked)unlockAudio();if(k==='autoSpeak'&&!$(k).checked&&busy&&!transitioning){stopSpeech();drainInputs();}save();paintLearningFrames();render();}));Object.keys(defaults).forEach(k=>$(k+'Color').addEventListener('input',()=>{save();recolor();}));$('rate').onchange=save;$('keyVolume').onchange=save;$('resetColors').onclick=()=>{Object.entries(defaults).forEach(([k,v])=>$(k+'Color').value=v);save();recolor();};
-$('openSettings').onclick=()=>{if(timedPractice()&&started&&!finished){pausedRemaining=Math.max(0,deadline-Date.now());stopClock();}stopSpeech();pendingKeys=[];transitioning=false;if(started&&!finished&&questions[index]&&statesFor(typed).some(s=>s.i===questions[index].parts.length&&!s.rest))nextQuestion();$('practiceView').hidden=true;$('settingsView').hidden=false;$('restart').hidden=true;$('openSettings').hidden=true;$('closeSettings').focus();};
-$('closeSettings').onclick=()=>{$('settingsView').hidden=true;$('practiceView').hidden=false;$('restart').hidden=false;$('openSettings').hidden=false;if(started&&!finished){if(timedPractice()&&pausedRemaining){deadline=Date.now()+pausedRemaining;pausedRemaining=0;clockTick();}focusTyping();}else $('start').focus();};
+$('openSettings').onclick=()=>{
+  if(timedPractice()&&started&&!finished){pausedRemaining=Math.max(0,deadline-Date.now());stopClock();}
+  $('practiceView').hidden=true;$('settingsView').hidden=false;
+  stopSpeech();pendingKeys=[];transitioning=false;
+  if(started&&!finished&&questions[index]&&isComplete(statesFor(typed),index))nextQuestion();
+  $('restart').hidden=true;$('openSettings').hidden=true;$('closeSettings').focus();
+};
+$('closeSettings').onclick=()=>{
+  $('settingsView').hidden=true;$('practiceView').hidden=false;$('restart').hidden=false;$('openSettings').hidden=false;
+  if(started&&!finished){
+    if(timedPractice()){
+      const resumedDeadline=Date.now()+pausedRemaining;
+      startTime+=resumedDeadline-deadline;
+      deadline=resumedDeadline;
+      pausedRemaining=0;
+      clockTick();
+    }
+    focusTyping();
+  }else $('start').focus();
+};
 $('selectAllRows').onclick=()=>{const selection=currentSelection();selection.clear();for(const k of Object.keys(currentGroups()))selection.add(k);renderRows();loadLesson();};
 $('clearRows').onclick=()=>{currentSelection().clear();renderRows();loadLesson();};
 function selectConsonants(all){chosenConsonants=new Set(all?consonantOrder:[]);renderConsonants();save();paintLearningFrames();render();}$('selectAllConsonants').onclick=()=>selectConsonants(true);$('clearConsonants').onclick=()=>selectConsonants(false);$('letterCase').onchange=()=>{save();paintLearningFrames();render();renderConsonants();};
-$('revealQuestion').onclick=()=>{questionRevealed=!questionRevealed;render();};for(const id of ['kanaLimit','kanaCount','kanaMinutes'])$(id).onchange=()=>{$('kanaCount').value=Math.max(1,Math.min(1000,Math.round(Number($('kanaCount').value)||12)));$('kanaMinutes').value=Math.max(.5,Math.min(60,Number($('kanaMinutes').value)||1));loadLesson();};$('practiceMode').onchange=()=>{renderRows();loadLesson();};$('questionOrder').onchange=()=>loadLesson();$('homeOrder').onchange=()=>loadLesson();
+$('revealQuestion').onclick=()=>{questionRevealed=!questionRevealed;render();};
+for(const id of ['practiceLimit','practiceCount','practiceMinutes'])$(id).onchange=()=>{
+  const length=practiceLength();
+  length.limit=$('practiceLimit').value;
+  length.count=normalizeCount($('practiceCount').value,length.count);
+  length.minutes=normalizeMinutes($('practiceMinutes').value);
+  loadLesson();
+};
+$('practiceMode').onchange=()=>{renderRows();loadLesson();};$('questionOrder').onchange=()=>loadLesson();$('homeOrder').onchange=()=>loadLesson();
 $('applyWords').onclick=()=>{try{const ws=collectRegistrationWords();wordGroups[registeredGroup]=ws;$('practiceMode').value='words';selectedGroups=new Set([registeredGroup]);saveDraft();renderRows();loadLesson();$('customError').textContent='';$('closeSettings').onclick();start();}catch(e){$('customError').textContent=e.message;}};
 function parseCSV(text){text=text.replace(/^\uFEFF/,'');const rows=[];let row=[],field='',quoted=false,closed=false;for(let i=0;i<text.length;i++){const c=text[i];if(quoted){if(c==='"'){if(text[i+1]==='"'){field+='"';i++;}else{quoted=false;closed=true;}}else field+=c;}else if(c==='"'){if(field||closed)throw Error('CSVの引用符を確認してください。');quoted=true;}else if(c===','){row.push(field);field='';closed=false;}else if(c==='\r'||c==='\n'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(field);if(row.some(v=>v.trim()))rows.push(row);row=[];field='';closed=false;}else{if(closed&&!/\s/.test(c))throw Error('CSVの引用符の後に余分な文字があります。');if(!closed)field+=c;}}if(quoted)throw Error('CSVの引用符が閉じていません。');row.push(field);if(row.some(v=>v.trim()))rows.push(row);return rows;}
 function csvEscape(s){s=String(s??'');return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
