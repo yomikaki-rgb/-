@@ -1,0 +1,976 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>まんがと ゴロかんじ</title>
+<!--
+  画像は『まんが・ゴロで楽しく覚えて忘れない 小学漢字1026』の提供PDFから切り出しています。
+  1〜6年生のおぼえるカードの画像は『小学 全漢字おぼえるカード1026』の提供PDFの表面です。
+  教科書順は、提供されたミチムラ式漢字カード令和6年度版の光村図書順対照表（1〜6年生）に基づきます。
+  読み上げの例文は、提供された kanji-atelier.html の audioReading を使用しています。
+  読みの照合と補完に Electronic Dictionary Research and Development Group (EDRDG) の
+  KANJIDIC2 を使用し、日本語の読みを抽出して表記を整えました。
+  KANJIDIC2 に由来する読みデータは CC BY-SA 4.0 の下で提供します。
+  https://www.edrdg.org/wiki/index.php/KANJIDIC_Project
+  https://www.edrdg.org/edrdg/licence.html
+  https://creativecommons.org/licenses/by-sa/4.0/
+-->
+<style>
+  :root{color-scheme:light;--ink:#282943;--muted:#5f6074;--purple:#4f378b;--lavender:#eee8fb;--paper:#faf8f5;--line:#dfdae5;--gold:#915204}
+  :root{
+    --school-font:"UD Digi Kyokasho N","UD デジタル 教科書体 N",
+      "UD Digi Kyokasho N-R","UD デジタル 教科書体 N-R",
+      "UD Digi Kyokasho NP","UD デジタル 教科書体 NP",
+      "UD Digi Kyokasho NP-R","UD デジタル 教科書体 NP-R",
+      "UD Digi Kyokasho NK","UD デジタル 教科書体 NK",
+      "UD Digi Kyokasho NK-R","UD デジタル 教科書体 NK-R",
+      "UD Digi Kyokasho N-B","UD デジタル 教科書体 N-B",
+      "UD Digi Kyokasho NP-B","UD デジタル 教科書体 NP-B",
+      "UD Digi Kyokasho NK-B","UD デジタル 教科書体 NK-B",
+      "BIZ UDGothic","Meiryo",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 var(--school-font)}
+  button,input,select{font:inherit}
+  button,select{cursor:pointer}
+  button{color:inherit;background:white;border:1px solid var(--line);border-radius:10px;padding:.55rem .9rem;font-weight:700}
+  button:hover:enabled{border-color:var(--purple);background:#f7f2ff}
+  button:disabled{opacity:.55;cursor:default}
+  :focus-visible{outline:3px solid #7557ba;outline-offset:3px}
+  [hidden]{display:none!important}
+  .wrap{width:min(1050px,calc(100% - 32px));margin-inline:auto}
+  header{background:#efe8fb;border-bottom:1px solid #e1d7f1;padding:30px 0 25px}
+  .kicker{font-size:.8rem;letter-spacing:.09em;font-weight:800;color:var(--purple)}
+  h1,h2,p{margin:0}
+  h1{font-size:clamp(1.65rem,4vw,2.65rem);line-height:1.3;margin:8px 0}
+  h2{font-size:1.35rem;line-height:1.4}
+  .muted,small{color:var(--muted)}
+  .controls{display:flex;align-items:center;justify-content:space-between;gap:8px 18px;flex-wrap:wrap;padding:16px 0}
+  .controls nav{padding:0}
+  .grade-picker{display:flex;align-items:center;gap:.45rem;font-weight:700}
+  nav{display:flex;gap:8px;padding:20px 0 16px;flex-wrap:wrap}
+  nav button{padding:.55rem .9rem}
+  nav [aria-pressed="true"],.primary{background:var(--purple);color:white;border-color:var(--purple)}
+  nav [aria-pressed="true"]:hover,.primary:hover:enabled{background:#422c79;color:white}
+  main{padding-bottom:30px}
+  .panel,.empty,.tile,.quiz{background:white;border:1px solid var(--line);border-radius:16px}
+  .panel{padding:17px 19px;margin-bottom:15px}
+  .label{font-weight:800;display:block;margin-bottom:4px}
+  input[type="search"],input[type="text"],select{color:var(--ink);background:white;border:1px solid #a7a0b5;border-radius:9px;padding:.6rem .8rem;min-width:0}
+  select{max-width:100%}
+  input[type="search"]{width:100%;max-width:540px}
+  .row{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap}
+  .spread{justify-content:space-between}
+  .results{margin:11px 0 12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(265px,100%),1fr));gap:12px}
+  .tile{display:grid;grid-template-columns:1fr auto;align-items:start;gap:6px;padding:10px}
+  .tile .open{border:0;padding:.4rem .55rem;min-width:0;text-align:left;display:grid;grid-template-columns:56px minmax(0,1fr);align-items:center;gap:12px}
+  .glyph{font:700 2.25rem/1.15 var(--school-font);text-align:center;color:#43316d;background:#f2edf9;border-radius:10px;padding:7px 0}
+  .readings{display:grid;gap:1px;font-size:.88rem;overflow-wrap:anywhere}
+  .tile-glyph{display:grid;gap:3px;text-align:center}
+  .serial{font-size:.72rem;white-space:nowrap;color:var(--muted)}
+  .readings b{color:var(--purple);margin-right:.45em}
+  .star{font-size:.85rem;white-space:nowrap}
+  .star[aria-pressed="true"]{background:#fff2d5;color:#714103;border-color:#e7c57b}
+  .empty{padding:24px;text-align:center}
+  dialog{color:var(--ink);width:min(880px,calc(100% - 24px));max-height:calc(100% - 24px);border:1px solid var(--line);border-radius:16px;padding:0}
+  dialog::backdrop{background:#20172d88}
+  .dialog-head{position:sticky;top:0;z-index:1;background:white;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .dialog-body{padding:15px 16px 20px}
+  .art{display:block;width:100%;height:auto;border-radius:8px;border:1px solid #e8dfc2}
+  .original{width:min(100%,600px);display:block;margin:auto}
+  .actions{margin-top:12px}
+  .quiz{padding:20px;text-align:center;max-width:760px;margin:auto}
+  .question-reading{margin-top:12px;font-size:1.12rem}
+  .card-choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(285px,100%),1fr));gap:12px;border:0;padding:0;margin:12px 0}
+  .card-choice label{min-width:0;display:block;border:2px solid var(--line);border-radius:10px;padding:9px;cursor:pointer}
+  .card-choice label:has(input:checked){border-color:var(--purple);background:var(--lavender)}
+  .card-choice input{accent-color:var(--purple)}
+  .card-choice .art{margin-top:7px}
+  .sets-grid{display:grid;gap:10px}
+  .sets-grid .panel{margin-bottom:0;overflow-wrap:anywhere}
+  .set-editor-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;margin-top:16px}
+  .set-editor-grid h3{margin:0 0 6px;font-size:1rem}
+  @media(max-width:650px){.set-editor-grid{grid-template-columns:1fr}}
+  .set-picker{max-height:16rem;overflow:auto;padding:4px}
+  .set-picker label{min-width:3.7rem}
+  .set-order{max-height:15rem;overflow:auto;margin:6px 0;padding-left:2.1rem}
+  .set-order li{margin-bottom:4px}
+  .set-order button{padding:.15rem .5rem}
+  #set-status:empty{display:none}
+  #speech-status:empty{display:none}
+  .answer{margin:12px 0}
+  .answer p{margin-bottom:8px}
+  .center{justify-content:center}
+  .pick{display:inline-flex;align-items:center;gap:5px;padding:.28rem .6rem;border:1px solid var(--line);border-radius:8px}
+  .pick input{accent-color:var(--purple)}
+  .print-picks{max-height:12rem;overflow:auto;padding:4px}
+  .preview-title{margin:18px 0 8px}
+  #preview{display:grid;gap:14px}
+  .preview-page{width:min(610px,100%);margin:auto;container-type:inline-size}
+  #preview .sheet{aspect-ratio:210/297;padding:5.71cqw;background:white;outline:1px solid var(--line);border-radius:4px}
+  .print-heading{border-bottom:1px solid #777;font-weight:700}
+  .sheet-cards{display:grid}
+  .print-card{position:relative}
+  .print-card .serial{position:absolute;top:0;left:0;color:#333}
+  .print-card .art{width:100%;object-fit:contain;border:0;border-radius:0}
+  #preview .print-heading{font-size:3cqw;line-height:3.8cqw;margin-bottom:1.43cqw;padding-bottom:.48cqw}
+  #preview .sheet-cards{gap:1.43cqw}
+  #preview .print-card .art{height:22.86cqw}
+  #preview .print-card .serial{font-size:2cqw}
+  #print-output{display:none}
+  @media(max-width:520px){header{padding:20px 0 16px}.panel{padding:12px}.panel .spread{align-items:flex-start}.tile .open{grid-template-columns:45px minmax(0,1fr)}nav{gap:5px}nav button{padding:.45rem .65rem}}
+  @page{size:A4 portrait;margin:12mm}
+  @media print{
+    body{background:white;color:#111;font-size:11pt}
+    body > :not(#print-output){display:none!important}
+    #print-output{display:block}
+    #print-output .sheet{break-after:page}
+    #print-output .sheet:last-child{break-after:auto}
+    .print-heading{font-size:13pt;line-height:8mm;margin-bottom:3mm;padding-bottom:1mm}
+    .sheet-cards{gap:3mm}
+    .print-card{break-inside:avoid}
+    .print-card .serial{font-size:9pt}
+    .print-card .art{height:48mm}
+  }
+</style>
+<body>
+<header><div class="wrap">
+  <h1>まんがと ゴロかんじ</h1>
+</div></header>
+<main class="wrap">
+  <div class="controls">
+  <nav aria-label="がめんを えらぶ">
+    <button type="button" data-tab="search" aria-pressed="true">さがす</button>
+    <button type="button" data-tab="saved" aria-pressed="false">☆ ほぞんした かんじ <span id="saved-count">0</span></button>
+    <button type="button" data-tab="sets" aria-pressed="false">がくしゅうセット</button>
+  </nav>
+  <label class="grade-picker" for="grade">がくねん
+    <select id="grade">
+      <option value="all">ぜんぶ</option>
+      <option value="1">1ねんせい</option>
+      <option value="2">2ねんせい</option>
+      <option value="3">3ねんせい</option>
+      <option value="4">4ねんせい</option>
+      <option value="5">5ねんせい</option>
+      <option value="6">6ねんせい</option>
+    </select>
+  </label>
+  </div>
+  <section id="search">
+    <div class="panel">
+      <label class="label" for="query">かんじ・おんよみ・くんよみ</label>
+      <input id="query" type="search" placeholder="光、コウ、ひかる" autocomplete="off">
+    </div>
+    <div class="row spread results">
+      <p id="result-count" class="muted" aria-live="polite"></p>
+      <label>ならべかた
+        <select id="sort">
+          <option value="textbook">きょうかしょの じゅん</option>
+          <option value="on">おんよみの あいうえおじゅん</option>
+        </select>
+      </label>
+    </div>
+    <div id="search-list" class="grid"></div>
+  </section>
+  <section id="saved" hidden>
+    <div class="panel row spread">
+      <h2>☆ ほぞんした かんじ</h2>
+      <div class="row">
+        <button id="saved-print" data-action="print-saved">いんさつ・PDF</button>
+      </div>
+    </div>
+    <div id="saved-list" class="grid"></div>
+  </section>
+  <section id="review" hidden></section>
+  <section id="sets" hidden>
+    <div class="panel">
+      <div class="row spread">
+        <div class="row">
+          <label>せいと <select id="student-select"></select></label>
+          <button data-action="student-new">せいとを とうろく</button>
+          <button id="student-delete" data-action="student-delete">せいとを けす</button>
+        </div>
+        <div class="row">
+          <button id="set-new" class="primary" data-action="set-new">セットを つくる</button>
+          <button id="sets-export" data-action="sets-export">せいとの データを ほぞん</button>
+          <button data-action="sets-import">ファイルを よみこむ</button>
+          <input type="file" id="sets-file" accept=".json,application/json" hidden>
+        </div>
+      </div>
+      <p id="set-status" role="status"></p>
+    </div>
+    <div id="sets-list" class="sets-grid"></div>
+  </section>
+  <p id="storage-note" class="muted" role="status" hidden>ほぞんできません。</p>
+</main>
+<dialog id="dialog" aria-labelledby="dialog-title">
+  <div class="dialog-head row spread">
+    <h2 id="dialog-title"></h2>
+    <button data-action="close">とじる</button>
+  </div>
+  <div id="dialog-body" class="dialog-body"></div>
+</dialog>
+<section id="print-output" aria-hidden="true"></section>
+<script>globalThis.cardImageData = Object.create(null);</script>
+<script src="cards-01.js"></script>
+<script src="cards-02.js"></script>
+<script src="cards-03.js"></script>
+<script src="cards-04.js"></script>
+<script src="cards-05.js"></script>
+<script src="cards-06.js"></script>
+<script src="cards-07.js"></script>
+<script src="cards-08.js"></script>
+<script src="cards-09.js"></script>
+<script>
+const cards = [{"kanji":"一","grade":1,"page":16,"on":["イチ","イツ"],"kun":["ひと","ひとつ"],"id":"k-4e00"},{"kanji":"二","grade":1,"page":16,"on":["ニ"],"kun":["ふた","ふたつ"],"alt":["ジ","ふたたび"],"id":"k-4e8c"},{"kanji":"三","grade":1,"page":17,"on":["サン"],"kun":["み","みつ","みっつ"],"alt":["ゾウ"],"id":"k-4e09"},{"kanji":"四","grade":1,"page":17,"on":["シ"],"kun":["よ","よっつ","よん"],"alt":["よつ"],"id":"k-56db"},{"kanji":"五","grade":1,"page":18,"on":["ゴ"],"kun":["いつ"],"alt":["いつつ"],"id":"k-4e94"},{"kanji":"六","grade":1,"page":18,"on":["ロク"],"kun":["む","むつ","むい"],"alt":["リク","むっつ"],"id":"k-516d"},{"kanji":"七","grade":1,"page":19,"on":["シチ"],"kun":["なな","なの"],"alt":["ななつ"],"id":"k-4e03"},{"kanji":"八","grade":1,"page":19,"on":["ハチ"],"kun":["や","よう"],"alt":["ハツ","やつ","やっつ"],"id":"k-516b"},{"kanji":"九","grade":1,"page":20,"on":["キュウ","ク"],"kun":["ここの","ここのつ"],"id":"k-4e5d"},{"kanji":"十","grade":1,"page":20,"on":["ジュウ","ジッ"],"kun":["とお","と"],"alt":["ジュッ","そ"],"id":"k-5341"},{"kanji":"日","grade":1,"page":21,"on":["ニチ","ジツ"],"kun":["ひ","か"],"alt":["び"],"id":"k-65e5"},{"kanji":"月","grade":1,"page":21,"on":["ゲツ","ガツ"],"kun":["つき"],"id":"k-6708"},{"kanji":"山","grade":1,"page":22,"on":["サン"],"kun":["やま"],"alt":["セン"],"id":"k-5c71"},{"kanji":"川","grade":1,"page":22,"on":["（セン）"],"kun":["かわ"],"id":"k-5ddd"},{"kanji":"水","grade":1,"page":23,"on":["スイ"],"kun":["みず"],"id":"k-6c34"},{"kanji":"木","grade":1,"page":23,"on":["モク","ボク"],"kun":["き"],"alt":["こ"],"id":"k-6728"},{"kanji":"土","grade":1,"page":24,"on":["ド"],"kun":["つち"],"alt":["ト"],"id":"k-571f"},{"kanji":"火","grade":1,"page":24,"on":["カ"],"kun":["ひ","（ほ）"],"alt":["び"],"id":"k-706b"},{"kanji":"林","grade":1,"page":25,"on":["リン"],"kun":["はやし"],"id":"k-6797"},{"kanji":"森","grade":1,"page":25,"on":["シン"],"kun":["もり"],"id":"k-68ee"},{"kanji":"人","grade":1,"page":26,"on":["ジン"],"kun":["ひと"],"alt":["ニン","り","と"],"id":"k-4eba"},{"kanji":"口","grade":1,"page":26,"on":["コウ","ク"],"kun":["くち"],"id":"k-53e3"},{"kanji":"目","grade":1,"page":27,"on":["モク","（ボク）"],"kun":["め","（ま）"],"id":"k-76ee"},{"kanji":"耳","grade":1,"page":27,"on":["ジ"],"kun":["みみ"],"id":"k-8033"},{"kanji":"足","grade":1,"page":28,"on":["ソク"],"kun":["あし","たりる","たる","たす"],"id":"k-8db3"},{"kanji":"手","grade":1,"page":28,"on":["シュ"],"kun":["て","（た）"],"alt":["ズ"],"id":"k-624b"},{"kanji":"立","grade":1,"page":29,"on":["リツ","（リュウ）"],"kun":["たてる"],"alt":["リットル","たつ","たち","たて","だて","だてる"],"id":"k-7acb"},{"kanji":"見","grade":1,"page":29,"on":["ケン"],"kun":["みる","みえる","みせる"],"id":"k-898b"},{"kanji":"大","grade":1,"page":30,"on":["ダイ","タイ"],"kun":["おお","おおきい","おおいに"],"id":"k-5927"},{"kanji":"小","grade":1,"page":30,"on":["ショウ"],"kun":["ちいさい","こ","お"],"alt":["さ"],"id":"k-5c0f"},{"kanji":"中","grade":1,"page":31,"on":["チュウ"],"kun":["なか"],"alt":["うち","あたる"],"id":"k-4e2d"},{"kanji":"石","grade":1,"page":32,"on":["セキ","シャク","（コク）"],"kun":["いし"],"id":"k-77f3"},{"kanji":"貝","grade":1,"page":32,"on":["バイ"],"kun":["かい"],"id":"k-8c9d"},{"kanji":"犬","grade":1,"page":33,"on":["ケン"],"kun":["いぬ"],"id":"k-72ac"},{"kanji":"虫","grade":1,"page":33,"on":["チュウ"],"kun":["むし"],"alt":["キ"],"id":"k-866b"},{"kanji":"百","grade":1,"page":34,"on":["ヒャク"],"kun":[],"alt":["ビャク","もも"],"id":"k-767e"},{"kanji":"早","grade":1,"page":34,"on":["ソウ","（サッ）"],"kun":["はやい","はやまる","はやめる"],"alt":["はや","さ"],"id":"k-65e9"},{"kanji":"草","grade":1,"page":35,"on":["ソウ"],"kun":["くさ"],"alt":["ぐさ"],"id":"k-8349"},{"kanji":"花","grade":1,"page":35,"on":["カ"],"kun":["はな"],"alt":["ケ"],"id":"k-82b1"},{"kanji":"田","grade":1,"page":36,"on":["デン"],"kun":["た"],"id":"k-7530"},{"kanji":"力","grade":1,"page":36,"on":["リョク"],"kun":["ちから"],"alt":["リキ","リイ"],"id":"k-529b"},{"kanji":"男","grade":1,"page":37,"on":["ダン","ナン"],"kun":["おとこ"],"alt":["お"],"id":"k-7537"},{"kanji":"女","grade":1,"page":37,"on":["ジョ","（ニョ）","ニョウ"],"kun":["おんな","（め）"],"id":"k-5973"},{"kanji":"上","grade":1,"page":38,"on":["ジョウ","（ショウ）"],"kun":["うえ","うわ","かみ","あげる","あがる","のぼる","（のぼせる）","（のぼす）"],"alt":["シャン","あがり","のぼり","たてまつる"],"id":"k-4e0a"},{"kanji":"下","grade":1,"page":38,"on":["カ","ゲ"],"kun":["した","しも","さげる","さがる","くだる","くだす","くださる","おろす","おりる","（もと）"],"alt":["くだり"],"id":"k-4e0b"},{"kanji":"右","grade":1,"page":39,"on":["ウ","ユウ"],"kun":["みぎ"],"id":"k-53f3"},{"kanji":"左","grade":1,"page":39,"on":["サ"],"kun":["ひだり"],"alt":["シャ"],"id":"k-5de6"},{"kanji":"子","grade":1,"page":40,"on":["シ"],"kun":["こ"],"alt":["ス","ツ","ね"],"id":"k-5b50"},{"kanji":"字","grade":1,"page":40,"on":["ジ"],"kun":["（あざ）"],"alt":["あざな","な"],"id":"k-5b57"},{"kanji":"文","grade":1,"page":41,"on":["モン"],"kun":["（ふみ）"],"alt":["ブン","あや"],"id":"k-6587"},{"kanji":"本","grade":1,"page":41,"on":["ホン"],"kun":["もと"],"id":"k-672c"},{"kanji":"学","grade":1,"page":42,"on":["ガク"],"kun":["まなぶ"],"id":"k-5b66"},{"kanji":"校","grade":1,"page":42,"on":["コウ"],"kun":[],"alt":["キョウ"],"id":"k-6821"},{"kanji":"先","grade":1,"page":43,"on":["セン"],"kun":["さき"],"alt":["まず"],"id":"k-5148"},{"kanji":"生","grade":1,"page":43,"on":["セイ","ショウ"],"kun":["いきる","いかす","いける","うまれる","うむ","はえる","はやす","なま","（おう）","（き）"],"alt":["うまれ","なる","なす","むす","う"],"id":"k-751f"},{"kanji":"年","grade":1,"page":44,"on":["ネン"],"kun":["とし"],"id":"k-5e74"},{"kanji":"正","grade":1,"page":44,"on":["セイ","ショウ"],"kun":["ただしい","ただす","まさ"],"alt":["まさに"],"id":"k-6b63"},{"kanji":"夕","grade":1,"page":45,"on":["（セキ）"],"kun":["ゆう"],"id":"k-5915"},{"kanji":"名","grade":1,"page":45,"on":["メイ","ミョウ"],"kun":["な"],"id":"k-540d"},{"kanji":"入","grade":1,"page":46,"on":["ニュウ"],"kun":["いる","いれる","はいる"],"alt":["ジュ","いり","いれ"],"id":"k-5165"},{"kanji":"出","grade":1,"page":46,"on":["シュツ","（スイ）"],"kun":["でる","だす"],"alt":["で","いでる","いだす"],"id":"k-51fa"},{"kanji":"休","grade":1,"page":47,"on":["キュウ"],"kun":["やすむ","やすまる"],"alt":["やすめる"],"id":"k-4f11"},{"kanji":"千","grade":1,"page":48,"on":["セン"],"kun":["ち"],"id":"k-5343"},{"kanji":"円","grade":1,"page":48,"on":["エン"],"kun":["まるい"],"alt":["まる","まど","まどか","まろやか"],"id":"k-5186"},{"kanji":"王","grade":1,"page":49,"on":["オウ"],"kun":[],"alt":["ノウ"],"id":"k-738b"},{"kanji":"玉","grade":1,"page":49,"on":["ギョク"],"kun":["たま"],"alt":["だま"],"id":"k-7389"},{"kanji":"白","grade":1,"page":50,"on":["ハク","（ビャク）"],"kun":["しろ","しら","しろい"],"id":"k-767d"},{"kanji":"赤","grade":1,"page":50,"on":["セキ","（シャク）"],"kun":["あか","あかい","あからむ","あからめる"],"id":"k-8d64"},{"kanji":"青","grade":1,"page":51,"on":["セイ","（ショウ）"],"kun":["あお","あおい"],"id":"k-9752"},{"kanji":"金","grade":1,"page":51,"on":["キン"],"kun":["かね"],"alt":["コン","ゴン","かな","がね"],"id":"k-91d1"},{"kanji":"音","grade":1,"page":52,"on":["オン","（イン）"],"kun":["おと","ね"],"alt":["ノン"],"id":"k-97f3"},{"kanji":"車","grade":1,"page":52,"on":["シャ"],"kun":["くるま"],"id":"k-8eca"},{"kanji":"竹","grade":1,"page":53,"on":["チク"],"kun":["たけ"],"id":"k-7af9"},{"kanji":"糸","grade":1,"page":53,"on":["シ"],"kun":["いと"],"id":"k-7cf8"},{"kanji":"空","grade":1,"page":54,"on":["クウ"],"kun":["そら","あく","あける","から"],"alt":["あき","すく","すかす","むなしい"],"id":"k-7a7a"},{"kanji":"雨","grade":1,"page":54,"on":["ウ"],"kun":["あめ","あま"],"alt":["さめ"],"id":"k-96e8"},{"kanji":"天","grade":1,"page":55,"on":["テン"],"kun":["あま","（あめ）"],"alt":["あまつ"],"id":"k-5929"},{"kanji":"気","grade":1,"page":55,"on":["キ"],"kun":[],"alt":["ケ","いき","き"],"id":"k-6c17"},{"kanji":"村","grade":1,"page":56,"on":["ソン"],"kun":["むら"],"id":"k-6751"},{"kanji":"町","grade":1,"page":56,"on":["チョウ"],"kun":["まち"],"id":"k-753a"},{"kanji":"外","grade":2,"page":60,"on":["ガイ","（ゲ）"],"kun":["そと","ほか","はずす","はずれる"],"id":"k-5916"},{"kanji":"工","grade":2,"page":60,"on":["コウ","ク"],"kun":[],"id":"k-5de5"},{"kanji":"才","grade":2,"page":60,"on":["サイ"],"kun":[],"id":"k-624d"},{"kanji":"多","grade":2,"page":61,"on":["タ"],"kun":["おおい"],"id":"k-591a"},{"kanji":"少","grade":2,"page":61,"on":["ショウ"],"kun":["すくない","すこし"],"id":"k-5c11"},{"kanji":"太","grade":2,"page":61,"on":["タイ","タ"],"kun":["ふとい","ふとる"],"id":"k-592a"},{"kanji":"丸","grade":2,"page":62,"on":["ガン"],"kun":["まる","まるい","まるめる"],"id":"k-4e38"},{"kanji":"公","grade":2,"page":62,"on":["コウ"],"kun":["（おおやけ）"],"id":"k-516c"},{"kanji":"台","grade":2,"page":62,"on":["ダイ","タイ"],"kun":[],"id":"k-53f0"},{"kanji":"古","grade":2,"page":63,"on":["コ"],"kun":["ふるい","ふるす"],"id":"k-53e4"},{"kanji":"合","grade":2,"page":63,"on":["ゴウ","ガッ","カッ"],"kun":["あう","あわす","あわせる"],"id":"k-5408"},{"kanji":"点","grade":2,"page":63,"on":["テン"],"kun":[],"id":"k-70b9"},{"kanji":"今","grade":2,"page":64,"on":["コン","（キン）"],"kun":["いま"],"id":"k-4eca"},{"kanji":"会","grade":2,"page":64,"on":["カイ","（エ）"],"kun":["あう"],"id":"k-4f1a"},{"kanji":"社","grade":2,"page":64,"on":["シャ"],"kun":["やしろ"],"id":"k-793e"},{"kanji":"体","grade":2,"page":65,"on":["タイ","（テイ）"],"kun":["からだ"],"id":"k-4f53"},{"kanji":"何","grade":2,"page":65,"on":["（カ）"],"kun":["なに","なん"],"id":"k-4f55"},{"kanji":"父","grade":2,"page":66,"on":["フ"],"kun":["ちち"],"id":"k-7236"},{"kanji":"交","grade":2,"page":66,"on":["コウ"],"kun":["まじわる","まじえる","まじる","まざる","まぜる","（かう）","（かわす）"],"id":"k-4ea4"},{"kanji":"京","grade":2,"page":66,"on":["キョウ","（ケイ）"],"kun":[],"id":"k-4eac"},{"kanji":"母","grade":2,"page":67,"on":["ボ"],"kun":["はは"],"id":"k-6bcd"},{"kanji":"毎","grade":2,"page":67,"on":["マイ"],"kun":[],"id":"k-6bce"},{"kanji":"明","grade":2,"page":68,"on":["メイ","ミョウ"],"kun":["あかり","あかるい","あかるむ","あからむ","あきらか","あける","あく","あくる","あかす"],"id":"k-660e"},{"kanji":"晴","grade":2,"page":68,"on":["セイ"],"kun":["はれる","はらす"],"id":"k-6674"},{"kanji":"星","grade":2,"page":68,"on":["セイ","（ショウ）"],"kun":["ほし"],"id":"k-661f"},{"kanji":"雲","grade":2,"page":69,"on":["ウン"],"kun":["くも"],"id":"k-96f2"},{"kanji":"雪","grade":2,"page":69,"on":["セツ"],"kun":["ゆき"],"id":"k-96ea"},{"kanji":"電","grade":2,"page":69,"on":["デン"],"kun":[],"id":"k-96fb"},{"kanji":"里","grade":2,"page":70,"on":["リ"],"kun":["さと"],"id":"k-91cc"},{"kanji":"野","grade":2,"page":70,"on":["ヤ"],"kun":["の"],"id":"k-91ce"},{"kanji":"理","grade":2,"page":70,"on":["リ"],"kun":[],"id":"k-7406"},{"kanji":"原","grade":2,"page":71,"on":["ゲン"],"kun":["はら"],"id":"k-539f"},{"kanji":"岩","grade":2,"page":71,"on":["ガン"],"kun":["いわ"],"id":"k-5ca9"},{"kanji":"谷","grade":2,"page":71,"on":["（コク）"],"kun":["たに"],"id":"k-8c37"},{"kanji":"鳥","grade":2,"page":72,"on":["チョウ"],"kun":["とり"],"id":"k-9ce5"},{"kanji":"鳴","grade":2,"page":72,"on":["メイ"],"kun":["なく","なる","ならす"],"id":"k-9cf4"},{"kanji":"羽","grade":2,"page":72,"on":["（ウ）"],"kun":["は","はね"],"id":"k-7fbd"},{"kanji":"馬","grade":2,"page":73,"on":["バ"],"kun":["うま","ま"],"id":"k-99ac"},{"kanji":"牛","grade":2,"page":73,"on":["ギュウ"],"kun":["うし"],"id":"k-725b"},{"kanji":"魚","grade":2,"page":73,"on":["ギョ"],"kun":["うお","さかな"],"id":"k-9b5a"},{"kanji":"米","grade":2,"page":74,"on":["ベイ","マイ"],"kun":["こめ"],"id":"k-7c73"},{"kanji":"番","grade":2,"page":74,"on":["バン"],"kun":[],"id":"k-756a"},{"kanji":"画","grade":2,"page":74,"on":["ガ","カク"],"kun":[],"id":"k-753b"},{"kanji":"茶","grade":2,"page":75,"on":["チャ","（サ）"],"kun":[],"id":"k-8336"},{"kanji":"麦","grade":2,"page":75,"on":["（バク）"],"kun":["むぎ"],"id":"k-9ea6"},{"kanji":"自","grade":2,"page":76,"on":["ジ","シ"],"kun":["みずから"],"id":"k-81ea"},{"kanji":"首","grade":2,"page":76,"on":["シュ"],"kun":["くび"],"id":"k-9996"},{"kanji":"毛","grade":2,"page":76,"on":["モウ"],"kun":["け"],"id":"k-6bdb"},{"kanji":"顔","grade":2,"page":77,"on":["ガン"],"kun":["かお"],"id":"k-9854"},{"kanji":"頭","grade":2,"page":77,"on":["トウ","ズ","（ト）"],"kun":["あたま","（かしら）"],"id":"k-982d"},{"kanji":"声","grade":2,"page":77,"on":["セイ","（ショウ）"],"kun":["こえ","（こわ）"],"id":"k-58f0"},{"kanji":"兄","grade":2,"page":78,"on":["キョウ","（ケイ）"],"kun":["あに"],"id":"k-5144"},{"kanji":"元","grade":2,"page":78,"on":["ゲン","ガン"],"kun":["もと"],"id":"k-5143"},{"kanji":"売","grade":2,"page":78,"on":["バイ"],"kun":["うる","うれる"],"id":"k-58f2"},{"kanji":"光","grade":2,"page":79,"on":["コウ"],"kun":["ひかり","ひかる"],"id":"light"},{"kanji":"当","grade":2,"page":79,"on":["トウ"],"kun":["あたる","あてる"],"id":"hit"},{"kanji":"市","grade":2,"page":80,"on":["シ"],"kun":["いち"],"id":"k-5e02"},{"kanji":"帰","grade":2,"page":80,"on":["キ"],"kun":["かえる","かえす"],"id":"k-5e30"},{"kanji":"姉","grade":2,"page":81,"on":["（シ）"],"kun":["あね"],"id":"k-59c9"},{"kanji":"妹","grade":2,"page":81,"on":["（マイ）"],"kun":["いもうと"],"id":"k-59b9"},{"kanji":"行","grade":2,"page":82,"on":["コウ","ギョウ","（アン）"],"kun":["いく","ゆく","おこなう"],"id":"k-884c"},{"kanji":"来","grade":2,"page":82,"on":["ライ"],"kun":["くる","（きたる）","（きたす）"],"id":"k-6765"},{"kanji":"買","grade":2,"page":82,"on":["バイ"],"kun":["かう"],"id":"k-8cb7"},{"kanji":"歩","grade":2,"page":83,"on":["ホ","（ブ）","（フ）"],"kun":["あるく","あゆむ"],"id":"k-6b69"},{"kanji":"走","grade":2,"page":83,"on":["ソウ"],"kun":["はしる"],"id":"k-8d70"},{"kanji":"止","grade":2,"page":83,"on":["シ"],"kun":["とまる","とめる"],"id":"k-6b62"},{"kanji":"食","grade":2,"page":84,"on":["ショク","（ジキ）"],"kun":["くう","たべる","（くらう）"],"id":"k-98df"},{"kanji":"楽","grade":2,"page":84,"on":["ガク","ラク"],"kun":["たのしい","たのしむ"],"id":"k-697d"},{"kanji":"高","grade":2,"page":85,"on":["コウ"],"kun":["たかい","たか","たかまる","たかめる"],"id":"k-9ad8"},{"kanji":"長","grade":2,"page":85,"on":["チョウ"],"kun":["ながい"],"id":"k-9577"},{"kanji":"直","grade":2,"page":86,"on":["チョク","ジキ"],"kun":["ただちに","なおす","なおる"],"id":"k-76f4"},{"kanji":"角","grade":2,"page":86,"on":["カク"],"kun":["かど","つの"],"id":"k-89d2"},{"kanji":"形","grade":2,"page":86,"on":["ケイ","ギョウ"],"kun":["かた","かたち"],"id":"k-5f62"},{"kanji":"黒","grade":2,"page":87,"on":["コク"],"kun":["くろ","くろい"],"id":"k-9ed2"},{"kanji":"黄","grade":2,"page":87,"on":["オウ","（コウ）"],"kun":["き","（こ）"],"id":"k-9ec4"},{"kanji":"色","grade":2,"page":87,"on":["ショク","シキ"],"kun":["いろ"],"id":"k-8272"},{"kanji":"寺","grade":2,"page":88,"on":["ジ"],"kun":["てら"],"id":"k-5bfa"},{"kanji":"時","grade":2,"page":88,"on":["ジ"],"kun":["とき"],"id":"k-6642"},{"kanji":"門","grade":2,"page":89,"on":["モン"],"kun":["（かど）"],"id":"k-9580"},{"kanji":"間","grade":2,"page":89,"on":["カン","ケン"],"kun":["あいだ","ま"],"id":"k-9593"},{"kanji":"聞","grade":2,"page":89,"on":["ブン","（モン）"],"kun":["きく","きこえる"],"id":"k-805e"},{"kanji":"刀","grade":2,"page":90,"on":["トウ"],"kun":["かたな"],"id":"k-5200"},{"kanji":"切","grade":2,"page":90,"on":["セツ","（サイ）"],"kun":["きる","きれる"],"id":"k-5207"},{"kanji":"分","grade":2,"page":90,"on":["ブン","フン","ブ"],"kun":["わける","わかれる","わかる","わかつ"],"id":"k-5206"},{"kanji":"半","grade":2,"page":91,"on":["ハン"],"kun":["なかば"],"id":"k-534a"},{"kanji":"前","grade":2,"page":91,"on":["ゼン"],"kun":["まえ"],"id":"k-524d"},{"kanji":"後","grade":2,"page":91,"on":["ゴ","コウ"],"kun":["のち","うしろ","あと","（おくれる）"],"id":"k-5f8c"},{"kanji":"矢","grade":2,"page":92,"on":["（シ）"],"kun":["や"],"id":"k-77e2"},{"kanji":"弓","grade":2,"page":92,"on":["（キュウ）"],"kun":["ゆみ"],"id":"k-5f13"},{"kanji":"弟","grade":2,"page":92,"on":["ダイ","（テイ）","（デ）"],"kun":["おとうと"],"id":"k-5f1f"},{"kanji":"引","grade":2,"page":93,"on":["イン"],"kun":["ひく","ひける"],"id":"k-5f15"},{"kanji":"強","grade":2,"page":93,"on":["キョウ","（ゴウ）"],"kun":["つよい","つよめる","つよまる","（しいる）"],"id":"k-5f37"},{"kanji":"弱","grade":2,"page":93,"on":["ジャク"],"kun":["よわい","よわる","よわまる","よわめる"],"id":"k-5f31"},{"kanji":"細","grade":2,"page":94,"on":["サイ"],"kun":["ほそい","ほそる","こまか","こまかい"],"id":"k-7d30"},{"kanji":"絵","grade":2,"page":94,"on":["カイ","エ"],"kun":[],"id":"k-7d75"},{"kanji":"紙","grade":2,"page":94,"on":["シ"],"kun":["かみ"],"id":"k-7d19"},{"kanji":"線","grade":2,"page":94,"on":["セン"],"kun":[],"id":"k-7dda"},{"kanji":"組","grade":2,"page":94,"on":["ソ"],"kun":["くむ","くみ"],"id":"k-7d44"},{"kanji":"友","grade":2,"page":95,"on":["ユウ"],"kun":["とも"],"id":"k-53cb"},{"kanji":"心","grade":2,"page":98,"on":["シン"],"kun":["こころ"],"id":"k-5fc3"},{"kanji":"思","grade":2,"page":98,"on":["シ"],"kun":["おもう"],"id":"k-601d"},{"kanji":"考","grade":2,"page":98,"on":["コウ"],"kun":["かんがえる"],"id":"k-8003"},{"kanji":"書","grade":2,"page":99,"on":["ショ"],"kun":["かく"],"id":"k-66f8"},{"kanji":"知","grade":2,"page":99,"on":["チ"],"kun":["しる"],"id":"k-77e5"},{"kanji":"作","grade":2,"page":99,"on":["サク","サ"],"kun":["つくる"],"id":"k-4f5c"},{"kanji":"言","grade":2,"page":100,"on":["ゲン","ゴン"],"kun":["いう","こと"],"id":"k-8a00"},{"kanji":"答","grade":2,"page":100,"on":["トウ"],"kun":["こたえる","こたえ"],"id":"k-7b54"},{"kanji":"算","grade":2,"page":100,"on":["サン"],"kun":[],"id":"k-7b97"},{"kanji":"教","grade":2,"page":101,"on":["キョウ"],"kun":["おしえる","おそわる"],"id":"k-6559"},{"kanji":"数","grade":2,"page":101,"on":["スウ","（ス）"],"kun":["かず","かぞえる"],"id":"k-6570"},{"kanji":"計","grade":2,"page":102,"on":["ケイ"],"kun":["はかる","はからう"],"id":"k-8a08"},{"kanji":"話","grade":2,"page":102,"on":["ワ"],"kun":["はなす","はなし"],"id":"k-8a71"},{"kanji":"語","grade":2,"page":102,"on":["ゴ"],"kun":["かたる","かたらう"],"id":"k-8a9e"},{"kanji":"読","grade":2,"page":103,"on":["ドク","トク","トウ"],"kun":["よむ"],"id":"k-8aad"},{"kanji":"記","grade":2,"page":103,"on":["キ"],"kun":["しるす"],"id":"k-8a18"},{"kanji":"歌","grade":2,"page":104,"on":["カ"],"kun":["うた","うたう"],"id":"k-6b4c"},{"kanji":"親","grade":2,"page":105,"on":["シン"],"kun":["おや","したしい","したしむ"],"id":"k-89aa"},{"kanji":"新","grade":2,"page":105,"on":["シン"],"kun":["あたらしい","あらた","にい"],"id":"k-65b0"},{"kanji":"広","grade":2,"page":106,"on":["コウ"],"kun":["ひろい","ひろまる","ひろめる","ひろがる","ひろげる"],"id":"k-5e83"},{"kanji":"店","grade":2,"page":106,"on":["テン"],"kun":["みせ"],"id":"k-5e97"},{"kanji":"戸","grade":2,"page":106,"on":["コ"],"kun":["と"],"id":"k-6238"},{"kanji":"室","grade":2,"page":107,"on":["シツ"],"kun":["（むろ）"],"id":"k-5ba4"},{"kanji":"家","grade":2,"page":107,"on":["カ","ケ"],"kun":["いえ","や"],"id":"k-5bb6"},{"kanji":"同","grade":2,"page":108,"on":["ドウ"],"kun":["おなじ"],"id":"k-540c"},{"kanji":"内","grade":2,"page":108,"on":["ナイ","（ダイ）"],"kun":["うち"],"id":"k-5185"},{"kanji":"肉","grade":2,"page":108,"on":["ニク"],"kun":[],"id":"k-8089"},{"kanji":"回","grade":2,"page":109,"on":["カイ","（エ）"],"kun":["まわる","まわす"],"id":"k-56de"},{"kanji":"国","grade":2,"page":109,"on":["コク"],"kun":["くに"],"id":"k-56fd"},{"kanji":"図","grade":2,"page":109,"on":["ズ","ト"],"kun":["（はかる）"],"id":"k-56f3"},{"kanji":"道","grade":2,"page":110,"on":["ドウ","（トウ）"],"kun":["みち"],"id":"k-9053"},{"kanji":"通","grade":2,"page":110,"on":["ツウ","（ツ）"],"kun":["とおる","とおす","かよう"],"id":"k-901a"},{"kanji":"近","grade":2,"page":110,"on":["キン"],"kun":["ちかい"],"id":"k-8fd1"},{"kanji":"遠","grade":2,"page":110,"on":["エン","（オン）"],"kun":["とおい"],"id":"k-9060"},{"kanji":"週","grade":2,"page":110,"on":["シュウ"],"kun":[],"id":"k-9031"},{"kanji":"用","grade":2,"page":111,"on":["ヨウ"],"kun":["もちいる"],"id":"k-7528"},{"kanji":"園","grade":2,"page":111,"on":["エン"],"kun":["（その）"],"id":"k-5712"},{"kanji":"朝","grade":2,"page":114,"on":["チョウ"],"kun":["あさ"],"id":"k-671d"},{"kanji":"昼","grade":2,"page":114,"on":["チュウ"],"kun":["ひる"],"id":"k-663c"},{"kanji":"夜","grade":2,"page":114,"on":["ヤ"],"kun":["よ","よる"],"id":"k-591c"},{"kanji":"午","grade":2,"page":115,"on":["ゴ"],"kun":[],"id":"k-5348"},{"kanji":"曜","grade":2,"page":115,"on":["ヨウ"],"kun":[],"id":"k-66dc"},{"kanji":"場","grade":2,"page":115,"on":["ジョウ"],"kun":["ば"],"id":"k-5834"},{"kanji":"春","grade":2,"page":116,"on":["シュン"],"kun":["はる"],"id":"k-6625"},{"kanji":"夏","grade":2,"page":116,"on":["カ","（ゲ）"],"kun":["なつ"],"id":"k-590f"},{"kanji":"秋","grade":2,"page":116,"on":["シュウ"],"kun":["あき"],"id":"k-79cb"},{"kanji":"冬","grade":2,"page":117,"on":["トウ"],"kun":["ふゆ"],"id":"k-51ac"},{"kanji":"科","grade":2,"page":117,"on":["カ"],"kun":[],"id":"k-79d1"},{"kanji":"東","grade":2,"page":118,"on":["トウ"],"kun":["ひがし"],"id":"k-6771"},{"kanji":"西","grade":2,"page":118,"on":["セイ","サイ"],"kun":["にし"],"id":"k-897f"},{"kanji":"南","grade":2,"page":118,"on":["ナン","（ナ）"],"kun":["みなみ"],"id":"k-5357"},{"kanji":"北","grade":2,"page":119,"on":["ホク"],"kun":["きた"],"id":"north"},{"kanji":"方","grade":2,"page":119,"on":["ホウ"],"kun":["かた"],"id":"direction"},{"kanji":"万","grade":2,"page":119,"on":["マン","（バン）"],"kun":[],"id":"ten-thousand"},{"kanji":"風","grade":2,"page":120,"on":["フウ","（フ）"],"kun":["かぜ","かざ"],"id":"k-98a8"},{"kanji":"船","grade":2,"page":120,"on":["セン"],"kun":["ふね","ふな"],"id":"k-8239"},{"kanji":"海","grade":2,"page":121,"on":["カイ"],"kun":["うみ"],"id":"k-6d77"},{"kanji":"汽","grade":2,"page":121,"on":["キ"],"kun":[],"id":"k-6c7d"},{"kanji":"活","grade":2,"page":121,"on":["カツ"],"kun":[],"id":"k-6d3b"},{"kanji":"地","grade":2,"page":122,"on":["チ","ジ"],"kun":[],"id":"k-5730"},{"kanji":"池","grade":2,"page":122,"on":["チ"],"kun":["いけ"],"id":"k-6c60"},{"kanji":"豆","grade":3,"page":75,"on":["トウ","ズ"],"kun":["まめ"],"id":"k-8c46"},{"kanji":"短","grade":3,"page":85,"on":["タン"],"kun":["みじかい"],"id":"k-77ed"},{"kanji":"次","grade":3,"page":104,"on":["ジ","（シ）"],"kun":["つぐ"],"alt":["つぎ"],"id":"k-6b21"},{"kanji":"他","grade":3,"page":122,"on":["タ"],"kun":["ほか"],"id":"k-4ed6"},{"kanji":"始","grade":3,"page":124,"on":["シ"],"kun":["はじめる","はじまる"],"id":"k-59cb"},{"kanji":"去","grade":3,"page":124,"on":["キョ","コ"],"kun":["さる"],"id":"k-53bb"},{"kanji":"主","grade":3,"page":124,"on":["シュ","（ス）"],"kun":["おも","ぬし"],"alt":["シュウ","あるじ"],"id":"k-4e3b"},{"kanji":"住","grade":3,"page":125,"on":["ジュウ"],"kun":["すむ","すまう"],"alt":["ヂュウ","チュウ","ずまい"],"id":"k-4f4f"},{"kanji":"注","grade":3,"page":125,"on":["チュウ"],"kun":["そそぐ"],"alt":["さす","つぐ"],"id":"k-6ce8"},{"kanji":"柱","grade":3,"page":125,"on":["チュウ"],"kun":["はしら"],"id":"k-67f1"},{"kanji":"暗","grade":3,"page":126,"on":["アン"],"kun":["くらい"],"alt":["くらむ","くれる"],"id":"k-6697"},{"kanji":"昭","grade":3,"page":126,"on":["ショウ"],"kun":[],"id":"k-662d"},{"kanji":"昔","grade":3,"page":126,"on":["（セキ）","（シャク）"],"kun":["むかし"],"id":"k-6614"},{"kanji":"者","grade":3,"page":127,"on":["シャ"],"kun":["もの"],"id":"k-8005"},{"kanji":"暑","grade":3,"page":127,"on":["ショ"],"kun":["あつい"],"id":"k-6691"},{"kanji":"習","grade":3,"page":127,"on":["シュウ"],"kun":["ならう"],"alt":["ジュ","ならい"],"id":"k-7fd2"},{"kanji":"味","grade":3,"page":128,"on":["ミ"],"kun":["あじ","あじわう"],"id":"k-5473"},{"kanji":"化","grade":3,"page":128,"on":["カ","（ケ）"],"kun":["ばける","ばかす"],"alt":["ふける","けする"],"id":"k-5316"},{"kanji":"秒","grade":3,"page":128,"on":["ビョウ"],"kun":[],"id":"k-79d2"},{"kanji":"対","grade":3,"page":129,"on":["タイ","（ツイ）"],"kun":[],"alt":["あいて","こたえる","そろい","つれあい","ならぶ","むかう"],"id":"k-5bfe"},{"kanji":"取","grade":3,"page":129,"on":["シュ"],"kun":["とる"],"alt":["とり","どり"],"id":"k-53d6"},{"kanji":"帳","grade":3,"page":129,"on":["チョウ"],"kun":[],"alt":["とばり"],"id":"k-5e33"},{"kanji":"畑","grade":3,"page":130,"on":[],"kun":["はた","はたけ"],"alt":["ばたけ"],"id":"k-7551"},{"kanji":"由","grade":3,"page":130,"on":["ユウ","（ユイ）"],"kun":["（よし）"],"alt":["ユ","よる"],"id":"k-7531"},{"kanji":"申","grade":3,"page":130,"on":["（シン）"],"kun":["もうす"],"alt":["もうし","さる"],"id":"k-7533"},{"kanji":"世","grade":3,"page":131,"on":["セイ","セ"],"kun":["よ"],"alt":["ソウ"],"id":"k-4e16"},{"kanji":"界","grade":3,"page":131,"on":["カイ"],"kun":[],"id":"k-754c"},{"kanji":"央","grade":3,"page":131,"on":["オウ"],"kun":[],"id":"k-592e"},{"kanji":"全","grade":3,"page":132,"on":["ゼン"],"kun":["まったく","すべて"],"id":"k-5168"},{"kanji":"委","grade":3,"page":132,"on":["イ"],"kun":["ゆだねる"],"id":"k-59d4"},{"kanji":"員","grade":3,"page":132,"on":["イン"],"kun":[],"id":"k-54e1"},{"kanji":"章","grade":3,"page":133,"on":["ショウ"],"kun":[],"id":"k-7ae0"},{"kanji":"童","grade":3,"page":133,"on":["ドウ"],"kun":["（わらべ）"],"id":"k-7ae5"},{"kanji":"君","grade":3,"page":133,"on":["クン"],"kun":["きみ"],"alt":["ぎみ"],"id":"k-541b"},{"kanji":"平","grade":3,"page":134,"on":["ヘイ","ビョウ"],"kun":["たいら","ひら"],"alt":["ヒョウ","たいらげる"],"id":"k-5e73"},{"kanji":"和","grade":3,"page":134,"on":["ワ","（オ）"],"kun":["（やわらぐ）","（やわらげる）","（なごむ）","（なごやか）"],"alt":["カ","あえる"],"id":"k-548c"},{"kanji":"幸","grade":3,"page":134,"on":["コウ"],"kun":["さいわい","しあわせ","（さち）"],"id":"k-5e78"},{"kanji":"礼","grade":3,"page":135,"on":["レイ","（ライ）"],"kun":[],"id":"k-793c"},{"kanji":"神","grade":3,"page":135,"on":["シン","ジン"],"kun":["かみ","（かん）","（こう）"],"id":"k-795e"},{"kanji":"福","grade":3,"page":135,"on":["フク"],"kun":[],"id":"k-798f"},{"kanji":"具","grade":3,"page":136,"on":["グ"],"kun":[],"alt":["そなえる","つぶさに"],"id":"k-5177"},{"kanji":"相","grade":3,"page":136,"on":["ソウ","（ショウ）"],"kun":["あい"],"id":"k-76f8"},{"kanji":"県","grade":3,"page":136,"on":["ケン"],"kun":[],"alt":["かける"],"id":"k-770c"},{"kanji":"号","grade":3,"page":137,"on":["ゴウ"],"kun":[],"alt":["さけぶ","よびな"],"id":"k-53f7"},{"kanji":"写","grade":3,"page":137,"on":["シャ"],"kun":["うつす","うつる"],"alt":["ジャ","うつ","うつし"],"id":"k-5199"},{"kanji":"真","grade":3,"page":137,"on":["シン"],"kun":["ま"],"alt":["まこと"],"id":"k-771f"},{"kanji":"重","grade":3,"page":138,"on":["ジュウ","チョウ"],"kun":["え","おもい","かさねる","かさなる"],"alt":["おもり","おもなう","おも"],"id":"k-91cd"},{"kanji":"動","grade":3,"page":138,"on":["ドウ"],"kun":["うごく","うごかす"],"id":"k-52d5"},{"kanji":"助","grade":3,"page":138,"on":["ジョ"],"kun":["たすける","たすかる","（すけ）"],"alt":["すける"],"id":"k-52a9"},{"kanji":"勉","grade":3,"page":139,"on":["ベン"],"kun":[],"alt":["つとめる"],"id":"k-52c9"},{"kanji":"勝","grade":3,"page":139,"on":["ショウ"],"kun":["かつ","（まさる）"],"alt":["がち","すぐれる"],"id":"k-52dd"},{"kanji":"負","grade":3,"page":139,"on":["フ"],"kun":["まける","まかす","おう"],"id":"k-8ca0"},{"kanji":"氷","grade":3,"page":140,"on":["ヒョウ"],"kun":["こおり","（ひ）"],"alt":["こおる"],"id":"k-6c37"},{"kanji":"州","grade":3,"page":140,"on":["シュウ"],"kun":["（す）"],"alt":["ス"],"id":"k-5dde"},{"kanji":"島","grade":3,"page":140,"on":["トウ"],"kun":["しま"],"id":"k-5cf6"},{"kanji":"岸","grade":3,"page":141,"on":["ガン"],"kun":["きし"],"id":"k-5cb8"},{"kanji":"炭","grade":3,"page":141,"on":["タン"],"kun":["すみ"],"id":"k-70ad"},{"kanji":"両","grade":3,"page":141,"on":["リョウ"],"kun":[],"alt":["てる","ふたつ"],"id":"k-4e21"},{"kanji":"待","grade":3,"page":142,"on":["タイ"],"kun":["まつ"],"alt":["まち"],"id":"k-5f85"},{"kanji":"役","grade":3,"page":142,"on":["ヤク","（エキ）"],"kun":[],"id":"k-5f79"},{"kanji":"投","grade":3,"page":142,"on":["トウ"],"kun":["なげる"],"alt":["なげ"],"id":"k-6295"},{"kanji":"打","grade":3,"page":143,"on":["ダ"],"kun":["うつ"],"alt":["ダース","うち","ぶつ"],"id":"k-6253"},{"kanji":"持","grade":3,"page":143,"on":["ジ"],"kun":["もつ"],"alt":["もち","もてる"],"id":"k-6301"},{"kanji":"拾","grade":3,"page":143,"on":["（シュウ）","（ジュウ）"],"kun":["ひろう"],"id":"k-62fe"},{"kanji":"指","grade":3,"page":143,"on":["シ"],"kun":["ゆび","さす"],"alt":["さし"],"id":"k-6307"},{"kanji":"仕","grade":3,"page":146,"on":["シ"],"kun":["つかえる"],"alt":["ジ"],"id":"k-4ed5"},{"kanji":"係","grade":3,"page":146,"on":["ケイ"],"kun":["かかる"],"alt":["かかり","がかり","かかわる"],"id":"k-4fc2"},{"kanji":"倍","grade":3,"page":146,"on":["バイ"],"kun":[],"id":"k-500d"},{"kanji":"詩","grade":3,"page":147,"on":["シ"],"kun":[],"alt":["うた"],"id":"k-8a69"},{"kanji":"調","grade":3,"page":147,"on":["チョウ"],"kun":["しらべる","（ととのう）","（ととのえる）"],"alt":["しらべ"],"id":"k-8abf"},{"kanji":"談","grade":3,"page":147,"on":["ダン"],"kun":[],"id":"k-8ac7"},{"kanji":"終","grade":3,"page":148,"on":["シュウ"],"kun":["おわる","おえる"],"alt":["つい","ついに"],"id":"k-7d42"},{"kanji":"練","grade":3,"page":148,"on":["レン"],"kun":["ねる"],"alt":["ねり"],"id":"k-7df4"},{"kanji":"緑","grade":3,"page":148,"on":["リョク","（ロク）"],"kun":["みどり"],"id":"k-7dd1"},{"kanji":"級","grade":3,"page":149,"on":["キュウ"],"kun":[],"id":"k-7d1a"},{"kanji":"転","grade":3,"page":149,"on":["テン"],"kun":["ころがる","ころげる","ころがす","ころぶ"],"alt":["まろぶ","うたた","うつる","くるめく"],"id":"k-8ee2"},{"kanji":"軽","grade":3,"page":149,"on":["ケイ"],"kun":["かるい","（かろやか）"],"alt":["キョウ","キン","かろんじる"],"id":"k-8efd"},{"kanji":"決","grade":3,"page":150,"on":["ケツ"],"kun":["きめる","きまる"],"alt":["ぎめ","さく"],"id":"k-6c7a"},{"kanji":"油","grade":3,"page":150,"on":["ユ"],"kun":["あぶら"],"alt":["ユウ"],"id":"k-6cb9"},{"kanji":"泳","grade":3,"page":150,"on":["エイ"],"kun":["およぐ"],"id":"k-6cf3"},{"kanji":"波","grade":3,"page":150,"on":["ハ"],"kun":["なみ"],"id":"k-6ce2"},{"kanji":"洋","grade":3,"page":150,"on":["ヨウ"],"kun":[],"id":"k-6d0b"},{"kanji":"流","grade":3,"page":150,"on":["リュウ","（ル）"],"kun":["ながれる","ながす"],"alt":["ながれ"],"id":"k-6d41"},{"kanji":"消","grade":3,"page":151,"on":["ショウ"],"kun":["きえる","けす"],"id":"k-6d88"},{"kanji":"深","grade":3,"page":151,"on":["シン"],"kun":["ぶかい","ふかまる","ふかめる"],"alt":["ふかい","み"],"id":"k-6df1"},{"kanji":"温","grade":3,"page":151,"on":["オン"],"kun":["あたたか","あたたかい"],"alt":["あたたまる","あたためる","ぬく"],"id":"k-6e29"},{"kanji":"湖","grade":3,"page":151,"on":["コ"],"kun":["みずうみ"],"id":"k-6e56"},{"kanji":"港","grade":3,"page":151,"on":["コウ"],"kun":["みなと"],"id":"k-6e2f"},{"kanji":"漢","grade":3,"page":151,"on":["カン"],"kun":[],"id":"k-6f22"},{"kanji":"植","grade":3,"page":154,"on":["ショク"],"kun":["うえる","うわる"],"id":"k-690d"},{"kanji":"横","grade":3,"page":154,"on":["オウ"],"kun":["よこ"],"id":"k-6a2a"},{"kanji":"橋","grade":3,"page":154,"on":["キョウ"],"kun":["はし"],"id":"k-6a4b"},{"kanji":"根","grade":3,"page":155,"on":["コン"],"kun":["ね"],"id":"k-6839"},{"kanji":"銀","grade":3,"page":155,"on":["ギン"],"kun":[],"alt":["しろがね"],"id":"k-9280"},{"kanji":"鉄","grade":3,"page":155,"on":["テツ"],"kun":[],"alt":["くろがね"],"id":"k-9244"},{"kanji":"飲","grade":3,"page":156,"on":["イン"],"kun":["のむ"],"alt":["オン","のみ"],"id":"k-98f2"},{"kanji":"館","grade":3,"page":156,"on":["カン"],"kun":["やかた"],"alt":["たて"],"id":"k-9928"},{"kanji":"駅","grade":3,"page":156,"on":["エキ"],"kun":[],"id":"k-99c5"},{"kanji":"研","grade":3,"page":157,"on":["ケン"],"kun":["とぐ"],"id":"k-7814"},{"kanji":"究","grade":3,"page":157,"on":["キュウ"],"kun":["（きわめる）"],"alt":["ク"],"id":"k-7a76"},{"kanji":"受","grade":3,"page":157,"on":["ジュ"],"kun":["うける","うかる"],"alt":["うけ"],"id":"k-53d7"},{"kanji":"酒","grade":3,"page":158,"on":["シュ"],"kun":["さけ","さか"],"id":"k-9152"},{"kanji":"配","grade":3,"page":158,"on":["ハイ"],"kun":["くばる"],"id":"k-914d"},{"kanji":"所","grade":3,"page":158,"on":["ショ"],"kun":["ところ"],"alt":["どころ","とこ"],"id":"k-6240"},{"kanji":"列","grade":3,"page":159,"on":["レツ"],"kun":[],"alt":["レ"],"id":"k-5217"},{"kanji":"死","grade":3,"page":159,"on":["シ"],"kun":["しぬ"],"alt":["しに"],"id":"k-6b7b"},{"kanji":"祭","grade":3,"page":159,"on":["サイ"],"kun":["まつる","まつり"],"id":"k-796d"},{"kanji":"丁","grade":3,"page":160,"on":["チョウ","（テイ）"],"kun":[],"alt":["チン","トウ","チ","ひのと"],"id":"k-4e01"},{"kanji":"予","grade":3,"page":160,"on":["ヨ"],"kun":[],"alt":["シャ","あらかじめ"],"id":"k-4e88"},{"kanji":"事","grade":3,"page":160,"on":["ジ","（ズ）"],"kun":["こと"],"alt":["つかう","つかえる"],"id":"k-4e8b"},{"kanji":"発","grade":3,"page":161,"on":["ハツ","（ホツ）"],"kun":[],"alt":["たつ","あばく","おこる","つかわす","はなつ"],"id":"k-767a"},{"kanji":"登","grade":3,"page":161,"on":["トウ","ト"],"kun":["のぼる"],"alt":["ドウ","ショウ","チョウ","あがる"],"id":"k-767b"},{"kanji":"安","grade":3,"page":162,"on":["アン"],"kun":["やすい"],"alt":["やすまる","やす","やすらか"],"id":"k-5b89"},{"kanji":"守","grade":3,"page":162,"on":["シュ","ス"],"kun":["まもる","（もり）"],"alt":["まもり","かみ"],"id":"k-5b88"},{"kanji":"実","grade":3,"page":162,"on":["ジツ"],"kun":["み","みのる"],"alt":["シツ","まこと","みの","みちる"],"id":"k-5b9f"},{"kanji":"宮","grade":3,"page":162,"on":["キュウ","（グウ）","（ク）"],"kun":["みや"],"alt":["クウ"],"id":"k-5bae"},{"kanji":"宿","grade":3,"page":162,"on":["シュク"],"kun":["やど"],"alt":["やどる","やどす"],"id":"k-5bbf"},{"kanji":"寒","grade":3,"page":162,"on":["カン"],"kun":["さむい"],"id":"k-5bd2"},{"kanji":"定","grade":3,"page":163,"on":["テイ","ジョウ"],"kun":["さだめる","さだまる","（さだか）"],"id":"k-5b9a"},{"kanji":"題","grade":3,"page":163,"on":["ダイ"],"kun":[],"id":"k-984c"},{"kanji":"起","grade":3,"page":163,"on":["キ"],"kun":["おきる","おこる","おこす"],"alt":["たつ"],"id":"k-8d77"},{"kanji":"笛","grade":3,"page":166,"on":["テキ"],"kun":["ふえ"],"id":"k-7b1b"},{"kanji":"箱","grade":3,"page":166,"on":["ソウ"],"kun":["はこ"],"id":"k-7bb1"},{"kanji":"第","grade":3,"page":166,"on":["ダイ"],"kun":[],"alt":["テイ"],"id":"k-7b2c"},{"kanji":"等","grade":3,"page":167,"on":["トウ"],"kun":["ひとしい"],"alt":["など","ら"],"id":"k-7b49"},{"kanji":"筆","grade":3,"page":167,"on":["ヒツ"],"kun":["ふで"],"id":"k-7b46"},{"kanji":"苦","grade":3,"page":168,"on":["ク"],"kun":["くるしい","くるしむ","くるしめる","にがい","にがる"],"alt":["ぐるしい"],"id":"k-82e6"},{"kanji":"荷","grade":3,"page":168,"on":["カ"],"kun":["に"],"id":"k-8377"},{"kanji":"葉","grade":3,"page":168,"on":["ヨウ"],"kun":["は"],"id":"k-8449"},{"kanji":"薬","grade":3,"page":168,"on":["ヤク"],"kun":["くすり"],"id":"k-85ac"},{"kanji":"落","grade":3,"page":168,"on":["ラク"],"kun":["おちる","おとす"],"alt":["おち"],"id":"k-843d"},{"kanji":"客","grade":3,"page":169,"on":["キャク","（カク）"],"kun":[],"id":"k-5ba2"},{"kanji":"路","grade":3,"page":169,"on":["ロ"],"kun":["じ"],"alt":["ル","みち"],"id":"k-8def"},{"kanji":"鼻","grade":3,"page":172,"on":["ビ"],"kun":["はな"],"id":"k-9f3b"},{"kanji":"歯","grade":3,"page":172,"on":["シ"],"kun":["よわい"],"alt":["は","よわいする"],"id":"k-6b6f"},{"kanji":"面","grade":3,"page":172,"on":["メン"],"kun":["（おも）","（おもて）","（つら）"],"alt":["ベン"],"id":"k-9762"},{"kanji":"皮","grade":3,"page":173,"on":["ヒ"],"kun":["かわ"],"id":"k-76ae"},{"kanji":"身","grade":3,"page":173,"on":["シン"],"kun":["み"],"id":"k-8eab"},{"kanji":"命","grade":3,"page":173,"on":["メイ","（ミョウ）"],"kun":["いのち"],"id":"k-547d"},{"kanji":"急","grade":3,"page":174,"on":["キュウ"],"kun":["いそぐ"],"alt":["いそぎ","せく"],"id":"k-6025"},{"kanji":"息","grade":3,"page":174,"on":["ソク"],"kun":["いき"],"id":"k-606f"},{"kanji":"悲","grade":3,"page":174,"on":["ヒ"],"kun":["かなしい","かなしむ"],"id":"k-60b2"},{"kanji":"悪","grade":3,"page":174,"on":["アク","（オ）"],"kun":["わるい"],"alt":["わる","あし","にくい","ああ","いずくに","いずくんぞ","にくむ"],"id":"k-60aa"},{"kanji":"想","grade":3,"page":174,"on":["ソウ","（ソ）"],"kun":[],"alt":["おもう"],"id":"k-60f3"},{"kanji":"意","grade":3,"page":174,"on":["イ"],"kun":[],"id":"k-610f"},{"kanji":"感","grade":3,"page":175,"on":["カン"],"kun":[],"id":"k-611f"},{"kanji":"商","grade":3,"page":175,"on":["ショウ"],"kun":["（あきなう）"],"id":"k-5546"},{"kanji":"羊","grade":3,"page":178,"on":["ヨウ"],"kun":["ひつじ"],"id":"k-7f8a"},{"kanji":"美","grade":3,"page":178,"on":["ビ"],"kun":["うつくしい"],"alt":["ミ"],"id":"k-7f8e"},{"kanji":"着","grade":3,"page":178,"on":["チャク","（ジャク）"],"kun":["きる","きせる","つく","つける"],"id":"k-7740"},{"kanji":"表","grade":3,"page":179,"on":["ヒョウ"],"kun":["おもて","あらわす","あらわれる"],"id":"k-8868"},{"kanji":"服","grade":3,"page":179,"on":["フク"],"kun":[],"id":"k-670d"},{"kanji":"育","grade":3,"page":180,"on":["イク"],"kun":["そだてる","はぐくむ"],"alt":["そだつ","そだち"],"id":"k-80b2"},{"kanji":"有","grade":3,"page":180,"on":["（ウ）"],"kun":["ある"],"alt":["ユウ"],"id":"k-6709"},{"kanji":"期","grade":3,"page":180,"on":["キ","（ゴ）"],"kun":[],"id":"k-671f"},{"kanji":"集","grade":3,"page":181,"on":["シュウ"],"kun":["あつまる","あつめる","（つどう）"],"id":"k-96c6"},{"kanji":"整","grade":3,"page":181,"on":["セイ"],"kun":["ととのえる","ととのう"],"id":"k-6574"},{"kanji":"反","grade":3,"page":182,"on":["ハン","（ホン）","（タン）"],"kun":["そる","そらす"],"alt":["ホ","かえす","かえる"],"id":"k-53cd"},{"kanji":"坂","grade":3,"page":182,"on":["ハン"],"kun":["さか"],"id":"k-5742"},{"kanji":"板","grade":3,"page":182,"on":["ハン"],"kun":["いた"],"alt":["バン"],"id":"k-677f"},{"kanji":"返","grade":3,"page":183,"on":["ヘン"],"kun":["かえす","かえる"],"id":"k-8fd4"},{"kanji":"送","grade":3,"page":183,"on":["ソウ"],"kun":["おくる"],"id":"k-9001"},{"kanji":"速","grade":3,"page":183,"on":["ソク"],"kun":["はやい","はやめる","（すみやか）"],"alt":["はや"],"id":"k-901f"},{"kanji":"追","grade":3,"page":183,"on":["ツイ"],"kun":["おう"],"id":"k-8ffd"},{"kanji":"進","grade":3,"page":183,"on":["シン"],"kun":["すすむ","すすめる"],"id":"k-9032"},{"kanji":"運","grade":3,"page":183,"on":["ウン"],"kun":["はこぶ"],"id":"k-904b"},{"kanji":"放","grade":3,"page":184,"on":["ホウ"],"kun":["はなす","はなれる","ほうる"],"alt":["っぱなし","はなつ","こく"],"id":"k-653e"},{"kanji":"旅","grade":3,"page":184,"on":["リョ"],"kun":["たび"],"id":"k-65c5"},{"kanji":"族","grade":3,"page":185,"on":["ゾク"],"kun":[],"id":"k-65cf"},{"kanji":"遊","grade":3,"page":185,"on":["ユウ"],"kun":["あそぶ"],"alt":["ユ","あそばす"],"id":"k-904a"},{"kanji":"皿","grade":3,"page":186,"on":["ベイ"],"kun":["さら"],"id":"k-76bf"},{"kanji":"血","grade":3,"page":186,"on":["ケツ"],"kun":["ち"],"id":"k-8840"},{"kanji":"曲","grade":3,"page":186,"on":["キョク"],"kun":["まがる","まげる"],"alt":["くま"],"id":"k-66f2"},{"kanji":"農","grade":3,"page":187,"on":["ノウ"],"kun":[],"id":"k-8fb2"},{"kanji":"業","grade":3,"page":187,"on":["ギョウ","（ゴウ）"],"kun":["（わざ）"],"id":"k-696d"},{"kanji":"乗","grade":3,"page":187,"on":["ジョウ"],"kun":["のる","のせる"],"alt":["ショウ","のり"],"id":"k-4e57"},{"kanji":"問","grade":3,"page":188,"on":["モン"],"kun":["とう","とい","とん"],"id":"k-554f"},{"kanji":"開","grade":3,"page":188,"on":["カイ"],"kun":["あく","あける"],"alt":["ひらく","ひらき","びらき","ひらける"],"id":"k-958b"},{"kanji":"向","grade":3,"page":189,"on":["コウ"],"kun":["むく","むける","むかう","むこう"],"alt":["むい","むき","むけ","むかい","むこ"],"id":"k-5411"},{"kanji":"度","grade":3,"page":189,"on":["ド","（ト）","（タク）"],"kun":["（たび）"],"alt":["たい"],"id":"k-5ea6"},{"kanji":"区","grade":3,"page":190,"on":["ク"],"kun":[],"alt":["オウ","コウ"],"id":"k-533a"},{"kanji":"医","grade":3,"page":190,"on":["イ"],"kun":[],"alt":["いやす","いする","くすし"],"id":"k-533b"},{"kanji":"局","grade":3,"page":190,"on":["キョク"],"kun":[],"alt":["つぼね"],"id":"k-5c40"},{"kanji":"屋","grade":3,"page":191,"on":["オク"],"kun":["や"],"id":"k-5c4b"},{"kanji":"庫","grade":3,"page":191,"on":["コ","（ク）"],"kun":[],"alt":["くら"],"id":"k-5eab"},{"kanji":"庭","grade":3,"page":191,"on":["テイ"],"kun":["にわ"],"id":"k-5ead"},{"kanji":"部","grade":3,"page":192,"on":["ブ"],"kun":[],"alt":["べ"],"id":"k-90e8"},{"kanji":"都","grade":3,"page":192,"on":["ト"],"kun":["みやこ"],"alt":["ツ"],"id":"k-90fd"},{"kanji":"院","grade":3,"page":193,"on":["イン"],"kun":[],"id":"k-9662"},{"kanji":"階","grade":3,"page":193,"on":["カイ"],"kun":[],"alt":["きざはし"],"id":"k-968e"},{"kanji":"病","grade":3,"page":193,"on":["ビョウ"],"kun":["やまい","（やむ）"],"alt":["ヘイ","やみ"],"id":"k-75c5"},{"kanji":"品","grade":3,"page":194,"on":["ヒン"],"kun":["しな"],"alt":["ホン"],"id":"k-54c1"},{"kanji":"物","grade":3,"page":194,"on":["ブツ"],"kun":["もの"],"alt":["モツ"],"id":"k-7269"},{"kanji":"湯","grade":3,"page":195,"on":["トウ"],"kun":["ゆ"],"id":"k-6e6f"},{"kanji":"陽","grade":3,"page":195,"on":["ヨウ"],"kun":[],"alt":["ひ"],"id":"k-967d"},{"kanji":"代","grade":3,"page":196,"on":["ダイ","タイ"],"kun":["かわる","かえる","よ","（しろ）"],"alt":["かわり","がわり"],"id":"k-4ee3"},{"kanji":"式","grade":3,"page":196,"on":["シキ"],"kun":[],"id":"k-5f0f"},{"kanji":"使","grade":3,"page":197,"on":["シ"],"kun":["つかう"],"alt":["つかい","づかい"],"id":"k-4f7f"},{"kanji":"球","grade":3,"page":198,"on":["キュウ"],"kun":["たま"],"id":"k-7403"},{"kanji":"様","grade":3,"page":198,"on":["ヨウ"],"kun":["さま"],"alt":["ショウ","さん"],"id":"k-69d8"},{"kanji":"未","grade":4,"page":81,"on":["ミ"],"kun":["いまだ"],"alt":["ビ","まだ","ひつじ"],"id":"k-672a"},{"kanji":"良","grade":4,"page":84,"on":["リョウ"],"kun":["よい"],"alt":["いい"],"id":"k-826f"},{"kanji":"氏","grade":4,"page":95,"on":["シ"],"kun":["（うじ）"],"id":"k-6c0f"},{"kanji":"欠","grade":4,"page":104,"on":["ケツ"],"kun":["かける","かく"],"alt":["ケン"],"id":"k-6b20"},{"kanji":"周","grade":4,"page":111,"on":["シュウ"],"kun":["まわり"],"id":"k-5468"},{"kanji":"録","grade":4,"page":148,"on":["ロク"],"kun":[],"alt":["しるす","とる"],"id":"k-9332"},{"kanji":"各","grade":4,"page":169,"on":["カク"],"kun":["（おのおの）"],"id":"k-5404"},{"kanji":"衣","grade":4,"page":179,"on":["イ"],"kun":["（ころも）"],"alt":["エ","きぬ","ぎ"],"id":"k-8863"},{"kanji":"束","grade":4,"page":181,"on":["ソク"],"kun":["たば"],"alt":["たばねる","つか","つかねる"],"id":"k-675f"},{"kanji":"便","grade":4,"page":197,"on":["ベン","ビン"],"kun":["たより"],"id":"k-4fbf"},{"kanji":"求","grade":4,"page":198,"on":["キュウ"],"kun":["もとめる"],"alt":["グ"],"id":"k-6c42"},{"kanji":"加","grade":4,"page":200,"on":["カ"],"kun":["くわえる","くわわる"],"id":"k-52a0"},{"kanji":"好","grade":4,"page":200,"on":["コウ"],"kun":["このむ","すく"],"alt":["よい","いい"],"id":"k-597d"},{"kanji":"唱","grade":4,"page":200,"on":["ショウ"],"kun":["となえる"],"id":"k-5531"},{"kanji":"灯","grade":4,"page":201,"on":["トウ"],"kun":["（ひ）"],"alt":["ほ","ともしび","ともす","あかり"],"id":"k-706f"},{"kanji":"祝","grade":4,"page":201,"on":["シュク","（シュウ）"],"kun":["いわう"],"id":"k-795d"},{"kanji":"昨","grade":4,"page":201,"on":["サク"],"kun":[],"id":"k-6628"},{"kanji":"牧","grade":4,"page":202,"on":["ボク"],"kun":["まき"],"id":"k-7267"},{"kanji":"特","grade":4,"page":202,"on":["トク"],"kun":[],"id":"k-7279"},{"kanji":"折","grade":4,"page":202,"on":["セツ"],"kun":["おる","おり","おれる"],"alt":["シャク"],"id":"k-6298"},{"kanji":"料","grade":4,"page":203,"on":["リョウ"],"kun":[],"id":"k-6599"},{"kanji":"塩","grade":4,"page":203,"on":["エン"],"kun":["しお"],"id":"k-5869"},{"kanji":"飯","grade":4,"page":203,"on":["ハン"],"kun":["めし"],"id":"k-98ef"},{"kanji":"付","grade":4,"page":204,"on":["フ"],"kun":["つける","つく"],"alt":["づける","つけ","づけ","づく","つき","づき"],"id":"k-4ed8"},{"kanji":"仲","grade":4,"page":204,"on":["（チュウ）"],"kun":["なか"],"id":"k-4ef2"},{"kanji":"伝","grade":4,"page":204,"on":["デン"],"kun":["つたわる","つたえる","つたう"],"alt":["テン","つだう","づたい","つて"],"id":"k-4f1d"},{"kanji":"位","grade":4,"page":204,"on":["イ"],"kun":["くらい"],"alt":["ぐらい"],"id":"k-4f4d"},{"kanji":"佐","grade":4,"page":204,"on":["サ"],"kun":[],"id":"k-4f50"},{"kanji":"例","grade":4,"page":204,"on":["レイ"],"kun":["たとえる"],"id":"k-4f8b"},{"kanji":"信","grade":4,"page":205,"on":["シン"],"kun":[],"id":"k-4fe1"},{"kanji":"借","grade":4,"page":205,"on":["シャク"],"kun":["かりる"],"id":"k-501f"},{"kanji":"候","grade":4,"page":205,"on":["コウ"],"kun":["（そうろう）"],"id":"k-5019"},{"kanji":"側","grade":4,"page":205,"on":["ソク"],"kun":["かわ"],"alt":["がわ","そば"],"id":"k-5074"},{"kanji":"働","grade":4,"page":205,"on":["ドウ"],"kun":["はたらく"],"id":"k-50cd"},{"kanji":"億","grade":4,"page":205,"on":["オク"],"kun":[],"id":"k-5104"},{"kanji":"径","grade":4,"page":208,"on":["ケイ"],"kun":[],"alt":["みち","こみち","さしわたし","ただちに"],"id":"k-5f84"},{"kanji":"徒","grade":4,"page":208,"on":["ト"],"kun":[],"alt":["いたずら","あだ"],"id":"k-5f92"},{"kanji":"街","grade":4,"page":208,"on":["ガイ","（カイ）"],"kun":["まち"],"id":"k-8857"},{"kanji":"旗","grade":4,"page":209,"on":["キ"],"kun":["はた"],"id":"k-65d7"},{"kanji":"競","grade":4,"page":209,"on":["キョウ","ケイ"],"kun":["（きそう）","（せる）"],"alt":["くらべる"],"id":"k-7af6"},{"kanji":"飛","grade":4,"page":209,"on":["ヒ"],"kun":["とぶ","とばす"],"id":"k-98db"},{"kanji":"松","grade":4,"page":210,"on":["ショウ"],"kun":["まつ"],"id":"k-677e"},{"kanji":"梅","grade":4,"page":210,"on":["バイ"],"kun":["うめ"],"id":"k-6885"},{"kanji":"札","grade":4,"page":211,"on":["サツ"],"kun":["ふだ"],"id":"k-672d"},{"kanji":"材","grade":4,"page":211,"on":["ザイ"],"kun":[],"id":"k-6750"},{"kanji":"末","grade":4,"page":211,"on":["マツ"],"kun":["すえ"],"alt":["バツ","うら","うれ"],"id":"k-672b"},{"kanji":"果","grade":4,"page":212,"on":["カ"],"kun":["はたす","はてる","はて"],"id":"k-679c"},{"kanji":"巣","grade":4,"page":212,"on":["（ソウ）"],"kun":["す"],"alt":["すくう"],"id":"k-5de3"},{"kanji":"単","grade":4,"page":212,"on":["タン"],"kun":[],"alt":["ひとえ"],"id":"k-5358"},{"kanji":"栄","grade":4,"page":213,"on":["エイ"],"kun":["さかえる","（はえ）","（はえる）"],"alt":["ヨウ","ばえ","え"],"id":"k-6804"},{"kanji":"案","grade":4,"page":213,"on":["アン"],"kun":[],"alt":["つくえ"],"id":"k-6848"},{"kanji":"梨","grade":4,"page":213,"on":["リ"],"kun":["なし"],"id":"k-68a8"},{"kanji":"泣","grade":4,"page":214,"on":["（キュウ）"],"kun":["なく"],"id":"k-6ce3"},{"kanji":"治","grade":4,"page":214,"on":["ジ"],"kun":["おさめる","おさまる","なおる","なおす"],"alt":["チ"],"id":"k-6cbb"},{"kanji":"法","grade":4,"page":214,"on":["ホウ","（ハッ）","（ホッ）"],"kun":[],"alt":["フラン","のり"],"id":"k-6cd5"},{"kanji":"沖","grade":4,"page":215,"on":["（チュウ）"],"kun":["おき"],"alt":["おきつ","ちゅうする","わく"],"id":"k-6c96"},{"kanji":"浴","grade":4,"page":215,"on":["ヨク"],"kun":["あびる","あびせる"],"id":"k-6d74"},{"kanji":"清","grade":4,"page":215,"on":["セイ","（ショウ）"],"kun":["きよい","きよまる","きよめる"],"alt":["シン"],"id":"k-6e05"},{"kanji":"漁","grade":4,"page":216,"on":["ギョ","リョウ"],"kun":[],"alt":["あさる"],"id":"k-6f01"},{"kanji":"満","grade":4,"page":216,"on":["マン"],"kun":["みちる","みたす"],"alt":["バン","みつ"],"id":"k-6e80"},{"kanji":"訓","grade":4,"page":216,"on":["クン"],"kun":[],"alt":["キン","おしえる","よむ","くんずる"],"id":"k-8a13"},{"kanji":"試","grade":4,"page":217,"on":["シ"],"kun":["こころみる","（ためす）"],"id":"k-8a66"},{"kanji":"説","grade":4,"page":217,"on":["セツ","（ゼイ）"],"kun":["とく"],"id":"k-8aac"},{"kanji":"課","grade":4,"page":217,"on":["カ"],"kun":[],"id":"k-8ab2"},{"kanji":"約","grade":4,"page":218,"on":["ヤク"],"kun":[],"alt":["つづまる","つづめる","つづまやか"],"id":"k-7d04"},{"kanji":"給","grade":4,"page":218,"on":["キュウ"],"kun":[],"alt":["たまう","たもう","たまえ"],"id":"k-7d66"},{"kanji":"結","grade":4,"page":218,"on":["ケツ"],"kun":["むすぶ","（ゆう）","（ゆわえる）"],"alt":["ケチ"],"id":"k-7d50"},{"kanji":"続","grade":4,"page":218,"on":["ゾク"],"kun":["つづく","つづける"],"alt":["ショク","コウ","キョウ","つぐない"],"id":"k-7d9a"},{"kanji":"協","grade":4,"page":218,"on":["キョウ"],"kun":[],"id":"k-5354"},{"kanji":"博","grade":4,"page":219,"on":["ハク","（バク）"],"kun":[],"id":"k-535a"},{"kanji":"貨","grade":4,"page":219,"on":["カ"],"kun":[],"alt":["たから"],"id":"k-8ca8"},{"kanji":"賀","grade":4,"page":219,"on":["ガ"],"kun":[],"id":"k-8cc0"},{"kanji":"種","grade":4,"page":220,"on":["シュ"],"kun":["たね"],"alt":["ぐさ"],"id":"k-7a2e"},{"kanji":"積","grade":4,"page":220,"on":["セキ"],"kun":["つむ","つもる"],"alt":["づみ","つもり"],"id":"k-7a4d"},{"kanji":"孫","grade":4,"page":221,"on":["ソン"],"kun":["まご"],"id":"k-5b6b"},{"kanji":"季","grade":4,"page":221,"on":["キ"],"kun":[],"id":"k-5b63"},{"kanji":"香","grade":4,"page":221,"on":["（コウ）","（キョウ）"],"kun":["か","かおり","かおる"],"id":"k-9999"},{"kanji":"以","grade":4,"page":222,"on":["イ"],"kun":[],"alt":["もって"],"id":"k-4ee5"},{"kanji":"児","grade":4,"page":222,"on":["ジ","（ニ）"],"kun":[],"alt":["ゲイ","こ","っこ"],"id":"k-5150"},{"kanji":"兆","grade":4,"page":222,"on":["チョウ"],"kun":["（きざす）","（きざし）"],"id":"k-5146"},{"kanji":"令","grade":4,"page":223,"on":["レイ"],"kun":[],"id":"k-4ee4"},{"kanji":"冷","grade":4,"page":223,"on":["レイ"],"kun":["つめたい","ひえる","ひや","ひやす","さます"],"alt":["ひややか","ひやかす","さめる"],"id":"k-51b7"},{"kanji":"固","grade":4,"page":223,"on":["コ"],"kun":["かためる","かたまる","かたい"],"alt":["かたまり"],"id":"k-56fa"},{"kanji":"的","grade":4,"page":224,"on":["テキ"],"kun":["まと"],"id":"k-7684"},{"kanji":"包","grade":4,"page":224,"on":["ホウ"],"kun":["つつむ"],"alt":["くるむ"],"id":"k-5305"},{"kanji":"印","grade":4,"page":225,"on":["イン"],"kun":["しるし"],"alt":["じるし","しるす"],"id":"k-5370"},{"kanji":"辞","grade":4,"page":225,"on":["ジ"],"kun":["やめる"],"alt":["いなむ"],"id":"k-8f9e"},{"kanji":"典","grade":4,"page":225,"on":["テン"],"kun":[],"alt":["デン","ふみ","のり"],"id":"k-5178"},{"kanji":"敗","grade":4,"page":226,"on":["ハイ"],"kun":["やぶれる"],"id":"k-6557"},{"kanji":"改","grade":4,"page":226,"on":["カイ"],"kun":["あらためる","あらたまる"],"id":"k-6539"},{"kanji":"散","grade":4,"page":226,"on":["サン"],"kun":["ちる","ちらす","ちらかす","ちらかる"],"alt":["ちらばる","ばら","ばらける"],"id":"k-6563"},{"kanji":"初","grade":4,"page":227,"on":["ショ"],"kun":["はじめ","はじめて","はつ","（うい）","（そめる）"],"alt":["ぞめ"],"id":"k-521d"},{"kanji":"利","grade":4,"page":227,"on":["リ"],"kun":["（きく）"],"id":"k-5229"},{"kanji":"別","grade":4,"page":227,"on":["ベツ"],"kun":["わかれる"],"alt":["わける"],"id":"k-5225"},{"kanji":"刷","grade":4,"page":227,"on":["サツ"],"kun":["する"],"alt":["ずり","はく"],"id":"k-5237"},{"kanji":"副","grade":4,"page":227,"on":["フク"],"kun":[],"id":"k-526f"},{"kanji":"争","grade":4,"page":230,"on":["ソウ"],"kun":["あらそう"],"alt":["いかでか"],"id":"k-4e89"},{"kanji":"静","grade":4,"page":230,"on":["セイ","（ジョウ）"],"kun":["しず","しずか","しずまる","しずめる"],"id":"k-9759"},{"kanji":"順","grade":4,"page":230,"on":["ジュン"],"kun":[],"id":"k-9806"},{"kanji":"類","grade":4,"page":231,"on":["ルイ"],"kun":["たぐい"],"id":"k-985e"},{"kanji":"願","grade":4,"page":231,"on":["ガン"],"kun":["ねがう"],"alt":["ねがい"],"id":"k-9858"},{"kanji":"景","grade":4,"page":232,"on":["ケイ"],"kun":[],"id":"k-666f"},{"kanji":"最","grade":4,"page":232,"on":["サイ"],"kun":["もっとも"],"alt":["シュ","つま"],"id":"k-6700"},{"kanji":"量","grade":4,"page":232,"on":["リョウ"],"kun":["はかる"],"id":"k-91cf"},{"kanji":"完","grade":4,"page":233,"on":["カン"],"kun":[],"id":"k-5b8c"},{"kanji":"官","grade":4,"page":233,"on":["カン"],"kun":[],"id":"k-5b98"},{"kanji":"害","grade":4,"page":233,"on":["ガイ"],"kun":[],"id":"k-5bb3"},{"kanji":"富","grade":4,"page":233,"on":["フ","（フウ）"],"kun":["とみ","とむ"],"id":"k-5bcc"},{"kanji":"察","grade":4,"page":233,"on":["サツ"],"kun":[],"id":"k-5bdf"},{"kanji":"笑","grade":4,"page":234,"on":["（ショウ）"],"kun":["わらう","えむ"],"id":"k-7b11"},{"kanji":"節","grade":4,"page":234,"on":["（セチ）"],"kun":["ふし"],"alt":["セツ","ぶし","のっと"],"id":"k-7bc0"},{"kanji":"管","grade":4,"page":234,"on":["カン"],"kun":["くだ"],"id":"k-7ba1"},{"kanji":"芸","grade":4,"page":235,"on":["ゲイ"],"kun":[],"alt":["ウン","うえる","のり","わざ"],"id":"k-82b8"},{"kanji":"英","grade":4,"page":235,"on":["エイ"],"kun":[],"alt":["はなぶさ"],"id":"k-82f1"},{"kanji":"芽","grade":4,"page":235,"on":["ガ"],"kun":["め"],"id":"k-82bd"},{"kanji":"菜","grade":4,"page":235,"on":["サイ"],"kun":["な"],"id":"k-83dc"},{"kanji":"功","grade":4,"page":236,"on":["コウ","（ク）"],"kun":[],"alt":["いさお"],"id":"k-529f"},{"kanji":"労","grade":4,"page":236,"on":["ロウ"],"kun":[],"alt":["ろうする","いたわる","いたずき","ねぎら","つかれる","ねぎらう"],"id":"k-52b4"},{"kanji":"努","grade":4,"page":236,"on":["ド"],"kun":["つとめる"],"id":"k-52aa"},{"kanji":"勇","grade":4,"page":237,"on":["ユウ"],"kun":["いさむ"],"id":"k-52c7"},{"kanji":"参","grade":4,"page":237,"on":["サン"],"kun":["まいる"],"alt":["シン","まい","まじわる","みつ"],"id":"k-53c2"},{"kanji":"挙","grade":4,"page":237,"on":["キョ"],"kun":["あげる","あがる"],"alt":["こぞる"],"id":"k-6319"},{"kanji":"不","grade":4,"page":238,"on":["フ"],"kun":[],"alt":["ブ"],"id":"k-4e0d"},{"kanji":"夫","grade":4,"page":238,"on":["フ","（フウ）"],"kun":["おっと"],"alt":["ブ","それ"],"id":"k-592b"},{"kanji":"失","grade":4,"page":238,"on":["シツ"],"kun":["うしなう"],"alt":["うせる"],"id":"k-5931"},{"kanji":"司","grade":4,"page":239,"on":["シ"],"kun":[],"alt":["つかさどる"],"id":"k-53f8"},{"kanji":"井","grade":4,"page":239,"on":["（セイ）","（ショウ）"],"kun":["い"],"id":"k-4e95"},{"kanji":"倉","grade":4,"page":239,"on":["ソウ"],"kun":["くら"],"id":"k-5009"},{"kanji":"愛","grade":4,"page":240,"on":["アイ"],"kun":[],"alt":["いとしい","かなしい","めでる","おしむ","まな"],"id":"k-611b"},{"kanji":"念","grade":4,"page":240,"on":["ネン"],"kun":[],"id":"k-5ff5"},{"kanji":"必","grade":4,"page":240,"on":["ヒツ"],"kun":["かならず"],"id":"k-5fc5"},{"kanji":"省","grade":4,"page":241,"on":["セイ","ショウ"],"kun":["はぶく","（かえりみる）"],"id":"k-7701"},{"kanji":"覚","grade":4,"page":241,"on":["カク"],"kun":["おぼえる","さます","さめる"],"alt":["さとる"],"id":"k-899a"},{"kanji":"観","grade":4,"page":241,"on":["カン"],"kun":[],"alt":["みる","しめす"],"id":"k-89b3"},{"kanji":"希","grade":4,"page":242,"on":["キ"],"kun":[],"alt":["ケ","まれ","こいねがう"],"id":"k-5e0c"},{"kanji":"帯","grade":4,"page":242,"on":["タイ"],"kun":["おびる","おび"],"id":"k-5e2f"},{"kanji":"席","grade":4,"page":242,"on":["セキ"],"kun":[],"alt":["むしろ"],"id":"k-5e2d"},{"kanji":"望","grade":4,"page":243,"on":["ボウ","（モウ）"],"kun":["のぞむ"],"alt":["もち"],"id":"k-671b"},{"kanji":"卒","grade":4,"page":243,"on":["ソツ"],"kun":[],"alt":["シュツ","そっする","おえる","おわる","ついに","にわか"],"id":"k-5352"},{"kanji":"変","grade":4,"page":243,"on":["ヘン"],"kun":["かわる","かえる"],"alt":["かわり"],"id":"k-5909"},{"kanji":"関","grade":4,"page":244,"on":["カン"],"kun":["せき","かかわる"],"alt":["ぜき","からくり","かんぬき"],"id":"k-95a2"},{"kanji":"老","grade":4,"page":244,"on":["ロウ"],"kun":["おいる","（ふける）"],"id":"k-8001"},{"kanji":"産","grade":4,"page":244,"on":["サン"],"kun":["うむ","うまれる","（うぶ）"],"alt":["むす"],"id":"k-7523"},{"kanji":"群","grade":4,"page":245,"on":["グン"],"kun":["むれる","むれ","むら"],"alt":["むらがる"],"id":"k-7fa4"},{"kanji":"差","grade":4,"page":245,"on":["サ"],"kun":["さす"],"alt":["さし"],"id":"k-5dee"},{"kanji":"養","grade":4,"page":245,"on":["ヨウ"],"kun":["やしなう"],"alt":["リョウ"],"id":"k-990a"},{"kanji":"置","grade":4,"page":246,"on":["チ"],"kun":["おく"],"alt":["おき"],"id":"k-7f6e"},{"kanji":"焼","grade":4,"page":246,"on":["（ショウ）"],"kun":["やく","やける"],"alt":["やき"],"id":"k-713c"},{"kanji":"器","grade":4,"page":246,"on":["キ"],"kun":["（うつわ）"],"id":"k-5668"},{"kanji":"機","grade":4,"page":247,"on":["キ"],"kun":["（はた）"],"id":"k-6a5f"},{"kanji":"械","grade":4,"page":247,"on":["カイ"],"kun":[],"alt":["かせ"],"id":"k-68b0"},{"kanji":"極","grade":4,"page":247,"on":["キョク","（ゴク）"],"kun":["（きわめる）","（きわまる）","（きわみ）"],"alt":["きわまり","きめる","ぎめ","きまる"],"id":"k-6975"},{"kanji":"照","grade":4,"page":248,"on":["ショウ"],"kun":["てる","てらす","てれる"],"id":"k-7167"},{"kanji":"熱","grade":4,"page":248,"on":["ネツ"],"kun":["あつい"],"id":"k-71b1"},{"kanji":"然","grade":4,"page":249,"on":["ゼン","ネン"],"kun":[],"alt":["しか","しかり","しかし","さ"],"id":"k-7136"},{"kanji":"無","grade":4,"page":249,"on":["ム"],"kun":["ない"],"alt":["ブ"],"id":"k-7121"},{"kanji":"熊","grade":4,"page":249,"on":["ユウ"],"kun":["くま"],"id":"k-718a"},{"kanji":"成","grade":4,"page":250,"on":["セイ","（ジョウ）"],"kun":["なる","なす"],"id":"k-6210"},{"kanji":"城","grade":4,"page":250,"on":["ジョウ"],"kun":["しろ"],"alt":["セイ"],"id":"k-57ce"},{"kanji":"戦","grade":4,"page":250,"on":["セン"],"kun":["たたかう","（いくさ）"],"alt":["おののく","そよぐ","わななく"],"id":"k-6226"},{"kanji":"共","grade":4,"page":252,"on":["キョウ"],"kun":["とも"],"alt":["ともに","ども"],"id":"k-5171"},{"kanji":"兵","grade":4,"page":252,"on":["ヘイ","ヒョウ"],"kun":[],"alt":["つわもの"],"id":"k-5175"},{"kanji":"臣","grade":4,"page":252,"on":["シン","ジン"],"kun":[],"id":"k-81e3"},{"kanji":"民","grade":4,"page":253,"on":["ミン"],"kun":["（たみ）"],"id":"k-6c11"},{"kanji":"軍","grade":4,"page":253,"on":["グン"],"kun":[],"alt":["いくさ"],"id":"k-8ecd"},{"kanji":"隊","grade":4,"page":253,"on":["タイ"],"kun":[],"id":"k-968a"},{"kanji":"府","grade":4,"page":254,"on":["フ"],"kun":[],"id":"k-5e9c"},{"kanji":"郡","grade":4,"page":254,"on":["グン"],"kun":[],"alt":["こおり"],"id":"k-90e1"},{"kanji":"辺","grade":4,"page":254,"on":["ヘン"],"kun":["あたり","べ"],"alt":["ほとり"],"id":"k-8fba"},{"kanji":"連","grade":4,"page":255,"on":["レン"],"kun":["つらなる","つらねる","つれる"],"alt":["づれ"],"id":"k-9023"},{"kanji":"達","grade":4,"page":255,"on":["タツ"],"kun":[],"alt":["ダ","たち"],"id":"k-9054"},{"kanji":"選","grade":4,"page":255,"on":["セン"],"kun":["えらぶ"],"alt":["える","よる"],"id":"k-9078"},{"kanji":"輪","grade":4,"page":256,"on":["リン"],"kun":["わ"],"id":"k-8f2a"},{"kanji":"要","grade":4,"page":257,"on":["ヨウ"],"kun":["かなめ","（いる）"],"id":"k-8981"},{"kanji":"票","grade":4,"page":257,"on":["ヒョウ"],"kun":[],"id":"k-7968"},{"kanji":"標","grade":4,"page":257,"on":["ヒョウ"],"kun":[],"alt":["しるべ","しるし"],"id":"k-6a19"},{"kanji":"低","grade":4,"page":258,"on":["テイ"],"kun":["ひくい","ひくめる","ひくまる"],"id":"k-4f4e"},{"kanji":"底","grade":4,"page":258,"on":["テイ"],"kun":["そこ"],"id":"k-5e95"},{"kanji":"康","grade":4,"page":258,"on":["コウ"],"kun":[],"id":"k-5eb7"},{"kanji":"建","grade":4,"page":259,"on":["ケン","（コン）"],"kun":["たてる"],"alt":["たて","だて","たつ"],"id":"k-5efa"},{"kanji":"健","grade":4,"page":259,"on":["ケン"],"kun":["（すこやか）"],"id":"k-5065"},{"kanji":"鏡","grade":4,"page":260,"on":["キョウ"],"kun":["かがみ"],"alt":["ケイ"],"id":"k-93e1"},{"kanji":"陸","grade":4,"page":260,"on":["リク"],"kun":[],"alt":["ロク","おか"],"id":"k-9678"},{"kanji":"験","grade":4,"page":261,"on":["ケン","（ゲン）"],"kun":[],"alt":["あかし","しるし","ためす","ためし"],"id":"k-9a13"},{"kanji":"議","grade":4,"page":262,"on":["ギ"],"kun":[],"id":"k-8b70"},{"kanji":"浅","grade":4,"page":263,"on":["（セン）"],"kun":["あさい"],"id":"k-6d45"},{"kanji":"残","grade":4,"page":263,"on":["ザン"],"kun":["のこる","のこす"],"alt":["サン","そこなう","のこり"],"id":"k-6b8b"},{"kanji":"茨","grade":4,"page":264,"on":["シ"],"kun":["いばら"],"alt":["ジ","かや","くさぶき"],"id":"k-8328"},{"kanji":"栃","grade":4,"page":264,"on":[],"kun":["とち"],"id":"k-6803"},{"kanji":"潟","grade":4,"page":264,"on":["セキ"],"kun":["かた"],"alt":["がた"],"id":"k-6f5f"},{"kanji":"埼","grade":4,"page":265,"on":["キ"],"kun":["さい"],"alt":["さき","みさき"],"id":"k-57fc"},{"kanji":"崎","grade":4,"page":265,"on":["キ"],"kun":["さき"],"alt":["さい","みさき"],"id":"k-5d0e"},{"kanji":"滋","grade":4,"page":265,"on":["シ"],"kun":[],"alt":["ジ"],"id":"k-6ecb"},{"kanji":"岐","grade":4,"page":266,"on":["キ"],"kun":[],"alt":["ギ"],"id":"k-5c90"},{"kanji":"阜","grade":4,"page":266,"on":["フ"],"kun":[],"alt":["フウ"],"id":"k-961c"},{"kanji":"阪","grade":4,"page":266,"on":["ハン"],"kun":[],"alt":["さか"],"id":"k-962a"},{"kanji":"奈","grade":4,"page":267,"on":["ナ"],"kun":[],"alt":["ナイ","ダイ","いかん","からなし"],"id":"k-5948"},{"kanji":"岡","grade":4,"page":267,"on":["コウ"],"kun":["おか"],"id":"k-5ca1"},{"kanji":"媛","grade":4,"page":267,"on":["（エン）"],"kun":[],"alt":["ひめ"],"id":"k-5a9b"},{"kanji":"徳","grade":4,"page":270,"on":["トク"],"kun":[],"id":"k-5fb3"},{"kanji":"鹿","grade":4,"page":270,"on":["ロク"],"kun":["しか","か"],"id":"k-9e7f"},{"kanji":"縄","grade":4,"page":270,"on":["（ジョウ）"],"kun":["なわ"],"alt":["ただす"],"id":"k-7e04"},{"kanji":"可","grade":5,"page":65,"on":["カ"],"kun":["べき"],"alt":["コク","べし"],"id":"k-53ef"},{"kanji":"航","grade":5,"page":120,"on":["コウ"],"kun":[],"id":"k-822a"},{"kanji":"減","grade":5,"page":175,"on":["ゲン"],"kun":["へる","へらす"],"id":"k-6e1b"},{"kanji":"武","grade":5,"page":196,"on":["ブ"],"kun":[],"alt":["ム","たけ","たけし"],"id":"k-6b66"},{"kanji":"史","grade":5,"page":197,"on":["シ"],"kun":[],"id":"k-53f2"},{"kanji":"桜","grade":5,"page":210,"on":["（オウ）"],"kun":["さくら"],"alt":["ヨウ"],"id":"k-685c"},{"kanji":"編","grade":5,"page":256,"on":["ヘン"],"kun":["あむ"],"alt":["あみ"],"id":"k-7de8"},{"kanji":"境","grade":5,"page":260,"on":["キョウ","（ケイ）"],"kun":["さかい"],"id":"k-5883"},{"kanji":"検","grade":5,"page":261,"on":["ケン"],"kun":[],"alt":["しらべる"],"id":"k-691c"},{"kanji":"険","grade":5,"page":261,"on":["ケン"],"kun":["けわしい"],"id":"k-967a"},{"kanji":"義","grade":5,"page":262,"on":["ギ"],"kun":[],"id":"k-7fa9"},{"kanji":"士","grade":5,"page":272,"on":["シ"],"kun":[],"alt":["さむらい"],"id":"k-58eb"},{"kanji":"久","grade":5,"page":272,"on":["キュウ","（ク）"],"kun":["ひさしい"],"id":"k-4e45"},{"kanji":"永","grade":5,"page":272,"on":["エイ"],"kun":["ながい"],"id":"k-6c38"},{"kanji":"布","grade":5,"page":273,"on":["フ"],"kun":["ぬの"],"alt":["ホ","しく","きれ"],"id":"k-5e03"},{"kanji":"弁","grade":5,"page":273,"on":["ベン"],"kun":[],"alt":["ヘン","かんむり","わきまえる","わける","はなびら","あらそう"],"id":"k-5f01"},{"kanji":"句","grade":5,"page":273,"on":["ク"],"kun":[],"id":"k-53e5"},{"kanji":"支","grade":5,"page":274,"on":["シ"],"kun":["ささえる"],"alt":["つかえる","かう"],"id":"k-652f"},{"kanji":"技","grade":5,"page":274,"on":["ギ"],"kun":["わざ"],"id":"k-6280"},{"kanji":"枝","grade":5,"page":274,"on":["シ"],"kun":["えだ"],"id":"k-679d"},{"kanji":"示","grade":5,"page":275,"on":["ジ","（シ）"],"kun":["しめす"],"id":"k-793a"},{"kanji":"禁","grade":5,"page":275,"on":["キン"],"kun":[],"id":"k-7981"},{"kanji":"歴","grade":5,"page":275,"on":["レキ"],"kun":[],"alt":["レッキ"],"id":"k-6b74"},{"kanji":"招","grade":5,"page":276,"on":["ショウ"],"kun":["まねく"],"id":"k-62db"},{"kanji":"授","grade":5,"page":276,"on":["ジュ"],"kun":["（さずける）","（さずかる）"],"id":"k-6388"},{"kanji":"採","grade":5,"page":276,"on":["サイ"],"kun":["とる"],"id":"k-63a1"},{"kanji":"接","grade":5,"page":276,"on":["セツ"],"kun":["（つぐ）"],"alt":["ショウ"],"id":"k-63a5"},{"kanji":"損","grade":5,"page":276,"on":["ソン"],"kun":["（そこなう）","（そこねる）"],"id":"k-640d"},{"kanji":"提","grade":5,"page":276,"on":["テイ"],"kun":["（さげる）"],"alt":["チョウ","ダイ"],"id":"k-63d0"},{"kanji":"得","grade":5,"page":277,"on":["トク"],"kun":["える","（うる）"],"id":"k-5f97"},{"kanji":"往","grade":5,"page":277,"on":["オウ"],"kun":[],"alt":["いく","いにしえ","さきに","ゆく"],"id":"k-5f80"},{"kanji":"輸","grade":5,"page":277,"on":["ユ"],"kun":[],"alt":["シュ"],"id":"k-8f38"},{"kanji":"仏","grade":5,"page":278,"on":["ブツ"],"kun":["ほとけ"],"alt":["フツ"],"id":"k-4ecf"},{"kanji":"仮","grade":5,"page":278,"on":["カ"],"kun":["かり"],"alt":["ケ"],"id":"k-4eee"},{"kanji":"件","grade":5,"page":278,"on":["ケン"],"kun":[],"alt":["くだん"],"id":"k-4ef6"},{"kanji":"任","grade":5,"page":279,"on":["ニン"],"kun":["まかせる","まかす"],"id":"k-4efb"},{"kanji":"似","grade":5,"page":279,"on":["ジ"],"kun":["にる"],"alt":["ひる"],"id":"k-4f3c"},{"kanji":"価","grade":5,"page":279,"on":["カ"],"kun":["（あたい）"],"alt":["ケ"],"id":"k-4fa1"},{"kanji":"保","grade":5,"page":280,"on":["ホ"],"kun":["たもつ"],"alt":["ホウ"],"id":"k-4fdd"},{"kanji":"個","grade":5,"page":280,"on":["コ"],"kun":[],"alt":["カ"],"id":"k-500b"},{"kanji":"修","grade":5,"page":280,"on":["シュウ","（シュ）"],"kun":["おさめる","おさまる"],"id":"k-4fee"},{"kanji":"停","grade":5,"page":281,"on":["テイ"],"kun":[],"alt":["とめる","とまる"],"id":"k-505c"},{"kanji":"備","grade":5,"page":281,"on":["ビ"],"kun":["そなえる","そなわる"],"alt":["つぶさに"],"id":"k-5099"},{"kanji":"像","grade":5,"page":281,"on":["ゾウ"],"kun":[],"id":"k-50cf"},{"kanji":"河","grade":5,"page":282,"on":["カ"],"kun":["かわ"],"id":"k-6cb3"},{"kanji":"混","grade":5,"page":282,"on":["コン"],"kun":["まじる","こむ"],"alt":["まじり","まざる","まぜる"],"id":"k-6df7"},{"kanji":"液","grade":5,"page":282,"on":["エキ"],"kun":[],"id":"k-6db2"},{"kanji":"演","grade":5,"page":283,"on":["エン"],"kun":[],"id":"k-6f14"},{"kanji":"潔","grade":5,"page":283,"on":["ケツ"],"kun":["（いさぎよい）"],"id":"k-6f54"},{"kanji":"測","grade":5,"page":283,"on":["ソク"],"kun":["はかる"],"id":"k-6e2c"},{"kanji":"設","grade":5,"page":284,"on":["セツ"],"kun":["もうける"],"id":"k-8a2d"},{"kanji":"許","grade":5,"page":284,"on":["キョ"],"kun":["ゆるす"],"alt":["もと"],"id":"k-8a31"},{"kanji":"証","grade":5,"page":284,"on":["ショウ"],"kun":[],"alt":["あかし"],"id":"k-8a3c"},{"kanji":"評","grade":5,"page":285,"on":["ヒョウ"],"kun":[],"id":"k-8a55"},{"kanji":"謝","grade":5,"page":285,"on":["シャ"],"kun":["（あやまる）"],"id":"k-8b1d"},{"kanji":"紀","grade":5,"page":286,"on":["キ"],"kun":[],"id":"k-7d00"},{"kanji":"経","grade":5,"page":286,"on":["ケイ","（キョウ）"],"kun":["へる"],"alt":["キン","たつ","たていと","はかる","のり"],"id":"k-7d4c"},{"kanji":"絶","grade":5,"page":286,"on":["ゼツ"],"kun":["たえる"],"alt":["たやす","たつ"],"id":"k-7d76"},{"kanji":"総","grade":5,"page":287,"on":["ソウ"],"kun":[],"alt":["すべて","ふさ"],"id":"k-7dcf"},{"kanji":"綿","grade":5,"page":287,"on":["メン"],"kun":["わた"],"id":"k-7dbf"},{"kanji":"統","grade":5,"page":287,"on":["トウ"],"kun":["（すべる）"],"id":"k-7d71"},{"kanji":"績","grade":5,"page":288,"on":["セキ"],"kun":[],"id":"k-7e3e"},{"kanji":"素","grade":5,"page":288,"on":["ソ","（ス）"],"kun":[],"alt":["もと"],"id":"k-7d20"},{"kanji":"居","grade":5,"page":288,"on":["キョ"],"kun":["い"],"alt":["コ","いる","おる"],"id":"k-5c45"},{"kanji":"容","grade":5,"page":289,"on":["ヨウ"],"kun":[],"alt":["いれる"],"id":"k-5bb9"},{"kanji":"寄","grade":5,"page":289,"on":["キ"],"kun":["よる","よせる"],"alt":["より"],"id":"k-5bc4"},{"kanji":"舎","grade":5,"page":289,"on":["シャ"],"kun":[],"alt":["セキ","やどる"],"id":"k-820e"},{"kanji":"規","grade":5,"page":290,"on":["キ"],"kun":[],"id":"k-898f"},{"kanji":"格","grade":5,"page":290,"on":["カク","（コウ）"],"kun":[],"alt":["キャク","ゴウ"],"id":"k-683c"},{"kanji":"序","grade":5,"page":290,"on":["ジョ"],"kun":[],"alt":["ついで"],"id":"k-5e8f"},{"kanji":"現","grade":5,"page":291,"on":["ゲン"],"kun":["あらわれる","あらわす"],"alt":["うつつ"],"id":"k-73fe"},{"kanji":"象","grade":5,"page":291,"on":["ショウ","ゾウ"],"kun":[],"alt":["かたどる"],"id":"k-8c61"},{"kanji":"応","grade":5,"page":291,"on":["オウ"],"kun":["こたえる"],"alt":["ヨウ","ノウ","あたる","まさに"],"id":"k-5fdc"},{"kanji":"比","grade":5,"page":292,"on":["ヒ"],"kun":["くらべる"],"id":"k-6bd4"},{"kanji":"査","grade":5,"page":292,"on":["サ"],"kun":[],"id":"k-67fb"},{"kanji":"解","grade":5,"page":292,"on":["カイ","（ゲ）"],"kun":["とく","とかす","とける"],"alt":["ほどく","ほぐす","わかる","さとる"],"id":"k-89e3"},{"kanji":"条","grade":5,"page":293,"on":["ジョウ"],"kun":[],"alt":["チョウ","デキ","えだ","すじ"],"id":"k-6761"},{"kanji":"均","grade":5,"page":293,"on":["キン"],"kun":[],"alt":["ならす"],"id":"k-5747"},{"kanji":"余","grade":5,"page":293,"on":["ヨ"],"kun":["あまる","あます"],"alt":["あまり","あんまり"],"id":"k-4f59"},{"kanji":"財","grade":5,"page":294,"on":["ザイ","（サイ）"],"kun":[],"alt":["ゾク","たから"],"id":"k-8ca1"},{"kanji":"貯","grade":5,"page":294,"on":["チョ"],"kun":[],"alt":["ためる","たくわえる"],"id":"k-8caf"},{"kanji":"貧","grade":5,"page":294,"on":["ビン","（ヒン）"],"kun":["まずしい"],"id":"k-8ca7"},{"kanji":"責","grade":5,"page":294,"on":["セキ"],"kun":["せめる"],"id":"k-8cac"},{"kanji":"貸","grade":5,"page":294,"on":["（タイ）"],"kun":["かす"],"alt":["かし"],"id":"k-8cb8"},{"kanji":"費","grade":5,"page":294,"on":["ヒ"],"kun":["（ついやす）","（ついえる）"],"id":"k-8cbb"},{"kanji":"貿","grade":5,"page":295,"on":["ボウ"],"kun":[],"id":"k-8cbf"},{"kanji":"資","grade":5,"page":295,"on":["シ"],"kun":[],"id":"k-8cc7"},{"kanji":"質","grade":5,"page":295,"on":["（シチ）","（チ）"],"kun":[],"alt":["シツ","たち","ただす","もと","わりふ"],"id":"k-8cea"},{"kanji":"賛","grade":5,"page":295,"on":["サン"],"kun":[],"alt":["たすける","たたえる"],"id":"k-8cdb"},{"kanji":"営","grade":5,"page":298,"on":["エイ"],"kun":["いとなむ"],"alt":["いとなみ"],"id":"k-55b6"},{"kanji":"益","grade":5,"page":298,"on":["エキ","（ヤク）"],"kun":[],"alt":["ます"],"id":"k-76ca"},{"kanji":"率","grade":5,"page":298,"on":["リツ","（ソツ）"],"kun":["ひきいる"],"alt":["シュツ"],"id":"k-7387"},{"kanji":"額","grade":5,"page":299,"on":["ガク"],"kun":["ひたい"],"id":"k-984d"},{"kanji":"領","grade":5,"page":299,"on":["リョウ"],"kun":[],"alt":["えり"],"id":"k-9818"},{"kanji":"導","grade":5,"page":299,"on":["ドウ"],"kun":["みちびく"],"id":"k-5c0e"},{"kanji":"志","grade":5,"page":300,"on":["シ"],"kun":["こころざす","こころざし"],"alt":["しりんぐ"],"id":"k-5fd7"},{"kanji":"快","grade":5,"page":300,"on":["カイ"],"kun":["こころよい"],"id":"k-5feb"},{"kanji":"性","grade":5,"page":301,"on":["セイ","（ショウ）"],"kun":[],"alt":["さが"],"id":"k-6027"},{"kanji":"情","grade":5,"page":301,"on":["ジョウ","（セイ）"],"kun":["なさけ"],"id":"k-60c5"},{"kanji":"慣","grade":5,"page":301,"on":["カン"],"kun":["なれる","ならす"],"id":"k-6163"},{"kanji":"効","grade":5,"page":302,"on":["コウ"],"kun":["きく"],"alt":["ききめ","ならう"],"id":"k-52b9"},{"kanji":"務","grade":5,"page":302,"on":["ム"],"kun":["つとめる"],"id":"k-52d9"},{"kanji":"勢","grade":5,"page":302,"on":["セイ"],"kun":["いきおい"],"alt":["ゼイ","はずみ"],"id":"k-52e2"},{"kanji":"刊","grade":5,"page":303,"on":["カン"],"kun":[],"id":"k-520a"},{"kanji":"判","grade":5,"page":303,"on":["ハン"],"kun":[],"alt":["バン","わかる"],"id":"k-5224"},{"kanji":"則","grade":5,"page":303,"on":["ソク"],"kun":[],"alt":["のっとる","のり","すなわち"],"id":"k-5247"},{"kanji":"制","grade":5,"page":303,"on":["セイ"],"kun":[],"id":"k-5236"},{"kanji":"製","grade":5,"page":303,"on":["セイ"],"kun":[],"id":"k-88fd"},{"kanji":"防","grade":5,"page":304,"on":["ボウ"],"kun":["ふせぐ"],"id":"k-9632"},{"kanji":"破","grade":5,"page":304,"on":["ハ"],"kun":["やぶる","やぶれる"],"alt":["われる"],"id":"k-7834"},{"kanji":"張","grade":5,"page":304,"on":["チョウ"],"kun":["はる"],"alt":["はり","ばり"],"id":"k-5f35"},{"kanji":"耕","grade":5,"page":305,"on":["コウ"],"kun":["たがやす"],"id":"k-8015"},{"kanji":"飼","grade":5,"page":305,"on":["シ"],"kun":["かう"],"id":"k-98fc"},{"kanji":"築","grade":5,"page":305,"on":["チク"],"kun":["きずく"],"id":"k-7bc9"},{"kanji":"略","grade":5,"page":306,"on":["リャク"],"kun":[],"alt":["ほぼ","はぶく","おかす","おさめる","はかりごと","はかる"],"id":"k-7565"},{"kanji":"増","grade":5,"page":306,"on":["ゾウ"],"kun":["ます","ふえる","ふやす"],"alt":["まし"],"id":"k-5897"},{"kanji":"留","grade":5,"page":306,"on":["ル"],"kun":["とめる"],"alt":["リュウ","とまる","とどめる","とどまる","るうぶる"],"id":"k-7559"},{"kanji":"粉","grade":5,"page":307,"on":["フン"],"kun":["こ","こな"],"alt":["でしめーとる"],"id":"k-7c89"},{"kanji":"精","grade":5,"page":307,"on":["セイ","（ショウ）"],"kun":[],"alt":["しらげる","くわしい"],"id":"k-7cbe"},{"kanji":"断","grade":5,"page":307,"on":["ダン"],"kun":["ことわる","（たつ）"],"alt":["さだめる"],"id":"k-65ad"},{"kanji":"妻","grade":5,"page":308,"on":["サイ"],"kun":["つま"],"id":"k-59bb"},{"kanji":"婦","grade":5,"page":308,"on":["フ"],"kun":[],"alt":["よめ"],"id":"k-5a66"},{"kanji":"師","grade":5,"page":308,"on":["シ"],"kun":[],"alt":["いくさ"],"id":"k-5e2b"},{"kanji":"祖","grade":5,"page":309,"on":["ソ"],"kun":[],"id":"k-7956"},{"kanji":"団","grade":5,"page":309,"on":["ダン","（トン）"],"kun":[],"alt":["かたまり","まるい"],"id":"k-56e3"},{"kanji":"堂","grade":5,"page":310,"on":["ドウ"],"kun":[],"id":"k-5802"},{"kanji":"常","grade":5,"page":310,"on":["ジョウ"],"kun":["つね","（とこ）"],"id":"k-5e38"},{"kanji":"賞","grade":5,"page":310,"on":["ショウ"],"kun":[],"alt":["ほめる"],"id":"k-8cde"},{"kanji":"鉱","grade":5,"page":311,"on":["コウ"],"kun":[],"alt":["あらがね"],"id":"k-9271"},{"kanji":"銅","grade":5,"page":311,"on":["ドウ"],"kun":[],"alt":["あかがね"],"id":"k-9285"},{"kanji":"属","grade":5,"page":311,"on":["ゾク"],"kun":[],"alt":["ショク","さかん","つく","やから"],"id":"k-5c5e"},{"kanji":"厚","grade":5,"page":312,"on":["（コウ）"],"kun":["あつい"],"alt":["あか"],"id":"k-539a"},{"kanji":"喜","grade":5,"page":312,"on":["キ"],"kun":["よろこぶ"],"alt":["よろこばす"],"id":"k-559c"},{"kanji":"際","grade":5,"page":312,"on":["サイ"],"kun":["きわ"],"alt":["ぎわ"],"id":"k-969b"},{"kanji":"夢","grade":5,"page":313,"on":["ム"],"kun":["ゆめ"],"alt":["ボウ","ゆめみる","くらい"],"id":"k-5922"},{"kanji":"豊","grade":5,"page":313,"on":["ホウ"],"kun":["ゆたか"],"alt":["ブ","とよ"],"id":"k-8c4a"},{"kanji":"興","grade":5,"page":313,"on":["コウ","キョウ"],"kun":["（おこる）","（おこす）"],"id":"k-8208"},{"kanji":"移","grade":5,"page":314,"on":["イ"],"kun":["うつる","うつす"],"id":"k-79fb"},{"kanji":"税","grade":5,"page":314,"on":["ゼイ"],"kun":[],"id":"k-7a0e"},{"kanji":"程","grade":5,"page":314,"on":["テイ"],"kun":["（ほど）"],"id":"k-7a0b"},{"kanji":"故","grade":5,"page":315,"on":["コ"],"kun":["（ゆえ）"],"alt":["ふるい","もと"],"id":"k-6545"},{"kanji":"政","grade":5,"page":315,"on":["セイ","（ショウ）"],"kun":["（まつりごと）"],"alt":["まん"],"id":"k-653f"},{"kanji":"救","grade":5,"page":315,"on":["キュウ"],"kun":["すくう"],"id":"k-6551"},{"kanji":"型","grade":5,"page":316,"on":["ケイ"],"kun":["かた"],"alt":["がた"],"id":"k-578b"},{"kanji":"基","grade":5,"page":316,"on":["キ"],"kun":["（もと）","（もとい）"],"id":"k-57fa"},{"kanji":"墓","grade":5,"page":316,"on":["ボ"],"kun":["はか"],"id":"k-5893"},{"kanji":"圧","grade":5,"page":317,"on":["アツ"],"kun":[],"alt":["エン","オウ","おす","へす","おさえる"],"id":"k-5727"},{"kanji":"在","grade":5,"page":317,"on":["ザイ"],"kun":["ある"],"id":"k-5728"},{"kanji":"旧","grade":5,"page":318,"on":["キュウ"],"kun":[],"alt":["ふるい","もと"],"id":"k-65e7"},{"kanji":"易","grade":5,"page":318,"on":["エキ","イ"],"kun":["やさしい"],"alt":["やすい"],"id":"k-6613"},{"kanji":"暴","grade":5,"page":318,"on":["ボウ","（バク）"],"kun":["あばれる","（あばく）"],"id":"k-66b4"},{"kanji":"災","grade":5,"page":319,"on":["サイ"],"kun":["（わざわい）"],"id":"k-707d"},{"kanji":"酸","grade":5,"page":319,"on":["サン"],"kun":["（すい）"],"id":"k-9178"},{"kanji":"燃","grade":5,"page":319,"on":["ネン"],"kun":["もえる"],"alt":["もやす","もす"],"id":"k-71c3"},{"kanji":"状","grade":5,"page":320,"on":["ジョウ"],"kun":[],"id":"k-72b6"},{"kanji":"能","grade":5,"page":320,"on":["ノウ"],"kun":[],"alt":["よく","あたう"],"id":"k-80fd"},{"kanji":"態","grade":5,"page":320,"on":["タイ"],"kun":[],"alt":["わざと"],"id":"k-614b"},{"kanji":"肥","grade":5,"page":321,"on":["ヒ"],"kun":["こえる","こえ","こやす"],"alt":["こやし","ふとる"],"id":"k-80a5"},{"kanji":"脈","grade":5,"page":321,"on":["ミャク"],"kun":[],"alt":["すじ"],"id":"k-8108"},{"kanji":"囲","grade":5,"page":321,"on":["イ"],"kun":["かこむ","かこう"],"alt":["かこい"],"id":"k-56f2"},{"kanji":"因","grade":5,"page":321,"on":["イン"],"kun":["よる"],"alt":["ちなむ"],"id":"k-56e0"},{"kanji":"犯","grade":5,"page":322,"on":["ハン"],"kun":["（おかす）"],"alt":["ボン"],"id":"k-72af"},{"kanji":"独","grade":5,"page":322,"on":["ドク"],"kun":["ひとり"],"alt":["トク"],"id":"k-72ec"},{"kanji":"非","grade":5,"page":323,"on":["ヒ"],"kun":[],"alt":["あらず"],"id":"k-975e"},{"kanji":"罪","grade":5,"page":323,"on":["ザイ"],"kun":["つみ"],"id":"k-7f6a"},{"kanji":"幹","grade":5,"page":324,"on":["カン"],"kun":["みき"],"id":"k-5e79"},{"kanji":"術","grade":5,"page":324,"on":["ジュツ"],"kun":[],"alt":["すべ"],"id":"k-8853"},{"kanji":"衛","grade":5,"page":324,"on":["エイ"],"kun":[],"alt":["エ"],"id":"k-885b"},{"kanji":"眼","grade":5,"page":325,"on":["ガン","（ゲン）"],"kun":["（まなこ）"],"alt":["め"],"id":"k-773c"},{"kanji":"限","grade":5,"page":325,"on":["ゲン"],"kun":["かぎる"],"alt":["かぎり"],"id":"k-9650"},{"kanji":"述","grade":5,"page":326,"on":["ジュツ"],"kun":["のべる"],"id":"k-8ff0"},{"kanji":"迷","grade":5,"page":326,"on":["（メイ）"],"kun":["まよう"],"id":"k-8ff7"},{"kanji":"逆","grade":5,"page":326,"on":["ギャク"],"kun":["さか","さからう"],"alt":["ゲキ","さかさ"],"id":"k-9006"},{"kanji":"過","grade":5,"page":327,"on":["カ"],"kun":["すぎる","すごす","（あやまち）"],"alt":["あやまつ","よぎる"],"id":"k-904e"},{"kanji":"適","grade":5,"page":327,"on":["テキ"],"kun":[],"alt":["かなう"],"id":"k-9069"},{"kanji":"再","grade":5,"page":328,"on":["サイ","サ"],"kun":["ふたたび"],"id":"k-518d"},{"kanji":"構","grade":5,"page":328,"on":["コウ"],"kun":["かまえる","かまう"],"id":"k-69cb"},{"kanji":"講","grade":5,"page":328,"on":["コウ"],"kun":[],"id":"k-8b1b"},{"kanji":"告","grade":5,"page":329,"on":["コク"],"kun":["つげる"],"id":"k-544a"},{"kanji":"造","grade":5,"page":329,"on":["ゾウ"],"kun":["つくる"],"alt":["つくり","づくり"],"id":"k-9020"},{"kanji":"報","grade":5,"page":329,"on":["ホウ"],"kun":["（むくいる）"],"id":"k-5831"},{"kanji":"復","grade":5,"page":330,"on":["フク"],"kun":[],"alt":["また"],"id":"k-5fa9"},{"kanji":"複","grade":5,"page":330,"on":["フク"],"kun":[],"id":"k-8907"},{"kanji":"織","grade":5,"page":331,"on":["シキ","（ショク）"],"kun":["おる"],"alt":["おり"],"id":"k-7e54"},{"kanji":"職","grade":5,"page":331,"on":["ショク"],"kun":[],"alt":["ソク"],"id":"k-8077"},{"kanji":"識","grade":5,"page":331,"on":["シキ"],"kun":[],"alt":["しる","しるす"],"id":"k-8b58"},{"kanji":"準","grade":5,"page":332,"on":["ジュン"],"kun":[],"alt":["じゅんじる","じゅんずる","なぞらえる","のり","ひとしい","みずもり"],"id":"k-6e96"},{"kanji":"雑","grade":5,"page":332,"on":["ザツ","ゾウ"],"kun":[],"alt":["まじえる","まじる"],"id":"k-96d1"},{"kanji":"殺","grade":5,"page":332,"on":["サツ","（サイ）","（セツ）"],"kun":["ころす"],"alt":["ごろし","そぐ","あやめる"],"id":"k-6bba"},{"kanji":"確","grade":5,"page":333,"on":["カク"],"kun":["たしか","たしかめる"],"alt":["コウ"],"id":"k-78ba"},{"kanji":"護","grade":5,"page":333,"on":["ゴ"],"kun":[],"alt":["まもる"],"id":"k-8b77"},{"kanji":"版","grade":5,"page":334,"on":["ハン"],"kun":[],"id":"k-7248"},{"kanji":"毒","grade":5,"page":334,"on":["ドク"],"kun":[],"id":"k-6bd2"},{"kanji":"寸","grade":6,"page":88,"on":["スン"],"kun":[],"id":"k-5bf8"},{"kanji":"己","grade":6,"page":103,"on":["（キ）"],"kun":["（おのれ）"],"alt":["コ","つちのと","な"],"id":"k-5df1"},{"kanji":"閉","grade":6,"page":188,"on":["ヘイ"],"kun":["とじる","しめる","しまる","（とざす）"],"alt":["たてる"],"id":"k-9589"},{"kanji":"論","grade":6,"page":256,"on":["ロン"],"kun":[],"alt":["あげつらう"],"id":"k-8ad6"},{"kanji":"我","grade":6,"page":262,"on":["（ガ）"],"kun":["われ","（わ）"],"alt":["わが"],"id":"k-6211"},{"kanji":"銭","grade":6,"page":263,"on":["セン"],"kun":["（ぜに）"],"alt":["ゼン","すき"],"id":"k-92ad"},{"kanji":"射","grade":6,"page":285,"on":["シャ"],"kun":["いる"],"alt":["さす","うつ"],"id":"k-5c04"},{"kanji":"存","grade":6,"page":317,"on":["ソン","ゾン"],"kun":[],"alt":["ながらえる","ある","たもつ","とう"],"id":"k-5b58"},{"kanji":"危","grade":6,"page":323,"on":["キ"],"kun":["あぶない","（あやうい）","（あやぶむ）"],"id":"k-5371"},{"kanji":"退","grade":6,"page":325,"on":["タイ"],"kun":["しりぞく","しりぞける"],"alt":["ひく","のく","のける","どく"],"id":"k-9000"},{"kanji":"敵","grade":6,"page":327,"on":["テキ"],"kun":["（かたき）"],"alt":["あだ","かなう"],"id":"k-6575"},{"kanji":"腹","grade":6,"page":330,"on":["フク"],"kun":["はら"],"id":"k-8179"},{"kanji":"片","grade":6,"page":334,"on":["ヘン"],"kun":["かた"],"id":"k-7247"},{"kanji":"沿","grade":6,"page":336,"on":["エン"],"kun":["そう"],"alt":["ぞい"],"id":"k-6cbf"},{"kanji":"洗","grade":6,"page":336,"on":["セン"],"kun":["あらう"],"id":"k-6d17"},{"kanji":"済","grade":6,"page":336,"on":["サイ"],"kun":["すむ","すます"],"alt":["セイ","ずみ","すまない","すくう","なす","わたし","わたる"],"id":"k-6e08"},{"kanji":"源","grade":6,"page":337,"on":["ゲン"],"kun":["みなもと"],"id":"k-6e90"},{"kanji":"潮","grade":6,"page":337,"on":["チョウ"],"kun":["しお"],"alt":["うしお"],"id":"k-6f6e"},{"kanji":"激","grade":6,"page":337,"on":["ゲキ"],"kun":["はげしい"],"id":"k-6fc0"},{"kanji":"枚","grade":6,"page":338,"on":["マイ"],"kun":[],"alt":["バイ"],"id":"k-679a"},{"kanji":"株","grade":6,"page":338,"on":["シュ"],"kun":["かぶ"],"id":"k-682a"},{"kanji":"棒","grade":6,"page":338,"on":["ボウ"],"kun":[],"id":"k-68d2"},{"kanji":"樹","grade":6,"page":339,"on":["ジュ"],"kun":[],"alt":["き"],"id":"k-6a39"},{"kanji":"模","grade":6,"page":339,"on":["モ"],"kun":[],"alt":["ボ"],"id":"k-6a21"},{"kanji":"権","grade":6,"page":339,"on":["ケン","（ゴン）"],"kun":[],"alt":["おもり","かり","はかる"],"id":"k-6a29"},{"kanji":"染","grade":6,"page":340,"on":["（セン）"],"kun":["そめる","そまる","（しみる）","（しみ）"],"id":"k-67d3"},{"kanji":"机","grade":6,"page":340,"on":["キ"],"kun":["つくえ"],"id":"k-673a"},{"kanji":"処","grade":6,"page":340,"on":["ショ"],"kun":[],"alt":["ところ","こ","おる"],"id":"k-51e6"},{"kanji":"討","grade":6,"page":341,"on":["トウ"],"kun":["（うつ）"],"id":"k-8a0e"},{"kanji":"訪","grade":6,"page":341,"on":["ホウ"],"kun":["たずねる","（おとずれる）"],"alt":["とう"],"id":"k-8a2a"},{"kanji":"訳","grade":6,"page":341,"on":["ヤク"],"kun":["わけ"],"id":"k-8a33"},{"kanji":"詞","grade":6,"page":341,"on":["シ"],"kun":[],"alt":["ことば"],"id":"k-8a5e"},{"kanji":"尺","grade":6,"page":341,"on":["シャク"],"kun":[],"alt":["セキ","さし"],"id":"k-5c3a"},{"kanji":"誠","grade":6,"page":342,"on":["セイ"],"kun":["（まこと）"],"id":"k-8aa0"},{"kanji":"誌","grade":6,"page":342,"on":["シ"],"kun":[],"id":"k-8a8c"},{"kanji":"誤","grade":6,"page":342,"on":["ゴ"],"kun":["あやまる"],"id":"k-8aa4"},{"kanji":"認","grade":6,"page":342,"on":["ニン"],"kun":["みとめる"],"alt":["したためる"],"id":"k-8a8d"},{"kanji":"誕","grade":6,"page":342,"on":["タン"],"kun":[],"id":"k-8a95"},{"kanji":"諸","grade":6,"page":342,"on":["ショ"],"kun":[],"alt":["もろ"],"id":"k-8af8"},{"kanji":"敬","grade":6,"page":343,"on":["ケイ"],"kun":["うやまう"],"alt":["キョウ"],"id":"k-656c"},{"kanji":"警","grade":6,"page":343,"on":["ケイ"],"kun":[],"alt":["いましめる"],"id":"k-8b66"},{"kanji":"臨","grade":6,"page":343,"on":["リン"],"kun":["のぞむ"],"id":"k-81e8"},{"kanji":"批","grade":6,"page":346,"on":["ヒ"],"kun":[],"id":"k-6279"},{"kanji":"拡","grade":6,"page":346,"on":["カク"],"kun":[],"alt":["コウ","ひろがる","ひろげる","ひろめる"],"id":"k-62e1"},{"kanji":"担","grade":6,"page":346,"on":["タン"],"kun":["（かつぐ）","（になう）"],"id":"k-62c5"},{"kanji":"拝","grade":6,"page":347,"on":["ハイ"],"kun":["おがむ"],"alt":["おろがむ"],"id":"k-62dd"},{"kanji":"探","grade":6,"page":347,"on":["タン"],"kun":["さがす","（さぐる）"],"id":"k-63a2"},{"kanji":"推","grade":6,"page":347,"on":["スイ"],"kun":["おす"],"id":"k-63a8"},{"kanji":"捨","grade":6,"page":348,"on":["シャ"],"kun":["すてる"],"id":"k-6368"},{"kanji":"揮","grade":6,"page":348,"on":["キ"],"kun":[],"alt":["ふるう"],"id":"k-63ee"},{"kanji":"操","grade":6,"page":348,"on":["ソウ"],"kun":["（みさお）","（あやつる）"],"alt":["サン"],"id":"k-64cd"},{"kanji":"承","grade":6,"page":349,"on":["ショウ"],"kun":["（うけたまわる）"],"alt":["ジョウ","うける"],"id":"k-627f"},{"kanji":"奏","grade":6,"page":349,"on":["ソウ"],"kun":["（かなでる）"],"id":"k-594f"},{"kanji":"座","grade":6,"page":349,"on":["ザ"],"kun":["（すわる）"],"id":"k-5ea7"},{"kanji":"視","grade":6,"page":350,"on":["シ"],"kun":[],"alt":["みる"],"id":"k-8996"},{"kanji":"覧","grade":6,"page":350,"on":["ラン"],"kun":[],"alt":["みる"],"id":"k-89a7"},{"kanji":"舌","grade":6,"page":350,"on":["ゼツ"],"kun":["した"],"id":"k-820c"},{"kanji":"呼","grade":6,"page":351,"on":["コ"],"kun":["よぶ"],"id":"k-547c"},{"kanji":"吸","grade":6,"page":351,"on":["キュウ"],"kun":["すう"],"id":"k-5438"},{"kanji":"仁","grade":6,"page":352,"on":["ジン","（ニ）"],"kun":[],"alt":["ニン"],"id":"k-4ec1"},{"kanji":"供","grade":6,"page":352,"on":["キョウ","（ク）"],"kun":["そなえる","とも"],"alt":["クウ","グ","ども"],"id":"k-4f9b"},{"kanji":"俳","grade":6,"page":352,"on":["ハイ"],"kun":[],"id":"k-4ff3"},{"kanji":"俵","grade":6,"page":353,"on":["ヒョウ"],"kun":["たわら"],"id":"k-4ff5"},{"kanji":"値","grade":6,"page":353,"on":["チ"],"kun":["ね","（あたい）"],"id":"k-5024"},{"kanji":"優","grade":6,"page":353,"on":["ユウ"],"kun":["（やさしい）","（すぐれる）"],"alt":["ウ","まさる"],"id":"k-512a"},{"kanji":"系","grade":6,"page":354,"on":["ケイ"],"kun":[],"id":"k-7cfb"},{"kanji":"紅","grade":6,"page":354,"on":["コウ","（ク）"],"kun":["べに","（くれない）"],"alt":["あかい"],"id":"k-7d05"},{"kanji":"納","grade":6,"page":354,"on":["ノウ","（ナッ）","（ナ）"],"kun":["おさめる","おさまる"],"alt":["ナン","トウ"],"id":"k-7d0d"},{"kanji":"純","grade":6,"page":355,"on":["ジュン"],"kun":[],"id":"k-7d14"},{"kanji":"絹","grade":6,"page":355,"on":["（ケン）"],"kun":["きぬ"],"id":"k-7d79"},{"kanji":"蚕","grade":6,"page":355,"on":["サン"],"kun":["かいこ"],"alt":["テン","こ"],"id":"k-8695"},{"kanji":"縮","grade":6,"page":356,"on":["シュク"],"kun":["ちぢむ","ちぢまる","ちぢめる","ちぢれる","ちぢらす"],"id":"k-7e2e"},{"kanji":"縦","grade":6,"page":356,"on":["ジュウ"],"kun":["たて"],"id":"k-7e26"},{"kanji":"従","grade":6,"page":356,"on":["ジュウ","（ショウ）"],"kun":["したがう","したがえる"],"alt":["ジュ","より"],"id":"k-5f93"},{"kanji":"頂","grade":6,"page":357,"on":["チョウ"],"kun":["いただく","いただき"],"id":"k-9802"},{"kanji":"預","grade":6,"page":357,"on":["ヨ"],"kun":["あずける","あずかる"],"id":"k-9810"},{"kanji":"収","grade":6,"page":357,"on":["シュウ"],"kun":["おさめる","おさまる"],"id":"k-53ce"},{"kanji":"映","grade":6,"page":358,"on":["エイ"],"kun":["うつる","うつす","（はえる）"],"alt":["ばえ"],"id":"k-6620"},{"kanji":"晩","grade":6,"page":358,"on":["バン"],"kun":[],"id":"k-6669"},{"kanji":"暖","grade":6,"page":358,"on":["ダン"],"kun":["あたたか","あたたかい"],"alt":["ノン","あたたまる","あたためる"],"id":"k-6696"},{"kanji":"暮","grade":6,"page":359,"on":["ボ"],"kun":["くらす","くれる"],"id":"k-66ae"},{"kanji":"幕","grade":6,"page":359,"on":["マク","バク"],"kun":[],"alt":["とばり"],"id":"k-5e55"},{"kanji":"泉","grade":6,"page":359,"on":["セン"],"kun":["いずみ"],"id":"k-6cc9"},{"kanji":"砂","grade":6,"page":360,"on":["サ","（シャ）"],"kun":["すな"],"id":"k-7802"},{"kanji":"磁","grade":6,"page":360,"on":["ジ"],"kun":[],"id":"k-78c1"},{"kanji":"域","grade":6,"page":360,"on":["イキ"],"kun":[],"id":"k-57df"},{"kanji":"針","grade":6,"page":361,"on":["シン"],"kun":["はり"],"id":"k-91dd"},{"kanji":"鋼","grade":6,"page":361,"on":["コウ"],"kun":["（はがね）"],"id":"k-92fc"},{"kanji":"灰","grade":6,"page":361,"on":["（カイ）"],"kun":["はい"],"id":"k-7070"},{"kanji":"宅","grade":6,"page":362,"on":["タク"],"kun":[],"id":"k-5b85"},{"kanji":"宇","grade":6,"page":362,"on":["ウ"],"kun":[],"id":"k-5b87"},{"kanji":"宙","grade":6,"page":362,"on":["チュウ"],"kun":[],"id":"k-5b99"},{"kanji":"宝","grade":6,"page":363,"on":["ホウ"],"kun":["たから"],"id":"k-5b9d"},{"kanji":"宗","grade":6,"page":363,"on":["シュウ","（ソウ）"],"kun":[],"alt":["むね"],"id":"k-5b97"},{"kanji":"宣","grade":6,"page":363,"on":["セン"],"kun":[],"alt":["のたまう"],"id":"k-5ba3"},{"kanji":"穴","grade":6,"page":364,"on":["ケツ"],"kun":["あな"],"id":"k-7a74"},{"kanji":"窓","grade":6,"page":364,"on":["ソウ"],"kun":["まど"],"alt":["ス","てんまど","けむだし"],"id":"k-7a93"},{"kanji":"段","grade":6,"page":364,"on":["ダン"],"kun":[],"alt":["タン"],"id":"k-6bb5"},{"kanji":"庁","grade":6,"page":365,"on":["チョウ"],"kun":[],"alt":["テイ","やくしょ"],"id":"k-5e81"},{"kanji":"署","grade":6,"page":365,"on":["ショ"],"kun":[],"id":"k-7f72"},{"kanji":"層","grade":6,"page":365,"on":["ソウ"],"kun":[],"id":"k-5c64"},{"kanji":"勤","grade":6,"page":366,"on":["キン","（ゴン）"],"kun":["つとめる","つとまる"],"alt":["づとめ","いそしむ"],"id":"k-52e4"},{"kanji":"就","grade":6,"page":366,"on":["シュウ"],"kun":["（つく）","（つける）"],"alt":["ジュ"],"id":"k-5c31"},{"kanji":"専","grade":6,"page":366,"on":["セン"],"kun":["もっぱら"],"id":"k-5c02"},{"kanji":"貴","grade":6,"page":367,"on":["キ"],"kun":["（たっとい）","（とうとい）"],"alt":["たっとぶ","とうとぶ"],"id":"k-8cb4"},{"kanji":"賃","grade":6,"page":367,"on":["チン"],"kun":[],"id":"k-8cc3"},{"kanji":"遺","grade":6,"page":367,"on":["イ"],"kun":[],"alt":["ユイ","のこす"],"id":"k-907a"},{"kanji":"干","grade":6,"page":368,"on":["カン"],"kun":["ほす","（ひる）"],"alt":["ほし","ぼし"],"id":"k-5e72"},{"kanji":"並","grade":6,"page":368,"on":["（ヘイ）"],"kun":["なみ","ならべる","ならぶ","ならびに"],"alt":["ホウ"],"id":"k-4e26"},{"kanji":"届","grade":6,"page":368,"on":["カイ"],"kun":["とどける","とどく"],"alt":["とどけ"],"id":"k-5c4a"},{"kanji":"至","grade":6,"page":369,"on":["シ"],"kun":["いたる"],"id":"k-81f3"},{"kanji":"延","grade":6,"page":369,"on":["エン"],"kun":["のびる","のべる","のばす"],"alt":["のべ"],"id":"k-5ef6"},{"kanji":"展","grade":6,"page":369,"on":["テン"],"kun":[],"id":"k-5c55"},{"kanji":"忘","grade":6,"page":370,"on":["（ボウ）"],"kun":["わすれる"],"id":"k-5fd8"},{"kanji":"忠","grade":6,"page":370,"on":["チュウ"],"kun":[],"id":"k-5fe0"},{"kanji":"恩","grade":6,"page":370,"on":["オン"],"kun":[],"id":"k-6069"},{"kanji":"孝","grade":6,"page":370,"on":["コウ"],"kun":[],"alt":["キョウ"],"id":"k-5b5d"},{"kanji":"困","grade":6,"page":371,"on":["コン"],"kun":["こまる"],"id":"k-56f0"},{"kanji":"疑","grade":6,"page":371,"on":["ギ"],"kun":["うたがう"],"id":"k-7591"},{"kanji":"欲","grade":6,"page":371,"on":["ヨク"],"kun":["（ほっする）","（ほしい）"],"id":"k-6b32"},{"kanji":"奮","grade":6,"page":372,"on":["フン"],"kun":["ふるう"],"id":"k-596e"},{"kanji":"盛","grade":6,"page":372,"on":["（セイ）","（ジョウ）"],"kun":["もる","（さかる）","（さかん）"],"id":"k-76db"},{"kanji":"乱","grade":6,"page":372,"on":["ラン"],"kun":["みだれる","みだす"],"alt":["ロン","みだる","みだ","おさめる","わたる"],"id":"k-4e71"},{"kanji":"幼","grade":6,"page":373,"on":["ヨウ"],"kun":["おさない"],"id":"k-5e7c"},{"kanji":"朗","grade":6,"page":373,"on":["ロウ"],"kun":["（ほがらか）"],"alt":["あきらか"],"id":"k-6717"},{"kanji":"尊","grade":6,"page":373,"on":["ソン"],"kun":["たっとい","たっとぶ"],"alt":["とうとい","とうとぶ"],"id":"k-5c0a"},{"kanji":"善","grade":6,"page":374,"on":["ゼン"],"kun":["よい"],"alt":["いい","よく","よしとする"],"id":"k-5584"},{"kanji":"否","grade":6,"page":374,"on":["ヒ"],"kun":["（いな）"],"alt":["いや"],"id":"k-5426"},{"kanji":"異","grade":6,"page":374,"on":["イ"],"kun":["こと"],"alt":["ことなる","け"],"id":"k-7570"},{"kanji":"簡","grade":6,"page":375,"on":["カン"],"kun":[],"alt":["ケン","えらぶ","ふだ"],"id":"k-7c21"},{"kanji":"難","grade":6,"page":375,"on":["ナン"],"kun":["（かたい）"],"alt":["がたい","むずかしい","むづかしい","むつかしい","にくい"],"id":"k-96e3"},{"kanji":"厳","grade":6,"page":375,"on":["ゲン","（ゴン）"],"kun":["きびしい","（おごそか）"],"alt":["いかめしい","いつくし"],"id":"k-53b3"},{"kanji":"痛","grade":6,"page":376,"on":["ツウ"],"kun":["いたい","いたむ","いためる"],"alt":["いたましい"],"id":"k-75db"},{"kanji":"傷","grade":6,"page":376,"on":["ショウ"],"kun":["きず","（いたむ）","（いためる）"],"id":"k-50b7"},{"kanji":"看","grade":6,"page":376,"on":["カン"],"kun":[],"alt":["みる"],"id":"k-770b"},{"kanji":"亡","grade":6,"page":377,"on":["ボウ","（モウ）"],"kun":["（ない）"],"alt":["なき","ほろびる","ほろぶ","ほろぼす"],"id":"k-4ea1"},{"kanji":"姿","grade":6,"page":377,"on":["シ"],"kun":["すがた"],"id":"k-59ff"},{"kanji":"翌","grade":6,"page":377,"on":["ヨク"],"kun":[],"id":"k-7fcc"},{"kanji":"卵","grade":6,"page":378,"on":["（ラン）"],"kun":["たまご"],"id":"k-5375"},{"kanji":"乳","grade":6,"page":378,"on":["ニュウ"],"kun":["ちち","（ち）"],"id":"k-4e73"},{"kanji":"熟","grade":6,"page":378,"on":["ジュク"],"kun":["（うれる）"],"id":"k-719f"},{"kanji":"糖","grade":6,"page":379,"on":["トウ"],"kun":[],"id":"k-7cd6"},{"kanji":"穀","grade":6,"page":379,"on":["コク"],"kun":[],"id":"k-7a40"},{"kanji":"若","grade":6,"page":380,"on":["（ジャク）"],"kun":["わかい","（もしくは）"],"alt":["ニャク","ニャ","わか","もしくわ","もし","ごとし"],"id":"k-82e5"},{"kanji":"著","grade":6,"page":380,"on":["チョ"],"kun":["（あらわす）","（いちじるしい）"],"alt":["チャク"],"id":"k-8457"},{"kanji":"蒸","grade":6,"page":380,"on":["ジョウ"],"kun":["（むす）","（むれる）","むらす"],"alt":["セイ"],"id":"k-84b8"},{"kanji":"蔵","grade":6,"page":380,"on":["ゾウ"],"kun":["くら"],"alt":["ソウ","おさめる","かくれる"],"id":"k-8535"},{"kanji":"私","grade":6,"page":381,"on":["シ"],"kun":["わたくし","わたし"],"id":"k-79c1"},{"kanji":"秘","grade":6,"page":381,"on":["ヒ"],"kun":["（ひめる）"],"alt":["ひそか","かくす"],"id":"k-79d8"},{"kanji":"密","grade":6,"page":381,"on":["ミツ"],"kun":[],"alt":["ひそか"],"id":"k-5bc6"},{"kanji":"補","grade":6,"page":382,"on":["ホ"],"kun":["おぎなう"],"id":"k-88dc"},{"kanji":"刻","grade":6,"page":382,"on":["コク"],"kun":["きざむ"],"alt":["きざみ"],"id":"k-523b"},{"kanji":"創","grade":6,"page":382,"on":["ソウ"],"kun":["つくる"],"alt":["ショウ","はじめる","きず","けずしける"],"id":"k-5275"},{"kanji":"割","grade":6,"page":382,"on":["（カツ）"],"kun":["わる","われる"],"alt":["わり","さく"],"id":"k-5272"},{"kanji":"劇","grade":6,"page":382,"on":["ゲキ"],"kun":[],"id":"k-5287"},{"kanji":"巻","grade":6,"page":383,"on":["カン"],"kun":["まく","まき"],"alt":["ケン"],"id":"k-5dfb"},{"kanji":"券","grade":6,"page":383,"on":["ケン"],"kun":[],"id":"k-5238"},{"kanji":"冊","grade":6,"page":383,"on":["サツ","（サク）"],"kun":[],"alt":["ふみ"],"id":"k-518a"},{"kanji":"垂","grade":6,"page":384,"on":["スイ"],"kun":["たれる","たらす"],"alt":["たれ","なんなんとす"],"id":"k-5782"},{"kanji":"郵","grade":6,"page":384,"on":["ユウ"],"kun":[],"id":"k-90f5"},{"kanji":"郷","grade":6,"page":384,"on":["キョウ","（ゴウ）"],"kun":[],"alt":["さと"],"id":"k-90f7"},{"kanji":"除","grade":6,"page":385,"on":["ジョ","（ジ）"],"kun":["のぞく"],"alt":["よけ"],"id":"k-9664"},{"kanji":"降","grade":6,"page":385,"on":["コウ"],"kun":["おりる","おろす","ふる"],"alt":["ゴ","ふり","くだる","くだす"],"id":"k-964d"},{"kanji":"障","grade":6,"page":385,"on":["ショウ"],"kun":["（さわる）"],"id":"k-969c"},{"kanji":"筋","grade":6,"page":386,"on":["キン"],"kun":["すじ"],"id":"k-7b4b"},{"kanji":"骨","grade":6,"page":386,"on":["コツ"],"kun":["ほね"],"id":"k-9aa8"},{"kanji":"胃","grade":6,"page":386,"on":["イ"],"kun":[],"id":"k-80c3"},{"kanji":"背","grade":6,"page":386,"on":["ハイ"],"kun":["せ","せい","（そむく）","（そむける）"],"id":"k-80cc"},{"kanji":"肺","grade":6,"page":387,"on":["ハイ"],"kun":[],"id":"k-80ba"},{"kanji":"胸","grade":6,"page":387,"on":["キョウ"],"kun":["むね","（むな）"],"id":"k-80f8"},{"kanji":"脳","grade":6,"page":387,"on":["ノウ"],"kun":[],"alt":["ドウ","のうずる"],"id":"k-8133"},{"kanji":"腸","grade":6,"page":387,"on":["チョウ"],"kun":[],"alt":["はらわた","わた"],"id":"k-8178"},{"kanji":"臓","grade":6,"page":387,"on":["ゾウ"],"kun":[],"alt":["はらわた"],"id":"k-81d3"},{"kanji":"策","grade":6,"page":390,"on":["サク"],"kun":[],"id":"k-7b56"},{"kanji":"律","grade":6,"page":390,"on":["リツ","（リチ）"],"kun":[],"alt":["レツ"],"id":"k-5f8b"},{"kanji":"憲","grade":6,"page":390,"on":["ケン"],"kun":[],"id":"k-61b2"},{"kanji":"装","grade":6,"page":391,"on":["ソウ","（ショウ）"],"kun":["（よそおう）"],"alt":["よそおい"],"id":"k-88c5"},{"kanji":"裏","grade":6,"page":391,"on":["リ"],"kun":["うら"],"id":"k-88cf"},{"kanji":"裁","grade":6,"page":391,"on":["サイ"],"kun":["さばく","（たつ）"],"id":"k-88c1"},{"kanji":"皇","grade":6,"page":392,"on":["コウ","オウ"],"kun":[],"id":"k-7687"},{"kanji":"聖","grade":6,"page":392,"on":["セイ"],"kun":[],"alt":["ショウ","ひじり"],"id":"k-8056"},{"kanji":"班","grade":6,"page":392,"on":["ハン"],"kun":[],"id":"k-73ed"},{"kanji":"陛","grade":6,"page":393,"on":["ヘイ"],"kun":[],"id":"k-965b"},{"kanji":"后","grade":6,"page":393,"on":["コウ"],"kun":[],"alt":["ゴ","きさき"],"id":"k-540e"},{"kanji":"将","grade":6,"page":393,"on":["ショウ"],"kun":[],"alt":["ソウ","まさに","はた","まさ","ひきいる","もって"],"id":"k-5c06"},{"kanji":"党","grade":6,"page":394,"on":["トウ"],"kun":[],"alt":["なかま","むら"],"id":"k-515a"},{"kanji":"盟","grade":6,"page":394,"on":["メイ"],"kun":[],"id":"k-76df"},{"kanji":"派","grade":6,"page":394,"on":["ハ"],"kun":[],"id":"k-6d3e"},{"kanji":"閣","grade":6,"page":395,"on":["カク"],"kun":[],"id":"k-95a3"},{"kanji":"衆","grade":6,"page":395,"on":["シュウ","（シュ）"],"kun":[],"alt":["おおい"],"id":"k-8846"},{"kanji":"革","grade":6,"page":395,"on":["カク"],"kun":["かわ"],"id":"k-9769"}];
+const textbookOrder = {"1": "木大小一二三四五六七八九十子空先生男女手天青文字正見学校山水雨上下日火田川竹月車人気糸目玉村白土音花休虫金本森出中町入赤耳王口年立草名夕百円千犬早貝林右足石左力", "2": "読雪声言行南図書方絵知春思記曜肉話聞黄色黒太毛高風晴多新考形体長近同今会社刀切内店姉妹線汽海魚広前元岩食教光家池組後数丸点買引羽雲夏公園通万頭来鳥歌分回直紙遠友朝顔毎当間昼半電外楽親父母兄弟午夜科国語算活工自時帰何合里週番画用角交明星東京古寺西止道野原台船米秋作理少谷細首鳴心冬戸麦茶地市場答歩才門弓矢計室馬北牛走売弱強", "3": "詩葉習着登物持旅始進動深様面館号調使問意味湖漢由温酒題発章平決事落相洋服次所県有氷秒農仕球局全遊表昔世界速横指鉄安定運予送住具拾向坂悲緑開岸路感対区陽整部泳練助童申品商客式去倍筆銀植集化死都両負係員祭業板柱油港薬笛注悪者勝庫波放勉想写真列血暗橋暑寒軽命第返主州屋根荷守役豆育消取期畑終福急起苦待談鼻歯央階委級昭和駅皮皿短息美転病医飲重配度幸流族帳代曲投炭羊宿丁宮院礼等反君乗庭研究打受島追実神箱湯他身", "4": "信達飛席建菜標例法類機械司典順録辞成訓印静愛昨城初景群必要的府茨栃埼奈潟富井梨量岐阜岡伝案説試選観旗利材関以季節郡戦争給飯包帯泣軍兵隊輪健康夫氏祝貨児器官良徒競芽梅約付清滋阪徳香媛佐賀崎熊鹿沖縄熱働栄養満令位置漁浴欠卒単結果径副臣街灯英参唱塩治刷変末種続折積松不議差念固便博浅倉札孫功加牧借挙協極求未芸各料然仲労焼冷照好最省課無側改周害共連願望失辺低敗老底票陸管衣完験別残希努束巣産候察特兆億鏡散民覚勇笑", "5": "像経情象絶厚賞状喜解容技術適許可複構桜銅破修復眼停祖準備貿易際潔質報告属確識因造似限留現接応勢河歴史幹招句常序武士資査性非総測舎往演刊肥製謝罪暴防鉱績志航夢編険断境態逆判圧得比政興示張個支迷在独弁検提寄余仏貸効条件保評価賛妻混雑略採禁能過程豊布減護再増証責任統酸素設授紀財脈織築旧規則貯型液基額故婦救格職移墓義殺貧版述仮飼綿居永久毒営犯講師精慣囲益災枝費税制衛耕損粉均輸団務快燃率領導堂", "6": "視砂腹段並降認洗異純射背捨舌乱域誌映拡展蔵訪我承蒸処就臨従恩裁律脳臓腸肺胃私密呼吸存刻激簡机難疑券障派警署銭勤諸供収納枚染宣暮探座幼著権尊庁装届沿冊宇宙俳誤幕晩模窓延論樹覧値源退厳優推貴策縮棒熟尺寸揮痛批傷若閉遺翌縦頂忠誠敵蚕己除仁泉裏系盟欲株善班危割否至宅糖紅卵乳創奏誕困看筋盛骨巻宝郷敬秘聖絹拝鋼亡干衆郵賃孝預穀俵訳忘暖詞朗胸片劇将皇后陛憲党閣革宗垂層磁操補担姿討専潮針穴灰奮済"};
+const kanaOrder = {"1": "一右雨円王音下火花貝学気九休玉金空月犬見五口校左三山子四糸字耳七車手十出女小上森人水正生青夕石赤千川先早草足村大男竹中虫町天田土二日入年白八百文木本名目立力林六", "2": "引羽雲園遠何科夏家歌画回会海絵外角楽活間丸岩顔汽記帰弓牛魚京強教近兄形計元言原戸古午後語工公広交光考行高黄合谷国黒今才細作算止市矢姉思紙寺自時室社弱首秋週春書少場色食心新親図数西声星晴切雪船線前組走多太体台地池知茶昼長鳥朝直通弟店点電刀冬当東答頭同道読内南肉馬売買麦半番父風分聞米歩母方北毎妹万明鳴毛門夜野友用曜来里理話", "3": "悪安暗医委意育員院飲運泳駅央横屋温化荷界開階寒感漢館岸起期客究急級宮球去橋業曲局銀区苦具君係軽血決研県庫湖向幸港号根祭皿仕死使始指歯詩次事持式実写者主守取酒受州拾終習集住重宿所暑助昭消商章勝乗植申身神真深進世整昔全相送想息速族他打対待代第題炭短談着注柱丁帳調追定庭笛鉄転都度投豆島湯登等動童農波配倍箱畑発反坂板皮悲美鼻筆氷表秒病品負部服福物平返勉放味命面問役薬由油有遊予羊洋葉陽様落流旅両緑礼列練路和", "4": "愛案以衣位茨印英栄媛塩岡億加果貨課芽賀改械害街各覚潟完官管関観願岐希季旗器機議求泣給挙漁共協鏡競極熊訓軍郡群径景芸欠結建健験固功好香候康佐差菜最埼材崎昨札刷察参産散残氏司試児治滋辞鹿失借種周祝順初松笑唱焼照城縄臣信井成省清静席積折節説浅戦選然争倉巣束側続卒孫帯隊達単置仲沖兆低底的典伝徒努灯働特徳栃奈梨熱念敗梅博阪飯飛必票標不夫付府阜富副兵別辺変便包法望牧末満未民無約勇要養浴利陸良料量輪類令冷例連老労録", "5": "圧囲移因永営衛易益液演応往桜可仮価河過快解格確額刊幹慣眼紀基寄規喜技義逆久旧救居許境均禁句型経潔件険検限現減故個護効厚耕航鉱構興講告混査再災妻採際在財罪殺雑酸賛士支史志枝師資飼示似識質舎謝授修述術準序招証象賞条状常情織職制性政勢精製税責績接設絶祖素総造像増則測属率損貸態団断築貯張停提程適統堂銅導得毒独任燃能破犯判版比肥非費備評貧布婦武復複仏粉編弁保墓報豊防貿暴脈務夢迷綿輸余容略留領歴", "6": "胃異遺域宇映延沿恩我灰拡革閣割株干巻看簡危机揮貴疑吸供胸郷勤筋系敬警劇激穴券絹権憲源厳己呼誤后孝皇紅降鋼刻穀骨困砂座済裁策冊蚕至私姿視詞誌磁射捨尺若樹収宗就衆従縦縮熟純処署諸除承将傷障蒸針仁垂推寸盛聖誠舌宣専泉洗染銭善奏窓創装層操蔵臓存尊退宅担探誕段暖値宙忠著庁頂腸潮賃痛敵展討党糖届難乳認納脳派拝背肺俳班晩否批秘俵腹奮並陛閉片補暮宝訪亡忘棒枚幕密盟模訳郵優預幼欲翌乱卵覧裏律臨朗論"};
+const exampleReadings = {"一": ["いちねんせいのいち", "ひとつ", "いっしょうのいつ"], "右": ["うせつのう", "さゆうのゆう", "みぎてのみぎ"], "雨": ["うてんのう", "あめふりのあめ", "あまみずのあま"], "円": ["ひゃくえんのえん", "まるい"], "王": ["おうさまのおう"], "音": ["おんがくのおん", "おと", "ほんねのね"], "下": ["ちかてつのか", "じょうげのげ", "した", "さげる", "しも"], "火": ["かようびのか", "ひばなのひ"], "花": ["かふんのか", "はなたばのはな"], "貝": ["かいがらのかい"], "学": ["しょうがくせいのがく", "まなぶ"], "気": ["くうきのき", "けはいのけ"], "休": ["きゅうじつのきゅう", "やすむ"], "玉": ["みずたまのたま", "ぎょくろのぎょく"], "金": ["きんようびのきん", "かね", "かなづちのかな", "おうごんのこん"], "九": ["きゅうこのきゅう", "くがつのく", "ここのつ"], "空": ["くうきのくう", "そら", "あきかんのあく", "からっぽのから"], "月": ["げつようひのげつ", "しょうがつのがつ", "つき"], "犬": ["あいけんのけん", "こいぬのいぬ"], "見": ["けんがくのけん", "みる"], "五": ["ごえんだまのご", "いつつ"], "口": ["じんこうのこう", "くちょうのく", "くちぶえのくち"], "校": ["がっこうのこう"], "左": ["さゆうのさ", "ひだりてのひだり"], "三": ["さんがつのさん", "みっつ", "みかづきのみ"], "山": ["ふじやまのさん", "やま"], "四": ["しがつのし", "よっつ", "よんかいのよん", "よにんのよ"], "子": ["だんしのし", "こどものこ", "ようすのす"], "糸": ["けいとのいと", "めんしのし"], "字": ["もじのじ"], "耳": ["みみたぶのみみ"], "七": ["しちがつのしち", "ななつ", "なのかのなの"], "車": ["でんしゃのしゃ", "くるま"], "手": ["てがみのて", "はくしゅのしゅ"], "十": ["じゅうがつのじゅう", "とお", "じゅうにんといろのと", "じっかいのじっ"], "出": ["しゅつじょうのしゅつ", "でる", "だす"], "女": ["だんじょのじょ", "おんな"], "小": ["しょうがっこうのしょう", "ちいさい", "おがわのお", "ことりのこ"], "上": ["おくじょうのじょう", "うえ", "かわかみのかみ", "あーげる", "のぼーる", "うわぎのうわ"], "森": ["しんりんのしん", "もり"], "人": ["にほんじんのじん", "にんげんのにん", "ひと"], "水": ["すいようびのすい", "みず"], "正": ["せいほうけいのせい", "しょうがつのしょう", "ただしい", "まさゆめのまさ"], "生": ["せいかつのせい", "いきる", "うまれる", "なま", "は‐える", "いっしょうのしょう"], "青": ["せいしゅんのせい", "あおぞらのあおい"], "石": ["ほうせきのせき", "いしじしゃくのしゃく"], "赤": ["せきはんのせき", "あかい"], "先": ["せんせいのせん", "さき"], "千": ["せんえんさつのせん", "ちよがみのち"], "川": ["がわあそびのかわ"], "早": ["そうちょうのそう", "はやい"], "草": ["ざっそうのそう", "くさ"], "足": ["えんそくのそく", "あし", "たしざんのたす"], "村": ["しちょうそんのそん", "むら"], "大": ["だいがくのだい", "たいせつのたい", "おおきい"], "男": ["だんじょのだん", "おとこ", "ちょうなんのなん"], "竹": ["ちくりんのちく", "たけうまのたけ"], "中": ["ちゅうがっこうのちゅう", "なか", "いちにちじゅうのじゅう"], "虫": ["こんちゅうのちゅう", "むし"], "町": ["ちょうないかいのちょう", "まち"], "天": ["てんきのてん", "あまのがわのあま"], "田": ["たんぼのた", "すいでんのでん"], "土": ["どようびのど", "つち"], "二": ["にがつのに", "ふたつ"], "日": ["まいにちのにち", "ひのまるのひ", "みっかのか", "きゅうじつのじつ"], "入": ["にゅうがくのにゅう", "いれる", "はいる"], "年": ["らいねんのねん", "とし"], "白": ["はくいのはく", "しろい", "しろかべのしら"], "八": ["はちがつのはち", "やっつ", "ようかのよう", "やえばのや"], "百": ["ひゃくえんだまのひゃく"], "文": ["さくぶんのぶん", "もんくのもん"], "本": ["ほんもののほん", "もと"], "名": ["めいじんのめい", "なまえのな", "みょうじのみょう"], "木": ["もくようびのもく", "き"], "目": ["もくてきのもく", "め"], "夕": ["ゆうがたのゆう"], "立": ["きりつのりつ", "たつ"], "力": ["どりょくのりょく", "ちから", "ばりきのりき"], "林": ["しんりんのしん", "はやし"], "六": ["ろくがつのろく", "むっつ", "むいかのむい", "むつぎりのむつ"], "引": ["いんりょくのいん", "ひく"], "羽": ["とりのはね", "はごいたのは"], "雲": ["うんかいのうん", "くも"], "園": ["どうぶつえんのえん"], "遠": ["えんそくのえん", "とおい"], "黄": ["きいろのき", "おうごんのおう"], "何": ["なにかのなに", "なんにんのなん"], "夏": ["しょかのか", "なつ"], "家": ["かぞくのか", "いえ"], "科": ["きょうかしょのか"], "歌": ["かしゅのか", "うたう"], "画": ["えいがかんのが", "けいかくのかく"], "会": ["かいしゃのかい", "ひとにあう"], "回": ["かいすうのかい", "まわる"], "海": ["かいがいのかい", "うみ"], "絵": ["えほんのえ", "かいがのかい"], "外": ["がいこくのがい", "そと"], "角": ["さんかくのかく", "かど", "つの"], "楽": ["おんがくのがく", "たのしい"], "活": ["せいかつのかつ"], "間": ["じかんのかん", "あいだ"], "丸": ["だんがんのがん", "まるい"], "岩": ["がんせきのがん", "いわ"], "顔": ["がんめんのがん", "かお"], "帰": ["きこくのき", "かえる"], "汽": ["きてきのき"], "記": ["にっきのき", "なまえをしるす"], "弓": ["ゆみやのゆみ"], "牛": ["ぎゅうにくのぎゅう", "うし"], "魚": ["きんぎょのぎょ", "さかな"], "京": ["きょうとのきょう"], "強": ["べんきょうのきょう", "つよい"], "教": ["きょうしつのきょう", "おしえる"], "近": ["きんじょのきん", "ちかい"], "兄": ["きょうだいのきょう", "あに"], "形": ["さんかっけいのけい", "かたち", "にんぎょうのぎょう"], "計": ["けいさんのけい", "はかる"], "元": ["げんきのげん", "もと"], "原": ["そうげんのげん", "はら"], "言": ["はつげんのげん", "いう"], "古": ["ちゅうこしゃのこ", "ふるい"], "戸": ["とだなのと", "こせきのこ"], "午": ["ごぜんちゅうのご"], "後": ["ぜんごのご", "あと", "うしろ"], "語": ["こくごのご", "かたる"], "交": ["こうつうのこう", "せんがまじわる", "しらががまじる"], "光": ["にっこうのこう", "ひかり", "ひかる"], "公": ["しゅじんこうのこう"], "工": ["ずこうのこう", "くふうのく"], "広": ["こうこくのこう", "ひろい"], "考": ["さんこうしょのこう", "かんがえる"], "行": ["りょこうのこう", "いく", "ぎょうれつのぎょう"], "高": ["さいこうのこう", "たかい"], "合": ["ごうけいのごう", "ぴたりとあう"], "国": ["こくごのこく", "くに"], "黒": ["こくばんのこく", "くろい"], "今": ["こんしゅうのこん", "いま"], "才": ["さいのうのさい"], "細": ["さいぼうのさい", "ほそい", "こまかい"], "作": ["さくひんのさく", "つくる"], "算": ["さんすうのさん"], "姉": ["あね"], "市": ["しやくしょのし", "いちばのいち"], "思": ["ふしぎのし", "おもう"], "止": ["きんしするのし", "とめる"], "紙": ["がようしのし", "かみ"], "寺": ["じいんのじ", "てら"], "時": ["じかんのじ", "とき"], "自": ["じぶんのじ", "しぜんのし"], "室": ["きょうしつのしつ"], "社": ["かいしゃのしゃ", "やしろ"], "弱": ["じゃくてんのじゃく", "よわい"], "首": ["しゅとのしゅ", "くび"], "秋": ["しゅうぶんのひのしゅう", "あき"], "週": ["いっしゅうかんのしゅう"], "春": ["しゅんぶんのひのしゅん", "はる"], "書": ["どくしょのしょ", "かく"], "少": ["しょうねんのしょう", "すくない", "すこし"], "場": ["しゅつじょうのじょう", "ばしょのば"], "色": ["ちゃくしょくのしょく", "けしきのしき"], "食": ["ちょうしょくのしょく", "たべる"], "心": ["あんしんのしん", "こころ"], "新": ["しんぶんのしん", "あたらしい"], "親": ["りょうしんのしん", "おや", "したしい"], "図": ["ちずのず", "としょかんのと"], "数": ["すうじのすう", "かず", "かぞえる"], "星": ["せいざのせい", "ほし"], "晴": ["せいてんのせい", "はれる"], "声": ["おんせいのせい", "こえ"], "西": ["にしがわのにし", "せいぶのせい", "かんさいのさい"], "切": ["たいせつのせつ", "きる"], "雪": ["ゆきだるまのゆき", "せきせつのせつ"], "線": ["せんろのせん"], "船": ["ふうせんのせん", "ふね"], "前": ["ぜんごのぜん", "まえ"], "組": ["ひとくみのくみ", "くむ", "そしきのそ"], "走": ["だっそうのそう", "はしる"], "多": ["たすうけつのた", "おおい"], "太": ["たいようのたい", "ふとい"], "体": ["たいじゅうのたい", "からだ"], "台": ["だいどころのだい", "たいふうのたい"], "谷": ["たにまのたに"], "知": ["ちしきのち", "しる"], "地": ["とちのち", "じめんのじ"], "池": ["でんちのち", "いけ"], "茶": ["おちゃのちゃ"], "昼": ["ちゅうしょくのちゅう", "ひる"], "朝": ["ちょうしょくのちょう", "あさ"], "長": ["しゃちょうのちょう", "ながい"], "鳥": ["はくちょうのちょう", "とり"], "直": ["ちょくせんのちょく", "なおす"], "通": ["こうつうのつう", "とおる", "かよう"], "弟": ["きょうだいのだい", "おとうと"], "店": ["ばいてんのてん", "みせ"], "点": ["てんすうのてん"], "電": ["でんわのでん"], "冬": ["だんとうのとう", "ふゆ"], "刀": ["にほんとうのとう", "かたな"], "東": ["とうきょうのとう", "ひがし"], "当": ["とうばんのとう", "あたる"], "答": ["とうあんのとう", "こたえる"], "頭": ["せんとうのとう", "ずつうのず", "あたま"], "同": ["どうじのどう", "おなじ"], "道": ["ほっかいどうのどう", "みち"], "読": ["どくしょのどく", "よむ"], "内": ["あんないのない", "うち"], "南": ["なんきょくのなん", "みなみ"], "肉": ["ぎゅうにくのにく"], "馬": ["ばしゃのば", "うま"], "買": ["かいもののかう", "ばいしゅうのばい"], "売": ["しょうばいのばい", "うる"], "麦": ["むぎちゃのむぎ"], "半": ["はんぶんのはん", "しがつのなかば"], "番": ["ばんごうのばん"], "父": ["ふぼのふ", "ちち"], "風": ["ふうせんのふう", "かぜ", "ふうしゃのかざ"], "分": ["はんぶんのぶん", "じゅうごふんのふん", "わける"], "聞": ["しんぶんのぶん", "きく"], "米": ["しんまいのまい", "こめ"], "歩": ["ほどうきょうのほ", "あるく"], "母": ["ふぼのぼ", "はは"], "方": ["せいほうけいのほう", "かた"], "北": ["とうほくのほく", "きた"], "妹": ["いもうと"], "毎": ["まいにちのまい"], "万": ["いちまんえんのまん"], "明": ["せつめいのめい", "あかるい"], "鳴": ["とりがなく", "ひめいのめい"], "毛": ["もうふのもう", "かみのけのけ"], "門": ["にゅうもんのもん"], "夜": ["こんやのや", "よなかのよ、よる"], "野": ["やさいのや", "のはらのの"], "矢": ["ゆみやのや"], "友": ["しんゆうのゆう", "とも"], "曜": ["げつようびのよう"], "用": ["よういするのよう", "どうぐをもちいる"], "来": ["らいねんのらい", "くる"], "理": ["りゆうのり"], "里": ["さといものさと", "さんぜんりのり"], "話": ["でんわのわ", "はなし、はなす"], "悪": ["あくにんのあく", "わるい"], "安": ["あんしんのあん", "やすい"], "暗": ["あんきするのあん", "くらい"], "委": ["いいんかいのい"], "意": ["いみのい"], "医": ["いしゃのい"], "育": ["きょういくのいく", "そだつ"], "員": ["ぜんいんのいん"], "飲": ["いんしょくのいん", "のむ"], "院": ["にゅういんのいん"], "運": ["うんどうのうん", "はこぶ"], "泳": ["すいえいのえい", "およぐ"], "駅": ["えきまえのえき"], "央": ["ちゅうおうのおう"], "横": ["おうだんするのおう", "よこ"], "屋": ["おくじょうのおく", "やねのや"], "温": ["おんせんのおん", "あたたかい"], "化": ["かせきのか", "ばける"], "荷": ["にもつのに"], "界": ["せかいのかい"], "開": ["かいはつのかい", "ひらく、あく"], "階": ["かいだんをのぼるのかい"], "寒": ["ぼうかんぎのかん", "さむい"], "感": ["かんそうぶんのかん"], "漢": ["かんすうじのかん"], "館": ["としょかんのかん", "やかた"], "岸": ["かいがんのがん", "きし"], "期": ["たんきかんのき"], "起": ["きりつするのき", "おきる"], "客": ["おきゃくさんのきゃく"], "宮": ["きゅうでんのきゅう", "みや"], "急": ["きゅうこうでんしゃのきゅう", "いそぐ"], "球": ["ちきゅうのきゅう", "たま"], "究": ["けんきゅうのきゅう"], "級": ["じょうきゅうのきゅう"], "去": ["きょねんのきょ", "かこのこ", "さる"], "橋": ["ほどうきょうのきょう", "はし"], "業": ["じゅぎょうのぎょう"], "局": ["やっきょくのきょく"], "曲": ["きょくせんのきょく", "まがる"], "銀": ["ぎんいろのぎん"], "区": ["くべつのく"], "苦": ["くろうのく", "くるしい", "にがい"], "具": ["どうぐのぐ"], "君": ["しょくんのくん", "きみ"], "係": ["かんけいのけい", "かかり"], "軽": ["けいしょくのけい", "かるい"], "決": ["たすうけつのけつ", "きめる"], "血": ["けつえきのけつ", "ち"], "研": ["けんきゅうのけん"], "県": ["とどうふけんのけん"], "庫": ["れいぞうこのこ"], "湖": ["びわこのこ", "みずうみ"], "向": ["こうじょうしんのこう", "むく"], "幸": ["こうふくのこう", "しあわせ"], "港": ["くうこうのこう", "みなと"], "号": ["ばんごうのごう"], "根": ["こんきのこん", "やねのね"], "祭": ["ぶんかさいのさい", "まつり"], "坂": ["さかみちのさか"], "皿": ["さらあらいのさら"], "仕": ["しごとのし"], "使": ["しようするのし", "つかう"], "始": ["かいしするのし", "はじめる"], "指": ["していするのし", "ゆび"], "死": ["しぼうするのし", "しぬ"], "詩": ["しじんのし"], "歯": ["えいきゅうしのし", "は"], "事": ["じけんのじ", "こと"], "持": ["じぞくするのじ", "もつ"], "次": ["もくじのじ", "つぎ"], "式": ["にゅうがくしきのしき"], "実": ["じつりょくのじつ", "きのみのみ、みのる"], "写": ["しゃしんのしゃ", "うつす"], "者": ["さくしゃのしゃ", "もの"], "主": ["しゅじんのしゅ", "もちぬしのぬし"], "取": ["しゅざいのしゅ", "とる"], "守": ["しゅびのしゅ", "まもる"], "酒": ["にほんしゅのしゅ", "さけ"], "受": ["じゅけんのじゅ", "うける"], "州": ["きゅうしゅうのしゅう"], "拾": ["ひろう"], "終": ["しゅうてんのしゅう", "おわる"], "習": ["れんしゅうのしゅう", "ならう"], "集": ["しゅうごうのしゅう", "あつまる"], "住": ["じゅうしょのじゅう", "すむ"], "重": ["たいじゅうのじゅう", "おもい"], "宿": ["しゅくだいのしゅく", "やど"], "所": ["ばしょのしょ", "ところ"], "暑": ["ざんしょのしょ", "あつい"], "助": ["きゅうじょのじょ", "たすける"], "勝": ["しょうりのしょう", "かつ"], "商": ["しょうばいのしょう"], "昭": ["しょうわのしょう"], "消": ["しょうぼうしゃのしょう", "きえる", "けす"], "章": ["ぶんしょうをよむのしょう"], "乗": ["じょうしゃけんのじょう", "のる"], "植": ["しょくぶつのしょく", "うえる"], "深": ["しんやのしん", "ふかい"], "申": ["もうしこむのもうす"], "真": ["しんじつのしん", "まなつのま"], "神": ["しんけいのしん", "じんじゃのじん", "かみ"], "身": ["じぶんじしんのしん", "みぶんのみ"], "進": ["しんぽのしん", "すすむ"], "世": ["せかいのせ", "よのなかのよ"], "整": ["せいりするのせい", "ととのえる"], "昔": ["むかしばなしのむかし"], "全": ["ぜんたいのぜん", "まったく、すべて"], "想": ["かんそうぶんのそう"], "相": ["そうだんするのそう", "あいてのあい"], "送": ["そうべつかいのそう", "おくる"], "息": ["りそくのそく", "いき"], "速": ["こうそくどうろのそく", "はやい"], "族": ["かぞくのぞく"], "他": ["たにんのた", "ほかのひとのほか"], "打": ["だきゅうのだ", "うつ"], "対": ["はんたいのたい"], "待": ["きたいするのたい", "まつ"], "代": ["だいひょうのだい", "こうたいのたい", "かわる"], "第": ["だいいっかいのだい"], "題": ["もんだいのだい"], "炭": ["せきたんのたん", "すみ"], "短": ["たんじかんのたん", "みじかい"], "談": ["ざつだんのだん"], "着": ["とうちゃくのちゃく", "きる、つく"], "柱": ["でんちゅうのちゅう", "はしら"], "注": ["ちゅういするのちゅう"], "丁": ["いっちょうめのちょう"], "帳": ["てちょうのちょう"], "調": ["ちょうさのちょう", "しらべる"], "追": ["ついかのつい", "おう"], "定": ["よていのてい", "じょうぎのじょう", "さだめる"], "庭": ["ていえんのてい", "にわ"], "笛": ["きてきのてき", "ふえ"], "鉄": ["てつどうのてつ"], "転": ["じてんしゃのてん", "ころぶ"], "登": ["とうこうのとう", "とざんのと", "のぼる"], "都": ["とかいのと", "みやこ"], "度": ["おんどけいのど"], "島": ["はんとうのとう", "しま"], "投": ["とうしゅのとう", "なげる"], "湯": ["ねっとうのとう", "ゆ"], "等": ["こうとうがっこうのとう", "ひとしい"], "豆": ["とうふのとう", "まめ"], "動": ["どうぶつのどう", "うごく"], "童": ["どうわのどう"], "農": ["のうぎょうののう"], "波": ["のうはのは", "なみ"], "配": ["はいたつのはい", "くばる"], "倍": ["ばいりつのばい"], "箱": ["ふでばこのはこ"], "畑": ["たはたのはた", "はたけ"], "発": ["はつめいのはつ"], "反": ["はんたいのはん", "そる"], "板": ["こくばんのばん", "いた"], "悲": ["ひげきのひ", "かなしい"], "皮": ["ひふのひ", "かわ"], "美": ["びじんのび", "うつくしい"], "鼻": ["はなぢのはな"], "筆": ["もうひつのひつ", "ふで"], "氷": ["ひょうざんのひょう", "こおり"], "表": ["だいひょうのひょう", "おもて、あらわす"], "病": ["びょうきのびょう", "やまい"], "秒": ["びょうよみのびょう"], "品": ["さくひんのひん", "しなもののしな"], "負": ["ふたんのふ", "まける"], "部": ["やきゅうぶのぶ"], "服": ["ようふくのふく"], "福": ["しゅくふくのふく"], "物": ["にもつのもつ", "もの"], "平": ["へいわのへい", "ひらおよぎのひら"], "返": ["へんじのへん", "かえす"], "勉": ["べんきょうのべん"], "放": ["ほうそうのほう"], "味": ["いみのみ", "あじわう"], "命": ["うんめいのめい", "いのち"], "面": ["ばめんのめん"], "問": ["もんだいのもん", "とう"], "役": ["やくわりのやく"], "薬": ["やくひんのやく", "くすり"], "油": ["せきゆのゆ", "あぶら"], "有": ["ゆうめいじんのゆう", "ある"], "由": ["りゆうのゆう"], "遊": ["ゆうえんちのゆう", "あそぶ"], "予": ["よていのよ"], "様": ["ようすのよう", "さま"], "洋": ["ようふくのよう"], "羊": ["ようもうのよう", "ひつじ"], "葉": ["はっぱのは"], "陽": ["たいようけいのよう"], "落": ["らくがきのらく", "おちる"], "流": ["りゅうこうのりゅう", "ながれる"], "旅": ["りょこうのりょ", "たび"], "両": ["りょうがわのりょう"], "緑": ["りょくちゃのりょく", "みどり"], "礼": ["しつれいのれい"], "列": ["ぎょうれつのれつ"], "練": ["れんしゅうのれん"], "路": ["どうろのろ"], "和": ["わしょくのわ"], "愛": ["あいじょうのあい"], "案": ["あんないのあん"], "以": ["よりいじょうのい"], "位": ["たんいのい", "くらい"], "囲": ["しゅういのい", "かこむ"], "胃": ["いぶくろのい"], "衣": ["はくいのい", "ころも"], "印": ["いんさつのいん", "しるし"], "栄": ["えいようのえい", "さかえる"], "英": ["えいごのえい"], "塩": ["しょくえんのえん", "しお"], "億": ["いちおくえんのおく"], "加": ["かにゅうのか", "くわえる"], "果": ["けっかのか"], "課": ["ほうかごのか"], "貨": ["かもつのか"], "芽": ["はつがのが", "め"], "改": ["かいかくのかい", "あらためる"], "械": ["きかいてきのかい"], "害": ["ひがいのがい"], "街": ["しょうてんがいのがい", "まち"], "各": ["かくじのかく"], "覚": ["みかくのかく", "おぼえる"], "完": ["かんぜんのかん"], "官": ["けいさつかんのかん"], "管": ["すいどうかんのかん", "くだ"], "観": ["かんきゃくのかん"], "関": ["かんけいのかん", "かかわる"], "願": ["がんぼうのがん", "ねがう"], "喜": ["きげきのき", "よろこぶ"], "器": ["しょっきのき", "うつわ"], "希": ["きぼうするのき"], "旗": ["こっきのき", "はた"], "機": ["ひこうきのき"], "季": ["きせつふうのき"], "紀": ["にじゅういっせいきのき"], "議": ["ぎかいのぎ"], "救": ["きゅうじょのきゅう", "すくう"], "求": ["ようきゅうのきゅう", "もとめる"], "泣": ["なく"], "給": ["がっこうきゅうしょくのきゅう"], "挙": ["せんきょのきょ", "あげる"], "漁": ["ぎょぎょうのぎょ", "りょうしのりょう"], "競": ["きょうそうのきょう", "けいばのけい"], "共": ["きょうつうのきょう", "とも"], "協": ["きょうりょくのきょう"], "鏡": ["ぼうえんきょうのきょう", "かがみ"], "極": ["ほっきょくのきょく", "きわめる"], "訓": ["くんれんのくん"], "軍": ["ぐんたいのぐん"], "郡": ["ぐんぶのぐん"], "型": ["もけいのけい", "かたがみのかた"], "径": ["はんけいのけい"], "景": ["ふうけいのけい"], "芸": ["げいじゅつのげい"], "欠": ["けっせきのけつ", "かける"], "結": ["けつろんのけつ", "むすぶ"], "健": ["ほけんしつのけん", "すこやか"], "建": ["けんちくのけん", "たてる"], "験": ["にゅうがくしけんのけん"], "固": ["こていするのこ", "かたい"], "候": ["りっこうほのこう"], "功": ["ふせいこうのこう"], "好": ["こうぶつのこう", "すき", "このむ"], "康": ["けんこうてきのこう"], "航": ["こうくうきのこう"], "告": ["こくはくのこく", "つげる"], "差": ["さべつのさ", "かさをさす"], "最": ["さいしょのさい", "もっとも"], "菜": ["やさいのさい", "なのはなのな"], "材": ["ざいりょうのざい"], "昨": ["さくねんのさく"], "刷": ["いんさつのさつ", "する"], "察": ["けいさつのさつ"], "札": ["さつたばのさつ", "ふだ"], "殺": ["さつじんのさつ", "ころす"], "参": ["さんかのさん", "まいる"], "散": ["さんぽのさん", "ちる"], "産": ["しゅっさんのさん", "うむ"], "残": ["ざんねんのざん", "のこる"], "司": ["しかいしゃのし"], "史": ["れきしのし"], "士": ["ぶしのし"], "氏": ["しめいのし"], "試": ["しけんのし", "こころみる"], "児": ["じどうせいとのじ"], "治": ["せいじのじ", "ちりょうのち", "おさめる"], "辞": ["かんじじてんのじ", "やめる"], "失": ["しつれいのしつ", "うしなう"], "借": ["かりる"], "種": ["しゅるいのしゅ", "たね"], "周": ["しゅういのしゅう", "まわり"], "祝": ["しゅくじつのしゅく", "いわう"], "順": ["じゅんばんのじゅん"], "初": ["さいしょのしょ", "はじめて"], "唱": ["がっしょうのしょう", "となえる"], "松": ["まつばやしのまつ"], "焼": ["ゆうやけのやく"], "照": ["やかんしょうめいのしょう", "てらす"], "省": ["はんせいのせい", "しょうりゃくのしょう", "はぶく"], "笑": ["ばくしょうのしょう", "わらう"], "象": ["いんしょうてきのしょう", "ぞう"], "賞": ["のーべるしょうのしょう"], "信": ["しんようするのしん"], "臣": ["かしんのしん", "だいじんのじん"], "成": ["せいじんしきのせい", "なりたちのなる"], "清": ["せいけつのせい", "きよい"], "静": ["せいでんきのせい", "しずか"], "席": ["ざせきのせき"], "積": ["めんせきのせき", "つむ"], "折": ["うせつのせつ", "おる"], "節": ["きせつのせつ", "ふし"], "説": ["せつめいのせつ", "ときふせるのとく"], "戦": ["せんそうのせん", "たたかう"], "浅": ["あさい"], "選": ["せんきょのせん", "えらぶ"], "然": ["だいしぜんのぜん", "てんねんのねん"], "倉": ["そうこのそう"], "巣": ["すばこのす"], "争": ["せんそうのそう", "あらそう"], "側": ["そくめんのそく", "そとがわのがわ"], "束": ["やくそくのそく", "たば"], "続": ["れんぞくのぞく", "つづく"], "卒": ["そつぎょうのそつ"], "孫": ["しそんのそん", "まご"], "帯": ["ねったいのたい", "おび"], "隊": ["へいたいのたい"], "達": ["はったつのたつ"], "単": ["たんいのたん"], "置": ["はいちするのち", "おく"], "仲": ["なかまのなか"], "貯": ["ちょきんのちょ"], "兆": ["いっちょうえんのちょう"], "腸": ["しょうちょうだいちょうのちょう"], "低": ["ていがくねんのてい", "ひくい"], "停": ["ていしゃのてい"], "底": ["かいていのてい", "そこ"], "的": ["もくてきのてき", "まと"], "典": ["こくごじてんのてん"], "伝": ["でんせつのでん", "つたえる"], "徒": ["とほのと"], "努": ["どりょくのど", "つとめる"], "灯": ["けいこうとうのとう"], "働": ["ろうどうのどう", "はたらく"], "堂": ["こっかいぎじどうのどう"], "得": ["なっとくのとく", "える"], "特": ["とくべつのとく"], "毒": ["どくやくのどく"], "熱": ["こうねつのねつ", "あつい"], "念": ["ざんねんのねん"], "敗": ["はいぼくのはい", "やぶれる"], "梅": ["ばいうぜんせんのばい", "うめ"], "博": ["はくぶつかんのはく"], "飯": ["ごはんのはん", "めし"], "費": ["しょうひぜいのひ", "ついやす"], "飛": ["ひこうきのひ", "とぶ"], "必": ["ひつようのひつ", "かならず"], "標": ["もくひょうのひょう"], "票": ["とうひょうするのひょう"], "不": ["ふあんのふ", "ぶきようのぶ"], "付": ["ふろくのふ", "つける"], "夫": ["ふさいのふ", "おっと"], "府": ["とどうふけんのふ"], "副": ["ふくかいちょうのふく"], "粉": ["ふんまつのふん", "ぱんこのこ", "こな"], "兵": ["へいたいのへい"], "別": ["とくべつのべつ", "わかれる"], "変": ["へんかのへん", "かわる"], "辺": ["しゅうへんのへん", "あたり"], "便": ["べんりのべん", "ゆうびんのびん", "たより"], "包": ["ほうたいのほう", "つつむ"], "法": ["ほうりつのほう"], "望": ["きぼうのぼう", "のぞむ"], "牧": ["ぼくじょうのぼく"], "末": ["ねんまつのまつ", "すえ"], "満": ["まんげつのまん", "みちる"], "未": ["みせいねんのみ"], "脈": ["さんみゃくのみゃく"], "民": ["こくみんのみん"], "無": ["むりのむ", "ぶじのぶ", "ない"], "約": ["やくそくのやく"], "勇": ["ゆうきのゆう", "いさましい"], "要": ["ようきゅうするのよう", "かなめ"], "養": ["えいようのよう", "やしなう"], "浴": ["にゅうよくのよく", "あびる"], "利": ["りようするのり"], "陸": ["たいりくのりく"], "料": ["りょうりするのりょう"], "良": ["かいりょうのりょう", "よい"], "量": ["ぞうりょうするのりょう", "はかる"], "輪": ["さんりんしゃのりん", "わ"], "類": ["じんるいのるい"], "令": ["めいれいのれい"], "例": ["じつれいのれい", "たとえる"], "冷": ["れいぞうこのれい", "つめたい"], "歴": ["れきしのれき"], "連": ["れんらくのれん", "つらなる"], "労": ["くろうのろう"], "老": ["ろうじんのろう", "おいる"], "録": ["きろくのろく"], "圧": ["あつりょくのあつ"], "易": ["ぼうえきこくのえき", "あんいな、のい", "やさしい"], "移": ["いじゅうのい", "うつる"], "因": ["げんいんのいん"], "営": ["えいぎょうのえい", "いとなむ"], "永": ["えいきゅうのえい", "ながい"], "衛": ["えいせいてきのえい"], "液": ["えきたいのえき"], "益": ["りえきのえき"], "演": ["えんげきのえん"], "往": ["おうふくのおう"], "応": ["おうえんのおう", "こたえる"], "恩": ["おんがえしのおん"], "仮": ["かめんのか", "かり"], "価": ["かかくのか"], "可": ["かのうせいのか"], "河": ["かせんのか", "かわ"], "過": ["かこのか", "すぎる"], "賀": ["ねんがじょうのが"], "解": ["りかいのかい", "とく"], "快": ["かいてきのかい", "こころよい"], "格": ["ごうかくのかく"], "確": ["かくじつのかく", "たしか"], "額": ["きんがくのがく", "ひたい"], "刊": ["しゅうかんしのかん"], "幹": ["しんかんせんのかん", "みき"], "慣": ["しゅうかんのかん", "なれる"], "眼": ["きんがんのがん"], "基": ["きほんのき"], "寄": ["きふのき", "よる"], "規": ["きそくてきのき"], "技": ["ぎじゅつのぎ"], "義": ["ぎむのぎ"], "逆": ["ぎゃくてんのぎゃく", "さからう"], "久": ["えいきゅうのきゅう", "ひさしい"], "旧": ["きゅうしきのきゅう"], "居": ["じゅうきょのきょ", "いる"], "許": ["きょかのきょ", "ゆるす"], "境": ["こっきょうのきょう", "さかい"], "興": ["こうふんのこう", "きょうみのきょう"], "均": ["へいきんのきん"], "禁": ["きんしするのきん"], "句": ["もんくのく"], "群": ["ぐんまけんのぐん", "むれる"], "経": ["けいけんするのけい", "へる"], "潔": ["せいけつのけつ"], "件": ["じけんのけん"], "券": ["じょうしゃけんのけん"], "検": ["けんさのけん"], "険": ["ぼうけんのけん", "けわしい"], "減": ["げんしょうするのげん", "へる"], "現": ["げんじつのげん", "あらわれる"], "限": ["げんかいのげん", "かぎる"], "個": ["こじんてきのこ"], "故": ["こうつうじこのこ"], "護": ["ほごしゃのご"], "効": ["こうかてきのこう", "きく"], "厚": ["あつい", "こうせいろうどうしょうのこう"], "構": ["こうぞうぶつのこう", "かまえる"], "耕": ["のうこうちのこう", "たがやす"], "講": ["こうしゅうかいのこう"], "鉱": ["てっこうせきのこう"], "混": ["こんざつのこん", "まじる"], "査": ["ちょうさのさ"], "再": ["さいかいのさい", "ふたたび"], "妻": ["あいさいのさい", "つま"], "採": ["さいようのさい", "とる"], "災": ["さいがいのさい"], "際": ["じっさいのさい"], "在": ["そんざいのざい", "ある"], "罪": ["はんざいのざい", "つみ"], "財": ["ざいさんのざい"], "桜": ["さくら"], "雑": ["こんざつのざつ", "ぞうきんのぞう"], "賛": ["さんせいするのさん"], "酸": ["さんそのさん"], "師": ["かていきょうしのし"], "志": ["しがんするのし", "こころざし", "こころざす"], "支": ["しはいにんのし", "ささえる"], "枝": ["えだ"], "資": ["しほんきんのし"], "飼": ["しいくのし", "かう"], "似": ["にる"], "示": ["ひょうじのじ", "しめす"], "識": ["ちしきのしき"], "質": ["しつもんのしつ"], "舎": ["きしゅくしゃのしゃ"], "謝": ["かんしゃするのしゃ"], "授": ["じゅぎょうのじゅ"], "修": ["しゅうりのしゅう", "おさめる"], "術": ["げいじゅつのじゅつ"], "述": ["きじゅつするのじゅつ", "のべる"], "準": ["じゅんびするのじゅん"], "序": ["じゅんじょのじょ"], "承": ["しょうだくするのしょう", "うけたまわる"], "招": ["しょうたいするのしょう", "まねく"], "証": ["しょうめいしょのしょう"], "常": ["じょうしきのじょう", "つね"], "情": ["ゆうじょうのじょう", "なさけ"], "条": ["じょうけんのじょう"], "状": ["ねんがじょうのじょう"], "織": ["そしきのしき", "おる"], "職": ["しょくぎょうのしょく"], "制": ["せいげんするのせい"], "勢": ["せいりょくのせい", "いきおい"], "性": ["こせいてきのせい"], "政": ["せいじのせい"], "精": ["せいしんてきのせい"], "製": ["せいぞうするのせい"], "税": ["ぜいきんのぜい"], "績": ["せいせきひょうのせき"], "責": ["せきにんのせき", "せめる"], "接": ["せつぞくのせつ"], "設": ["せつびのせつ", "もうける"], "絶": ["ぜつぼうのぜつ", "たえる"], "舌": ["した"], "銭": ["つりせんのせん"], "祖": ["そせんのそ"], "素": ["さんそのそ", "すなおのす"], "総": ["そうりだいじんのそう"], "像": ["ぶつぞうのぞう"], "増": ["ぞうかするのぞう", "ふえる"], "造": ["こうぞうのぞう", "つくる"], "則": ["ほうそくのそく"], "測": ["そくていのそく", "はかる"], "属": ["しょぞくのぞく"], "損": ["そんがいのそん"], "態": ["たいどのたい"], "貸": ["かしきりのかす"], "退": ["たいくつのたい", "しりぞく"], "団": ["だんけつのだん"], "断": ["ゆだんのだん", "ことわる"], "築": ["けんちくのちく", "きずく"], "張": ["しゅっちょうのちょう", "はる"], "提": ["ていあんのてい"], "程": ["にっていのてい"], "敵": ["てきみかたのてき", "かたき"], "適": ["てきとうのてき"], "統": ["とういつのとう"], "導": ["しどうしゃのどう", "みちびく"], "銅": ["どうめだるのどう"], "徳": ["どうとくのとく"], "独": ["どくりつのどく", "ひとり"], "任": ["せきにんのにん", "まかせる"], "燃": ["ねんりょうのねん", "もえる"], "能": ["かのうせいののう"], "破": ["はれつのは", "やぶる"], "判": ["はんだんのはん", "ひょうばんのばん"], "版": ["もくはんがのはん"], "犯": ["はんざいのはん"], "比": ["ひかくするのひ", "くらべる"], "肥": ["ひりょうのひ", "こえる"], "非": ["ひじょうぐちのひ"], "備": ["じゅんびするのび", "そなえる"], "俵": ["どひょうのひょう", "たわら"], "評": ["ひょうばんのひょう"], "貧": ["びんぼうのびん", "まずしい"], "婦": ["ふうふのふ"], "富": ["ほうふのふ", "とみ", "とむ"], "布": ["もうふのふ", "ぬの"], "武": ["ぶきのぶ", "むしゃしゅぎょうのむ"], "復": ["おうふくのふく"], "複": ["ふくざつのふく"], "仏": ["ぶつぞうのぶつ", "ほとけ"], "編": ["へんしゅうするのへん", "あむ"], "弁": ["べんとうのべん"], "保": ["ほけんしつのほ", "たもつ"], "墓": ["ぼちのぼ", "はか"], "報": ["ほうどうのほう"], "豊": ["ほうさくのほう", "ゆたか"], "暴": ["ぼうりょくのぼう", "あばれる"], "貿": ["ぼうえきこくのぼう"], "防": ["よぼうのぼう", "ふせぐ"], "務": ["ぎむのむ", "つとめる"], "夢": ["むちゅうのむ", "ゆめ"], "迷": ["まよう", "めいわくのめい"], "綿": ["もめんのめん", "わた"], "輸": ["ゆにゅうのゆ"], "余": ["よゆうのよ", "あまる"], "預": ["よきんのよ", "あずける"], "容": ["けいようしのよう"], "率": ["ばいりつのりつ", "ひきいる"], "略": ["しょうりゃくのりゃく"], "留": ["りゅうがくのりゅう", "とめる", "るすばんのる"], "領": ["だいとうりょうのりょう"], "異": ["いこくのい", "ことなる"], "遺": ["いでんのい"], "域": ["ちいきのいき"], "宇": ["うちゅうせんのう"], "映": ["えいがのえい", "うつる"], "延": ["えんきするのえん", "のびる"], "沿": ["えんがんのえん", "そう"], "我": ["がまんのが", "われ"], "灰": ["はいいろのはい"], "拡": ["かくだいのかく"], "閣": ["てんしゅかくのかく"], "革": ["かいかくのかく"], "割": ["わりざんのわる", "わり"], "株": ["かぶしきがいしゃのかぶ"], "巻": ["かんまつのかん", "まきもののまき", "まく"], "干": ["かんばつのかん", "ほす"], "看": ["かんびょうのかん"], "簡": ["かんたんなのかん"], "危": ["きけんのき", "あぶない"], "揮": ["はっきするのき"], "机": ["つくえ"], "貴": ["ききんぞくのき"], "疑": ["ぎもんのぎ", "うたがう"], "吸": ["しんこきゅうのきゅう", "すう"], "供": ["ていきょうのきょう", "とも", "そなえる"], "胸": ["どきょうのきょう", "むね"], "郷": ["うまれこきょうのきょう"], "勤": ["つうきんのきん", "つとめる"], "筋": ["きんにくのきん", "すじ"], "敬": ["そんけいのけい", "うやまう"], "系": ["たいようけいのけい"], "警": ["けいさつのけい"], "劇": ["えんげきのげき"], "激": ["げきせんのげき", "はげしい"], "穴": ["おとしあなのあな"], "憲": ["けんぽうきねんびのけん"], "権": ["けんりょくのけん"], "絹": ["きぬいとのきぬ"], "厳": ["げんみつのげん", "きびしい"], "源": ["でんげんのげん", "みなもと"], "呼": ["しんこきゅうのこ", "よぶ"], "己": ["じこしょうかいのこ", "おのれ"], "誤": ["ごかいするのご", "あやまる"], "后": ["こうごうのごう"], "孝": ["おやふこうのこう"], "皇": ["こうたいしのこう", "ほうおうのおう"], "紅": ["こうちゃのこう", "べに"], "鋼": ["てっこうぎょうのこう"], "降": ["こうすいりょうのこう", "おりる", "ふる"], "刻": ["じこくのこく", "きざむ"], "穀": ["こくもつのこく"], "骨": ["てっこつのこつ", "ほね"], "困": ["こんなんのこん", "こまる"], "砂": ["さとうのさ", "すな", "どしゃのしゃ"], "座": ["ざせきのざ", "すわる"], "済": ["きゅうさいするのさい", "すむ"], "裁": ["さいばんしょのさい", "さばく"], "策": ["さくりゃくのさく"], "冊": ["べっさつのさつ"], "蚕": ["ようさんのさん", "かいこ"], "姿": ["しせいのし", "すがた"], "私": ["しせいかつのし", "わたし"], "至": ["だいしきゅうのし", "いたる"], "視": ["しりょくけんさのし"], "詞": ["けいようしのし"], "誌": ["ざっしのし"], "磁": ["じしゃくのじ"], "射": ["はんしゃのしゃ", "いる"], "捨": ["ししゃごにゅうのしゃ", "すてる"], "尺": ["しゃくはちのしゃく"], "若": ["わかもののわかい", "じゃっかんめいのじゃく"], "樹": ["じゅもくのじゅ"], "収": ["しゅうにゅうのしゅう", "おさめる"], "宗": ["しゅうきょうのしゅう"], "就": ["しゅうしょくのしゅう"], "衆": ["しゅうぎいんのしゅう"], "従": ["じゅうぎょういんのじゅう", "したがう"], "縦": ["じゅうだんするのじゅう", "たて"], "縮": ["たんしゅくのしゅく", "ちぢむ"], "熟": ["じゅくごのじゅく"], "純": ["たんじゅんのじゅん"], "処": ["しょぶんのしょ"], "署": ["けいさつしょのしょ"], "諸": ["しょくんのしょ"], "除": ["さくじょのじょ", "のぞく"], "傷": ["ふしょうするのしょう", "きず"], "将": ["しょうらいのしょう"], "障": ["しょうがいぶつのしょう"], "城": ["じょうかまちのじょう", "しろ"], "蒸": ["すいじょうきのじょう", "むす"], "針": ["ほうしんのしん", "はり"], "仁": ["じんぎのじん"], "垂": ["すいちょくのすい", "たれる"], "推": ["すいりするのすい"], "寸": ["すんぽうのすん"], "盛": ["もる", "せいだいなのせい"], "聖": ["せいかりれーのせい"], "誠": ["せいじつなのせい", "まこと"], "宣": ["せんでんのせん"], "専": ["せんもんのせん"], "泉": ["おんせんのせん", "いずみ"], "洗": ["せんめんじょのせん", "あらう"], "染": ["かんせんしょうのせん", "そめる"], "善": ["ぜんあくのぜん", "よい"], "創": ["そうりつのそう", "つくる"], "奏": ["えんそうかいのそう"], "層": ["こうそうびるのそう"], "操": ["たいそうふくのそう", "あやつる"], "窓": ["どうそうかいのそう", "まど"], "装": ["ふくそうのそう", "いしょうのしょう"], "臓": ["しんぞうかんぞうのぞう"], "蔵": ["れいぞうこのぞう"], "存": ["そんざいのそん", "ほぞんのぞん"], "尊": ["そんけいのそん", "とうとい"], "宅": ["じゅうたくのたく"], "担": ["たんにんのたん"], "探": ["たんていのたん", "さがす"], "誕": ["たんじょうびのたん"], "暖": ["だんぼうのだん", "あたたかいふゆ"], "段": ["ねだんのだん"], "値": ["かちのち", "ねだんのね"], "宙": ["うちゅうせんのちゅう"], "忠": ["ちゅうじつのちゅう"], "著": ["ちょしゃのちょ", "いちじるしい"], "庁": ["きしょうちょうのちょう"], "潮": ["まんちょうのちょう", "しお"], "頂": ["ちょうじょうのちょう", "いただき", "いただく"], "賃": ["やちんのちん"], "痛": ["ずつうのつう", "いたい"], "展": ["はってんのてん"], "党": ["よとうやとうのとう"], "糖": ["さとうのとう"], "討": ["とうろんかいのとう"], "届": ["とどける"], "難": ["さいなんのなん", "むずかしい"], "乳": ["ぎゅうにゅうのにゅう", "ちち"], "認": ["かくにんのにん", "みとめる"], "納": ["のうぜいののう", "おさめる"], "脳": ["ずのうののう"], "派": ["とくはいんのは"], "俳": ["はいくのはい"], "拝": ["はいけんするのはい", "おがむ"], "背": ["はいごのはい", "せなかのせ"], "肺": ["はいかつりょうのはい"], "班": ["はんちょうのはん"], "晩": ["あさばんのばん"], "否": ["ひていするのひ"], "批": ["ひはんするのひ"], "秘": ["ひみつのひ"], "腹": ["くうふくのふく", "はら"], "奮": ["こうふんのふん", "ふるう"], "並": ["なみきみちのなみ", "ならべる"], "閉": ["へいかいしきのへい", "とじる", "しめる"], "陛": ["てんのうへいかのへい"], "片": ["かたほうのかた"], "補": ["ほじょのほ", "おぎなう"], "暮": ["くれる", "おせいぼのぼ"], "宝": ["ほうせきのほう", "たから"], "訪": ["ほうもんするのほう", "たずねる"], "亡": ["しぼうするのぼう", "なくなる"], "忘": ["わすれる", "ぼうねんかいのぼう"], "棒": ["ぼうぐらふのぼう"], "枚": ["まいすうのまい"], "幕": ["かいまくのまく", "えどばくふのばく"], "密": ["ひみつのみつ"], "盟": ["どうめいこくのめい"], "模": ["もようのも", "きぼのぼ"], "訳": ["つうやくのやく", "わけ"], "優": ["ゆうしょうするのゆう", "やさしい"], "郵": ["ゆうびんのゆう"], "幼": ["ようちえんのよう", "おさない"], "欲": ["しょくよくのよく", "ほしい"], "翌": ["よくじつのよく"], "乱": ["らんぼうのらん", "みだれる"], "卵": ["たまご", "らんおうのらん"], "覧": ["はくらんかいのらん"], "裏": ["うらぐちのうら"], "律": ["ほうりつのりつ"], "臨": ["りんじのりん"], "朗": ["ろうどくのろう", "ほがらか"], "論": ["けつろんのろん"], "栃": ["とちぎけんのとち"], "埼": ["さいたまけんのさい"], "潟": ["にいがたけんのがた"], "井": ["いどみずのい"], "梨": ["やまなしけんのなし"], "岡": ["おかやまけんのおか"], "奈": ["ならけんのな"], "茨": ["いばらきけんのいばら"], "岐": ["ぎふけんのぎ"], "阜": ["ぎふけんのふ"], "滋": ["しがけんのし"], "阪": ["おおさかふのさか"], "香": ["こうすいのこう", "かおり"], "佐": ["さがけんのさ"], "崎": ["ながさきけんのさき"], "熊": ["くまもとけんのくま"], "沖": ["おきなわけんのおき"], "縄": ["おきなわけんのなわ"], "媛": ["えひめけんのひめ"], "鹿": ["しか"]};
+const mainReadings = {"一": "いちねんせいのいち", "右": "さゆうのゆう", "雨": "うてんのう", "円": "ひゃくえんのえん", "王": "おうさまのおう", "音": "おんがくのおん", "下": "じょうげのげ", "火": "かようびのか", "花": "かふんのか", "貝": "かいがらのかい", "学": "しょうがくせいのがく", "気": "くうきのき", "休": "きゅうじつのきゅう", "玉": "ぎょくろのぎょく", "金": "きんようびのきん", "九": "きゅうこのきゅう", "空": "くうきのくう", "月": "げつようひのげつ", "犬": "あいけんのけん", "見": "けんがくのけん", "五": "ごえんだまのご", "口": "じんこうのこう", "校": "がっこうのこう", "左": "さゆうのさ", "三": "さんがつのさん", "山": "ふじやまのさん", "四": "しがつのし", "子": "だんしのし", "糸": "めんしのし", "字": "もじのじ", "耳": "みみたぶのみみ", "七": "しちがつのしち", "車": "でんしゃのしゃ", "手": "はくしゅのしゅ", "十": "じゅうがつのじゅう", "出": "しゅつじょうのしゅつ", "女": "だんじょのじょ", "小": "しょうがっこうのしょう", "上": "おくじょうのじょう", "森": "しんりんのしん", "人": "にほんじんのじん", "水": "すいようびのすい", "正": "せいほうけいのせい", "生": "せいかつのせい", "青": "せいしゅんのせい", "石": "ほうせきのせき", "赤": "せきはんのせき", "先": "せんせいのせん", "千": "せんえんさつのせん", "川": "がわあそびのかわ", "早": "そうちょうのそう", "草": "ざっそうのそう", "足": "えんそくのそく", "村": "しちょうそんのそん", "大": "だいがくのだい", "男": "だんじょのだん", "竹": "ちくりんのちく", "中": "ちゅうがっこうのちゅう", "虫": "こんちゅうのちゅう", "町": "ちょうないかいのちょう", "天": "てんきのてん", "田": "すいでんのでん", "土": "どようびのど", "二": "にがつのに", "日": "まいにちのにち", "入": "にゅうがくのにゅう", "年": "らいねんのねん", "白": "はくいのはく", "八": "はちがつのはち", "百": "ひゃくえんだまのひゃく", "文": "さくぶんのぶん", "本": "ほんもののほん", "名": "めいじんのめい", "木": "もくようびのもく", "目": "もくてきのもく", "夕": "ゆうがたのゆう", "立": "きりつのりつ", "力": "どりょくのりょく", "林": "しんりんのしん", "六": "ろくがつのろく", "引": "いんりょくのいん", "羽": "とりのはね", "雲": "うんかいのうん", "園": "どうぶつえんのえん", "遠": "えんそくのえん", "黄": "おうごんのおう", "何": "なにかのなに", "夏": "しょかのか", "家": "かぞくのか", "科": "きょうかしょのか", "歌": "かしゅのか", "画": "けいかくのかく", "会": "かいしゃのかい", "回": "かいすうのかい", "海": "かいがいのかい", "絵": "かいがのかい", "外": "がいこくのがい", "角": "さんかくのかく", "楽": "おんがくのがく", "活": "せいかつのかつ", "間": "じかんのかん", "丸": "だんがんのがん", "岩": "がんせきのがん", "顔": "がんめんのがん", "帰": "きこくのき", "汽": "きてきのき", "記": "にっきのき", "弓": "ゆみやのゆみ", "牛": "ぎゅうにくのぎゅう", "魚": "きんぎょのぎょ", "京": "きょうとのきょう", "強": "べんきょうのきょう", "教": "きょうしつのきょう", "近": "きんじょのきん", "兄": "きょうだいのきょう", "形": "さんかっけいのけい", "計": "けいさんのけい", "元": "げんきのげん", "原": "そうげんのげん", "言": "はつげんのげん", "古": "ちゅうこしゃのこ", "戸": "こせきのこ", "午": "ごぜんちゅうのご", "後": "ぜんごのご", "語": "こくごのご", "交": "こうつうのこう", "光": "にっこうのこう", "公": "しゅじんこうのこう", "工": "ずこうのこう", "広": "こうこくのこう", "考": "さんこうしょのこう", "行": "りょこうのこう", "高": "さいこうのこう", "合": "ごうけいのごう", "国": "こくごのこく", "黒": "こくばんのこく", "今": "こんしゅうのこん", "才": "さいのうのさい", "細": "さいぼうのさい", "作": "さくひんのさく", "算": "さんすうのさん", "姉": "あね", "市": "しやくしょのし", "思": "ふしぎのし", "止": "きんしするのし", "紙": "がようしのし", "寺": "じいんのじ", "時": "じかんのじ", "自": "じぶんのじ", "室": "きょうしつのしつ", "社": "かいしゃのしゃ", "弱": "じゃくてんのじゃく", "首": "しゅとのしゅ", "秋": "しゅうぶんのひのしゅう", "週": "いっしゅうかんのしゅう", "春": "しゅんぶんのひのしゅん", "書": "どくしょのしょ", "少": "しょうねんのしょう", "場": "しゅつじょうのじょう", "色": "けしきのしき", "食": "ちょうしょくのしょく", "心": "あんしんのしん", "新": "しんぶんのしん", "親": "りょうしんのしん", "図": "ちずのず", "数": "すうじのすう", "星": "せいざのせい", "晴": "せいてんのせい", "声": "おんせいのせい", "西": "せいぶのせい", "切": "たいせつのせつ", "雪": "せきせつのせつ", "線": "せんろのせん", "船": "ふうせんのせん", "前": "ぜんごのぜん", "組": "そしきのそ", "走": "だっそうのそう", "多": "たすうけつのた", "太": "たいようのたい", "体": "たいじゅうのたい", "台": "だいどころのだい", "谷": "たにまのたに", "知": "ちしきのち", "地": "とちのち", "池": "でんちのち", "茶": "おちゃのちゃ", "昼": "ちゅうしょくのちゅう", "朝": "ちょうしょくのちょう", "長": "しゃちょうのちょう", "鳥": "はくちょうのちょう", "直": "ちょくせんのちょく", "通": "こうつうのつう", "弟": "きょうだいのだい", "店": "ばいてんのてん", "点": "てんすうのてん", "電": "でんわのでん", "冬": "だんとうのとう", "刀": "にほんとうのとう", "東": "とうきょうのとう", "当": "とうばんのとう", "答": "とうあんのとう", "頭": "せんとうのとう", "同": "どうじのどう", "道": "ほっかいどうのどう", "読": "どくしょのどく", "内": "あんないのない", "南": "なんきょくのなん", "肉": "ぎゅうにくのにく", "馬": "ばしゃのば", "買": "ばいしゅうのばい", "売": "しょうばいのばい", "麦": "むぎちゃのむぎ", "半": "はんぶんのはん", "番": "ばんごうのばん", "父": "ふぼのふ", "風": "ふうせんのふう", "分": "はんぶんのぶん", "聞": "しんぶんのぶん", "米": "しんまいのまい", "歩": "ほどうきょうのほ", "母": "ふぼのぼ", "方": "せいほうけいのほう", "北": "とうほくのほく", "妹": "いもうと", "毎": "まいにちのまい", "万": "いちまんえんのまん", "明": "せつめいのめい", "鳴": "ひめいのめい", "毛": "もうふのもう", "門": "にゅうもんのもん", "夜": "こんやのや", "野": "やさいのや", "矢": "ゆみやのや", "友": "しんゆうのゆう", "曜": "げつようびのよう", "用": "よういするのよう", "来": "らいねんのらい", "理": "りゆうのり", "里": "さんぜんりのり", "話": "でんわのわ", "悪": "あくにんのあく", "安": "あんしんのあん", "暗": "あんきするのあん", "委": "いいんかいのい", "意": "いみのい", "医": "いしゃのい", "育": "きょういくのいく", "員": "ぜんいんのいん", "飲": "いんしょくのいん", "院": "にゅういんのいん", "運": "うんどうのうん", "泳": "すいえいのえい", "駅": "えきまえのえき", "央": "ちゅうおうのおう", "横": "おうだんするのおう", "屋": "おくじょうのおく", "温": "おんせんのおん", "化": "かせきのか", "荷": "にもつのに", "界": "せかいのかい", "開": "かいはつのかい", "階": "かいだんをのぼるのかい", "寒": "ぼうかんぎのかん", "感": "かんそうぶんのかん", "漢": "かんすうじのかん", "館": "としょかんのかん", "岸": "かいがんのがん", "期": "たんきかんのき", "起": "きりつするのき", "客": "おきゃくさんのきゃく", "宮": "きゅうでんのきゅう", "急": "きゅうこうでんしゃのきゅう", "球": "ちきゅうのきゅう", "究": "けんきゅうのきゅう", "級": "じょうきゅうのきゅう", "去": "きょねんのきょ", "橋": "ほどうきょうのきょう", "業": "じゅぎょうのぎょう", "局": "やっきょくのきょく", "曲": "きょくせんのきょく", "銀": "ぎんいろのぎん", "区": "くべつのく", "苦": "くろうのく", "具": "どうぐのぐ", "君": "しょくんのくん", "係": "かんけいのけい", "軽": "けいしょくのけい", "決": "たすうけつのけつ", "血": "けつえきのけつ", "研": "けんきゅうのけん", "県": "とどうふけんのけん", "庫": "れいぞうこのこ", "湖": "びわこのこ", "向": "こうじょうしんのこう", "幸": "こうふくのこう", "港": "くうこうのこう", "号": "ばんごうのごう", "根": "こんきのこん", "祭": "ぶんかさいのさい", "坂": "さかみちのさか", "皿": "さらあらいのさら", "仕": "しごとのし", "使": "しようするのし", "始": "かいしするのし", "指": "していするのし", "死": "しぼうするのし", "詩": "しじんのし", "歯": "えいきゅうしのし", "事": "じけんのじ", "持": "じぞくするのじ", "次": "もくじのじ", "式": "にゅうがくしきのしき", "実": "じつりょくのじつ", "写": "しゃしんのしゃ", "者": "さくしゃのしゃ", "主": "しゅじんのしゅ", "取": "しゅざいのしゅ", "守": "しゅびのしゅ", "酒": "にほんしゅのしゅ", "受": "じゅけんのじゅ", "州": "きゅうしゅうのしゅう", "拾": "ひろう", "終": "しゅうてんのしゅう", "習": "れんしゅうのしゅう", "集": "しゅうごうのしゅう", "住": "じゅうしょのじゅう", "重": "たいじゅうのじゅう", "宿": "しゅくだいのしゅく", "所": "ばしょのしょ", "暑": "ざんしょのしょ", "助": "きゅうじょのじょ", "勝": "しょうりのしょう", "商": "しょうばいのしょう", "昭": "しょうわのしょう", "消": "しょうぼうしゃのしょう", "章": "ぶんしょうをよむのしょう", "乗": "じょうしゃけんのじょう", "植": "しょくぶつのしょく", "深": "しんやのしん", "申": "もうしこむのもうす", "真": "しんじつのしん", "神": "しんけいのしん", "身": "じぶんじしんのしん", "進": "しんぽのしん", "世": "せかいのせ", "整": "せいりするのせい", "昔": "むかしばなしのむかし", "全": "ぜんたいのぜん", "想": "かんそうぶんのそう", "相": "そうだんするのそう", "送": "そうべつかいのそう", "息": "りそくのそく", "速": "こうそくどうろのそく", "族": "かぞくのぞく", "他": "たにんのた", "打": "だきゅうのだ", "対": "はんたいのたい", "待": "きたいするのたい", "代": "だいひょうのだい", "第": "だいいっかいのだい", "題": "もんだいのだい", "炭": "せきたんのたん", "短": "たんじかんのたん", "談": "ざつだんのだん", "着": "とうちゃくのちゃく", "柱": "でんちゅうのちゅう", "注": "ちゅういするのちゅう", "丁": "いっちょうめのちょう", "帳": "てちょうのちょう", "調": "ちょうさのちょう", "追": "ついかのつい", "定": "よていのてい", "庭": "ていえんのてい", "笛": "きてきのてき", "鉄": "てつどうのてつ", "転": "じてんしゃのてん", "登": "とざんのと", "都": "とかいのと", "度": "おんどけいのど", "島": "はんとうのとう", "投": "とうしゅのとう", "湯": "ねっとうのとう", "等": "こうとうがっこうのとう", "豆": "とうふのとう", "動": "どうぶつのどう", "童": "どうわのどう", "農": "のうぎょうののう", "波": "のうはのは", "配": "はいたつのはい", "倍": "ばいりつのばい", "箱": "ふでばこのはこ", "畑": "たはたのはた", "発": "はつめいのはつ", "反": "はんたいのはん", "板": "こくばんのばん", "悲": "ひげきのひ", "皮": "ひふのひ", "美": "びじんのび", "鼻": "はなぢのはな", "筆": "もうひつのひつ", "氷": "ひょうざんのひょう", "表": "だいひょうのひょう", "病": "びょうきのびょう", "秒": "びょうよみのびょう", "品": "さくひんのひん", "負": "ふたんのふ", "部": "やきゅうぶのぶ", "服": "ようふくのふく", "福": "しゅくふくのふく", "物": "にもつのもつ", "平": "へいわのへい", "返": "へんじのへん", "勉": "べんきょうのべん", "放": "ほうそうのほう", "味": "いみのみ", "命": "うんめいのめい", "面": "ばめんのめん", "問": "もんだいのもん", "役": "やくわりのやく", "薬": "やくひんのやく", "油": "せきゆのゆ", "有": "ゆうめいじんのゆう", "由": "りゆうのゆう", "遊": "ゆうえんちのゆう", "予": "よていのよ", "様": "ようすのよう", "洋": "ようふくのよう", "羊": "ようもうのよう", "葉": "はっぱのは", "陽": "たいようけいのよう", "落": "らくがきのらく", "流": "りゅうこうのりゅう", "旅": "りょこうのりょ", "両": "りょうがわのりょう", "緑": "りょくちゃのりょく", "礼": "しつれいのれい", "列": "ぎょうれつのれつ", "練": "れんしゅうのれん", "路": "どうろのろ", "和": "わしょくのわ", "愛": "あいじょうのあい", "案": "あんないのあん", "以": "よりいじょうのい", "位": "たんいのい", "囲": "しゅういのい", "胃": "いぶくろのい", "衣": "はくいのい", "印": "いんさつのいん", "栄": "えいようのえい", "英": "えいごのえい", "塩": "しょくえんのえん", "億": "いちおくえんのおく", "加": "かにゅうのか", "果": "けっかのか", "課": "ほうかごのか", "貨": "かもつのか", "芽": "はつがのが", "改": "かいかくのかい", "械": "きかいてきのかい", "害": "ひがいのがい", "街": "しょうてんがいのがい", "各": "かくじのかく", "覚": "みかくのかく", "完": "かんぜんのかん", "官": "けいさつかんのかん", "管": "すいどうかんのかん", "観": "かんきゃくのかん", "関": "かんけいのかん", "願": "がんぼうのがん", "喜": "きげきのき", "器": "しょっきのき", "希": "きぼうするのき", "旗": "こっきのき", "機": "ひこうきのき", "季": "きせつふうのき", "紀": "にじゅういっせいきのき", "議": "ぎかいのぎ", "救": "きゅうじょのきゅう", "求": "ようきゅうのきゅう", "泣": "なく", "給": "がっこうきゅうしょくのきゅう", "挙": "せんきょのきょ", "漁": "りょうしのりょう", "競": "きょうそうのきょう", "共": "きょうつうのきょう", "協": "きょうりょくのきょう", "鏡": "ぼうえんきょうのきょう", "極": "ほっきょくのきょく", "訓": "くんれんのくん", "軍": "ぐんたいのぐん", "郡": "ぐんぶのぐん", "型": "もけいのけい", "径": "はんけいのけい", "景": "ふうけいのけい", "芸": "げいじゅつのげい", "欠": "けっせきのけつ", "結": "けつろんのけつ", "健": "ほけんしつのけん", "建": "けんちくのけん", "験": "にゅうがくしけんのけん", "固": "こていするのこ", "候": "りっこうほのこう", "功": "ふせいこうのこう", "好": "こうぶつのこう", "康": "けんこうてきのこう", "航": "こうくうきのこう", "告": "こくはくのこく", "差": "さべつのさ", "最": "さいしょのさい", "菜": "やさいのさい", "材": "ざいりょうのざい", "昨": "さくねんのさく", "刷": "いんさつのさつ", "察": "けいさつのさつ", "札": "さつたばのさつ", "殺": "さつじんのさつ", "参": "さんかのさん", "散": "さんぽのさん", "産": "しゅっさんのさん", "残": "ざんねんのざん", "司": "しかいしゃのし", "史": "れきしのし", "士": "ぶしのし", "氏": "しめいのし", "試": "しけんのし", "児": "じどうせいとのじ", "治": "ちりょうのち", "辞": "かんじじてんのじ", "失": "しつれいのしつ", "借": "かりる", "種": "しゅるいのしゅ", "周": "しゅういのしゅう", "祝": "しゅくじつのしゅく", "順": "じゅんばんのじゅん", "初": "さいしょのしょ", "唱": "がっしょうのしょう", "松": "まつばやしのまつ", "焼": "ゆうやけのやく", "照": "やかんしょうめいのしょう", "省": "はんせいのせい", "笑": "ばくしょうのしょう", "象": "いんしょうてきのしょう", "賞": "のーべるしょうのしょう", "信": "しんようするのしん", "臣": "だいじんのじん", "成": "せいじんしきのせい", "清": "せいけつのせい", "静": "せいでんきのせい", "席": "ざせきのせき", "積": "めんせきのせき", "折": "うせつのせつ", "節": "きせつのせつ", "説": "せつめいのせつ", "戦": "せんそうのせん", "浅": "あさい", "選": "せんきょのせん", "然": "だいしぜんのぜん", "倉": "そうこのそう", "巣": "すばこのす", "争": "せんそうのそう", "側": "そくめんのそく", "束": "やくそくのそく", "続": "れんぞくのぞく", "卒": "そつぎょうのそつ", "孫": "しそんのそん", "帯": "ねったいのたい", "隊": "へいたいのたい", "達": "はったつのたつ", "単": "たんいのたん", "置": "はいちするのち", "仲": "なかまのなか", "貯": "ちょきんのちょ", "兆": "いっちょうえんのちょう", "腸": "しょうちょうだいちょうのちょう", "低": "ていがくねんのてい", "停": "ていしゃのてい", "底": "かいていのてい", "的": "もくてきのてき", "典": "こくごじてんのてん", "伝": "でんせつのでん", "徒": "とほのと", "努": "どりょくのど", "灯": "けいこうとうのとう", "働": "ろうどうのどう", "堂": "こっかいぎじどうのどう", "得": "なっとくのとく", "特": "とくべつのとく", "毒": "どくやくのどく", "熱": "こうねつのねつ", "念": "ざんねんのねん", "敗": "はいぼくのはい", "梅": "ばいうぜんせんのばい", "博": "はくぶつかんのはく", "飯": "ごはんのはん", "費": "しょうひぜいのひ", "飛": "ひこうきのひ", "必": "ひつようのひつ", "標": "もくひょうのひょう", "票": "とうひょうするのひょう", "不": "ふあんのふ", "付": "ふろくのふ", "夫": "ふさいのふ", "府": "とどうふけんのふ", "副": "ふくかいちょうのふく", "粉": "ふんまつのふん", "兵": "へいたいのへい", "別": "とくべつのべつ", "変": "へんかのへん", "辺": "しゅうへんのへん", "便": "ゆうびんのびん", "包": "ほうたいのほう", "法": "ほうりつのほう", "望": "きぼうのぼう", "牧": "ぼくじょうのぼく", "末": "ねんまつのまつ", "満": "まんげつのまん", "未": "みせいねんのみ", "脈": "さんみゃくのみゃく", "民": "こくみんのみん", "無": "むりのむ", "約": "やくそくのやく", "勇": "ゆうきのゆう", "要": "ようきゅうするのよう", "養": "えいようのよう", "浴": "にゅうよくのよく", "利": "りようするのり", "陸": "たいりくのりく", "料": "りょうりするのりょう", "良": "かいりょうのりょう", "量": "ぞうりょうするのりょう", "輪": "さんりんしゃのりん", "類": "じんるいのるい", "令": "めいれいのれい", "例": "じつれいのれい", "冷": "れいぞうこのれい", "歴": "れきしのれき", "連": "れんらくのれん", "労": "くろうのろう", "老": "ろうじんのろう", "録": "きろくのろく", "圧": "あつりょくのあつ", "易": "あんいな、のい", "移": "いじゅうのい", "因": "げんいんのいん", "営": "えいぎょうのえい", "永": "えいきゅうのえい", "衛": "えいせいてきのえい", "液": "えきたいのえき", "益": "りえきのえき", "演": "えんげきのえん", "往": "おうふくのおう", "応": "おうえんのおう", "恩": "おんがえしのおん", "仮": "かめんのか", "価": "かかくのか", "可": "かのうせいのか", "河": "かせんのか", "過": "かこのか", "賀": "ねんがじょうのが", "解": "りかいのかい", "快": "かいてきのかい", "格": "ごうかくのかく", "確": "かくじつのかく", "額": "きんがくのがく", "刊": "しゅうかんしのかん", "幹": "しんかんせんのかん", "慣": "しゅうかんのかん", "眼": "きんがんのがん", "基": "きほんのき", "寄": "きふのき", "規": "きそくてきのき", "技": "ぎじゅつのぎ", "義": "ぎむのぎ", "逆": "ぎゃくてんのぎゃく", "久": "えいきゅうのきゅう", "旧": "きゅうしきのきゅう", "居": "じゅうきょのきょ", "許": "きょかのきょ", "境": "こっきょうのきょう", "興": "きょうみのきょう", "均": "へいきんのきん", "禁": "きんしするのきん", "句": "もんくのく", "群": "ぐんまけんのぐん", "経": "けいけんするのけい", "潔": "せいけつのけつ", "件": "じけんのけん", "券": "じょうしゃけんのけん", "検": "けんさのけん", "険": "ぼうけんのけん", "減": "げんしょうするのげん", "現": "げんじつのげん", "限": "げんかいのげん", "個": "こじんてきのこ", "故": "こうつうじこのこ", "護": "ほごしゃのご", "効": "こうかてきのこう", "厚": "こうせいろうどうしょうのこう", "構": "こうぞうぶつのこう", "耕": "のうこうちのこう", "講": "こうしゅうかいのこう", "鉱": "てっこうせきのこう", "混": "こんざつのこん", "査": "ちょうさのさ", "再": "さいかいのさい", "妻": "あいさいのさい", "採": "さいようのさい", "災": "さいがいのさい", "際": "じっさいのさい", "在": "そんざいのざい", "罪": "はんざいのざい", "財": "ざいさんのざい", "桜": "さくら", "雑": "ぞうきんのぞう", "賛": "さんせいするのさん", "酸": "さんそのさん", "師": "かていきょうしのし", "志": "しがんするのし", "支": "しはいにんのし", "枝": "えだ", "資": "しほんきんのし", "飼": "しいくのし", "似": "にる", "示": "ひょうじのじ", "識": "ちしきのしき", "質": "しつもんのしつ", "舎": "きしゅくしゃのしゃ", "謝": "かんしゃするのしゃ", "授": "じゅぎょうのじゅ", "修": "しゅうりのしゅう", "術": "げいじゅつのじゅつ", "述": "きじゅつするのじゅつ", "準": "じゅんびするのじゅん", "序": "じゅんじょのじょ", "承": "しょうだくするのしょう", "招": "しょうたいするのしょう", "証": "しょうめいしょのしょう", "常": "じょうしきのじょう", "情": "ゆうじょうのじょう", "条": "じょうけんのじょう", "状": "ねんがじょうのじょう", "織": "そしきのしき", "職": "しょくぎょうのしょく", "制": "せいげんするのせい", "勢": "せいりょくのせい", "性": "こせいてきのせい", "政": "せいじのせい", "精": "せいしんてきのせい", "製": "せいぞうするのせい", "税": "ぜいきんのぜい", "績": "せいせきひょうのせき", "責": "せきにんのせき", "接": "せつぞくのせつ", "設": "せつびのせつ", "絶": "ぜつぼうのぜつ", "舌": "した", "銭": "つりせんのせん", "祖": "そせんのそ", "素": "さんそのそ", "総": "そうりだいじんのそう", "像": "ぶつぞうのぞう", "増": "ぞうかするのぞう", "造": "こうぞうのぞう", "則": "ほうそくのそく", "測": "そくていのそく", "属": "しょぞくのぞく", "損": "そんがいのそん", "態": "たいどのたい", "貸": "かしきりのかす", "退": "たいくつのたい", "団": "だんけつのだん", "断": "ゆだんのだん", "築": "けんちくのちく", "張": "しゅっちょうのちょう", "提": "ていあんのてい", "程": "にっていのてい", "敵": "てきみかたのてき", "適": "てきとうのてき", "統": "とういつのとう", "導": "しどうしゃのどう", "銅": "どうめだるのどう", "徳": "どうとくのとく", "独": "どくりつのどく", "任": "せきにんのにん", "燃": "ねんりょうのねん", "能": "かのうせいののう", "破": "はれつのは", "判": "はんだんのはん", "版": "もくはんがのはん", "犯": "はんざいのはん", "比": "ひかくするのひ", "肥": "ひりょうのひ", "非": "ひじょうぐちのひ", "備": "じゅんびするのび", "俵": "どひょうのひょう", "評": "ひょうばんのひょう", "貧": "びんぼうのびん", "婦": "ふうふのふ", "富": "ほうふのふ", "布": "もうふのふ", "武": "ぶきのぶ", "復": "おうふくのふく", "複": "ふくざつのふく", "仏": "ぶつぞうのぶつ", "編": "へんしゅうするのへん", "弁": "べんとうのべん", "保": "ほけんしつのほ", "墓": "ぼちのぼ", "報": "ほうどうのほう", "豊": "ほうさくのほう", "暴": "ぼうりょくのぼう", "貿": "ぼうえきこくのぼう", "防": "よぼうのぼう", "務": "ぎむのむ", "夢": "むちゅうのむ", "迷": "めいわくのめい", "綿": "もめんのめん", "輸": "ゆにゅうのゆ", "余": "よゆうのよ", "預": "よきんのよ", "容": "けいようしのよう", "率": "ばいりつのりつ", "略": "しょうりゃくのりゃく", "留": "りゅうがくのりゅう", "領": "だいとうりょうのりょう", "異": "いこくのい", "遺": "いでんのい", "域": "ちいきのいき", "宇": "うちゅうせんのう", "映": "えいがのえい", "延": "えんきするのえん", "沿": "えんがんのえん", "我": "がまんのが", "灰": "はいいろのはい", "拡": "かくだいのかく", "閣": "てんしゅかくのかく", "革": "かいかくのかく", "割": "わりざんのわる", "株": "かぶしきがいしゃのかぶ", "巻": "かんまつのかん", "干": "かんばつのかん", "看": "かんびょうのかん", "簡": "かんたんなのかん", "危": "きけんのき", "揮": "はっきするのき", "机": "つくえ", "貴": "ききんぞくのき", "疑": "ぎもんのぎ", "吸": "しんこきゅうのきゅう", "供": "ていきょうのきょう", "胸": "どきょうのきょう", "郷": "うまれこきょうのきょう", "勤": "つうきんのきん", "筋": "きんにくのきん", "敬": "そんけいのけい", "系": "たいようけいのけい", "警": "けいさつのけい", "劇": "えんげきのげき", "激": "げきせんのげき", "穴": "おとしあなのあな", "憲": "けんぽうきねんびのけん", "権": "けんりょくのけん", "絹": "きぬいとのきぬ", "厳": "げんみつのげん", "源": "でんげんのげん", "呼": "しんこきゅうのこ", "己": "じこしょうかいのこ", "誤": "ごかいするのご", "后": "こうごうのごう", "孝": "おやふこうのこう", "皇": "こうたいしのこう", "紅": "こうちゃのこう", "鋼": "てっこうぎょうのこう", "降": "こうすいりょうのこう", "刻": "じこくのこく", "穀": "こくもつのこく", "骨": "てっこつのこつ", "困": "こんなんのこん", "砂": "どしゃのしゃ", "座": "ざせきのざ", "済": "きゅうさいするのさい", "裁": "さいばんしょのさい", "策": "さくりゃくのさく", "冊": "べっさつのさつ", "蚕": "ようさんのさん", "姿": "しせいのし", "私": "しせいかつのし", "至": "だいしきゅうのし", "視": "しりょくけんさのし", "詞": "けいようしのし", "誌": "ざっしのし", "磁": "じしゃくのじ", "射": "はんしゃのしゃ", "捨": "ししゃごにゅうのしゃ", "尺": "しゃくはちのしゃく", "若": "わかもののわかい", "樹": "じゅもくのじゅ", "収": "しゅうにゅうのしゅう", "宗": "しゅうきょうのしゅう", "就": "しゅうしょくのしゅう", "衆": "しゅうぎいんのしゅう", "従": "じゅうぎょういんのじゅう", "縦": "じゅうだんするのじゅう", "縮": "たんしゅくのしゅく", "熟": "じゅくごのじゅく", "純": "たんじゅんのじゅん", "処": "しょぶんのしょ", "署": "けいさつしょのしょ", "諸": "しょくんのしょ", "除": "さくじょのじょ", "傷": "ふしょうするのしょう", "将": "しょうらいのしょう", "障": "しょうがいぶつのしょう", "城": "じょうかまちのじょう", "蒸": "すいじょうきのじょう", "針": "ほうしんのしん", "仁": "じんぎのじん", "垂": "すいちょくのすい", "推": "すいりするのすい", "寸": "すんぽうのすん", "盛": "せいだいなのせい", "聖": "せいかりれーのせい", "誠": "せいじつなのせい", "宣": "せんでんのせん", "専": "せんもんのせん", "泉": "おんせんのせん", "洗": "せんめんじょのせん", "染": "かんせんしょうのせん", "善": "ぜんあくのぜん", "創": "そうりつのそう", "奏": "えんそうかいのそう", "層": "こうそうびるのそう", "操": "たいそうふくのそう", "窓": "どうそうかいのそう", "装": "ふくそうのそう", "臓": "しんぞうかんぞうのぞう", "蔵": "れいぞうこのぞう", "存": "そんざいのそん", "尊": "そんけいのそん", "宅": "じゅうたくのたく", "担": "たんにんのたん", "探": "たんていのたん", "誕": "たんじょうびのたん", "暖": "だんぼうのだん", "段": "ねだんのだん", "値": "かちのち", "宙": "うちゅうせんのちゅう", "忠": "ちゅうじつのちゅう", "著": "ちょしゃのちょ", "庁": "きしょうちょうのちょう", "潮": "まんちょうのちょう", "頂": "ちょうじょうのちょう", "賃": "やちんのちん", "痛": "ずつうのつう", "展": "はってんのてん", "党": "よとうやとうのとう", "糖": "さとうのとう", "討": "とうろんかいのとう", "届": "とどける", "難": "さいなんのなん", "乳": "ぎゅうにゅうのにゅう", "認": "かくにんのにん", "納": "のうぜいののう", "脳": "ずのうののう", "派": "とくはいんのは", "俳": "はいくのはい", "拝": "はいけんするのはい", "背": "はいごのはい", "肺": "はいかつりょうのはい", "班": "はんちょうのはん", "晩": "あさばんのばん", "否": "ひていするのひ", "批": "ひはんするのひ", "秘": "ひみつのひ", "腹": "くうふくのふく", "奮": "こうふんのふん", "並": "なみきみちのなみ", "閉": "へいかいしきのへい", "陛": "てんのうへいかのへい", "片": "かたほうのかた", "補": "ほじょのほ", "暮": "おせいぼのぼ", "宝": "ほうせきのほう", "訪": "ほうもんするのほう", "亡": "しぼうするのぼう", "忘": "ぼうねんかいのぼう", "棒": "ぼうぐらふのぼう", "枚": "まいすうのまい", "幕": "かいまくのまく", "密": "ひみつのみつ", "盟": "どうめいこくのめい", "模": "もようのも", "訳": "つうやくのやく", "優": "ゆうしょうするのゆう", "郵": "ゆうびんのゆう", "幼": "ようちえんのよう", "欲": "しょくよくのよく", "翌": "よくじつのよく", "乱": "らんぼうのらん", "卵": "らんおうのらん", "覧": "はくらんかいのらん", "裏": "うらぐちのうら", "律": "ほうりつのりつ", "臨": "りんじのりん", "朗": "ろうどくのろう", "論": "けつろんのろん", "栃": "とちぎけんのとち", "埼": "さいたまけんのさい", "潟": "にいがたけんのがた", "井": "いどみずのい", "梨": "やまなしけんのなし", "岡": "おかやまけんのおか", "奈": "ならけんのな", "茨": "いばらきけんのいばら", "岐": "ぎふけんのぎ", "阜": "ぎふけんのふ", "滋": "しがけんのし", "阪": "おおさかふのさか", "香": "こうすいのこう", "佐": "さがけんのさ", "崎": "ながさきけんのさき", "熊": "くまもとけんのくま", "沖": "おきなわけんのおき", "縄": "おきなわけんのなわ", "媛": "えひめけんのひめ", "鹿": "しか"};
+const rememberIds = new Set(["k-4e00", "k-4e8c", "k-4e09", "k-56db", "k-4e94", "k-516d", "k-4e03", "k-516b", "k-4e5d", "k-5341", "k-65e5", "k-6708", "k-5c71", "k-5ddd", "k-6c34", "k-6728", "k-571f", "k-706b", "k-6797", "k-68ee", "k-4eba", "k-53e3", "k-76ee", "k-8033", "k-8db3", "k-624b", "k-7acb", "k-898b", "k-5927", "k-5c0f", "k-4e2d", "k-77f3", "k-8c9d", "k-72ac", "k-866b", "k-767e", "k-65e9", "k-8349", "k-82b1", "k-7530", "k-529b", "k-7537", "k-5973", "k-4e0a", "k-4e0b", "k-53f3", "k-5de6", "k-5b50", "k-5b57", "k-6587", "k-672c", "k-5b66", "k-6821", "k-5148", "k-751f", "k-5e74", "k-6b63", "k-5915", "k-540d", "k-5165", "k-51fa", "k-4f11", "k-5343", "k-5186", "k-738b", "k-7389", "k-767d", "k-8d64", "k-9752", "k-91d1", "k-97f3", "k-8eca", "k-7af9", "k-7cf8", "k-7a7a", "k-96e8", "k-5929", "k-6c17", "k-6751", "k-753a", "k-5916", "k-5de5", "k-624d", "k-591a", "k-5c11", "k-592a", "k-4e38", "k-516c", "k-53f0", "k-53e4", "k-5408", "k-70b9", "k-4eca", "k-4f1a", "k-793e", "k-4f53", "k-4f55", "k-7236", "k-4ea4", "k-4eac", "k-6bcd", "k-6bce", "k-660e", "k-6674", "k-661f", "k-96f2", "k-96ea", "k-96fb", "k-91cc", "k-91ce", "k-7406", "k-539f", "k-5ca9", "k-8c37", "k-9ce5", "k-9cf4", "k-7fbd", "k-99ac", "k-725b", "k-9b5a", "k-7c73", "k-756a", "k-753b", "k-8336", "k-9ea6", "k-81ea", "k-9996", "k-6bdb", "k-9854", "k-982d", "k-58f0", "k-5144", "k-5143", "k-58f2", "light", "hit", "k-5e02", "k-5e30", "k-59c9", "k-59b9", "k-884c", "k-6765", "k-8cb7", "k-6b69", "k-8d70", "k-6b62", "k-98df", "k-697d", "k-9ad8", "k-9577", "k-76f4", "k-89d2", "k-5f62", "k-9ed2", "k-9ec4", "k-8272", "k-5bfa", "k-6642", "k-9580", "k-9593", "k-805e", "k-5200", "k-5207", "k-5206", "k-534a", "k-524d", "k-5f8c", "k-77e2", "k-5f13", "k-5f1f", "k-5f15", "k-5f37", "k-5f31", "k-7d30", "k-7d75", "k-7d19", "k-7dda", "k-7d44", "k-53cb", "k-5fc3", "k-601d", "k-8003", "k-66f8", "k-77e5", "k-4f5c", "k-8a00", "k-7b54", "k-7b97", "k-6559", "k-6570", "k-8a08", "k-8a71", "k-8a9e", "k-8aad", "k-8a18", "k-6b4c", "k-89aa", "k-65b0", "k-5e83", "k-5e97", "k-6238", "k-5ba4", "k-5bb6", "k-540c", "k-5185", "k-8089", "k-56de", "k-56fd", "k-56f3", "k-9053", "k-901a", "k-8fd1", "k-9060", "k-9031", "k-7528", "k-5712", "k-671d", "k-663c", "k-591c", "k-5348", "k-66dc", "k-5834", "k-6625", "k-590f", "k-79cb", "k-51ac", "k-79d1", "k-6771", "k-897f", "k-5357", "north", "direction", "ten-thousand", "k-98a8", "k-8239", "k-6d77", "k-6c7d", "k-6d3b", "k-5730", "k-6c60", "k-8c46", "k-77ed", "k-6b21", "k-4ed6", "k-59cb", "k-53bb", "k-4e3b", "k-4f4f", "k-6ce8", "k-67f1", "k-6697", "k-662d", "k-6614", "k-8005", "k-6691", "k-7fd2", "k-5473", "k-5316", "k-79d2", "k-5bfe", "k-53d6", "k-5e33", "k-7551", "k-7531", "k-7533", "k-4e16", "k-754c", "k-592e", "k-5168", "k-59d4", "k-54e1", "k-7ae0", "k-7ae5", "k-541b", "k-5e73", "k-548c", "k-5e78", "k-793c", "k-795e", "k-798f", "k-5177", "k-76f8", "k-770c", "k-53f7", "k-5199", "k-771f", "k-91cd", "k-52d5", "k-52a9", "k-52c9", "k-52dd", "k-8ca0", "k-6c37", "k-5dde", "k-5cf6", "k-5cb8", "k-70ad", "k-4e21", "k-5f85", "k-5f79", "k-6295", "k-6253", "k-6301", "k-62fe", "k-6307", "k-4ed5", "k-4fc2", "k-500d", "k-8a69", "k-8abf", "k-8ac7", "k-7d42", "k-7df4", "k-7dd1", "k-7d1a", "k-8ee2", "k-8efd", "k-6c7a", "k-6cb9", "k-6cf3", "k-6ce2", "k-6d0b", "k-6d41", "k-6d88", "k-6df1", "k-6e29", "k-6e56", "k-6e2f", "k-6f22", "k-690d", "k-6a2a", "k-6a4b", "k-6839", "k-9280", "k-9244", "k-98f2", "k-9928", "k-99c5", "k-7814", "k-7a76", "k-53d7", "k-9152", "k-914d", "k-6240", "k-5217", "k-6b7b", "k-796d", "k-4e01", "k-4e88", "k-4e8b", "k-767a", "k-767b", "k-5b89", "k-5b88", "k-5b9f", "k-5bae", "k-5bbf", "k-5bd2", "k-5b9a", "k-984c", "k-8d77", "k-7b1b", "k-7bb1", "k-7b2c", "k-7b49", "k-7b46", "k-82e6", "k-8377", "k-8449", "k-85ac", "k-843d", "k-5ba2", "k-8def", "k-9f3b", "k-6b6f", "k-9762", "k-76ae", "k-8eab", "k-547d", "k-6025", "k-606f", "k-60b2", "k-60aa", "k-60f3", "k-610f", "k-611f", "k-5546", "k-7f8a", "k-7f8e", "k-7740", "k-8868", "k-670d", "k-80b2", "k-6709", "k-671f", "k-96c6", "k-6574", "k-53cd", "k-5742", "k-677f", "k-8fd4", "k-9001", "k-901f", "k-8ffd", "k-9032", "k-904b", "k-653e", "k-65c5", "k-65cf", "k-904a", "k-76bf", "k-8840", "k-66f2", "k-8fb2", "k-696d", "k-4e57", "k-554f", "k-958b", "k-5411", "k-5ea6", "k-533a", "k-533b", "k-5c40", "k-5c4b", "k-5eab", "k-5ead", "k-90e8", "k-90fd", "k-9662", "k-968e", "k-75c5", "k-54c1", "k-7269", "k-6e6f", "k-967d", "k-4ee3", "k-5f0f", "k-4f7f", "k-7403", "k-69d8", "k-672a", "k-826f", "k-6c0f", "k-6b20", "k-5468", "k-9332", "k-5404", "k-8863", "k-675f", "k-4fbf", "k-6c42", "k-52a0", "k-597d", "k-5531", "k-706f", "k-795d", "k-6628", "k-7267", "k-7279", "k-6298", "k-6599", "k-5869", "k-98ef", "k-4ed8", "k-4ef2", "k-4f1d", "k-4f4d", "k-4f50", "k-4f8b", "k-4fe1", "k-501f", "k-5019", "k-5074", "k-50cd", "k-5104", "k-5f84", "k-5f92", "k-8857", "k-65d7", "k-7af6", "k-98db", "k-677e", "k-6885", "k-672d", "k-6750", "k-672b", "k-679c", "k-5de3", "k-5358", "k-6804", "k-6848", "k-68a8", "k-6ce3", "k-6cbb", "k-6cd5", "k-6c96", "k-6d74", "k-6e05", "k-6f01", "k-6e80", "k-8a13", "k-8a66", "k-8aac", "k-8ab2", "k-7d04", "k-7d66", "k-7d50", "k-7d9a", "k-5354", "k-535a", "k-8ca8", "k-8cc0", "k-7a2e", "k-7a4d", "k-5b6b", "k-5b63", "k-9999", "k-4ee5", "k-5150", "k-5146", "k-4ee4", "k-51b7", "k-56fa", "k-7684", "k-5305", "k-5370", "k-8f9e", "k-5178", "k-6557", "k-6539", "k-6563", "k-521d", "k-5229", "k-5225", "k-5237", "k-526f", "k-4e89", "k-9759", "k-9806", "k-985e", "k-9858", "k-666f", "k-6700", "k-91cf", "k-5b8c", "k-5b98", "k-5bb3", "k-5bcc", "k-5bdf", "k-7b11", "k-7bc0", "k-7ba1", "k-82b8", "k-82f1", "k-82bd", "k-83dc", "k-529f", "k-52b4", "k-52aa", "k-52c7", "k-53c2", "k-6319", "k-4e0d", "k-592b", "k-5931", "k-53f8", "k-4e95", "k-5009", "k-611b", "k-5ff5", "k-5fc5", "k-7701", "k-899a", "k-89b3", "k-5e0c", "k-5e2f", "k-5e2d", "k-671b", "k-5352", "k-5909", "k-95a2", "k-8001", "k-7523", "k-7fa4", "k-5dee", "k-990a", "k-7f6e", "k-713c", "k-5668", "k-6a5f", "k-68b0", "k-6975", "k-7167", "k-71b1", "k-7136", "k-7121", "k-718a", "k-6210", "k-57ce", "k-6226", "k-5171", "k-5175", "k-81e3", "k-6c11", "k-8ecd", "k-968a", "k-5e9c", "k-90e1", "k-8fba", "k-9023", "k-9054", "k-9078", "k-8f2a", "k-8981", "k-7968", "k-6a19", "k-4f4e", "k-5e95", "k-5eb7", "k-5efa", "k-5065", "k-93e1", "k-9678", "k-9a13", "k-8b70", "k-6d45", "k-6b8b", "k-8328", "k-6803", "k-6f5f", "k-57fc", "k-5d0e", "k-6ecb", "k-5c90", "k-961c", "k-962a", "k-5948", "k-5ca1", "k-5a9b", "k-5fb3", "k-9e7f", "k-7e04", "k-53ef", "k-822a", "k-6e1b", "k-6b66", "k-53f2", "k-685c", "k-7de8", "k-5883", "k-691c", "k-967a", "k-7fa9", "k-58eb", "k-4e45", "k-6c38", "k-5e03", "k-5f01", "k-53e5", "k-652f", "k-6280", "k-679d", "k-793a", "k-7981", "k-6b74", "k-62db", "k-6388", "k-63a1", "k-63a5", "k-640d", "k-63d0", "k-5f97", "k-5f80", "k-8f38", "k-4ecf", "k-4eee", "k-4ef6", "k-4efb", "k-4f3c", "k-4fa1", "k-4fdd", "k-500b", "k-4fee", "k-505c", "k-5099", "k-50cf", "k-6cb3", "k-6df7", "k-6db2", "k-6f14", "k-6f54", "k-6e2c", "k-8a2d", "k-8a31", "k-8a3c", "k-8a55", "k-8b1d", "k-7d00", "k-7d4c", "k-7d76", "k-7dcf", "k-7dbf", "k-7d71", "k-7e3e", "k-7d20", "k-5c45", "k-5bb9", "k-5bc4", "k-820e", "k-898f", "k-683c", "k-5e8f", "k-73fe", "k-8c61", "k-5fdc", "k-6bd4", "k-67fb", "k-89e3", "k-6761", "k-5747", "k-4f59", "k-8ca1", "k-8caf", "k-8ca7", "k-8cac", "k-8cb8", "k-8cbb", "k-8cbf", "k-8cc7", "k-8cea", "k-8cdb", "k-55b6", "k-76ca", "k-7387", "k-984d", "k-9818", "k-5c0e", "k-5fd7", "k-5feb", "k-6027", "k-60c5", "k-6163", "k-52b9", "k-52d9", "k-52e2", "k-520a", "k-5224", "k-5247", "k-5236", "k-88fd", "k-9632", "k-7834", "k-5f35", "k-8015", "k-98fc", "k-7bc9", "k-7565", "k-5897", "k-7559", "k-7c89", "k-7cbe", "k-65ad", "k-59bb", "k-5a66", "k-5e2b", "k-7956", "k-56e3", "k-5802", "k-5e38", "k-8cde", "k-9271", "k-9285", "k-5c5e", "k-539a", "k-559c", "k-969b", "k-5922", "k-8c4a", "k-8208", "k-79fb", "k-7a0e", "k-7a0b", "k-6545", "k-653f", "k-6551", "k-578b", "k-57fa", "k-5893", "k-5727", "k-5728", "k-65e7", "k-6613", "k-66b4", "k-707d", "k-9178", "k-71c3", "k-72b6", "k-80fd", "k-614b", "k-80a5", "k-8108", "k-56f2", "k-56e0", "k-72af", "k-72ec", "k-975e", "k-7f6a", "k-5e79", "k-8853", "k-885b", "k-773c", "k-9650", "k-8ff0", "k-8ff7", "k-9006", "k-904e", "k-9069", "k-518d", "k-69cb", "k-8b1b", "k-544a", "k-9020", "k-5831", "k-5fa9", "k-8907", "k-7e54", "k-8077", "k-8b58", "k-6e96", "k-96d1", "k-6bba", "k-78ba", "k-8b77", "k-7248", "k-6bd2", "k-5bf8", "k-5df1", "k-9589", "k-8ad6", "k-6211", "k-92ad", "k-5c04", "k-5b58", "k-5371", "k-9000", "k-6575", "k-8179", "k-7247", "k-6cbf", "k-6d17", "k-6e08", "k-6e90", "k-6f6e", "k-6fc0", "k-679a", "k-682a", "k-68d2", "k-6a39", "k-6a21", "k-6a29", "k-67d3", "k-673a", "k-51e6", "k-8a0e", "k-8a2a", "k-8a33", "k-8a5e", "k-5c3a", "k-8aa0", "k-8a8c", "k-8aa4", "k-8a8d", "k-8a95", "k-8af8", "k-656c", "k-8b66", "k-81e8", "k-6279", "k-62e1", "k-62c5", "k-62dd", "k-63a2", "k-63a8", "k-6368", "k-63ee", "k-64cd", "k-627f", "k-594f", "k-5ea7", "k-8996", "k-89a7", "k-820c", "k-547c", "k-5438", "k-4ec1", "k-4f9b", "k-4ff3", "k-4ff5", "k-5024", "k-512a", "k-7cfb", "k-7d05", "k-7d0d", "k-7d14", "k-7d79", "k-8695", "k-7e2e", "k-7e26", "k-5f93", "k-9802", "k-9810", "k-53ce", "k-6620", "k-6669", "k-6696", "k-66ae", "k-5e55", "k-6cc9", "k-7802", "k-78c1", "k-57df", "k-91dd", "k-92fc", "k-7070", "k-5b85", "k-5b87", "k-5b99", "k-5b9d", "k-5b97", "k-5ba3", "k-7a74", "k-7a93", "k-6bb5", "k-5e81", "k-7f72", "k-5c64", "k-52e4", "k-5c31", "k-5c02", "k-8cb4", "k-8cc3", "k-907a", "k-5e72", "k-4e26", "k-5c4a", "k-81f3", "k-5ef6", "k-5c55", "k-5fd8", "k-5fe0", "k-6069", "k-5b5d", "k-56f0", "k-7591", "k-6b32", "k-596e", "k-76db", "k-4e71", "k-5e7c", "k-6717", "k-5c0a", "k-5584", "k-5426", "k-7570", "k-7c21", "k-96e3", "k-53b3", "k-75db", "k-50b7", "k-770b", "k-4ea1", "k-59ff", "k-7fcc", "k-5375", "k-4e73", "k-719f", "k-7cd6", "k-7a40", "k-82e5", "k-8457", "k-84b8", "k-8535", "k-79c1", "k-79d8", "k-5bc6", "k-88dc", "k-523b", "k-5275", "k-5272", "k-5287", "k-5dfb", "k-5238", "k-518a", "k-5782", "k-90f5", "k-90f7", "k-9664", "k-964d", "k-969c", "k-7b4b", "k-9aa8", "k-80c3", "k-80cc", "k-80ba", "k-80f8", "k-8133", "k-8178", "k-81d3", "k-7b56", "k-5f8b", "k-61b2", "k-88c5", "k-88cf", "k-88c1", "k-7687", "k-8056", "k-73ed", "k-965b", "k-540e", "k-5c06", "k-515a", "k-76df", "k-6d3e", "k-95a3", "k-8846", "k-9769"]);
+const serials = new Map(Array.from(Object.values(textbookOrder).join(""),
+  (kanji, index) => [kanji, index + 1]));
+const kanaRanks = new Map(Object.values(kanaOrder).flatMap(order =>
+  Array.from(order, (kanji, rank) => [kanji, rank])
+));
+const byId = new Map(cards.map(card => [card.id, card]));
+const byKanji = new Map(cards.map(card => [card.kanji, card]));
+const storageKey = "manga-goro-grade2-prototype-saved-v1";
+const variantKey = "manga-goro-card-style-v1";
+const setsKey = "manga-goro-study-sets-v1";
+const workspaceKey = "manga-goro-students-v1";
+const modeKey = "manga-goro-reading-mode-v1";
+const cardsPerSheet = 5;
+const get = id => document.getElementById(id);
+const dialog = get("dialog");
+let saved = new Set();
+let quiz;
+let activeSpeech;
+let variants = new Set();
+let students = [];
+let studentId = "";
+let studySets = [];
+let reviewMode = "all";
+let setDraft;
+let printCards = [];
+let printSelection = new Set();
+
+try {
+  const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
+  if (Array.isArray(stored)) saved = new Set(stored.filter(id => byId.has(id)));
+} catch {
+  get("storage-note").hidden = false;
+}
+
+function storeData(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    get("storage-note").hidden = false;
+  }
+}
+
+function cleanMode(mode) {
+  return mode === "mainOn" ? "mainOn" : "all";
+}
+
+function validSet(set) {
+  return set && typeof set.id === "string" && /^[a-z0-9-]{1,80}$/i.test(set.id) && typeof set.name === "string" &&
+    set.name.trim() && set.name.length <= 60 && Array.isArray(set.ids) && set.ids.length &&
+    set.ids.length <= cards.length && new Set(set.ids).size === set.ids.length &&
+    set.ids.every(id => byId.has(id)) && ["all", "mainOn"].includes(set.mode) &&
+    (set.order === undefined || ["textbook", "kana"].includes(set.order)) &&
+    (set.shuffle === undefined || typeof set.shuffle === "boolean");
+}
+
+function validStudent(student) {
+  return student && typeof student.id === "string" && /^[a-z0-9_-]{1,100}$/i.test(student.id) &&
+    typeof student.name === "string" && student.name.trim() && student.name.length <= 100;
+}
+
+function persistWorkspace() {
+  storeData(workspaceKey, {students, studySets, studentId});
+}
+
+try {
+  const storedVariants = JSON.parse(localStorage.getItem(variantKey) || "[]");
+  if (Array.isArray(storedVariants)) variants = new Set(storedVariants.filter(id => rememberIds.has(id)));
+  const workspace = JSON.parse(localStorage.getItem(workspaceKey) || "null");
+  if (workspace && Array.isArray(workspace.students) && Array.isArray(workspace.studySets)) {
+    students = workspace.students.filter(validStudent);
+    studySets = workspace.studySets.filter(set => validSet(set) && students.some(student => student.id === set.studentId));
+    studentId = students.some(student => student.id === workspace.studentId) ? workspace.studentId : students[0]?.id || "";
+  } else {
+    const storedSets = JSON.parse(localStorage.getItem(setsKey) || "[]");
+    if (Array.isArray(storedSets) && storedSets.some(validSet)) {
+      studentId = "legacy-sets";
+      students = [{id:studentId, name:"これまでの セット"}];
+      studySets = storedSets.filter(validSet).map(set => ({...set, studentId}));
+      persistWorkspace();
+    }
+  }
+  reviewMode = cleanMode(JSON.parse(localStorage.getItem(modeKey) || '"all"'));
+} catch {
+  get("storage-note").hidden = false;
+}
+
+function normalize(value) {
+  return value.normalize("NFKC").trim().replace(/[()‐]/g, "").replace(/[ァ-ヶ]/g, char =>
+    String.fromCharCode(char.charCodeAt(0) - 0x60)
+  );
+}
+
+function readingLines(card, mode = "all") {
+  return mode === "mainOn" ? [mainReadings[card.kanji]] : exampleReadings[card.kanji];
+}
+
+function readings(card, mode) {
+  return readingLines(card, mode).join("、");
+}
+
+function modeOptions(mode) {
+  return `<option value="mainOn"${mode === "mainOn" ? " selected" : ""}>おもな おんよみ</option>
+    <option value="all"${mode === "all" ? " selected" : ""}>ぜんぶ よむ</option>`;
+}
+
+const imageUrls = new Map();
+
+function imageUrl(id) {
+  if (!imageUrls.has(id)) {
+    const encoded = globalThis.cardImageData[id];
+    const bytes = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
+    imageUrls.set(id, URL.createObjectURL(new Blob([bytes], {type:"image/webp"})));
+  }
+  return imageUrls.get(id);
+}
+
+function picture(card, remember = variants.has(card.id)) {
+  const id = remember ? "remember-" + card.id : card.id;
+  return `<img class="art" src="${imageUrl(id)}" alt="${card.kanji}の ${remember ? "おぼえるカード" : "まんがと ゴロ"}">`;
+}
+
+function starText(card) {
+  return saved.has(card.id) ? "★ ほぞんずみ" : "☆ ほぞん";
+}
+
+function star(card) {
+  return `<button class="star" data-action="star" data-id="${card.id}" aria-pressed="${saved.has(card.id)}" aria-label="${card.kanji}を ほぞん">${starText(card)}</button>`;
+}
+
+function tile(card) {
+  return `<article class="tile">
+    <button class="open" data-action="card" data-id="${card.id}" aria-label="${card.kanji}の カードを ひらく">
+      <span class="tile-glyph"><span class="glyph">${card.kanji}</span>
+      <small class="serial">${serials.get(card.kanji)}</small></span>
+      <span class="readings"><span>${readings(card)}</span>
+      ${get("grade").value === "all" ? `<small>${card.grade}ねんせい</small>` : ""}</span>
+    </button>${star(card)}</article>`;
+}
+
+function inGrade(card) {
+  const grade = get("grade").value;
+  return grade === "all" || Number(grade) === card.grade;
+}
+
+function compareTextbook(first, second) {
+  return serials.get(first.kanji) - serials.get(second.kanji);
+}
+
+function orderCards(matching) {
+  if (get("sort").value === "textbook") return matching.sort(compareTextbook);
+  return matching.sort((first, second) => {
+    const left = first.on[0];
+    const right = second.on[0];
+    if (!left || !right) return Number(!left) - Number(!right);
+    return normalize(left).localeCompare(normalize(right), "ja");
+  });
+}
+
+function renderSearch() {
+  const query = normalize(get("query").value);
+  const found = orderCards(cards.filter(card => inGrade(card) && matchesCard(card, query)));
+  get("result-count").textContent = `${found.length} もじ`;
+  get("search-list").innerHTML = found.map(tile).join("") ||
+    '<p class="empty">みつかりませんでした。</p>';
+}
+
+function matchesCard(card, query) {
+  return !query || card.kanji === query ||
+    [...card.on, ...card.kun, ...(card.alt || []), ...exampleReadings[card.kanji]]
+      .some(value => normalize(value).startsWith(query));
+}
+
+function savedCards() {
+  return orderCards(cards.filter(card => inGrade(card) && saved.has(card.id)));
+}
+
+function renderSaved() {
+  const matching = savedCards();
+  get("saved-count").textContent = matching.length;
+  get("saved-print").disabled = !matching.length;
+  get("saved-list").innerHTML = matching.map(tile).join("") ||
+    '<p class="empty">まだ ☆が ありません。</p>';
+}
+
+function toggleStar(button, card) {
+  if (saved.has(card.id)) saved.delete(card.id);
+  else saved.add(card.id);
+  try {
+    localStorage.setItem(storageKey, JSON.stringify([...saved]));
+  } catch {
+    get("storage-note").hidden = false;
+  }
+  const restoreFocus = button.closest("#search-list");
+  renderSearch();
+  renderSaved();
+  if (button.isConnected) {
+    button.setAttribute("aria-pressed", saved.has(card.id));
+    button.textContent = starText(card);
+  } else if (restoreFocus) {
+    get("search-list").querySelector(`[data-action="star"][data-id="${card.id}"]`)?.focus();
+  } else {
+    document.querySelector('nav [data-tab="saved"]').focus();
+  }
+}
+
+function showTab(name) {
+  stopSpeech();
+  quiz = null;
+  get("review").hidden = true;
+  for (const tab of ["search", "saved", "sets"]) {
+    get(tab).hidden = tab !== name;
+    document.querySelector(`nav [data-tab="${tab}"]`).setAttribute("aria-pressed", tab === name);
+  }
+  if (name === "sets") renderSets();
+  if (name !== "search") document.querySelector(`nav [data-tab="${name}"]`).focus();
+}
+
+function showDialog(title, markup) {
+  get("dialog-title").textContent = title;
+  get("dialog-body").innerHTML = markup;
+  if (!dialog.open) dialog.showModal();
+  dialog.querySelector(".dialog-head button").focus();
+  dialog.scrollTop = 0;
+}
+
+function showCard(card) {
+  const selected = variants.has(card.id);
+  const images = rememberIds.has(card.id) ? `<fieldset class="card-choice"><legend>つかう カード</legend>
+    <label><input type="radio" name="card-art" data-variant-id="${card.id}" value="manga"${selected ? "" : " checked"}>
+      まんがと ゴロ${picture(card, false)}</label>
+    <label><input type="radio" name="card-art" data-variant-id="${card.id}" value="remember"${selected ? " checked" : ""}>
+      おぼえるカード${picture(card, true)}</label></fieldset>` :
+    `<div class="actions">${picture(card)}</div>`;
+  showDialog(`${serials.get(card.kanji)}　${card.kanji}　｜　${card.page} ページ`, `
+    <div class="row spread"><p>${readings(card)}</p>${star(card)}</div>
+    ${images}
+    <div class="row actions">
+      <button data-action="original" data-id="${card.id}">もとの ページ</button>
+      <button data-action="print-one" data-id="${card.id}">いんさつ・PDF</button>
+    </div>`);
+}
+
+function renderReview() {
+  const section = get("review");
+  if (!quiz || quiz.index === quiz.cards.length) {
+    section.innerHTML = '<div class="quiz"><h2>がくしゅう おわり！</h2><button class="primary actions" data-tab="sets">セットに もどる</button></div>';
+    return;
+  }
+  const card = quiz.cards[quiz.index];
+  section.innerHTML = `<div class="quiz">
+    <p class="muted">${quiz.index + 1} / ${quiz.cards.length}</p>
+    <div class="row center actions">
+      <button data-action="listen">🔊 もういちど きく</button>
+      ${quiz.revealed ? "" : '<button data-action="reading" aria-expanded="false" aria-controls="question-reading">よみかたを みる</button>'}
+    </div>
+    <p id="speech-status" class="muted" role="status"></p>
+    ${quiz.revealed ? `<div class="answer"><p>${readings(card, quiz.mode)}</p>
+      <small class="serial">${serials.get(card.kanji)}</small>${picture(card)}</div>
+      <button class="primary" data-action="next">${quiz.index + 1 === quiz.cards.length ? "おわる" : "つぎへ"}</button>` :
+      `<p id="question-reading" class="question-reading" hidden>${readings(card, quiz.mode)}</p>
+      <button class="primary actions" data-action="reveal">こたえを みる</button>`}
+    </div>`;
+}
+
+function stopSpeech() {
+  if (!activeSpeech) return;
+  activeSpeech = null;
+  globalThis.speechSynthesis?.cancel();
+}
+
+function showQuestionReading(button, visible) {
+  get("question-reading").hidden = !visible;
+  button?.setAttribute("aria-expanded", visible);
+  if (button) button.textContent = visible ? "よみかたを とじる" : "よみかたを みる";
+}
+
+function speakQuestion() {
+  const card = quiz?.cards[quiz.index];
+  if (!card) return;
+  const status = get("speech-status");
+  const fallback = () => {
+    status.textContent = "おんせいを さいせいできません。";
+    if (!quiz.revealed) showQuestionReading(get("review").querySelector('[data-action="reading"]'), true);
+  };
+  const engine = globalThis.speechSynthesis;
+  if (!engine || typeof globalThis.SpeechSynthesisUtterance !== "function") {
+    fallback();
+    return;
+  }
+  stopSpeech();
+  const voices = engine.getVoices();
+  const japanese = voices.filter(voice => /^ja(?:[-_]|$)/i.test(voice.lang));
+  if (voices.length && !japanese.length) {
+    fallback();
+    return;
+  }
+  const speech = new SpeechSynthesisUtterance(readingLines(card, quiz.mode).join("。").replaceAll("‐", ""));
+  speech.lang = "ja-JP";
+  speech.rate = .85;
+  const voice = japanese.find(item => item.localService) || japanese[0];
+  if (voice) speech.voice = voice;
+  speech.onend = () => {
+    if (activeSpeech === speech) activeSpeech = null;
+  };
+  speech.onerror = event => {
+    if (activeSpeech !== speech) return;
+    activeSpeech = null;
+    if (event.error !== "canceled" && event.error !== "interrupted") fallback();
+  };
+  status.textContent = "";
+  activeSpeech = speech;
+  try {
+    engine.speak(speech);
+  } catch {
+    activeSpeech = null;
+    fallback();
+  }
+}
+
+function beginReview(order, mode, shuffle = false) {
+  if (shuffle) {
+    for (let index = order.length - 1; index > 0; index--) {
+      const other = Math.floor(Math.random() * (index + 1));
+      [order[index], order[other]] = [order[other], order[index]];
+    }
+  }
+  if (!order.length) return;
+  quiz = {cards:order, index:0, revealed:false, mode};
+  advanceReviewFocus();
+  speakQuestion();
+}
+
+function advanceReviewFocus() {
+  renderReview();
+  get("review").querySelector(".primary")?.focus();
+}
+
+function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
+}
+
+function newSetId() {
+  return globalThis.crypto?.randomUUID?.() || `set-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function activeStudent() {
+  return students.find(student => student.id === studentId);
+}
+
+function activeSets() {
+  return studySets.filter(set => set.studentId === studentId);
+}
+
+function showStudentEditor() {
+  showDialog("せいとを とうろく", `
+    <div class="row"><label>なまえ <input id="student-name" type="text" maxlength="100"></label>
+    <button class="primary" data-action="student-save">ほぞん</button></div>`);
+  get("student-name").focus();
+}
+
+function saveStudent() {
+  const name = get("student-name").value.trim();
+  if (!name) {
+    get("student-name").focus();
+    return;
+  }
+  studentId = newSetId();
+  students.push({id:studentId, name});
+  persistWorkspace();
+  dialog.close();
+  renderSets();
+}
+
+function deleteStudent() {
+  const student = activeStudent();
+  if (!student || !globalThis.confirm(`${student.name} さんと、この せいとの セットを けしますか？`)) return;
+  students = students.filter(item => item.id !== student.id);
+  studySets = studySets.filter(set => set.studentId !== student.id);
+  studentId = students[0]?.id || "";
+  persistWorkspace();
+  renderSets();
+  get("set-status").textContent = "せいとを けしました。";
+}
+
+function renderSets() {
+  const student = activeStudent();
+  get("student-select").innerHTML = students.map(item =>
+    `<option value="${item.id}">${escapeHtml(item.name)}</option>`
+  ).join("") || '<option value="">まだ いません</option>';
+  get("student-select").value = student?.id || "";
+  get("student-select").disabled = !student;
+  get("student-delete").disabled = !student;
+  get("set-new").disabled = !student;
+  get("sets-export").disabled = !student;
+  get("sets-list").innerHTML = activeSets().map(set => `<article class="panel">
+    <div class="row spread"><h2>${escapeHtml(set.name)}</h2>
+      <span class="muted">${set.ids.length} もじ　${set.mode === "mainOn" ? "おもな おんよみ" : "ぜんぶ よむ"}</span>
+    </div>
+    <p class="actions">${set.ids.map(id => byId.get(id).kanji).join("・")}</p>
+    <div class="row actions">
+      <button class="primary" data-action="set-start" data-id="${set.id}">はじめる</button>
+      <button data-action="set-edit" data-id="${set.id}">セットを へんしゅう</button>
+      <button data-action="set-copy" data-id="${set.id}">コピー</button>
+    </div></article>`).join("") || (student ?
+    '<p class="empty">まだ セットが ありません。</p>' :
+    '<p class="empty">せいとを とうろくして ください。</p>');
+}
+
+function showSetEditor(set) {
+  if (!activeStudent()) return;
+  setDraft = {id:set?.id || newSetId(), studentId, mode:set?.mode || reviewMode,
+    order:set?.order || "kana", ids:set ? [...set.ids] : []};
+  showDialog(set ? "セットを へんしゅう" : "セットを つくる", `
+    <div class="row">
+      <label>セットの なまえ <input id="set-name" type="text" maxlength="60" value="${escapeHtml(set?.name || "")}"></label>
+      <label>よみかた <select id="set-mode">${modeOptions(setDraft.mode)}</select></label>
+      <label class="pick"><input id="set-shuffle" type="checkbox"${set?.shuffle ? " checked" : ""}> まぜて はじめる</label>
+    </div>
+    <div class="set-editor-grid">
+      <section aria-labelledby="set-picker-title">
+        <h3 id="set-picker-title">かんじを えらぶ</h3>
+        <div class="row">
+          <label>がくねん <select id="set-grade">${get("grade").innerHTML}</select></label>
+          <label>ならべかた <select id="set-sort">
+            <option value="kana">50おんじゅん</option>
+            <option value="textbook">きょうかしょの じゅん</option>
+          </select></label>
+          <label>さがす <input id="set-query" type="search" autocomplete="off"></label>
+        </div>
+        <div id="set-picker" class="row actions set-picker"></div>
+      </section>
+      <section aria-labelledby="set-count">
+        <h3 id="set-count" aria-live="polite"></h3>
+        <ol id="set-order" class="set-order"></ol>
+      </section>
+    </div>
+    <div class="row actions">
+      <button id="set-save" class="primary" data-action="set-save">ほぞん</button>
+      ${set ? '<button data-action="set-delete">セットを けす</button>' : ""}
+    </div>`);
+  get("set-grade").value = get("grade").value;
+  get("set-sort").value = setDraft.order;
+  get("set-grade").addEventListener("change", renderSetCandidates);
+  get("set-query").addEventListener("input", renderSetCandidates);
+  get("set-sort").addEventListener("change", () => {
+    setDraft.order = get("set-sort").value;
+    renderSetCandidates();
+  });
+  get("set-name").addEventListener("input", updateSetSaveButton);
+  renderSetCandidates();
+  renderSetOrder();
+}
+
+function compareSetCards(first, second) {
+  if (setDraft.order === "textbook") return compareTextbook(first, second);
+  return first.grade - second.grade || kanaRanks.get(first.kanji) - kanaRanks.get(second.kanji);
+}
+
+function renderSetCandidates() {
+  const grade = get("set-grade").value;
+  const query = normalize(get("set-query").value);
+  const matching = cards.filter(card => (grade === "all" || card.grade === Number(grade)) &&
+    matchesCard(card, query)).sort(compareSetCards);
+  get("set-picker").innerHTML = matching.map(card =>
+    `<label class="pick"><input type="checkbox" data-set-card="${card.id}"${setDraft.ids.includes(card.id) ? " checked" : ""}>
+    <small class="serial">${serials.get(card.kanji)}</small> ${card.kanji}</label>`
+  ).join("") || '<p>みつかりませんでした。</p>';
+}
+
+function updateSetSaveButton() {
+  get("set-save").disabled = !get("set-name").value.trim() || !setDraft.ids.length;
+}
+
+function renderSetOrder() {
+  get("set-count").textContent = `えらんだ かんじ　${setDraft.ids.length} もじ`;
+  get("set-order").innerHTML = setDraft.ids.map((id, index) => `<li><div class="row">
+    <span>${byId.get(id).kanji}</span><small class="serial">${serials.get(byId.get(id).kanji)}</small>
+    <button data-action="set-up" data-id="${id}" aria-label="まえへ"${index === 0 ? " disabled" : ""}>↑</button>
+    <button data-action="set-down" data-id="${id}" aria-label="うしろへ"${index === setDraft.ids.length - 1 ? " disabled" : ""}>↓</button>
+    <button data-action="set-remove" data-id="${id}">はずす</button>
+  </div></li>`).join("");
+  updateSetSaveButton();
+}
+
+function saveSet() {
+  const set = {id:setDraft.id, studentId:setDraft.studentId, name:get("set-name").value.trim(),
+    ids:[...setDraft.ids], mode:cleanMode(get("set-mode").value), order:setDraft.order,
+    shuffle:get("set-shuffle").checked};
+  if (!validSet(set) || set.studentId !== studentId) return;
+  const index = studySets.findIndex(item => item.id === set.id);
+  if (index < 0) studySets.push(set);
+  else studySets[index] = set;
+  persistWorkspace();
+  dialog.close();
+  renderSets();
+}
+
+function deleteSet() {
+  if (!globalThis.confirm("この セットを けしますか？")) return;
+  studySets = studySets.filter(set => set.studentId !== studentId || set.id !== setDraft.id);
+  persistWorkspace();
+  dialog.close();
+  renderSets();
+}
+
+function copySet(id) {
+  const set = activeSets().find(item => item.id === id);
+  if (!set) return;
+  studySets.push({...set, id:newSetId(), name:`${set.name.slice(0,54)} のコピー`, ids:[...set.ids]});
+  persistWorkspace();
+  renderSets();
+  get("set-status").textContent = "セットを コピーしました。";
+}
+
+function studyBackup() {
+  const sets = activeSets();
+  const usedIds = new Set(sets.flatMap(set => set.ids));
+  return {format:"manga-goro-student", version:2, student:activeStudent(), sets,
+    remember:[...variants].filter(id => usedIds.has(id))};
+}
+
+function exportSets() {
+  const data = studyBackup();
+  if (!data.student) return;
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:"application/json"}));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${data.student.name.replace(/[\\/:*?"<>|]/g, "_")}_かんじの がくしゅうセット.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+function importSets(data) {
+  let incomingStudents;
+  let incomingSets;
+  let remembered = [];
+  if (data?.schemaVersion === 1 && Array.isArray(data.students) && Array.isArray(data.sets)) {
+    incomingStudents = data.students;
+    incomingSets = data.sets.map(set => ({
+      id:newSetId(), studentId:set?.studentId, name:set?.name, ids:Array.isArray(set?.chars) ?
+        set.chars.map(char => byKanji.get(char)?.id) : [], mode:cleanMode(set?.readingMode)
+    }));
+  } else if (data?.format === "manga-goro-student" && data.version === 2) {
+    incomingStudents = [data.student];
+    incomingSets = data.sets;
+    remembered = data.remember;
+  } else if (data?.format === "manga-goro-study-sets" && data.version === 1 && Array.isArray(data.sets)) {
+    incomingStudents = [{id:"legacy-backup", name:"よみこんだ セット"}];
+    incomingSets = data.sets.map(set => ({...set, studentId:"legacy-backup"}));
+    remembered = data.remember;
+  }
+  if (!incomingStudents?.length || !incomingStudents.every(validStudent) ||
+      new Set(incomingStudents.map(student => student.id)).size !== incomingStudents.length ||
+      !Array.isArray(incomingSets) || !incomingSets.every(set =>
+        validSet(set) && incomingStudents.some(student => student.id === set.studentId)) ||
+      !Array.isArray(remembered) || !remembered.every(id => rememberIds.has(id))) {
+    throw new Error("Invalid study-set file");
+  }
+  const newIds = new Map(incomingStudents.map(student => [student.id, newSetId()]));
+  for (const student of incomingStudents) {
+    students.push({id:newIds.get(student.id), name:student.name});
+  }
+  for (const set of incomingSets) {
+    studySets.push({id:newSetId(), studentId:newIds.get(set.studentId), name:set.name,
+      ids:[...set.ids], mode:set.mode, order:set.order || "textbook", shuffle:set.shuffle === true});
+  }
+  studentId = newIds.get(incomingStudents[0].id);
+  for (const id of remembered) variants.add(id);
+  persistWorkspace();
+  storeData(variantKey, [...variants]);
+  renderSets();
+  return incomingStudents.length;
+}
+
+function showPrint(options) {
+  printCards = options;
+  printSelection = new Set(options.map(card => card.id));
+  showDialog("いんさつ・PDF", `
+    ${options.length > cardsPerSheet ? `<div class="row">
+      <button data-action="pick-all">ぜんぶ えらぶ</button>
+      <button data-action="pick-none">ぜんぶ はずす</button>
+    </div>` : ""}
+    <div class="row actions print-picks">${options.map(card => `
+      <label class="pick"><input type="checkbox" data-print-id="${card.id}" checked>
+      <small class="serial">${serials.get(card.kanji)}</small> ${card.kanji}</label>`).join("")}</div>
+    <div class="row actions">
+      <button class="primary" id="print-button" data-action="print">いんさつ・PDFへ</button>
+      <span id="print-count" class="muted" aria-live="polite"></span>
+    </div>
+    <h3 class="preview-title">いんさつの みほん</h3><div id="preview"></div>`);
+  renderPrint();
+}
+
+function setPrintSelection(checked) {
+  printSelection = new Set(checked ? printCards.map(card => card.id) : []);
+  for (const input of dialog.querySelectorAll("[data-print-id]")) input.checked = checked;
+  renderPrint();
+}
+
+function renderPrint() {
+  const selected = printCards.filter(card => printSelection.has(card.id));
+  const pageCount = Math.ceil(selected.length / cardsPerSheet);
+  const pages = [];
+  for (let index = 0; index < selected.length; index += cardsPerSheet) {
+    const items = selected.slice(index, index + cardsPerSheet).map(card =>
+      `<article class="print-card"><small class="serial">${serials.get(card.kanji)}</small>${picture(card)}</article>`
+    ).join("");
+    pages.push(`<section class="sheet">
+      <div class="print-heading">かんじの ふくしゅう</div>
+      <div class="sheet-cards">${items}</div></section>`);
+  }
+  get("print-button").disabled = !selected.length;
+  get("print-count").textContent = `A4・${selected.length} もじ・${pageCount} ページ`;
+  get("preview").innerHTML = pages.map(page => `<div class="preview-page">${page}</div>`).join("") ||
+    '<p class="empty">いんさつする かんじを えらんでね。</p>';
+  get("print-output").innerHTML = pages.join("");
+}
+
+get("query").addEventListener("input", renderSearch);
+get("sort").addEventListener("change", () => {
+  renderSearch();
+  renderSaved();
+});
+get("grade").addEventListener("change", () => {
+  renderSearch();
+  renderSaved();
+});
+get("student-select").addEventListener("change", event => {
+  studentId = event.target.value;
+  persistWorkspace();
+  renderSets();
+});
+get("sets-file").addEventListener("change", async event => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = get("set-status");
+  try {
+    if (file.size > 5_000_000) throw new Error("File too large");
+    const added = importSets(JSON.parse(await file.text()));
+    status.textContent = `${added} にん ついかしました。`;
+  } catch {
+    status.textContent = "セットの ファイルを よみこめません。";
+  } finally {
+    event.target.value = "";
+  }
+});
+dialog.addEventListener("change", event => {
+  const {printId, variantId, setCard} = event.target.dataset;
+  if (variantId && rememberIds.has(variantId) && event.target.checked) {
+    if (event.target.value === "remember") variants.add(variantId);
+    else variants.delete(variantId);
+    storeData(variantKey, [...variants]);
+    return;
+  }
+  if (setCard) {
+    if (event.target.checked) setDraft.ids.push(setCard);
+    else setDraft.ids = setDraft.ids.filter(id => id !== setCard);
+    renderSetOrder();
+    return;
+  }
+  if (!printId) return;
+  if (event.target.checked) printSelection.add(printId);
+  else printSelection.delete(printId);
+  renderPrint();
+});
+dialog.addEventListener("close", () => {
+  if (dialog.open) return;
+  get("print-output").replaceChildren();
+});
+
+document.addEventListener("click", async event => {
+  const button = event.target.closest("button");
+  if (!button) return;
+  const {action, id, tab} = button.dataset;
+  if (tab) showTab(tab);
+  const card = byId.get(id);
+  switch (action) {
+    case "star": toggleStar(button, card); break;
+    case "card": showCard(card); break;
+    case "original":
+      showDialog(`もとの ページ　｜　${card.page} ページ`, `
+        <button data-action="card" data-id="${card.id}">${card.kanji}の カードに もどる</button>
+        <img class="art original actions" src="${imageUrl("page-" + card.page)}" alt="${card.page} ページ">`);
+      break;
+    case "close": dialog.close(); break;
+    case "listen": speakQuestion(); break;
+    case "reading": showQuestionReading(button, get("question-reading").hidden); break;
+    case "reveal": stopSpeech(); quiz.revealed = true; advanceReviewFocus(); break;
+    case "next":
+      stopSpeech();
+      quiz.index++;
+      quiz.revealed = false;
+      advanceReviewFocus();
+      speakQuestion();
+      break;
+    case "set-new": showSetEditor(); break;
+    case "student-new": showStudentEditor(); break;
+    case "student-delete": deleteStudent(); break;
+    case "student-save": saveStudent(); break;
+    case "set-edit": showSetEditor(activeSets().find(set => set.id === id)); break;
+    case "set-copy": copySet(id); break;
+    case "set-save": saveSet(); break;
+    case "set-delete": deleteSet(); break;
+    case "sets-export": exportSets(); break;
+    case "sets-import": get("sets-file").click(); break;
+    case "set-remove":
+      setDraft.ids = setDraft.ids.filter(item => item !== id);
+      renderSetCandidates();
+      renderSetOrder();
+      break;
+    case "set-up":
+    case "set-down": {
+      const index = setDraft.ids.indexOf(id);
+      const neighbor = index + (action === "set-up" ? -1 : 1);
+      if (index < 0 || neighbor < 0 || neighbor >= setDraft.ids.length) break;
+      [setDraft.ids[index], setDraft.ids[neighbor]] = [setDraft.ids[neighbor], setDraft.ids[index]];
+      renderSetOrder();
+      get("set-order").querySelector(`[data-id="${id}"]:enabled`)?.focus();
+      break;
+    }
+    case "set-start": {
+      const set = activeSets().find(item => item.id === id);
+      if (!set) break;
+      showTab("sets");
+      get("sets").hidden = true;
+      get("review").hidden = false;
+      beginReview(set.ids.map(item => byId.get(item)), set.mode, set.shuffle);
+      break;
+    }
+    case "print-saved": showPrint(savedCards()); break;
+    case "print-one": showPrint([card]); break;
+    case "pick-all": setPrintSelection(true); break;
+    case "pick-none": setPrintSelection(false); break;
+    case "print":
+      await Promise.allSettled([...get("print-output").querySelectorAll("img")].map(img => img.decode()));
+      if (dialog.open && get("print-button") && printSelection.size) window.print();
+      break;
+  }
+});
+
+renderSearch();
+renderSaved();
+</script>
+</body>
+</html>
