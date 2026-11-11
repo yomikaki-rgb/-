@@ -87,6 +87,13 @@
   .card-choice label:has(input:checked){border-color:var(--purple);background:var(--lavender)}
   .card-choice input{accent-color:var(--purple)}
   .card-choice .art{margin-top:7px}
+  #dialog:has(#set-card-preview),#card-zoom{width:min(1400px,calc(100% - 24px))}
+  .card-option{min-width:0}
+  .card-option button{margin-top:6px}
+  #card-zoom[open]{display:flex;flex-direction:column}
+  #card-zoom .dialog-head{flex-shrink:0}
+  #card-zoom-body{min-height:0;overflow:auto}
+  #card-zoom[data-magnified] .art{width:180%}
   .sets-grid{display:grid;gap:10px}
   .sets-grid .panel{margin-bottom:0;overflow-wrap:anywhere}
   .set-editor-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;margin-top:16px}
@@ -211,6 +218,16 @@
     <button data-action="close">とじる</button>
   </div>
   <div id="dialog-body" class="dialog-body"></div>
+</dialog>
+<dialog id="card-zoom" aria-labelledby="card-zoom-title">
+  <div class="dialog-head row spread">
+    <h2 id="card-zoom-title"></h2>
+    <div class="row">
+      <button id="card-zoom-more" data-action="zoom-more" aria-pressed="false">さらに おおきく</button>
+      <button data-action="zoom-close" autofocus>とじる</button>
+    </div>
+  </div>
+  <div id="card-zoom-body" class="dialog-body"></div>
 </dialog>
 <section id="print-output" aria-hidden="true"></section>
 <script>globalThis.cardImageData = Object.create(null);</script>
@@ -361,11 +378,29 @@ function picture(card, remember = variants.has(card.id)) {
 
 function cardChoices(card, selected, scope) {
   if (!rememberIds.has(card.id)) return picture(card, false);
+  const options = [
+    {style:"manga", name:"まんがと ゴロ", remember:false},
+    {style:"remember", name:"おぼえるカード", remember:true}
+  ];
   return `<fieldset class="card-choice"><legend>${card.kanji}の カードを えらぶ</legend>
-    <label><input type="radio" name="${scope}-art" data-${scope}-id="${card.id}" value="manga"${selected ? "" : " checked"}>
-      まんがと ゴロ${picture(card, false)}</label>
-    <label><input type="radio" name="${scope}-art" data-${scope}-id="${card.id}" value="remember"${selected ? " checked" : ""}>
-      おぼえるカード${picture(card, true)}</label></fieldset>`;
+    ${options.map(({style, name, remember}) => `<div class="card-option">
+      <label><input type="radio" name="${scope}-art" data-${scope}-id="${card.id}" value="${style}"${selected === remember ? " checked" : ""}>
+        ${name}${picture(card, remember)}</label>
+      ${scope === "set-style" ? `<button data-action="zoom-card" data-id="${card.id}" data-style="${style}"
+        aria-label="${name}を おおきく みる">おおきく みる</button>` : ""}
+    </div>`).join("")}</fieldset>`;
+}
+
+function showCardZoom(card, remember) {
+  const zoom = get("card-zoom");
+  get("card-zoom-title").textContent = `${card.kanji}　${remember ? "おぼえるカード" : "まんがと ゴロ"}`;
+  const body = get("card-zoom-body");
+  body.innerHTML = picture(card, remember);
+  body.scrollLeft = 0;
+  body.scrollTop = 0;
+  delete zoom.dataset.magnified;
+  get("card-zoom-more").setAttribute("aria-pressed", "false");
+  zoom.showModal();
 }
 
 function cardNumber(card, order = get("sort").value) {
@@ -985,6 +1020,15 @@ document.addEventListener("click", async event => {
       renderSetOrder();
       renderSetPreview();
       get("set-card-preview").querySelector("input:checked")?.focus();
+      break;
+    }
+    case "zoom-card": showCardZoom(card, button.dataset.style === "remember"); break;
+    case "zoom-close": get("card-zoom").close(); break;
+    case "zoom-more": {
+      const zoom = get("card-zoom");
+      const magnified = zoom.toggleAttribute("data-magnified");
+      button.setAttribute("aria-pressed", String(magnified));
+      if (!magnified) get("card-zoom-body").scrollLeft = 0;
       break;
     }
     case "set-remove":
