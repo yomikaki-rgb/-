@@ -679,6 +679,7 @@ function renderSets() {
       <button data-action="set-edit" data-id="${set.id}">セットを へんしゅう</button>
       <button data-action="set-copy" data-id="${set.id}">コピー</button>
       <button data-action="set-print" data-id="${set.id}">いんさつ・PDF</button>
+      <button data-action="set-delete" data-id="${set.id}">セットを けす</button>
     </div></article>`).join("") || (student ?
     '<p class="empty">まだ セットが ありません。</p>' :
     '<p class="empty">せいとを とうろくして ください。</p>');
@@ -716,7 +717,6 @@ function showSetEditor(set) {
     <div id="set-card-preview"></div>
     <div class="row actions">
       <button id="set-save" class="primary" data-action="set-save">ほぞん</button>
-      ${set ? '<button data-action="set-delete">セットを けす</button>' : ""}
     </div>`);
   get("set-grade").value = get("grade").value;
   get("set-sort").value = setDraft.order;
@@ -792,11 +792,11 @@ function saveSet() {
   renderSets();
 }
 
-function deleteSet() {
-  if (!globalThis.confirm("この セットを けしますか？")) return;
-  studySets = studySets.filter(set => set.studentId !== studentId || set.id !== setDraft.id);
+function deleteSet(id) {
+  const set = activeSets().find(item => item.id === id);
+  if (!set || !globalThis.confirm(`「${set.name}」を けしますか？`)) return;
+  studySets = studySets.filter(item => item !== set);
   persistWorkspace();
-  dialog.close();
   renderSets();
 }
 
@@ -1006,7 +1006,7 @@ document.addEventListener("click", async event => {
     case "set-edit": showSetEditor(activeSets().find(set => set.id === id)); break;
     case "set-copy": copySet(id); break;
     case "set-save": saveSet(); break;
-    case "set-delete": deleteSet(); break;
+    case "set-delete": deleteSet(id); break;
     case "sets-export": exportSets(); break;
     case "sets-import": get("sets-file").click(); break;
     case "set-preview": {
