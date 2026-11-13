@@ -269,7 +269,7 @@
 </dialog>
 <section id="print-output" aria-hidden="true"></section>
 <script>globalThis.cardImageData = Object.create(null);</script>
-<script src="cards-01.js"></script>
+<script src="cards-01.js?v=20261113-restore"></script>
 <script src="cards-02.js?v=20261113-memo3"></script>
 <script src="cards-03.js?v=20261113-memo3"></script>
 <script src="cards-04.js?v=20261113-memo3"></script>
@@ -508,6 +508,7 @@ const imageUrls = new Map();
 function imageUrl(id) {
   if (!imageUrls.has(id)) {
     const encoded = globalThis.cardImageData[id];
+    if (!encoded) return "";
     const bytes = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
     imageUrls.set(id, URL.createObjectURL(new Blob([bytes], {type:"image/webp"})));
   }
@@ -525,6 +526,7 @@ function picture(card, style = chosenStyle(card.id)) {
   const src = style === "michimura"
     ? "data:image/webp;base64," + michimuraCards[card.id]
     : imageUrl(style === "remember" ? "remember-" + card.id : card.id);
+  if (!src) return '<p class="art">カード画像を読み込めませんでした。</p>';
   return `<img class="art${style === "michimura" ? " michimura-art" : ""}" src="${src}" alt="${card.kanji}の ${styleNames[style]}">`;
 }
 
