@@ -1,0 +1,2 @@
+5.6.205
+Mozilla PDF.js npm package (legacy build)
