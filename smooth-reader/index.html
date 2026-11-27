@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-title" content="スムーズリーダー">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' blob: data:; connect-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+  <link rel="stylesheet" href="./style.css">
+  <title>スムーズリーダー</title>
+</head>
+<body>
+  <main id="library" class="library">
+    <header class="library-head">
+      <a class="brand" href="./"><img class="app-icon" src="./app-icon.png" alt="" width="38" height="38"><span>スムーズリーダー</span></a>
+    </header>
+    <section class="shelf" aria-labelledby="shelf-title">
+      <div class="section-title">
+        <h1 id="shelf-title">本棚</h1>
+        <button class="button primary" id="add" data-icon="plus">本を追加</button>
+        <input type="file" id="files" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple hidden>
+      </div>
+      <div class="empty" id="empty" hidden>
+        <h2>本棚は空です</h2>
+        <p>PDF・JPEG・PNG</p>
+      </div>
+      <ul id="books" class="books" aria-label="保存した本"></ul>
+    </section>
+  </main>
+
+  <main id="reader" class="reader" aria-label="読書画面" hidden>
+    <nav class="tools" aria-label="読書と書き込み">
+      <div class="modes" role="group" aria-label="操作モード">
+        <button class="button mode" id="back" data-icon="shelf">本棚</button>
+        <button class="button mode" data-mode="track" data-icon="track" aria-pressed="true">トラッカー</button>
+        <button class="button mode" data-mode="mark" data-icon="mark" aria-pressed="false">マーカー</button>
+        <button class="button mode" data-mode="erase" data-icon="erase" aria-pressed="false">消しゴム</button>
+        <button class="button mode" data-mode="note" data-icon="note" aria-pressed="false">メモ</button>
+        <button class="button mode" id="notes-open" data-icon="list" aria-haspopup="dialog">メモ一覧</button>
+      </div>
+      <div class="tool-actions">
+        <button class="button" id="adjust" data-icon="settings" aria-label="トラッカーを調整" aria-controls="settings" aria-expanded="false">調整</button>
+        <button class="button" id="visibility" data-icon="eye" aria-label="トラッカーを表示" aria-pressed="true">表示</button>
+        <div class="palette" id="mark-colors" role="group" aria-label="マーカーの色" hidden></div>
+        <button class="button history" id="undo" data-icon="undo" aria-label="元に戻す" title="元に戻す" disabled></button>
+        <button class="button history" id="redo" data-icon="redo" aria-label="やり直す" title="やり直す" disabled></button>
+      </div>
+      <div class="head-actions" role="group" aria-label="ページ表示">
+        <button class="button" id="zoom-out" data-icon="minus" aria-label="縮小" title="縮小"></button>
+        <button class="button" id="fit" aria-label="ページ全体を表示" title="ページ全体を表示">全体</button>
+        <button class="button" id="zoom-in" data-icon="plus" aria-label="拡大" title="拡大"></button>
+        <button class="button" id="rotate-page" data-icon="rotate" aria-label="ページを回転" title="ページを回転"></button>
+      </div>
+    </nav>
+
+    <div class="reader-content">
+      <aside id="page-rail" class="page-rail" aria-labelledby="rail-title" hidden>
+        <div class="rail-head">
+          <h2 id="rail-title">ページ一覧</h2>
+          <button class="button" id="rail-close" data-icon="close" aria-label="ページ一覧を閉じる"></button>
+        </div>
+        <div class="rail-scroll" id="rail-scroll">
+          <div id="rail-pages" role="list" aria-label="ページ"></div>
+        </div>
+      </aside>
+      <button type="button" class="rail-shade" id="rail-shade" aria-label="ページ一覧を閉じる" tabindex="-1" hidden></button>
+      <div id="stage" class="stage" data-mode="track" aria-label="ページ表示">
+      <canvas id="scene" aria-hidden="true"></canvas>
+      <div id="line-bookmark" class="line-bookmark" aria-hidden="true" hidden><img src="./app-icon.png" alt="" width="24" height="24"></div>
+      <div id="note-layer" class="note-layer"></div>
+      <div id="page-state" class="page-state" role="status" hidden></div>
+      <section id="settings" class="settings" aria-labelledby="settings-title" hidden>
+        <div class="panel-head">
+          <h2 id="settings-title"><button type="button" class="button settings-drag" id="settings-drag" aria-label="トラッカー調整カードを移動"><span class="settings-grip" data-icon="move">移動</span><span>トラッカー調整</span></button></h2>
+          <button class="button" id="close-settings" data-icon="close" aria-label="調整を閉じる"></button>
+        </div>
+        <div class="shapes" role="group" aria-label="形">
+          <button class="shape" data-shape="bar" data-icon="bar">バー</button>
+          <button class="shape" data-shape="window" data-icon="window">中抜き</button>
+          <button class="shape" data-shape="line" data-icon="line">下線</button>
+          <button class="shape" data-shape="lens" data-icon="lens">ルーペ</button>
+        </div>
+        <div class="setting"><label for="length">長さ</label><input id="length" type="range" min="44" max="900" step="1"><span id="length-val" aria-hidden="true"></span><button class="button setting-reset" data-reset="length" aria-label="長さを初期値に戻す">戻す</button></div>
+        <div class="setting"><label for="width">幅</label><input id="width" type="range" min="8" max="250" step="1"><span id="width-val" aria-hidden="true"></span><button class="button setting-reset" data-reset="width" aria-label="幅を初期値に戻す">戻す</button></div>
+        <div class="orientation" role="group" aria-label="縦書き・横書き">
+          <button class="button" data-angle="0">横書き</button>
+          <button class="button" data-angle="90">縦書き</button>
+          <button class="button" data-angle-step="-1" aria-label="角度を1度戻す">−1°</button>
+          <button class="button" data-angle-step="1" aria-label="角度を1度進める">＋1°</button>
+        </div>
+        <div class="setting"><label for="angle">角度</label><input id="angle" type="range" min="-180" max="180" step="1"><span id="angle-val" aria-hidden="true"></span><button class="button setting-reset" data-reset="angle" aria-label="角度を初期値に戻す">戻す</button></div>
+        <div class="setting"><label for="opacity">濃さ</label><input id="opacity" type="range" min="0" max="100" step="1"><span id="opacity-val" aria-hidden="true"></span><button class="button setting-reset" data-reset="opacity" aria-label="濃さを初期値に戻す">戻す</button></div>
+        <div class="setting" id="magnification-row" hidden><label for="magnification">倍率</label><input id="magnification" type="range" min="1.2" max="3" step="0.1"><span id="magnification-val" aria-hidden="true"></span><button class="button setting-reset" data-reset="magnification" aria-label="ルーペ倍率を初期値に戻す">戻す</button></div>
+        <div class="color-setting"><span>色</span><div class="palette" id="tracker-colors" role="group" aria-label="トラッカーの色"></div><button class="button setting-reset" data-reset="color" aria-label="色を初期値に戻す">戻す</button></div>
+        <button class="button reset" id="reset">すべて初期設定に戻す</button>
+      </section>
+      </div>
+    </div>
+
+    <footer class="reader-foot">
+      <div class="reader-nav">
+        <div class="pages">
+          <button type="button" class="button" id="prev" data-icon="left" aria-label="前のページ" title="前のページ"></button>
+          <span id="page-status" aria-live="polite"></span>
+          <button type="button" class="button" id="next" data-icon="right" aria-label="次のページ" title="次のページ"></button>
+        </div>
+        <div class="seek"><input type="range" id="progress" min="1" step="1" aria-label="ページを移動"><output id="seek-value" for="progress" hidden></output></div>
+        <div class="page-actions">
+          <button class="button" id="rail-toggle" data-icon="list" aria-controls="page-rail" aria-expanded="false">ページ一覧</button>
+          <button class="button" id="jump-open" data-icon="file" aria-haspopup="dialog">ページ移動</button>
+        </div>
+      </div>
+      <div class="bookmark-actions" aria-label="しおり" role="group">
+        <button class="button" id="set-bookmark"><img class="app-icon" src="./app-icon.png" alt="" width="22" height="22"><span id="set-bookmark-label">しおりを付ける</span></button>
+        <button class="button primary" id="goto-bookmark" disabled><span>しおりへ戻る</span><small id="bookmark-info" hidden></small></button>
+        <button class="button danger" id="clear-bookmark" aria-haspopup="dialog" disabled>しおりを外す</button>
+      </div>
+    </footer>
+  </main>
+
+  <dialog id="jump-dialog" aria-labelledby="jump-title">
+    <form id="page-form" novalidate>
+      <h2 id="jump-title">ページ移動</h2>
+      <label class="jump-field" for="page-number">移動先のページ</label>
+      <input id="page-number" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="go" aria-describedby="jump-range jump-error">
+      <p id="jump-range" class="jump-range"></p>
+      <p id="jump-error" class="jump-error" role="alert" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" class="button" id="jump-close">閉じる</button>
+        <button type="submit" class="button primary" id="jump-go">移動</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="notes-dialog" class="notes-dialog" aria-labelledby="notes-title">
+    <div class="panel-head">
+      <h2 id="notes-title">メモ一覧</h2>
+      <button class="button" id="notes-close" data-icon="close" aria-label="メモ一覧を閉じる" autofocus></button>
+    </div>
+    <p id="notes-book" class="notes-book"></p>
+    <p id="notes-status" class="notes-status" role="status"></p>
+    <ol id="notes-list" class="notes-list" aria-label="この本のメモ"></ol>
+    <div class="dialog-actions notes-actions">
+      <button class="button" id="notes-save" disabled>テキストで保存</button>
+      <button class="button primary" id="notes-print-button" disabled>印刷</button>
+    </div>
+  </dialog>
+  <section id="notes-print" hidden aria-hidden="true"></section>
+
+  <dialog id="dialog" aria-labelledby="dialog-title">
+    <form id="dialog-form">
+      <h2 id="dialog-title"></h2>
+      <p id="dialog-body" hidden></p>
+      <label id="note-field" hidden><span class="sr-only">メモの内容</span><textarea id="note-text" maxlength="4000" rows="5" placeholder="メモを書く"></textarea></label>
+      <div class="dialog-actions">
+        <button type="button" id="dialog-delete" class="button danger" hidden>削除</button>
+        <div class="spacer"></div>
+        <button type="button" id="dialog-cancel" class="button">閉じる</button>
+        <button type="submit" id="dialog-ok" class="button primary">保存</button>
+      </div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <div id="alert" class="alert" role="alert" hidden><span id="alert-text"></span><button id="retry" class="button" hidden>再試行</button><button id="dismiss-alert" class="button" data-icon="close" aria-label="通知を閉じる"></button></div>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>
