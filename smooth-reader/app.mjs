@@ -148,8 +148,6 @@ function refreshPageControls() {
   $('progress').setAttribute('aria-valuetext',view.page+' / '+book.count+' ページ');
   $('prev').disabled=view.page<=1;
   $('next').disabled=view.page>=book.count;
-  $('book-name').textContent=book.name;
-  $('book-name').title=book.name;
   const mark=book.bookmark;
   $('set-bookmark-label').textContent=mark ? 'しおりを更新' : 'しおりを付ける';
   $('bookmark-info').hidden=!mark;

@@ -32,11 +32,7 @@
     </section>
   </main>
 
-  <main id="reader" class="reader" hidden>
-    <header class="reader-head">
-      <img class="app-icon reader-icon" src="./app-icon.png" alt="スムーズリーダー" width="30" height="30">
-      <h1 id="book-name"></h1>
-    </header>
+  <main id="reader" class="reader" aria-label="読書画面" hidden>
     <nav class="tools" aria-label="読書と書き込み">
       <div class="modes" role="group" aria-label="操作モード">
         <button class="button mode" id="back" data-icon="shelf">本棚</button>
@@ -79,7 +75,7 @@
       <div id="page-state" class="page-state" role="status" hidden></div>
       <section id="settings" class="settings" aria-labelledby="settings-title" hidden>
         <div class="panel-head">
-          <h2 id="settings-title"><button type="button" class="button settings-drag" id="settings-drag" aria-label="トラッカー調整カードを移動">トラッカー調整</button></h2>
+          <h2 id="settings-title"><button type="button" class="button settings-drag" id="settings-drag" aria-label="トラッカー調整カードを移動"><span class="settings-grip" data-icon="move">移動</span><span>トラッカー調整</span></button></h2>
           <button class="button" id="close-settings" data-icon="close" aria-label="調整を閉じる"></button>
         </div>
         <div class="shapes" role="group" aria-label="形">

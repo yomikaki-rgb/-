@@ -8,6 +8,7 @@ const paths = {
   erase:'<path d="m4 11 8-8a2 2 0 0 1 3 0l6 6a2 2 0 0 1 0 3l-8 8H9l-5-5a3 3 0 0 1 0-4zm4-4 9 9m-4 4h9"/>',
   note:'<path d="M4 4h16v11l-5 5H4zm11 16v-5h5M8 9h8m-8 4h5"/>',
   settings:'<path d="M3 6h18M3 12h18M3 18h18"/><circle fill="white" cx="8" cy="6" r="2"/><circle fill="white" cx="16" cy="12" r="2"/><circle fill="white" cx="10" cy="18" r="2"/>',
+  move:'<path d="M12 2v20M2 12h20M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',
   eye:'<path d="M2 12s3-6 10-6 10 6 10 6-3 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/>',
   eyeOff:'<path d="m4 4 16 16M3 12s3-6 9-6c6 0 9 6 9 6s-1 2-3 3.5M14 18c-1 .3-1.5.3-2 .3C6 18.3 3 12 3 12"/>',
   undo:'<path d="m9 4-6 6 6 6m-6-6h12a6 6 0 0 1 0 12"/>',
