@@ -6,6 +6,7 @@ import { wireGestures } from './gestures.mjs';
 import { fileKind, openSource, validateSize } from './source.mjs';
 import * as db from './storage.mjs';
 import { PageRail } from './page-rail.mjs';
+import { wireSettingsCard } from './settings-card.mjs';
 import { noteRows, paintPrintNotes, saveTextNotes } from './note-export.mjs';
 
 const $ = id => document.getElementById(id);
@@ -28,6 +29,7 @@ let railNoteScan=null;
 const narrowRail=matchMedia('(max-width:759px), (max-width:1100px) and (orientation:portrait), (max-height:500px) and (pointer:coarse)');
 
 for (const node of all('[data-icon]')) node.insertAdjacentHTML('afterbegin',icon(node.dataset.icon));
+wireSettingsCard($('stage'),$('settings'),$('settings-drag'));
 const renderer=new PageRenderer($('scene'),()=>({view,mode,items,stroke,eraseId}),showNotes,(_error,label)=>{
   if (label==='base') pageMessage('このページを表示できませんでした。');
 });

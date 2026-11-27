@@ -34,18 +34,12 @@
 
   <main id="reader" class="reader" hidden>
     <header class="reader-head">
-      <button class="button" id="back" data-icon="shelf">本棚</button>
       <img class="app-icon reader-icon" src="./app-icon.png" alt="スムーズリーダー" width="30" height="30">
       <h1 id="book-name"></h1>
-      <div class="head-actions">
-        <button class="button" id="zoom-out" data-icon="minus" aria-label="縮小" title="縮小"></button>
-        <button class="button" id="fit" aria-label="ページ全体を表示" title="ページ全体を表示">全体</button>
-        <button class="button" id="zoom-in" data-icon="plus" aria-label="拡大" title="拡大"></button>
-        <button class="button" id="rotate-page" data-icon="rotate" aria-label="ページを回転" title="ページを回転"></button>
-      </div>
     </header>
     <nav class="tools" aria-label="読書と書き込み">
       <div class="modes" role="group" aria-label="操作モード">
+        <button class="button mode" id="back" data-icon="shelf">本棚</button>
         <button class="button mode" data-mode="track" data-icon="track" aria-pressed="true">トラッカー</button>
         <button class="button mode" data-mode="mark" data-icon="mark" aria-pressed="false">マーカー</button>
         <button class="button mode" data-mode="erase" data-icon="erase" aria-pressed="false">消しゴム</button>
@@ -58,6 +52,12 @@
         <div class="palette" id="mark-colors" role="group" aria-label="マーカーの色" hidden></div>
         <button class="button history" id="undo" data-icon="undo" aria-label="元に戻す" title="元に戻す" disabled></button>
         <button class="button history" id="redo" data-icon="redo" aria-label="やり直す" title="やり直す" disabled></button>
+      </div>
+      <div class="head-actions" role="group" aria-label="ページ表示">
+        <button class="button" id="zoom-out" data-icon="minus" aria-label="縮小" title="縮小"></button>
+        <button class="button" id="fit" aria-label="ページ全体を表示" title="ページ全体を表示">全体</button>
+        <button class="button" id="zoom-in" data-icon="plus" aria-label="拡大" title="拡大"></button>
+        <button class="button" id="rotate-page" data-icon="rotate" aria-label="ページを回転" title="ページを回転"></button>
       </div>
     </nav>
 
@@ -79,7 +79,7 @@
       <div id="page-state" class="page-state" role="status" hidden></div>
       <section id="settings" class="settings" aria-labelledby="settings-title" hidden>
         <div class="panel-head">
-          <h2 id="settings-title">トラッカー調整</h2>
+          <h2 id="settings-title"><button type="button" class="button settings-drag" id="settings-drag" aria-label="トラッカー調整カードを移動">トラッカー調整</button></h2>
           <button class="button" id="close-settings" data-icon="close" aria-label="調整を閉じる"></button>
         </div>
         <div class="shapes" role="group" aria-label="形">
