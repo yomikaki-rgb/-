@@ -1,10 +1,10 @@
 const SCOPE = new URL('./',self.location.href);
 const PREFIX = 'yomu-tracker-shell-' + SCOPE.pathname + '-';
-const NAME = PREFIX + 'v8';
+const NAME = PREFIX + 'v9';
 const SHELL = [
   './','./index.html','./style.css','./app.mjs','./geometry.mjs','./source.mjs','./storage.mjs',
   './render.mjs','./gestures.mjs','./icons.mjs','./manifest.webmanifest','./icon-192.png','./icon-512.png',
-  './page-rail.mjs','./note-export.mjs','./settings-card.mjs',
+  './page-rail.mjs','./note-export.mjs','./settings-card.mjs','./vertical-pages.mjs',
   './app-icon.png','./favicon.png','./apple-touch-icon.png','./icon-maskable-512.png',
   './vendor/pdf.mjs','./vendor/pdf.worker.mjs','./asset-list.json'
 ];

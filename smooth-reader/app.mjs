@@ -1,12 +1,13 @@
 import { icon } from './icons.mjs';
 import { bookmarkSpot, boundPoint, centerAfter, clamp, mod, newView, onPage, onScreen,
-  parsePageNumber, revealPoint, trackBox, TRACK_DEFAULT, viewAfterSwipe, writingOrientation } from './geometry.mjs';
+  onPaper, parsePageNumber, revealPoint, trackBox, TRACK_DEFAULT, viewAfterSwipe, writingOrientation } from './geometry.mjs';
 import { PageRenderer } from './render.mjs';
 import { wireGestures } from './gestures.mjs';
 import { fileKind, openSource, validateSize } from './source.mjs';
 import * as db from './storage.mjs';
 import { PageRail } from './page-rail.mjs';
 import { wireSettingsCard } from './settings-card.mjs';
+import { VerticalPages } from './vertical-pages.mjs';
 import { noteRows, paintPrintNotes, saveTextNotes } from './note-export.mjs';
 
 const $ = id => document.getElementById(id);
@@ -21,6 +22,7 @@ const inkStyles = {
   pen:{color:penColors[0][1],width:2.5,min:1,max:9,step:.5}
 };
 let books=[], book=null, source=null, view=null, mode='track', items=[], stroke=null, eraseId=null;
+let previewPage=null;
 let defaults=TRACK_DEFAULT, inkKind='marker';
 let opening=false, importing=false, deleting=false, loading=false, pageToken=0;
 let undo=[], redo=[], alertKind, toastTimer, seekTimer;
@@ -35,7 +37,7 @@ const narrowRail=matchMedia('(max-width:759px), (max-width:1100px) and (orientat
 
 for (const node of all('[data-icon]')) node.insertAdjacentHTML('afterbegin',icon(node.dataset.icon));
 wireSettingsCard($('stage'),$('settings'),$('settings-drag'));
-const renderer=new PageRenderer($('scene'),()=>({view,mode,items,stroke,eraseId}),showNotes,(_error,label)=>{
+const renderer=new PageRenderer($('scene'),()=>({view,mode,items,stroke,eraseId,previewPage}),showNotes,(_error,label)=>{
   if (label==='base') pageMessage('このページを表示できませんでした。');
 });
 const rail=new PageRail($('rail-scroll'),$('rail-pages'),number=>{
@@ -46,10 +48,15 @@ const cancelGesture=wireGestures($('stage'),renderer,{
   state:()=>({view,mode,items}), canInteract:()=>Boolean(book && !loading && !hasModal() && !railOverlay()),
   ink:()=>({kind:inkKind,color:inkStyles[inkKind].color,width:inkStyles[inkKind].width}),
   swipeAxis,id:uid,
+  continuous:()=>Boolean(renderer.stack),
+  targetAt:annotationTarget,
+  stackAnchor:point=>renderer.stack?.anchor(view,renderer.size,point),
+  pan:(from,to)=>moveStack(renderer.stack?.anchor(view,renderer.size,from),to,view.zoom),
+  zoomAt:moveStack,
   view:setView, settled:()=>{ queuePosition(false,0); renderer.scheduleDetail(); },
-  preview:(next,erasing)=>{ stroke=next; eraseId=erasing; renderer.invalidate(); },
-  stroke:value=>applyEdit(null,value),
-  erase:id=>applyEdit(items.find(item=>item.id===id),null),
+  preview:(next,erasing,page)=>{ stroke=next; eraseId=erasing; previewPage=page; renderer.invalidate(); },
+  stroke:(value,page)=>applyEdit(null,value,page),
+  erase:(id,page)=>applyEdit(itemsFor(page)?.find(item=>item.id===id),null,page),
   note:(id,at)=>openNote(id,at),
   turn:turnBySwipe
 });
@@ -119,9 +126,9 @@ function queuePosition(touch=false, delay=200) {
   const value=book;
   enqueue({key:'book/'+value.id,run:()=>db.saveBook(value)},delay);
 }
-function queueMarks() {
+function queueMarks(page,value) {
   if (!book) return;
-  const id=book.id, page=view.page, value=items;
+  const id=book.id;
   enqueue({key:'marks/'+id+'/'+page,value,run:()=>db.saveMarks(id,page,value)});
 }
 async function loadMarks(id,page) {
@@ -130,10 +137,31 @@ async function loadMarks(id,page) {
   return local ? local.value : db.readMarks(id,page);
 }
 function setView(next, detail=true) {
+  const changedPage=next.page!==view.page;
   view=next;
+  if (changedPage) {
+    refreshPageControls();
+    pageMessage('');
+  }
   renderer.invalidate();
   if (detail) renderer.scheduleDetail();
   queuePosition();
+}
+function moveStack(anchor,point,ratio) {
+  const stack=renderer.stack;
+  if (!stack || !anchor) return false;
+  setView(stack.place(view,renderer.size,anchor,point,ratio));
+  return true;
+}
+function itemsFor(page=view?.page) {
+  if (renderer.stack) return renderer.stack.pages.get(page)?.items ?? null;
+  return page===view?.page && renderer.base ? items : null;
+}
+function annotationTarget(point,number) {
+  if (!renderer.stack) return {number:view.page,cam:renderer.cam,items};
+  const row=renderer.stackRows().find(({number:page,cam,entry})=>entry.base && entry.items &&
+    (number ? number===page : onPaper(onPage(point,view.rotation,cam))));
+  return row && {number:row.number,cam:row.cam,items:row.entry.items};
 }
 function setTracker(changes) {
   const t={...view.tracker,orientation:writingOrientation(view.tracker),...changes};
@@ -197,14 +225,16 @@ function refreshTools() {
   }
   $('magnification-row').hidden=t.shape!=='lens';
 }
-function showNotes(cam,state) {
+function showNotes(cam,state,stackRows) {
   const marker=$('line-bookmark');
   const bookmark=book?.bookmark;
   let markerVisible=false;
-  if (cam && bookmark?.page===state.view.page) {
+  const rows=stackRows || (cam && state.view ? [{number:state.view.page,cam,entry:{items:state.items}}] : []);
+  const savedRow=rows.find(row=>row.number===bookmark?.page);
+  if (savedRow) {
     const at=bookmarkSpot(bookmark);
     if (at) {
-      const [x,y]=onScreen(at,state.view.rotation,cam);
+      const [x,y]=onScreen(at,state.view.rotation,savedRow.cam);
       const [w,h]=renderer.size;
       if (x>=0 && x<=w && y>=0 && y<=h) {
         marker.style.left=clamp(x,11,w-11)+'px';
@@ -215,7 +245,7 @@ function showNotes(cam,state) {
   }
   marker.hidden=!markerVisible;
   const seen=new Set();
-  if (cam) for (const note of state.items) {
+  for (const row of rows) for (const note of row.entry.items||[]) {
     if (note.type!=='note') continue;
     seen.add(note.id);
     let button=noteNodes.get(note.id);
@@ -223,12 +253,13 @@ function showNotes(cam,state) {
       button=document.createElement('button');
       button.className='note-icon';
       button.dataset.id=note.id;
+      button.dataset.page=row.number;
       button.innerHTML='<span>'+icon('note')+'</span>';
-      button.onclick=event=>{ if (event.detail===0 && (mode==='track'||mode==='note')) openNote(note.id); };
+      button.onclick=event=>{ if (event.detail===0 && (mode==='track'||mode==='note')) openNote(note.id,undefined,row.number); };
       $('note-layer').append(button);
       noteNodes.set(note.id,button);
     }
-    const point=onScreen(note.at,state.view.rotation,cam);
+    const point=onScreen(note.at,state.view.rotation,row.cam);
     button.style.left=point[0]+'px';
     button.style.top=point[1]+'px';
     button.hidden=point[0]<0 || point[1]<0 || point[0]>renderer.size[0] || point[1]>renderer.size[1];
@@ -270,6 +301,22 @@ async function displayPage(focusAt) {
     if (results[0].status==='rejected') throw results[0].reason;
     items=results[1].value;
     const page=results[0].value;
+    if (swipeAxis()==='vertical' && book.count>1) {
+      const id=book.id;
+      if (focusAt) { view={...view,center:boundPoint(focusAt)}; queuePosition(false,0); }
+      const stack=new VerticalPages(currentSource,desired.rotation,number=>loadMarks(id,number),()=>{
+        if (renderer.stack!==stack || token!==pageToken) return;
+        const active=stack.pages.get(view.page);
+        if (active?.base) pageMessage('');
+        else if (active?.baseFailed) pageMessage('このページを表示できませんでした。');
+        $('set-bookmark').disabled=!renderer.base;
+        renderer.invalidate();
+        renderer.scheduleDetail();
+      });
+      stack.seed(desired.page,page,items);
+      renderer.attachStack(stack);
+      return;
+    }
     if (focusAt) {
       const {width,height}=renderer.canvas.getBoundingClientRect();
       const adjusted=revealPoint(view,page,[width,height],focusAt);
@@ -313,6 +360,7 @@ function zoom(next) {
   if (!renderer.cam || !renderer.base || loading) return;
   const at=renderer.size.map(n=>n/2);
   if (next===1) { setView({...view,zoom:1,center:[.5,.5]}); return; }
+  if (renderer.stack && moveStack(renderer.stack.anchor(view,renderer.size,at),at,clamp(next,1,8))) return;
   setView(centerAfter(view,renderer.page,renderer.size,onPage(at,view.rotation,renderer.cam),at,clamp(next,1,8)));
 }
 function rotatePage() {
@@ -382,25 +430,30 @@ function setMode(next) {
   renderer.scheduleDetail();
 }
 
-function editPage(before,after,index) {
+function editPage(before,after,index,page=view.page) {
   const id=(before||after).id;
-  const remaining=items.filter(item=>item.id!==id);
+  const current=itemsFor(page);
+  if (!current) return;
+  const remaining=current.filter(item=>item.id!==id);
   if (after) remaining.splice(index,0,after);
-  items=remaining;
+  if (renderer.stack) renderer.stack.pages.get(page).items=remaining;
+  if (page===view.page) items=remaining;
   if (before?.type==='note' || after?.type==='note') {
-    const present=items.some(item=>item.type==='note');
-    railNoteScan?.changes?.set(view.page,present);
-    rail.setNotePage(view.page,present);
+    const present=remaining.some(item=>item.type==='note');
+    railNoteScan?.changes?.set(page,present);
+    rail.setNotePage(page,present);
   }
-  queueMarks();
+  queueMarks(page,remaining);
   renderer.invalidate();
 }
-function applyEdit(before,after) {
+function applyEdit(before,after,page=view?.page) {
   if (!book || loading || !(before||after)) return;
-  const index=before ? items.findIndex(item=>item.id===before.id) : items.length;
+  const current=itemsFor(page);
+  if (!current) return;
+  const index=before ? current.findIndex(item=>item.id===before.id) : current.length;
   if (index<0) return;
-  editPage(before,after,index);
-  undo.push({page:view.page,before,after,index});
+  editPage(before,after,index,page);
+  undo.push({page,before,after,index});
   if (undo.length>80) undo.shift();
   redo=[];
   refreshTools();
@@ -409,17 +462,17 @@ async function historyAction(reverse) {
   const from=reverse?undo:redo, to=reverse?redo:undo;
   if (!book || loading || !from.length) return;
   const action=from.pop(), id=book.id;
-  if (view.page!==action.page) {
+  if (view.page!==action.page && !itemsFor(action.page)) {
     view={...newView(view.tracker,action.page,view.rotation),tracker:copy(view.tracker)};
     queuePosition(true,0);
     await displayPage();
   }
-  if (book?.id!==id || view.page!==action.page || !renderer.base) {
+  if (book?.id!==id || !itemsFor(action.page)) {
     if (book?.id===id) from.push(action);
     refreshTools();
     return;
   }
-  editPage(reverse?action.after:action.before,reverse?action.before:action.after,action.index);
+  editPage(reverse?action.after:action.before,reverse?action.before:action.after,action.index,action.page);
   to.push(action);
   refreshTools();
 }
@@ -486,12 +539,12 @@ async function askPassword(retry) {
     field.focus();
   });
 }
-function openNote(id,at) {
+function openNote(id,at,page=view?.page) {
   if (!book || loading) return;
-  const existing=id && items.find(item=>item.id===id);
+  const existing=id && itemsFor(page)?.find(item=>item.id===id);
   if (!existing && !at) return;
-  const currentBook=book.id, currentPage=view.page;
-  const allowed=()=>book?.id===currentBook && view.page===currentPage;
+  const currentBook=book.id;
+  const allowed=()=>book?.id===currentBook && itemsFor(page)!==null;
   showDialog({
     title:existing ? 'メモ' : '新しいメモ',field:'note',initial:existing?.text || '',
     ok:'保存',cancel:'閉じる',
@@ -500,10 +553,10 @@ function openNote(id,at) {
       if (!content) { $('note-text').focus(); return; }
       closeDialog('done');
       if (allowed() && content!==existing?.text) {
-        applyEdit(existing||null,{type:'note',id:existing?.id||uid(),at:existing?.at||boundPoint(at),text:content});
+        applyEdit(existing||null,{type:'note',id:existing?.id||uid(),at:existing?.at||boundPoint(at),text:content},page);
       }
     },
-    onDelete: existing ? ()=>{ closeDialog('done'); if (allowed()) applyEdit(existing,null); } : null
+    onDelete: existing ? ()=>{ closeDialog('done'); if (allowed()) applyEdit(existing,null,page); } : null
   });
 }
 
@@ -515,7 +568,7 @@ function notesOverrides(id) {
       pages.set(Number(entry.key.slice(prefix.length)),entry.value);
     }
   }
-  if (!loading && renderer.base) pages.set(view.page,items);
+  if (!loading && renderer.base && itemsFor()) pages.set(view.page,itemsFor());
   return pages;
 }
 
@@ -796,8 +849,9 @@ $('swipe-direction').onclick=()=>{
   const next=swipeAxis()==='vertical' ? 'horizontal' : 'vertical';
   cancelGesture();
   book={...book,swipeAxis:next};
+  if (next==='horizontal') view={...view,center:boundPoint(view.center)};
   queuePosition(false,0);
-  refreshPageControls();
+  displayPage();
   notify(next==='vertical' ? 'ページ送り：上下' : 'ページ送り：左右');
 };
 $('rail-toggle').onclick=()=>toggleRail(!rail.open);

@@ -73,7 +73,22 @@ export class PageRenderer {
     this.resize.observe(canvas);
   }
   get cam() {
+    if (this.stack) return this.stackRows().find(row=>row.number===this.getState().view.page)?.cam ?? null;
     return this.page && this.size.every(Boolean) ? camera(this.getState().view,this.page,this.size) : null;
+  }
+  get page() {
+    return this.stack ? this.stack.pages.get(this.getState().view?.page)?.page : this.singlePage;
+  }
+  get base() {
+    return this.stack ? this.stack.pages.get(this.getState().view?.page)?.base : this.singleBase;
+  }
+  stackRows() {
+    const {view}=this.getState();
+    return this.stack && view ? this.stack.layout(view,this.size) : [];
+  }
+  attachStack(stack) {
+    this.stack=stack;
+    this.invalidate();
   }
   invalidate() {
     if (this.frame) return;
@@ -87,17 +102,21 @@ export class PageRenderer {
     this.tiles++;
     clearTimeout(this.timer);
     this.task?.cancel();
-    const page = this.page;
+    const stack=this.stack;
+    this.stack=null;
+    if (stack) this.serial=Promise.all([this.serial,stack.close()]).then(()=>{});
+    const page = this.singlePage;
     if (page) this.serial = this.serial.then(()=>{ page.cleanup(); });
-    this.page = null;
-    release(this.base);
-    release(this.detail);
-    this.base = this.detail = null;
+    this.singlePage = null;
+    release(this.singleBase);
+    release(this.singleDetail);
+    this.singleBase = this.singleDetail = null;
     this.paths = new WeakMap();
     this.invalidate();
     return this.serial;
   }
   work(page,region,scale,valid,store) {
+    const slot=store==='base' ? 'singleBase' : 'singleDetail';
     this.serial = this.serial.then(async () => {
       if (!valid()) return;
       const surface = makeSurface(region,scale);
@@ -107,8 +126,8 @@ export class PageRenderer {
         this.task = page.start(context,scale,region.x,region.y);
         await this.task.promise;
         if (valid()) {
-          release(this[store]);
-          this[store] = surface;
+          release(this[slot]);
+          this[slot] = surface;
           this.invalidate();
           return;
         }
@@ -116,14 +135,14 @@ export class PageRenderer {
         if (valid() && error.name!=='RenderingCancelledException') this.onError(error,store);
       } finally {
         this.task = null;
-        if (this[store]!==surface) release(surface);
+        if (this[slot]!==surface) release(surface);
       }
     }).catch(error=>this.onError(error,store));
     return this.serial;
   }
   load(page) {
     this.clear();
-    this.page = page;
+    this.singlePage = page;
     const epoch = this.epoch;
     const dpr = Math.min(devicePixelRatio || 1,2);
     const fit = this.cam?.fit || Math.min(1,800/Math.max(page.width,page.height));
@@ -145,6 +164,10 @@ export class PageRenderer {
     const page = this.page;
     const {view,mode} = this.getState();
     const lens = mode==='track' && view.tracker.visible && view.tracker.shape==='lens' ? view.tracker.magnification : 1;
+    if (this.stack) {
+      this.stack.requestDetail(view,this.size,lens);
+      return;
+    }
     const target = cam.scale*Math.min(devicePixelRatio || 1,2)*lens;
     const margin = 120/cam.scale;
     const left = clamp(-cam.x/cam.scale-margin,0,page.width);
@@ -154,7 +177,7 @@ export class PageRenderer {
     const region = {x:left,y:top,w:right-left,h:bottom-top};
     const scale = pixelScale(region.w,region.h,target,TILE_PIXELS);
     if (scale<=this.base.scale*1.15) return;
-    const prev = this.detail;
+    const prev = this.singleDetail;
     if (prev && scale>=prev.scale*.8 && scale<=prev.scale*1.2 && Math.abs(left-prev.x)<margin*.4 &&
         Math.abs(top-prev.y)<margin*.4 && Math.abs(right-prev.x-prev.w)<margin*.4 &&
         Math.abs(bottom-prev.y-prev.h)<margin*.4) return;
@@ -162,7 +185,7 @@ export class PageRenderer {
     this.task?.cancel();
     this.work(page,region,scale,()=>this.epoch===epoch && this.tiles===tile,'detail');
   }
-  paintPaper(ctx,cam,state) {
+  paintPaper(ctx,cam,state,surfaces=[this.singleBase,this.singleDetail]) {
     const {view,items,stroke,eraseId} = state;
     ctx.save();
     ctx.beginPath();
@@ -170,7 +193,7 @@ export class PageRenderer {
     ctx.clip();
     ctx.fillStyle = 'white';
     ctx.fillRect(cam.x,cam.y,cam.w,cam.h);
-    for (const surface of [this.base,this.detail]) {
+    for (const surface of surfaces) {
       if (!surface) continue;
       ctx.drawImage(surface.canvas,cam.x+surface.x*cam.scale,cam.y+surface.y*cam.scale,
         surface.w*cam.scale,surface.h*cam.scale);
@@ -189,7 +212,7 @@ export class PageRenderer {
     if (stroke) drawStroke(ctx,stroke,view.rotation,cam.w,cam.h,strokePath(stroke.points,view.rotation,cam.w,cam.h));
     ctx.restore();
   }
-  paintTracker(ctx,cam,state) {
+  paintTracker(ctx,cam,state,rows) {
     const t = state.view.tracker;
     const {x,y,w,h,angle} = trackBox(t,cam,state.view.rotation,this.size);
     ctx.save();
@@ -205,7 +228,8 @@ export class PageRenderer {
       ctx.rotate(-angle);
       ctx.scale(t.magnification,t.magnification);
       ctx.translate(-x,-y);
-      this.paintPaper(ctx,cam,state);
+      if (rows) this.paintStack(ctx,state,rows);
+      else this.paintPaper(ctx,cam,state);
       ctx.restore();
       roundRect(ctx,left,top,w,h,9);
       ctx.strokeStyle = '#133b42';
@@ -232,6 +256,14 @@ export class PageRenderer {
     }
     ctx.restore();
   }
+  paintStack(ctx,state,rows) {
+    for (const {cam,entry,number} of rows) {
+      this.paintPaper(ctx,cam,{...state,items:entry.items||[],
+        stroke:state.previewPage===number ? state.stroke : null,
+        eraseId:state.previewPage===number ? state.eraseId : null,
+      },[entry.base,entry.detail]);
+    }
+  }
   draw() {
     const [w,h] = this.size;
     if (!w || !h) return;
@@ -243,8 +275,17 @@ export class PageRenderer {
     ctx.setTransform(cw/w,0,0,ch/h,0,0);
     ctx.fillStyle = '#e8eeef';
     ctx.fillRect(0,0,w,h);
-    const cam = this.cam;
     const state = this.getState();
+    if (this.stack && state.view) {
+      this.stack.sync(state.view,this.size);
+      const rows=this.stackRows().filter(row=>row.cam.y+row.cam.h>0 && row.cam.y<h);
+      this.paintStack(ctx,state,rows);
+      const active=rows.find(row=>row.number===state.view.page);
+      if (active && state.mode==='track' && state.view.tracker.visible) this.paintTracker(ctx,active.cam,state,rows);
+      this.updateNotes(active?.cam,state,rows);
+      return;
+    }
+    const cam = this.cam;
     if (!cam || !this.base || !state.view) {
       this.updateNotes(null,state);
       return;
