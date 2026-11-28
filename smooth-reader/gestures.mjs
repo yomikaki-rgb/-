@@ -53,6 +53,7 @@ export function wireGestures(stage, renderer, ui) {
   function beginMultiple() {
     clearTimeout(straightTimer);
     clearTimeout(gesture?.intentTimer);
+    ui.lassoCancel?.();
     const [a,b] = pointers.values();
     const center = midpoint(a,b);
     const axis=ui.swipeAxis();
@@ -105,6 +106,8 @@ export function wireGestures(stage, renderer, ui) {
     } else if (mode==='erase') {
       gesture = {...common,type:'erase',erased:new Map()};
       sweepErase(point,point,gesture);
+    } else if (mode==='lasso' && anchor && onPaper(anchor)) {
+      gesture={...common,type:'lasso',session:ui.lassoStart(target,anchor)};
     } else if (mode==='note' && anchor && onPaper(anchor)) {
       gesture = {...common,type:'note',target};
     } else {
@@ -241,6 +244,8 @@ export function wireGestures(stage, renderer, ui) {
       ui.view({...view,tracker:{...view.tracker,anchor}},false);
     } else if (gesture.type==='mark') {
       extendInk(event,gesture,view);
+    } else if (gesture.type==='lasso') {
+      ui.lassoUpdate(gesture.session,point);
     } else if (gesture.type==='erase') {
       const coalesced=event.getCoalescedEvents?.() || [];
       let from=last;
@@ -275,10 +280,15 @@ export function wireGestures(stage, renderer, ui) {
     }
     gesture=null;
     ui.preview(null,null);
-    if (!g || event.type!=='pointerup') { ui.settled(); return; }
+    if (!g || event.type!=='pointerup') {
+      if (g?.type==='lasso') ui.lassoCancel();
+      ui.settled();
+      return;
+    }
     if (g.type==='mark') ui.stroke(g.stroke,g.target.number);
     if (g.type==='erase' && g.erased.size) ui.erase(g.erased);
     if (g.type==='note' && !g.far) ui.note(g.note,g.anchor,g.target.number);
+    if (g.type==='lasso') ui.lassoFinish(g.session);
     if (g.type==='pan' && g.pointer!=='mouse' && !ui.continuous?.() && performance.now()-g.time<900) {
       const delta=swipeTurn(g.start,position(event),g.axis,g.edges);
       if (delta) ui.turn(delta,g.axis);
@@ -320,6 +330,7 @@ export function wireGestures(stage, renderer, ui) {
     clearTimeout(straightTimer);
     clearTimeout(gesture?.intentTimer);
     gesture=null;
+    ui.lassoCancel?.();
     ui.preview(null,null);
   };
 }

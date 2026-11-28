@@ -92,14 +92,24 @@ svg { width:22px; height:22px; flex:none; vertical-align:middle; }
 .stage[data-mode="mark"] #scene,.stage[data-mode="erase"] #scene,.stage[data-mode="note"] #scene { cursor:crosshair; }
 .note-layer { pointer-events:none; overflow:hidden; }
 .note-icon { position:absolute; padding:0; border:0; border-radius:.15em; background:#ffffffeb; text-align:start; line-height:1.25; white-space:pre-wrap; overflow-wrap:anywhere; pointer-events:auto; touch-action:none; }
+.note-icon > span { display:block; inline-size:max-content; max-inline-size:var(--note-length); }
+.note-icon[data-vertical] { transform:translateX(-100%); }
+.note-icon[data-vertical] > span,.note-box[data-vertical] textarea { writing-mode:vertical-rl; }
 .note-icon.is-target { outline:3px solid var(--accent); outline-offset:3px; }
-.stage[data-mode="mark"] .note-icon,.stage[data-mode="erase"] .note-icon { pointer-events:none; }
+.stage[data-mode="mark"] .note-icon,.stage[data-mode="erase"] .note-icon,.stage[data-mode="lasso"] .note-icon { pointer-events:none; }
+.stage[data-mode="lasso"] #scene { cursor:crosshair; }
 .note-editor { position:absolute; inset:0; z-index:3; pointer-events:none; }
 .note-box { position:absolute; outline:1px dashed var(--accent); outline-offset:2px; background:#ffffffeb; }
 .note-editor textarea { display:block; padding:0; border:0; border-radius:0; background:transparent; line-height:1.25; overflow-wrap:anywhere; resize:none; outline:none; transform-origin:top left; pointer-events:auto; user-select:text; -webkit-user-select:text; -webkit-touch-callout:default; }
+.note-editor textarea { scrollbar-width:none; }
+.note-editor textarea::-webkit-scrollbar { display:none; }
+.note-resize { position:absolute; right:-15px; top:0; display:grid; place-items:center; width:30px; height:32px; border:0; padding:0; background:none; pointer-events:auto; touch-action:none; cursor:ew-resize; }
+.note-resize::before { content:""; width:6px; height:18px; border:1px solid white; border-radius:4px; background:var(--accent); }
+.note-box[data-vertical] .note-resize { right:0; top:auto; bottom:-16px; cursor:ns-resize; }
+.note-box[data-vertical] .note-resize::before { width:18px; height:6px; }
 .note-tools { position:absolute; display:flex; align-items:center; gap:2px; width:max-content; max-width:calc(100% - 8px); padding:0 3px; border:1px solid #9bb8b5; border-radius:8px; background:white; box-shadow:0 2px 9px #19323524; pointer-events:auto; }
 .note-tools .button { padding-inline:5px; white-space:nowrap; }
-.note-tools input[type="range"] { width:clamp(36px,16vw,92px); flex:0 1 auto; }
+.note-tools input[type="range"] { width:clamp(30px,14vw,92px); flex:0 1 auto; }
 .note-tools input[type="color"] { width:30px; height:32px; padding:2px; border:1px solid #9bb8b5; border-radius:5px; background:white; }
 #note-move { touch-action:none; cursor:grab; }
 #note-move:active { cursor:grabbing; }
@@ -213,6 +223,7 @@ dialog p { white-space:pre-line; line-height:1.6; overflow-wrap:anywhere; }
   .bookmark-actions { flex-wrap:wrap; }
 }
 @media (max-width:359px) {
+  .mode { padding-inline:1px; font-size:.7rem; }
   .library { padding-inline:12px; }
   .brand { gap:6px; }
   .brand .app-icon { width:32px; height:32px; }

@@ -39,6 +39,7 @@
         <button class="button mode" id="write" data-mode="mark" data-icon="mark" aria-pressed="false" aria-controls="ink-panel" aria-expanded="false">書く</button>
         <button class="button mode" data-mode="erase" data-icon="erase" aria-pressed="false">消しゴム</button>
         <button class="button mode" data-mode="note" data-icon="note" aria-pressed="false">メモ</button>
+        <button class="button mode" data-mode="lasso" data-icon="lasso" aria-pressed="false">投げ縄</button>
         <button class="button mode" id="notes-open" data-icon="list" aria-haspopup="dialog">メモ一覧</button>
       </div>
       <div class="tool-actions">
@@ -73,9 +74,11 @@
       <form id="note-editor" class="note-editor" aria-label="ページ上のメモ" hidden>
         <div id="note-box" class="note-box">
           <textarea id="note-text" aria-label="メモの内容" maxlength="4000" rows="1"></textarea>
+          <button type="button" id="note-resize" class="note-resize" aria-label="メモの幅を調整"></button>
         </div>
         <div id="note-tools" class="note-tools">
           <button type="button" id="note-move" class="button" data-icon="move" aria-label="メモを移動">移動</button>
+          <button type="button" id="note-direction" class="button" aria-label="メモを縦書きにする" aria-pressed="false">横書き</button>
           <input id="note-size" aria-label="文字の大きさ" type="range" min="0.008" max="0.12" step="any">
           <input id="note-color" aria-label="文字の色" type="color">
           <button type="button" id="note-delete" class="button danger" data-icon="trash" aria-label="メモを削除" hidden></button>

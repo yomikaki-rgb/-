@@ -6,6 +6,7 @@ const paths = {
   mark:'<path d="m8 16-4-4L15 2l5 5L10 17zm0 0-5 4h8l2-2M3 22h14"/>',
   erase:'<path d="m4 11 8-8a2 2 0 0 1 3 0l6 6a2 2 0 0 1 0 3l-8 8H9l-5-5a3 3 0 0 1 0-4zm4-4 9 9m-4 4h9"/>',
   note:'<path d="M4 4h16v11l-5 5H4zm11 16v-5h5M8 9h8m-8 4h5"/>',
+  lasso:'<path d="M6 15c-3-1-4-3-3-6 1-4 6-6 11-5 4 1 7 3 7 6s-4 6-9 6c-2 0-4-1-4-3s3-3 5-2c3 2 0 8-4 9-2 1-4 0-5-1"/>',
   settings:'<path d="M3 6h18M3 12h18M3 18h18"/><circle fill="white" cx="8" cy="6" r="2"/><circle fill="white" cx="16" cy="12" r="2"/><circle fill="white" cx="10" cy="18" r="2"/>',
   move:'<path d="M12 2v20M2 12h20M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',
   eye:'<path d="M2 12s3-6 10-6 10 6 10 6-3 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/>',

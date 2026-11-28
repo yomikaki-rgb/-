@@ -200,7 +200,9 @@ export class PageRenderer {
     }
     ctx.translate(cam.x,cam.y);
     const key = [view.rotation,cam.w,cam.h].join('/');
-    for (const item of items) {
+    const preview=state.lasso?.page===(state.pageNumber ?? view.page) ? state.lasso.preview : null;
+    for (const original of items) {
+      const item=preview?.get(original.id) || original;
       if (item.type!=='stroke' || erased?.get(state.pageNumber ?? view.page)?.has(item.id)) continue;
       let cached = this.paths.get(item);
       if (cached?.key !== key) {
@@ -210,6 +212,27 @@ export class PageRenderer {
       drawStroke(ctx,item,view.rotation,cam.w,cam.h,cached.path);
     }
     if (stroke) drawStroke(ctx,stroke,view.rotation,cam.w,cam.h,strokePath(stroke.points,view.rotation,cam.w,cam.h));
+    ctx.restore();
+  }
+  paintLasso(ctx,lasso,cam,rotation) {
+    if (!lasso || !cam || lasso.path.length<2) return;
+    const path=lasso.path.map(point=>onScreen(point,rotation,cam));
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(...path[0]);
+    for (let i=1;i<path.length;i++) ctx.lineTo(...path[i]);
+    if (lasso.selected) {
+      ctx.closePath();
+      ctx.fillStyle='#167d7425';
+      ctx.fill();
+    }
+    ctx.strokeStyle='#ffffff';
+    ctx.lineWidth=3.5;
+    ctx.stroke();
+    ctx.setLineDash([5,4]);
+    ctx.strokeStyle='#126f68';
+    ctx.lineWidth=1.5;
+    ctx.stroke();
     ctx.restore();
   }
   paintTracker(ctx,cam,state,rows) {
@@ -281,6 +304,7 @@ export class PageRenderer {
       this.paintStack(ctx,state,rows);
       const active=rows.find(row=>row.number===state.view.page);
       if (active && state.mode==='track' && state.view.tracker.visible) this.paintTracker(ctx,active.cam,state,rows);
+      if (state.lasso) this.paintLasso(ctx,state.lasso,rows.find(row=>row.number===state.lasso.page)?.cam,state.view.rotation);
       this.updateNotes(active?.cam,state,rows);
       return;
     }
@@ -297,6 +321,7 @@ export class PageRenderer {
     ctx.restore();
     this.paintPaper(ctx,cam,state);
     if (state.mode==='track' && state.view.tracker.visible) this.paintTracker(ctx,cam,state);
+    if (state.lasso?.page===state.view.page) this.paintLasso(ctx,state.lasso,cam,state.view.rotation);
     this.updateNotes(cam,state);
   }
 }

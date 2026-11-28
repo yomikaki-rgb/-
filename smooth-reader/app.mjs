@@ -9,7 +9,9 @@ import { PageRail } from './page-rail.mjs';
 import { wireSettingsCard } from './settings-card.mjs';
 import { VerticalPages } from './vertical-pages.mjs';
 import { noteRows, paintPrintNotes, saveTextNotes } from './note-export.mjs';
-import { moveNote, noteColor, notePixels, noteSheetOffset, noteSize, noteWidth } from './note-style.mjs';
+import { moveNote, noteColor, noteDirection, noteInlineSize, noteLength, notePixels,
+  noteSheetOffset, noteSize, resizeNoteLength } from './note-style.mjs';
+import { insideLasso, lassoItems, lassoShift, shiftedLassoItems } from './lasso.mjs';
 
 const $ = id => document.getElementById(id);
 const all = selector => [...document.querySelectorAll(selector)];
@@ -33,6 +35,7 @@ let saving=null, activeWrite=null, saveTimer;
 const noteNodes=new Map();
 let noteDraft=null;
 let noteDrag=null;
+let lasso=null;
 let highlightedNote=null, highlightTimer;
 let notesSnapshot=null, notesRequest=0;
 let railNoteScan=null;
@@ -40,7 +43,7 @@ const narrowRail=matchMedia('(max-width:759px), (max-width:1100px) and (orientat
 
 for (const node of all('[data-icon]')) node.insertAdjacentHTML('afterbegin',icon(node.dataset.icon));
 wireSettingsCard($('stage'),$('settings'),$('settings-drag'));
-const renderer=new PageRenderer($('scene'),()=>({view,mode,items,stroke,erased,previewPage}),showNotes,(_error,label)=>{
+const renderer=new PageRenderer($('scene'),()=>({view,mode,items,stroke,erased,previewPage,lasso}),showNotes,(_error,label)=>{
   if (label==='base') pageMessage('このページを表示できませんでした。');
 });
 const rail=new PageRail($('rail-scroll'),$('rail-pages'),number=>{
@@ -62,6 +65,7 @@ const cancelGesture=wireGestures($('stage'),renderer,{
   stroke:(value,page)=>applyEdit(null,value,page),
   erase:applyErasure,
   note:openNote,
+  lassoStart,lassoUpdate,lassoFinish,lassoCancel,
   turn:turnBySwipe
 });
 $('stage').addEventListener('pointerdown',event=>{
@@ -266,13 +270,15 @@ function showNotes(cam,state,stackRows) {
   }
   marker.hidden=!markerVisible;
   const seen=new Set();
-  for (const row of rows) for (const note of row.entry.items||[]) {
+  for (const row of rows) for (const item of row.entry.items||[]) {
+    const note=lasso?.page===row.number ? lasso.preview?.get(item.id) || item : item;
     if (note.type!=='note') continue;
     seen.add(note.id);
     let button=noteNodes.get(note.id);
     if (!button) {
       button=document.createElement('button');
       button.className='note-icon';
+      button.append(document.createElement('span'));
       button.dataset.id=note.id;
       button.dataset.page=row.number;
       button.onclick=event=>{ if (event.detail===0 && (mode==='track'||mode==='note')) openNote(note.id,undefined,row.number); };
@@ -281,14 +287,20 @@ function showNotes(cam,state,stackRows) {
     }
     const point=onScreen(note.at,state.view.rotation,row.cam);
     const pixels=notePixels(note.size,row.cam);
-    if (button.textContent!==note.text) button.textContent=note.text;
+    if (button.textContent!==note.text) button.firstElementChild.textContent=note.text;
     button.style.left=point[0]+'px';
     button.style.top=point[1]+'px';
     button.style.fontSize=pixels+'px';
     button.style.color=noteColor(note.color);
-    button.style.maxWidth=noteWidth(pixels,point[0],row.cam,renderer.size[0])+'px';
-    button.hidden=noteDraft?.existing?.id===note.id || point[0]>renderer.size[0] || point[1]>renderer.size[1];
-    button.tabIndex=state.mode==='mark'||state.mode==='erase' ? -1 : 0;
+    const vertical=noteDirection(note.direction)==='vertical';
+    button.toggleAttribute('data-vertical',vertical);
+    const axis=vertical ? 1 : 0;
+    const edge=vertical ? row.cam.y+row.cam.h : row.cam.x+row.cam.w;
+    button.style.setProperty('--note-length',noteInlineSize(note.length,pixels,edge-point[axis],
+      Math.min(row.cam.w,row.cam.h),renderer.size[axis])+'px');
+    const beyondSide=vertical ? point[0]<0 : point[0]>renderer.size[0];
+    button.hidden=noteDraft?.existing?.id===note.id || beyondSide || point[1]>renderer.size[1];
+    button.tabIndex=['mark','erase','lasso'].includes(state.mode) ? -1 : 0;
     button.classList.toggle('is-target',note.id===highlightedNote);
     if (note.id===highlightedNote && !button.hidden && !highlightTimer) {
       highlightTimer=setTimeout(()=>{
@@ -482,6 +494,60 @@ function applyEdit(before,after,page=view?.page) {
   editPage(before,after,index,page);
   recordUndo({page,before,after,index});
 }
+function lassoCancel() {
+  if (!lasso) return;
+  lasso=null;
+  renderer.invalidate();
+}
+function lassoStart(target,anchor) {
+  if (lasso?.page===target.number && lasso.selected?.length && insideLasso(anchor,lasso.path)) {
+    return {target,anchor,selection:lasso};
+  }
+  lasso={page:target.number,path:[anchor]};
+  renderer.invalidate();
+  return {target,anchor,path:lasso.path};
+}
+function lassoUpdate(session,point) {
+  const {target,anchor,selection,path}=session;
+  const next=boundPoint(onPage(point,view.rotation,target.cam));
+  if (selection) {
+    const delta=lassoShift(selection.selected,next.map((n,i)=>n-anchor[i]));
+    const selected=delta.some(Boolean) ? shiftedLassoItems(selection.selected,delta) : selection.selected;
+    lasso={page:target.number,selected,path:selection.path.map(p=>p.map((n,i)=>n+delta[i])),
+      preview:new Map(selected.map(item=>[item.id,item])),moved:delta.some(Boolean)};
+  } else {
+    const prev=onScreen(path.at(-1),view.rotation,target.cam);
+    if (Math.hypot(point[0]-prev[0],point[1]-prev[1])>=3 &&
+        (next[0]!==path.at(-1)[0] || next[1]!==path.at(-1)[1])) path.push(next);
+  }
+  renderer.invalidate();
+}
+function lassoFinish(session) {
+  const {target,selection,path}=session;
+  if (selection) {
+    if (lasso.moved) {
+      replaceLassoItems(target.number,lasso.selected);
+      recordUndo({page:target.number,beforeGroup:selection.selected,afterGroup:lasso.selected});
+    }
+    delete lasso.preview;
+    return;
+  }
+  if (path.length<3) { lassoCancel(); return; }
+  const stage=$('stage').getBoundingClientRect();
+  const selected=lassoItems(itemsFor(target.number)||[],path,note=>{
+    const button=noteNodes.get(note.id);
+    if (!button || button.hidden) return null;
+    const rect=button.getBoundingClientRect();
+    return onPage([rect.left+rect.width/2-stage.left,rect.top+rect.height/2-stage.top],view.rotation,target.cam);
+  });
+  if (!selected.length) { lassoCancel(); return; }
+  lasso={page:target.number,path,selected};
+  renderer.invalidate();
+}
+function replaceLassoItems(page,replacements) {
+  const byId=new Map(replacements.map(item=>[item.id,item]));
+  updatePageItems(page,itemsFor(page).map(item=>byId.get(item.id)||item));
+}
 function recordUndo(action) {
   undo.push(action);
   if (undo.length>80) undo.shift();
@@ -521,6 +587,7 @@ async function applyEraseHistory(action,reverse,id,currentSource) {
 async function historyAction(reverse) {
   const from=reverse?undo:redo, to=reverse?redo:undo;
   if (!book || loading || historyBusy || !from.length) return;
+  lassoCancel();
   const action=from.pop(), id=book.id;
   if (action.erasures) {
     const currentSource=source;
@@ -549,7 +616,8 @@ async function historyAction(reverse) {
     refreshTools();
     return;
   }
-  editPage(reverse?action.after:action.before,reverse?action.before:action.after,action.index,action.page);
+  if (action.beforeGroup) replaceLassoItems(action.page,reverse?action.beforeGroup:action.afterGroup);
+  else editPage(reverse?action.after:action.before,reverse?action.before:action.after,action.index,action.page);
   to.push(action);
   refreshTools();
 }
@@ -618,27 +686,44 @@ function refreshNoteStyle(cam=noteCamera(noteDraft.page)) {
   const viewport=window.visualViewport;
   const visibleTop=viewport ? Math.max(0,viewport.offsetTop-stage.top) : 0;
   const visibleBottom=viewport ? Math.min(stage.height,viewport.offsetTop+viewport.height-stage.top) : stage.height;
-  const [x,y]=onScreen(noteDraft.at,view.rotation,cam);
+  const [anchorX,y]=onScreen(noteDraft.at,view.rotation,cam);
+  const vertical=noteDraft.direction==='vertical';
   const pixels=notePixels(noteDraft.size,cam);
-  const width=noteWidth(pixels,x,cam,stage.width);
   const input=$('note-text'), box=$('note-box'), toolbar=$('note-tools');
-  // Keep the logical input font at least 16px to avoid Safari's focus zoom.
-  const font=Math.max(16,pixels), scale=pixels/font;
-  const scroll=input.scrollTop;
-  input.style.fontSize=font+'px';
-  input.style.color=$('note-color').value;
-  input.style.width=width/scale+'px';
-  input.style.transform=scale<1 ? 'scale('+scale+')' : '';
-  input.style.height='0px';
   const gap=toolbar.offsetHeight+6;
   const lineHeight=pixels*1.25;
-  const maxHeight=Math.max(lineHeight,visibleBottom-visibleTop-gap-8);
-  const height=clamp(input.scrollHeight*scale,lineHeight,maxHeight);
-  input.style.height=height/scale+'px';
-  input.scrollTop=scroll;
+  const visibleHeight=Math.max(lineHeight,visibleBottom-visibleTop-gap-16);
+  const visibleWidth=Math.max(lineHeight,stage.width-18);
+  const extent=vertical ? stage.height : stage.width;
+  const remaining=vertical ? cam.y+cam.h-y : cam.x+cam.w-anchorX;
+  const natural=noteInlineSize(noteDraft.length,pixels,remaining,Math.min(cam.w,cam.h),extent);
+  const resizeLimit=vertical ? visibleHeight : visibleWidth;
+  const inlineSize=Math.min(natural,resizeLimit);
+  noteDraft.displayLength=inlineSize;
+  noteDraft.resizeLimit=resizeLimit;
+  box.toggleAttribute('data-vertical',vertical);
+  // Keep the logical input font at least 16px to avoid Safari's focus zoom.
+  const font=Math.max(16,pixels), scale=pixels/font;
+  const scroll=vertical ? input.scrollLeft : input.scrollTop;
+  const inlineDimension=vertical ? 'height' : 'width';
+  const blockDimension=vertical ? 'width' : 'height';
+  input.style.fontSize=font+'px';
+  input.style.color=$('note-color').value;
+  input.style[inlineDimension]=inlineSize/scale+'px';
+  input.style.transform=scale<1 ? 'scale('+scale+')' : '';
+  input.style[blockDimension]=lineHeight/scale+'px';
+  const measured=(vertical ? input.scrollWidth : input.scrollHeight)*scale;
+  const blockSize=clamp(measured,lineHeight,vertical ? visibleWidth : visibleHeight);
+  input.style[blockDimension]=blockSize/scale+'px';
+  if (vertical) input.scrollLeft=scroll;
+  else input.scrollTop=scroll;
+  const width=vertical ? blockSize : inlineSize;
+  const height=vertical ? inlineSize : blockSize;
+  const x=vertical ? anchorX-width : anchorX;
   $('note-size').setAttribute('aria-valuetext',Math.round(pixels)+'ピクセル');
-  const placeAbove=y-gap>=visibleTop+4 || y+height+gap>visibleBottom-4;
-  const offset=noteDrag?.offset || noteSheetOffset(x,y,width,height,stage.width,
+  const grip=vertical ? 9 : 0;
+  const placeAbove=y-gap>=visibleTop+4 || y+height+grip+gap>visibleBottom-4;
+  const offset=noteDrag?.offset || noteSheetOffset(x,y,width+(vertical ? 0 : 9),height+grip,stage.width,
     visibleTop+(placeAbove ? gap : 0),visibleBottom-(placeAbove ? 0 : gap));
   noteDraft.offset=offset;
   $('note-sheet').style.transform=offset.some(Boolean) ? 'translate('+offset[0]+'px,'+offset[1]+'px)' : '';
@@ -647,8 +732,17 @@ function refreshNoteStyle(cam=noteCamera(noteDraft.page)) {
   const toolsHeight=toolbar.offsetHeight;
   const above=top-toolsHeight-6;
   toolbar.style.left=clamp(left,4,Math.max(4,stage.width-toolbar.offsetWidth-4))+'px';
-  toolbar.style.top=clamp(above>=visibleTop+4 ? above : top+height+6,
+  toolbar.style.top=clamp(above>=visibleTop+4 ? above : top+height+grip+6,
     visibleTop+4,Math.max(visibleTop+4,visibleBottom-toolsHeight-4))+'px';
+}
+function refreshNoteDirection() {
+  const vertical=noteDraft.direction==='vertical';
+  const direction=$('note-direction');
+  direction.textContent=vertical ? '縦書き' : '横書き';
+  direction.setAttribute('aria-label',vertical ? 'メモを横書きにする' : 'メモを縦書きにする');
+  direction.setAttribute('aria-pressed',String(vertical));
+  $('note-resize').setAttribute('aria-label',vertical ? 'メモの高さを調整' : 'メモの幅を調整');
+  refreshNoteStyle();
 }
 function setNoteEditing(editing) {
   for (const node of all('#reader .tools,#reader .reader-foot,#page-rail,#note-layer')) node.inert=editing;
@@ -660,7 +754,8 @@ function openNote(id,at,page=view?.page) {
   if (!current) return;
   const existing=id ? current.find(item=>item.id===id && item.type==='note') : null;
   if (!existing && (!at || id)) return;
-  const draft={existing,page,at:existing?.at || boundPoint(at),size:noteSize(existing?.size),manualSize:false};
+  const draft={existing,page,at:existing?.at || boundPoint(at),size:noteSize(existing?.size),
+    direction:noteDirection(existing?.direction),length:noteLength(existing?.length),manualSize:false};
   noteDraft=draft;
   clearTimeout(seekTimer);
   refreshPageControls();
@@ -673,7 +768,7 @@ function openNote(id,at,page=view?.page) {
   $('note-color').value=noteColor(existing?.color);
   $('note-delete').hidden=!existing;
   setNoteEditing(true);
-  refreshNoteStyle();
+  refreshNoteDirection();
   (existing ? $('note-move') : $('note-text')).focus({preventScroll:true});
   renderer.invalidate();
   if (!existing) source.noteSizeAt?.(page,draft.at).then(suggested=>{
@@ -695,13 +790,22 @@ $('note-editor').onsubmit=event=>{
   event.preventDefault();
   if (!noteDraft) return;
   const text=$('note-text').value.trim();
-  const {existing,page,at,size}=noteDraft;
+  const {existing,page,at,size,direction,length}=noteDraft;
   const color=$('note-color').value;
   closeNote();
   if (!text) return;
   if (existing?.text===text && noteSize(existing.size)===size && noteColor(existing.color)===color &&
+      noteDirection(existing.direction)===direction && noteLength(existing.length)===length &&
       existing.at.every((n,i)=>n===at[i])) return;
-  applyEdit(existing||null,{type:'note',id:existing?.id||uid(),at,text,size,color},page);
+  applyEdit(existing||null,{type:'note',id:existing?.id||uid(),at,text,size,color,direction,length},page);
+};
+$('note-direction').onpointerdown=event=>{
+  if (document.activeElement===$('note-text')) event.preventDefault();
+};
+$('note-direction').onclick=()=>{
+  if (noteDrag) return;
+  noteDraft.direction=noteDraft.direction==='vertical' ? 'horizontal' : 'vertical';
+  refreshNoteDirection();
 };
 $('note-size').oninput=event=>{
   noteDraft.manualSize=true;
@@ -720,41 +824,51 @@ for (const event of ['resize','scroll']) window.visualViewport?.addEventListener
   if (noteDraft) refreshNoteStyle();
 });
 
-const noteMove=$('note-move');
-noteMove.onpointerdown=event=>{
-  if (!noteDraft || noteDrag || event.button!==0) return;
-  const cam=noteCamera(noteDraft.page);
-  if (!cam) return;
-  event.preventDefault();
-  noteMove.setPointerCapture(event.pointerId);
-  noteDrag={id:event.pointerId,at:noteDraft.at,offset:noteDraft.offset,
-    x:event.clientX,y:event.clientY,cam,rotation:view.rotation};
-};
-noteMove.onpointermove=event=>{
-  if (event.pointerId!==noteDrag?.id) return;
-  const {at,cam,rotation,x,y}=noteDrag;
-  if (event.clientX===x && event.clientY===y) noteDraft.at=at;
-  else noteDraft.at=moveNote(at,rotation,cam,event.clientX-x,event.clientY-y);
-  refreshNoteStyle(cam);
-};
-function finishNoteMove(event) {
-  if (event.pointerId!==noteDrag?.id) return;
-  if (event.type==='pointerup') noteMove.onpointermove(event);
-  else noteDraft.at=noteDrag.at;
-  noteDrag=null;
-  refreshNoteStyle();
+function wireNoteDrag(control,resize) {
+  const adjust=(start,dx,dy)=>{
+    if (resize) {
+      const delta=noteDraft.direction==='vertical' ? dy : dx;
+      const change=Math.min(delta,start.resizeLimit-start.displayLength);
+      noteDraft.length=change ? resizeNoteLength(start.displayLength,change,Math.min(start.cam.w,start.cam.h)) : start.length;
+    } else {
+      noteDraft.at=dx||dy ? moveNote(start.at,start.rotation,start.cam,dx,dy) : start.at;
+    }
+    refreshNoteStyle(start.cam);
+  };
+  control.onpointerdown=event=>{
+    if (!noteDraft || noteDrag || event.button!==0) return;
+    const cam=noteCamera(noteDraft.page);
+    if (!cam) return;
+    event.preventDefault();
+    control.setPointerCapture(event.pointerId);
+    noteDrag={...noteDraft,id:event.pointerId,control,x:event.clientX,y:event.clientY,cam,rotation:view.rotation};
+  };
+  control.onpointermove=event=>{
+    if (event.pointerId!==noteDrag?.id || noteDrag.control!==control) return;
+    adjust(noteDrag,event.clientX-noteDrag.x,event.clientY-noteDrag.y);
+  };
+  control.onpointerup=control.onpointercancel=control.onlostpointercapture=event=>{
+    if (event.pointerId!==noteDrag?.id || noteDrag.control!==control) return;
+    if (event.type==='pointerup') control.onpointermove(event);
+    else {
+      noteDraft.at=noteDrag.at;
+      noteDraft.length=noteDrag.length;
+    }
+    noteDrag=null;
+    refreshNoteStyle();
+  };
+  control.onkeydown=event=>{
+    const step=event.shiftKey ? 10 : 2;
+    const delta={ArrowLeft:[-step,0],ArrowRight:[step,0],ArrowUp:[0,-step],ArrowDown:[0,step]}[event.key];
+    if (!delta || !noteDraft || noteDrag) return;
+    const cam=noteCamera(noteDraft.page);
+    if (!cam) return;
+    event.preventDefault();
+    adjust({...noteDraft,cam,rotation:view.rotation},...delta);
+  };
 }
-noteMove.onpointerup=noteMove.onpointercancel=noteMove.onlostpointercapture=finishNoteMove;
-noteMove.onkeydown=event=>{
-  const step=event.shiftKey ? 10 : 2;
-  const delta={ArrowLeft:[-step,0],ArrowRight:[step,0],ArrowUp:[0,-step],ArrowDown:[0,step]}[event.key];
-  if (!delta || !noteDraft || noteDrag) return;
-  const cam=noteCamera(noteDraft.page);
-  if (!cam) return;
-  event.preventDefault();
-  noteDraft.at=moveNote(noteDraft.at,view.rotation,cam,...delta);
-  refreshNoteStyle(cam);
-};
+wireNoteDrag($('note-move'),false);
+wireNoteDrag($('note-resize'),true);
 
 function notesOverrides(id) {
   const pages=new Map();
@@ -1193,7 +1307,8 @@ document.addEventListener('keydown',event=>{
   }
   if (!book || hasModal() || event.target.matches('input,textarea,select')) return;
   if (event.key==='Escape') {
-    if (!$('ink-panel').hidden) toggleInk(false);
+    if (lasso) lassoCancel();
+    else if (!$('ink-panel').hidden) toggleInk(false);
     else if (!$('settings').hidden) toggleSettings(false);
     else if (rail.open) toggleRail(false,true);
     return;
