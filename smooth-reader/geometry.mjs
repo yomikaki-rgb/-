@@ -34,7 +34,7 @@ export function camera(view, page, size) {
   const [cx,cy] = turned(view.center, view.rotation);
   const position = (length, viewport, c) => length <= viewport-2*pad
     ? (viewport-length)/2 : clamp(viewport/2-c*length, viewport-length-pad, pad);
-  return { x:position(w,size[0],cx), y:position(h,size[1],cy), w, h, scale, fit };
+  return { x:position(w,size[0],cx), y:position(h,size[1],cy), w, h, scale, fit, pad };
 }
 export function onScreen(point, rotation, cam) {
   const p = turned(point, rotation);
@@ -56,6 +56,33 @@ export function centerAfter(view, page, size, anchor, destination, zoom) {
   const center = [x + (size[0]/2-destination[0])/w, y + (size[1]/2-destination[1])/h];
   next.center = boundPoint(turned(center,-view.rotation));
   return next;
+}
+
+export function pageEdges(cam,size,axis) {
+  const vertical=axis==='vertical';
+  const offset=vertical ? cam.y : cam.x;
+  const extent=vertical ? cam.h : cam.w;
+  const viewport=size[vertical ? 1 : 0];
+  if (extent<=viewport-2*cam.pad+.5) return {start:true,end:true};
+  return {
+    start:offset>=cam.pad-1,
+    end:offset+extent<=viewport-cam.pad+1
+  };
+}
+
+export function swipeTurn(start,finish,axis,edges) {
+  const i=axis==='vertical' ? 1 : 0;
+  const along=finish[i]-start[i];
+  const across=finish[1-i]-start[1-i];
+  if (Math.abs(along)<=60 || Math.abs(along)<=1.6*Math.abs(across)) return 0;
+  if (along<0) return edges.end ? 1 : 0;
+  return edges.start ? -1 : 0;
+}
+
+export function viewAfterSwipe(view,page,axis,delta) {
+  const center=turned(view.center,view.rotation);
+  center[axis==='vertical' ? 1 : 0]=delta>0 ? 0 : 1;
+  return {...view,page,center:turned(center,-view.rotation)};
 }
 
 export function writingOrientation(tracker) {

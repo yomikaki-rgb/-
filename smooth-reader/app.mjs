@@ -1,6 +1,6 @@
 import { icon } from './icons.mjs';
 import { bookmarkSpot, boundPoint, centerAfter, clamp, mod, newView, onPage, onScreen,
-  parsePageNumber, revealPoint, trackBox, TRACK_DEFAULT, writingOrientation } from './geometry.mjs';
+  parsePageNumber, revealPoint, trackBox, TRACK_DEFAULT, viewAfterSwipe, writingOrientation } from './geometry.mjs';
 import { PageRenderer } from './render.mjs';
 import { wireGestures } from './gestures.mjs';
 import { fileKind, openSource, validateSize } from './source.mjs';
@@ -15,8 +15,13 @@ const uid = () => crypto.randomUUID?.() || [...crypto.getRandomValues(new Uint32
 const copy = value => structuredClone(value);
 const trackerColors = [['青緑','#49c7b7'],['黄色','#ffdf45'],['水色','#57bbf4'],['ピンク','#f585ad'],['緑','#83cf80'],['グレー','#52656a']];
 const markerColors = [['黄色','#fbd323'],['ピンク','#f16d9d'],['水色','#42acf0'],['緑','#65c762']];
+const penColors = [['黒','#20232a'],['青','#1759a8'],['赤','#bd263d'],['緑','#19755b']];
+const inkStyles = {
+  marker:{color:markerColors[0][1],width:13,min:5,max:30,step:1},
+  pen:{color:penColors[0][1],width:2.5,min:1,max:9,step:.5}
+};
 let books=[], book=null, source=null, view=null, mode='track', items=[], stroke=null, eraseId=null;
-let defaults=TRACK_DEFAULT, markColor=markerColors[0][1];
+let defaults=TRACK_DEFAULT, inkKind='marker';
 let opening=false, importing=false, deleting=false, loading=false, pageToken=0;
 let undo=[], redo=[], alertKind, toastTimer, seekTimer;
 let dialogAction=null, dialogDeletion=null, dialogDismiss=null, priorFocus=null;
@@ -39,14 +44,18 @@ const rail=new PageRail($('rail-scroll'),$('rail-pages'),number=>{
 });
 const cancelGesture=wireGestures($('stage'),renderer,{
   state:()=>({view,mode,items}), canInteract:()=>Boolean(book && !loading && !hasModal() && !railOverlay()),
-  markColor:()=>markColor,id:uid,
+  ink:()=>({kind:inkKind,color:inkStyles[inkKind].color,width:inkStyles[inkKind].width}),
+  swipeAxis,id:uid,
   view:setView, settled:()=>{ queuePosition(false,0); renderer.scheduleDetail(); },
   preview:(next,erasing)=>{ stroke=next; eraseId=erasing; renderer.invalidate(); },
   stroke:value=>applyEdit(null,value),
   erase:id=>applyEdit(items.find(item=>item.id===id),null),
   note:(id,at)=>openNote(id,at),
-  turn:delta=>goTo(view.page+delta)
+  turn:turnBySwipe
 });
+$('stage').addEventListener('pointerdown',event=>{
+  if (event.target===renderer.canvas && !$('ink-panel').hidden) toggleInk(false);
+},{capture:true});
 
 function notify(message) {
   clearTimeout(toastTimer);
@@ -148,6 +157,12 @@ function refreshPageControls() {
   $('progress').setAttribute('aria-valuetext',view.page+' / '+book.count+' ページ');
   $('prev').disabled=view.page<=1;
   $('next').disabled=view.page>=book.count;
+  $('swipe-direction').disabled=book.count===1;
+  const vertical=swipeAxis()==='vertical';
+  $('swipe-symbol').textContent=vertical ? '↕' : '↔';
+  $('swipe-label').textContent=vertical ? '上下' : '左右';
+  $('swipe-direction').setAttribute('aria-label',vertical ?
+    'ページ送りは上下。左右に切り替える' : 'ページ送りは左右。上下に切り替える');
   const mark=book.bookmark;
   $('set-bookmark-label').textContent=mark ? 'しおりを更新' : 'しおりを付ける';
   $('bookmark-info').hidden=!mark;
@@ -160,12 +175,12 @@ function refreshPageControls() {
 function refreshTools() {
   $('stage').dataset.mode=mode;
   for (const button of all('[data-mode].mode')) button.setAttribute('aria-pressed',String(button.dataset.mode===mode));
-  $('mark-colors').hidden=mode!=='mark';
+  $('ink-options').hidden=mode!=='mark';
   $('adjust').hidden=mode!=='track';
   $('visibility').hidden=mode!=='track';
   $('undo').disabled=!undo.length || loading;
   $('redo').disabled=!redo.length || loading;
-  for (const b of all('#mark-colors button')) b.setAttribute('aria-pressed',String(b.dataset.color===markColor));
+  refreshInk();
   if (!view) return;
   const t=view.tracker;
   $('visibility').setAttribute('aria-pressed',String(t.visible));
@@ -237,6 +252,7 @@ function showNotes(cam,state) {
 async function displayPage(focusAt) {
   const token=++pageToken, currentSource=source, desired=copy(view);
   cancelGesture();
+  toggleInk(false);
   renderer.clear();
   items=[];
   loading=true;
@@ -284,6 +300,15 @@ function goTo(page,restore,focusAt) {
   queuePosition(true,0);
   displayPage(focusAt);
 }
+function swipeAxis() {
+  return book?.swipeAxis==='vertical' ? 'vertical' : 'horizontal';
+}
+function turnBySwipe(delta,axis) {
+  if (!book || !view || loading) return;
+  const page=view.page+delta;
+  if (page<1 || page>book.count) return;
+  goTo(page,viewAfterSwipe(view,page,axis,delta));
+}
 function zoom(next) {
   if (!renderer.cam || !renderer.base || loading) return;
   const at=renderer.size.map(n=>n/2);
@@ -299,6 +324,31 @@ function rotatePage() {
 function toggleSettings(open) {
   $('settings').hidden=!open;
   $('adjust').setAttribute('aria-expanded',String(open));
+}
+function toggleInk(open) {
+  $('ink-panel').hidden=!open;
+  $('write').setAttribute('aria-expanded',String(open));
+  $('ink-options').setAttribute('aria-expanded',String(open));
+}
+function refreshInk() {
+  const pen=inkKind==='pen';
+  const {color,width,min,max,step}=inkStyles[inkKind];
+  $('ink-label').textContent=pen ? 'ペン' : 'マーカー';
+  $('mark-colors').hidden=pen;
+  $('pen-colors').hidden=!pen;
+  for (const button of all('[data-ink]')) {
+    button.setAttribute('aria-pressed',String(button.dataset.ink===inkKind));
+  }
+  for (const button of all('#pen-colors button,#mark-colors button')) {
+    button.setAttribute('aria-pressed',String(button.dataset.color===color));
+  }
+  const slider=$('ink-width');
+  slider.min=min;
+  slider.max=max;
+  slider.step=step;
+  slider.value=width;
+  slider.setAttribute('aria-valuetext',String(width));
+  $('ink-width-value').textContent=width;
 }
 function hasModal() {
   return ['dialog','jump-dialog','notes-dialog'].some(id=>$(id).open);
@@ -326,6 +376,7 @@ function setMode(next) {
   cancelGesture();
   mode=next;
   if (next!=='track') toggleSettings(false);
+  if (next!=='mark') toggleInk(false);
   refreshTools();
   renderer.invalidate();
   renderer.scheduleDetail();
@@ -725,7 +776,8 @@ function palette(id,colors,handler) {
     $(id).append(button);
   }
 }
-palette('mark-colors',markerColors,color=>{ markColor=color; refreshTools(); });
+palette('mark-colors',markerColors,color=>{ inkStyles.marker.color=color; refreshInk(); });
+palette('pen-colors',penColors,color=>{ inkStyles.pen.color=color; refreshInk(); });
 palette('tracker-colors',trackerColors,color=>setTracker({color}));
 $('files').onchange=event=>{ importBooks([...event.target.files]); event.target.value=''; };
 $('add').onclick=()=>{
@@ -739,6 +791,15 @@ $('zoom-out').onclick=()=>zoom(Math.max(1,view.zoom/1.28));
 $('rotate-page').onclick=rotatePage;
 $('prev').onclick=()=>goTo(view.page-1);
 $('next').onclick=()=>goTo(view.page+1);
+$('swipe-direction').onclick=()=>{
+  if (!book) return;
+  const next=swipeAxis()==='vertical' ? 'horizontal' : 'vertical';
+  cancelGesture();
+  book={...book,swipeAxis:next};
+  queuePosition(false,0);
+  refreshPageControls();
+  notify(next==='vertical' ? 'ページ送り：上下' : 'ページ送り：左右');
+};
 $('rail-toggle').onclick=()=>toggleRail(!rail.open);
 $('rail-close').onclick=$('rail-shade').onclick=()=>toggleRail(false,true);
 narrowRail.addEventListener('change',syncRailOverlay);
@@ -847,7 +908,24 @@ $('visibility').onclick=()=>{
   if (!visible) toggleSettings(false);
 };
 $('reset').onclick=()=>setTracker({...TRACK_DEFAULT,anchor:[...TRACK_DEFAULT.anchor]});
-for (const button of all('[data-mode].mode')) button.onclick=()=>setMode(button.dataset.mode);
+for (const button of all('[data-mode].mode:not(#write)')) button.onclick=()=>setMode(button.dataset.mode);
+$('write').onclick=()=>{
+  const open=mode!=='mark' || $('ink-panel').hidden;
+  if (mode!=='mark') setMode('mark');
+  toggleInk(open);
+};
+$('ink-options').onclick=()=>toggleInk($('ink-panel').hidden);
+$('ink-close').onclick=()=>{ toggleInk(false); $('write').focus(); };
+for (const button of all('[data-ink]')) button.onclick=()=>{
+  cancelGesture();
+  inkKind=button.dataset.ink;
+  refreshInk();
+};
+$('ink-width').oninput=event=>{
+  inkStyles[inkKind].width=Number(event.target.value);
+  $('ink-width-value').textContent=event.target.value;
+  event.target.setAttribute('aria-valuetext',event.target.value);
+};
 for (const button of all('[data-shape]')) button.onclick=()=>setTracker({shape:button.dataset.shape,visible:true});
 for (const button of all('[data-angle]')) button.onclick=()=>{
   const orientation=Number(button.dataset.angle);
@@ -866,7 +944,8 @@ $('redo').onclick=()=>historyAction(false);
 document.addEventListener('keydown',event=>{
   if (!book || hasModal() || event.target.matches('input,textarea,select')) return;
   if (event.key==='Escape') {
-    if (!$('settings').hidden) toggleSettings(false);
+    if (!$('ink-panel').hidden) toggleInk(false);
+    else if (!$('settings').hidden) toggleSettings(false);
     else if (rail.open) toggleRail(false,true);
     return;
   }

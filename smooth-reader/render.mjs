@@ -24,6 +24,10 @@ function roundRect(ctx,x,y,w,h,radius) {
   ctx.closePath();
 }
 function drawStroke(ctx,stroke,rotation,w,h,path) {
+  // Strokes saved before the pen feature are all markers.
+  const pen=stroke.ink==='pen';
+  ctx.globalAlpha=pen ? 1 : .39;
+  ctx.globalCompositeOperation=pen ? 'source-over' : 'multiply';
   ctx.strokeStyle = ctx.fillStyle = stroke.color;
   ctx.lineWidth = stroke.weight*Math.min(w,h);
   ctx.lineCap = ctx.lineJoin = 'round';
@@ -172,8 +176,6 @@ export class PageRenderer {
         surface.w*cam.scale,surface.h*cam.scale);
     }
     ctx.translate(cam.x,cam.y);
-    ctx.globalAlpha = .39;
-    ctx.globalCompositeOperation = 'multiply';
     const key = [view.rotation,cam.w,cam.h].join('/');
     for (const item of items) {
       if (item.type!=='stroke' || item.id===eraseId) continue;

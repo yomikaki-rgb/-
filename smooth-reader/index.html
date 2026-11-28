@@ -36,7 +36,7 @@
       <div class="modes" role="group" aria-label="操作モード">
         <button class="button mode" id="back" data-icon="shelf">本棚</button>
         <button class="button mode" data-mode="track" data-icon="track" aria-pressed="true">トラッカー</button>
-        <button class="button mode" data-mode="mark" data-icon="mark" aria-pressed="false">マーカー</button>
+        <button class="button mode" id="write" data-mode="mark" data-icon="mark" aria-pressed="false" aria-controls="ink-panel" aria-expanded="false">書く</button>
         <button class="button mode" data-mode="erase" data-icon="erase" aria-pressed="false">消しゴム</button>
         <button class="button mode" data-mode="note" data-icon="note" aria-pressed="false">メモ</button>
         <button class="button mode" id="notes-open" data-icon="list" aria-haspopup="dialog">メモ一覧</button>
@@ -44,13 +44,13 @@
       <div class="tool-actions">
         <button class="button" id="adjust" data-icon="settings" aria-label="トラッカーを調整" aria-controls="settings" aria-expanded="false">調整</button>
         <button class="button" id="visibility" data-icon="eye" aria-label="トラッカーを表示" aria-pressed="true">表示</button>
-        <div class="palette" id="mark-colors" role="group" aria-label="マーカーの色" hidden></div>
+        <button class="button" id="ink-options" aria-controls="ink-panel" aria-expanded="false" hidden><span id="ink-label">マーカー</span><span aria-hidden="true">▾</span></button>
         <button class="button history" id="undo" data-icon="undo" aria-label="元に戻す" title="元に戻す" disabled></button>
         <button class="button history" id="redo" data-icon="redo" aria-label="やり直す" title="やり直す" disabled></button>
       </div>
       <div class="head-actions" role="group" aria-label="ページ表示">
         <button class="button" id="zoom-out" data-icon="minus" aria-label="縮小" title="縮小"></button>
-        <button class="button" id="fit" aria-label="ページ全体を表示" title="ページ全体を表示">全体</button>
+        <button class="button" id="fit" title="ページ全体を表示">全体表示</button>
         <button class="button" id="zoom-in" data-icon="plus" aria-label="拡大" title="拡大"></button>
         <button class="button" id="rotate-page" data-icon="rotate" aria-label="ページを回転" title="ページを回転"></button>
       </div>
@@ -72,6 +72,27 @@
       <div id="line-bookmark" class="line-bookmark" aria-hidden="true" hidden><img src="./app-icon.png" alt="" width="24" height="24"></div>
       <div id="note-layer" class="note-layer"></div>
       <div id="page-state" class="page-state" role="status" hidden></div>
+      <section id="ink-panel" class="settings ink-panel" aria-labelledby="ink-title" hidden>
+        <div class="panel-head">
+          <h2 id="ink-title">ペン・マーカー</h2>
+          <button class="button" id="ink-close" data-icon="close" aria-label="ペン・マーカーの設定を閉じる"></button>
+        </div>
+        <div class="ink-kinds" role="group" aria-label="書く道具">
+          <button class="button" data-ink="pen" aria-pressed="false">ペン</button>
+          <button class="button" data-ink="marker" aria-pressed="true">マーカー</button>
+        </div>
+        <div class="ink-colors">
+          <span>色</span>
+          <div class="palette" id="mark-colors" role="group" aria-label="マーカーの色"></div>
+          <div class="palette" id="pen-colors" role="group" aria-label="ペンの色" hidden></div>
+        </div>
+        <div class="setting ink-weight">
+          <label for="ink-width">太さ</label>
+          <input id="ink-width" type="range" min="5" max="30" step="1" value="13">
+          <span id="ink-width-value" aria-hidden="true">13</span>
+        </div>
+        <p class="ink-tip">線の終点で約0.5秒止めると直線になります。</p>
+      </section>
       <section id="settings" class="settings" aria-labelledby="settings-title" hidden>
         <div class="panel-head">
           <h2 id="settings-title"><button type="button" class="button settings-drag" id="settings-drag" aria-label="トラッカー調整カードを移動"><span class="settings-grip" data-icon="move">移動</span><span>トラッカー調整</span></button></h2>
@@ -107,7 +128,10 @@
           <span id="page-status" aria-live="polite"></span>
           <button type="button" class="button" id="next" data-icon="right" aria-label="次のページ" title="次のページ"></button>
         </div>
-        <div class="seek"><input type="range" id="progress" min="1" step="1" aria-label="ページを移動"><output id="seek-value" for="progress" hidden></output></div>
+        <div class="reader-progress">
+          <div class="seek"><input type="range" id="progress" min="1" step="1" aria-label="ページを移動"><output id="seek-value" for="progress" hidden></output></div>
+          <button class="button" id="swipe-direction" title="ページ送りの向き"><span aria-hidden="true" id="swipe-symbol">↔</span><span id="swipe-label">左右</span></button>
+        </div>
         <div class="page-actions">
           <button class="button" id="rail-toggle" data-icon="list" aria-controls="page-rail" aria-expanded="false">ページ一覧</button>
           <button class="button" id="jump-open" data-icon="file" aria-haspopup="dialog">ページ移動</button>
