@@ -57,7 +57,7 @@ function renderChoices(){
   container.replaceChildren();
   const all=available();
   const query=normalizePickerName($('pickerSearch').value);
-  const matches=all.filter(card=>normalizePickerName(card.name).includes(query));
+  const matches=all.filter(card=>normalizePickerName(card.name).startsWith(query));
   $('pickerSearchStatus').textContent=query
     ? (matches.length ? matches.length+' / '+all.length+'枚を表示' : 'あてはまる札がありません')
     : all.length+'枚を表示';
