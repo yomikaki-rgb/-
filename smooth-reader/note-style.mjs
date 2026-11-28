@@ -1,10 +1,23 @@
-import { clamp, segmentDistance } from './geometry.mjs';
+import { boundPoint, clamp, onPage, onScreen, segmentDistance } from './geometry.mjs';
 
 export const NOTE_SIZE = .024;
 export const NOTE_COLOR = '#243444';
 export const noteSize = value => Number.isFinite(value) ? clamp(value,.008,.12) : NOTE_SIZE;
 export const noteColor = value => /^#[a-f0-9]{6}$/i.test(value) ? value.toLowerCase() : NOTE_COLOR;
 export const notePixels = (value,cam) => noteSize(value)*Math.min(cam.w,cam.h);
+export const noteWidth = (pixels,x,cam,stageWidth) =>
+  Math.min(24*pixels,Math.max(6*pixels,cam.x+cam.w-x),Math.max(24,stageWidth-8));
+
+export function moveNote(at,rotation,cam,dx,dy) {
+  const [x,y]=onScreen(at,rotation,cam);
+  return boundPoint(onPage([x+dx,y+dy],rotation,cam));
+}
+
+export function noteSheetOffset(x,y,width,height,stageWidth,top,bottom) {
+  const right=Math.max(4,stageWidth-width-4);
+  const low=Math.max(top+4,bottom-height-4);
+  return [clamp(x,4,right)-x,clamp(y,top+4,low)-y];
+}
 
 export function pageTextGeometry(content, viewport) {
   const [a,b,c,d]=viewport.transform;

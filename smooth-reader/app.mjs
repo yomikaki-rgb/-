@@ -9,7 +9,7 @@ import { PageRail } from './page-rail.mjs';
 import { wireSettingsCard } from './settings-card.mjs';
 import { VerticalPages } from './vertical-pages.mjs';
 import { noteRows, paintPrintNotes, saveTextNotes } from './note-export.mjs';
-import { noteColor, notePixels, noteSize } from './note-style.mjs';
+import { moveNote, noteColor, notePixels, noteSheetOffset, noteSize, noteWidth } from './note-style.mjs';
 
 const $ = id => document.getElementById(id);
 const all = selector => [...document.querySelectorAll(selector)];
@@ -32,6 +32,7 @@ const pending=new Map(), failed=new Map();
 let saving=null, activeWrite=null, saveTimer;
 const noteNodes=new Map();
 let noteDraft=null;
+let noteDrag=null;
 let highlightedNote=null, highlightTimer;
 let notesSnapshot=null, notesRequest=0;
 let railNoteScan=null;
@@ -227,14 +228,12 @@ function refreshPageControls() {
 function refreshTools() {
   $('stage').dataset.mode=mode;
   for (const button of all('[data-mode].mode')) button.setAttribute('aria-pressed',String(button.dataset.mode===mode));
-  $('visibility').hidden=mode!=='track';
   $('undo').disabled=!undo.length || loading || historyBusy;
   $('redo').disabled=!redo.length || loading || historyBusy;
   refreshInk();
   if (!view) return;
   const t=view.tracker;
   $('visibility').setAttribute('aria-pressed',String(t.visible));
-  $('visibility').setAttribute('aria-label',t.visible ? 'トラッカーを隠す' : 'トラッカーを表示');
   $('visibility').innerHTML=icon(t.visible?'eye':'eyeOff')+(t.visible?'表示中':'非表示');
   for (const b of all('[data-shape]')) b.setAttribute('aria-pressed',String(b.dataset.shape===t.shape));
   for (const b of all('[data-angle]')) b.setAttribute('aria-pressed',String(Number(b.dataset.angle)===writingOrientation(t)));
@@ -287,7 +286,7 @@ function showNotes(cam,state,stackRows) {
     button.style.top=point[1]+'px';
     button.style.fontSize=pixels+'px';
     button.style.color=noteColor(note.color);
-    button.style.maxWidth=Math.min(24*pixels,Math.max(6*pixels,row.cam.x+row.cam.w-point[0]))+'px';
+    button.style.maxWidth=noteWidth(pixels,point[0],row.cam,renderer.size[0])+'px';
     button.hidden=noteDraft?.existing?.id===note.id || point[0]>renderer.size[0] || point[1]>renderer.size[1];
     button.tabIndex=state.mode==='mark'||state.mode==='erase' ? -1 : 0;
     button.classList.toggle('is-target',note.id===highlightedNote);
@@ -613,25 +612,43 @@ function noteCamera(page) {
   if (renderer.stack) return renderer.stackRows().find(row=>row.number===page)?.cam;
   return page===view.page ? renderer.cam : null;
 }
-function positionNoteEditor(cam) {
-  const editor=$('note-editor');
+function refreshNoteStyle(cam=noteCamera(noteDraft.page)) {
+  if (!cam) return;
   const stage=$('stage').getBoundingClientRect();
   const viewport=window.visualViewport;
   const visibleTop=viewport ? Math.max(0,viewport.offsetTop-stage.top) : 0;
   const visibleBottom=viewport ? Math.min(stage.height,viewport.offsetTop+viewport.height-stage.top) : stage.height;
-  editor.style.maxHeight=Math.max(40,visibleBottom-visibleTop-8)+'px';
-  const [x,y]=cam ? onScreen(noteDraft.at,view.rotation,cam) : [4,visibleTop+4];
-  editor.style.left=clamp(x,4,Math.max(4,stage.width-editor.offsetWidth-4))+'px';
-  editor.style.top=clamp(y,visibleTop+4,Math.max(visibleTop+4,visibleBottom-editor.offsetHeight-4))+'px';
-}
-function refreshNoteStyle(cam=noteCamera(noteDraft.page)) {
-  const size=cam ? Math.round(notePixels(noteDraft.size,cam)) : Math.round(noteDraft.size*600);
-  // Safari magnifies a focused input if its font is smaller than 16 CSS pixels.
-  $('note-text').style.fontSize=Math.max(16,size)+'px';
-  $('note-text').style.color=$('note-color').value;
-  $('note-size-value').textContent=size;
-  $('note-size').setAttribute('aria-valuetext',size+'ピクセル');
-  positionNoteEditor(cam);
+  const [x,y]=onScreen(noteDraft.at,view.rotation,cam);
+  const pixels=notePixels(noteDraft.size,cam);
+  const width=noteWidth(pixels,x,cam,stage.width);
+  const input=$('note-text'), box=$('note-box'), toolbar=$('note-tools');
+  // Keep the logical input font at least 16px to avoid Safari's focus zoom.
+  const font=Math.max(16,pixels), scale=pixels/font;
+  const scroll=input.scrollTop;
+  input.style.fontSize=font+'px';
+  input.style.color=$('note-color').value;
+  input.style.width=width/scale+'px';
+  input.style.transform=scale<1 ? 'scale('+scale+')' : '';
+  input.style.height='0px';
+  const gap=toolbar.offsetHeight+6;
+  const lineHeight=pixels*1.25;
+  const maxHeight=Math.max(lineHeight,visibleBottom-visibleTop-gap-8);
+  const height=clamp(input.scrollHeight*scale,lineHeight,maxHeight);
+  input.style.height=height/scale+'px';
+  input.scrollTop=scroll;
+  $('note-size').setAttribute('aria-valuetext',Math.round(pixels)+'ピクセル');
+  const placeAbove=y-gap>=visibleTop+4 || y+height+gap>visibleBottom-4;
+  const offset=noteDrag?.offset || noteSheetOffset(x,y,width,height,stage.width,
+    visibleTop+(placeAbove ? gap : 0),visibleBottom-(placeAbove ? 0 : gap));
+  noteDraft.offset=offset;
+  $('note-sheet').style.transform=offset.some(Boolean) ? 'translate('+offset[0]+'px,'+offset[1]+'px)' : '';
+  const left=x+offset[0], top=y+offset[1];
+  Object.assign(box.style,{left:left+'px',top:top+'px',width:width+'px',height:height+'px'});
+  const toolsHeight=toolbar.offsetHeight;
+  const above=top-toolsHeight-6;
+  toolbar.style.left=clamp(left,4,Math.max(4,stage.width-toolbar.offsetWidth-4))+'px';
+  toolbar.style.top=clamp(above>=visibleTop+4 ? above : top+height+6,
+    visibleTop+4,Math.max(visibleTop+4,visibleBottom-toolsHeight-4))+'px';
 }
 function setNoteEditing(editing) {
   for (const node of all('#reader .tools,#reader .reader-foot,#page-rail,#note-layer')) node.inert=editing;
@@ -651,12 +668,13 @@ function openNote(id,at,page=view?.page) {
   toggleSettings(false);
   toggleInk(false);
   $('note-text').value=existing?.text || '';
+  $('note-text').readOnly=Boolean(existing);
   $('note-size').value=draft.size;
   $('note-color').value=noteColor(existing?.color);
   $('note-delete').hidden=!existing;
   setNoteEditing(true);
   refreshNoteStyle();
-  $('note-text').focus({preventScroll:true});
+  (existing ? $('note-move') : $('note-text')).focus({preventScroll:true});
   renderer.invalidate();
   if (!existing) source.noteSizeAt?.(page,draft.at).then(suggested=>{
     if (noteDraft!==draft || draft.manualSize || suggested===undefined) return;
@@ -666,7 +684,9 @@ function openNote(id,at,page=view?.page) {
   });
 }
 function closeNote() {
+  noteDrag=null;
   noteDraft=null;
+  $('note-sheet').style.transform='';
   setNoteEditing(false);
   document.querySelector('[data-mode].mode[aria-pressed="true"]')?.focus({preventScroll:true});
   renderer.invalidate();
@@ -675,11 +695,12 @@ $('note-editor').onsubmit=event=>{
   event.preventDefault();
   if (!noteDraft) return;
   const text=$('note-text').value.trim();
-  if (!text) { $('note-text').focus(); return; }
   const {existing,page,at,size}=noteDraft;
   const color=$('note-color').value;
   closeNote();
-  if (existing?.text===text && noteSize(existing.size)===size && noteColor(existing.color)===color) return;
+  if (!text) return;
+  if (existing?.text===text && noteSize(existing.size)===size && noteColor(existing.color)===color &&
+      existing.at.every((n,i)=>n===at[i])) return;
   applyEdit(existing||null,{type:'note',id:existing?.id||uid(),at,text,size,color},page);
 };
 $('note-size').oninput=event=>{
@@ -688,7 +709,8 @@ $('note-size').oninput=event=>{
   refreshNoteStyle();
 };
 $('note-color').oninput=()=>refreshNoteStyle();
-$('note-cancel').onclick=closeNote;
+$('note-text').onpointerdown=$('note-text').onfocus=()=>{ $('note-text').readOnly=false; };
+$('note-text').oninput=()=>refreshNoteStyle();
 $('note-delete').onclick=()=>{
   const {existing,page}=noteDraft;
   closeNote();
@@ -697,6 +719,42 @@ $('note-delete').onclick=()=>{
 for (const event of ['resize','scroll']) window.visualViewport?.addEventListener(event,()=>{
   if (noteDraft) refreshNoteStyle();
 });
+
+const noteMove=$('note-move');
+noteMove.onpointerdown=event=>{
+  if (!noteDraft || noteDrag || event.button!==0) return;
+  const cam=noteCamera(noteDraft.page);
+  if (!cam) return;
+  event.preventDefault();
+  noteMove.setPointerCapture(event.pointerId);
+  noteDrag={id:event.pointerId,at:noteDraft.at,offset:noteDraft.offset,
+    x:event.clientX,y:event.clientY,cam,rotation:view.rotation};
+};
+noteMove.onpointermove=event=>{
+  if (event.pointerId!==noteDrag?.id) return;
+  const {at,cam,rotation,x,y}=noteDrag;
+  if (event.clientX===x && event.clientY===y) noteDraft.at=at;
+  else noteDraft.at=moveNote(at,rotation,cam,event.clientX-x,event.clientY-y);
+  refreshNoteStyle(cam);
+};
+function finishNoteMove(event) {
+  if (event.pointerId!==noteDrag?.id) return;
+  if (event.type==='pointerup') noteMove.onpointermove(event);
+  else noteDraft.at=noteDrag.at;
+  noteDrag=null;
+  refreshNoteStyle();
+}
+noteMove.onpointerup=noteMove.onpointercancel=noteMove.onlostpointercapture=finishNoteMove;
+noteMove.onkeydown=event=>{
+  const step=event.shiftKey ? 10 : 2;
+  const delta={ArrowLeft:[-step,0],ArrowRight:[step,0],ArrowUp:[0,-step],ArrowDown:[0,step]}[event.key];
+  if (!delta || !noteDraft || noteDrag) return;
+  const cam=noteCamera(noteDraft.page);
+  if (!cam) return;
+  event.preventDefault();
+  noteDraft.at=moveNote(noteDraft.at,view.rotation,cam,...delta);
+  refreshNoteStyle(cam);
+};
 
 function notesOverrides(id) {
   const pages=new Map();
@@ -1090,15 +1148,10 @@ $('goto-bookmark').onclick=()=>{
 $('track').onclick=()=>{
   const open=$('settings').hidden;
   if (open && mode!=='track') setMode('track');
-  if (open && !view.tracker.visible) setTracker({visible:true});
   toggleSettings(open);
 };
 $('close-settings').onclick=()=>{ toggleSettings(false); $('track').focus(); };
-$('visibility').onclick=()=>{
-  const visible=!view.tracker.visible;
-  setTracker({visible});
-  if (!visible) toggleSettings(false);
-};
+$('visibility').onclick=()=>setTracker({visible:!view.tracker.visible});
 $('reset').onclick=()=>setTracker({...TRACK_DEFAULT,anchor:[...TRACK_DEFAULT.anchor]});
 for (const button of all('[data-mode].mode:not(#write,#track)')) button.onclick=()=>setMode(button.dataset.mode);
 $('write').onclick=()=>{
@@ -1117,7 +1170,7 @@ $('ink-width').oninput=event=>{
   $('ink-width-value').textContent=event.target.value;
   event.target.setAttribute('aria-valuetext',event.target.value);
 };
-for (const button of all('[data-shape]')) button.onclick=()=>setTracker({shape:button.dataset.shape,visible:true});
+for (const button of all('[data-shape]')) button.onclick=()=>setTracker({shape:button.dataset.shape});
 for (const button of all('[data-angle]')) button.onclick=()=>{
   const orientation=Number(button.dataset.angle);
   setTracker({angle:orientation,orientation});

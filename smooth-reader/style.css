@@ -86,19 +86,24 @@ svg { width:22px; height:22px; flex:none; vertical-align:middle; }
 .rail-note { display:grid; place-items:center; width:18px; height:18px; border:1px solid #76a79e; border-radius:5px; background:#e7f7f2; color:#095b55; }
 .rail-note svg { width:13px; height:13px; }
 .rail-shade { display:none; }
-#scene, .note-layer { position:absolute; inset:0; width:100%; height:100%; }
+#scene, .note-layer, .note-sheet { position:absolute; inset:0; width:100%; height:100%; }
 #scene { touch-action:none; user-select:none; -webkit-user-select:none; }
 .stage[data-mode="track"] #scene { cursor:grab; }
 .stage[data-mode="mark"] #scene,.stage[data-mode="erase"] #scene,.stage[data-mode="note"] #scene { cursor:crosshair; }
 .note-layer { pointer-events:none; overflow:hidden; }
-.note-icon { position:absolute; padding:0 .16em; border:0; border-radius:.15em; background:#ffffffeb; text-align:start; line-height:1.25; white-space:pre-wrap; overflow-wrap:anywhere; pointer-events:auto; touch-action:none; }
+.note-icon { position:absolute; padding:0; border:0; border-radius:.15em; background:#ffffffeb; text-align:start; line-height:1.25; white-space:pre-wrap; overflow-wrap:anywhere; pointer-events:auto; touch-action:none; }
 .note-icon.is-target { outline:3px solid var(--accent); outline-offset:3px; }
 .stage[data-mode="mark"] .note-icon,.stage[data-mode="erase"] .note-icon { pointer-events:none; }
-.note-editor { position:absolute; z-index:3; width:min(340px,calc(100% - 8px)); padding:8px; overflow:auto; overscroll-behavior:contain; border:1px solid #9bb8b5; border-radius:10px; background:white; box-shadow:0 4px 18px #19323528; }
-.note-editor textarea { display:block; width:100%; min-height:52px; max-height:120px; padding:6px; border:1px solid #9bb8b5; border-radius:6px; background:white; line-height:1.25; resize:none; user-select:text; -webkit-user-select:text; -webkit-touch-callout:default; }
-.note-format { display:grid; grid-template-columns:auto minmax(0,1fr) minmax(2ch,auto) auto 36px; align-items:center; gap:6px; font-size:.82rem; }
-.note-format input[type="color"] { width:36px; height:32px; padding:2px; border:1px solid #9bb8b5; border-radius:5px; background:white; }
-.note-editor .dialog-actions { justify-content:flex-end; flex-wrap:wrap; margin-top:0; }
+.note-editor { position:absolute; inset:0; z-index:3; pointer-events:none; }
+.note-box { position:absolute; outline:1px dashed var(--accent); outline-offset:2px; background:#ffffffeb; }
+.note-editor textarea { display:block; padding:0; border:0; border-radius:0; background:transparent; line-height:1.25; overflow-wrap:anywhere; resize:none; outline:none; transform-origin:top left; pointer-events:auto; user-select:text; -webkit-user-select:text; -webkit-touch-callout:default; }
+.note-tools { position:absolute; display:flex; align-items:center; gap:2px; width:max-content; max-width:calc(100% - 8px); padding:0 3px; border:1px solid #9bb8b5; border-radius:8px; background:white; box-shadow:0 2px 9px #19323524; pointer-events:auto; }
+.note-tools .button { padding-inline:5px; white-space:nowrap; }
+.note-tools input[type="range"] { width:clamp(36px,16vw,92px); flex:0 1 auto; }
+.note-tools input[type="color"] { width:30px; height:32px; padding:2px; border:1px solid #9bb8b5; border-radius:5px; background:white; }
+#note-move { touch-action:none; cursor:grab; }
+#note-move:active { cursor:grabbing; }
+.tracker-visibility { margin-inline-start:auto; white-space:nowrap; padding-inline:5px; }
 .line-bookmark { position:absolute; z-index:1; pointer-events:none; transform:translate(-50%,-100%); }
 .line-bookmark img { display:block; border:1px solid #76a79e; border-radius:6px; box-shadow:0 1px 4px #17323444; }
 .page-state { position:absolute; inset:0; display:grid; place-items:center; padding:20px; text-align:center; color:var(--muted); pointer-events:none; }
