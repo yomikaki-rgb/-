@@ -9,6 +9,7 @@ import { PageRail } from './page-rail.mjs';
 import { wireSettingsCard } from './settings-card.mjs';
 import { VerticalPages } from './vertical-pages.mjs';
 import { noteRows, paintPrintNotes, saveTextNotes } from './note-export.mjs';
+import { noteColor, notePixels, noteSize } from './note-style.mjs';
 
 const $ = id => document.getElementById(id);
 const all = selector => [...document.querySelectorAll(selector)];
@@ -26,10 +27,11 @@ let previewPage=null;
 let defaults=TRACK_DEFAULT, inkKind='marker';
 let opening=false, importing=false, deleting=false, loading=false, pageToken=0;
 let undo=[], redo=[], historyBusy=false, alertKind, toastTimer, seekTimer;
-let dialogAction=null, dialogDeletion=null, dialogDismiss=null, priorFocus=null;
+let dialogAction=null, dialogDismiss=null, priorFocus=null;
 const pending=new Map(), failed=new Map();
 let saving=null, activeWrite=null, saveTimer;
 const noteNodes=new Map();
+let noteDraft=null;
 let highlightedNote=null, highlightTimer;
 let notesSnapshot=null, notesRequest=0;
 let railNoteScan=null;
@@ -58,7 +60,7 @@ const cancelGesture=wireGestures($('stage'),renderer,{
   preview:(next,erasing,page)=>{ stroke=next; erased=erasing; previewPage=page; renderer.invalidate(); },
   stroke:(value,page)=>applyEdit(null,value,page),
   erase:applyErasure,
-  note:(id,at)=>openNote(id,at),
+  note:openNote,
   turn:turnBySwipe
 });
 $('stage').addEventListener('pointerdown',event=>{
@@ -66,12 +68,15 @@ $('stage').addEventListener('pointerdown',event=>{
 },{capture:true});
 const reader=$('reader');
 for (const event of ['selectstart','contextmenu','dragstart']) {
-  reader.addEventListener(event,action=>action.preventDefault());
+  reader.addEventListener(event,action=>{
+    if (action.target!==$('note-text')) action.preventDefault();
+  });
 }
 document.addEventListener('selectionchange',()=>{
   if (reader.hidden) return;
   const selection=document.getSelection();
   if (selection && !selection.isCollapsed &&
+      ![selection.anchorNode,selection.focusNode].every(node=>$('note-text').contains(node)) &&
       (reader.contains(selection.anchorNode) || reader.contains(selection.focusNode))) {
     selection.removeAllRanges();
   }
@@ -222,8 +227,6 @@ function refreshPageControls() {
 function refreshTools() {
   $('stage').dataset.mode=mode;
   for (const button of all('[data-mode].mode')) button.setAttribute('aria-pressed',String(button.dataset.mode===mode));
-  $('ink-options').hidden=mode!=='mark';
-  $('adjust').hidden=mode!=='track';
   $('visibility').hidden=mode!=='track';
   $('undo').disabled=!undo.length || loading || historyBusy;
   $('redo').disabled=!redo.length || loading || historyBusy;
@@ -273,15 +276,19 @@ function showNotes(cam,state,stackRows) {
       button.className='note-icon';
       button.dataset.id=note.id;
       button.dataset.page=row.number;
-      button.innerHTML='<span>'+icon('note')+'</span>';
       button.onclick=event=>{ if (event.detail===0 && (mode==='track'||mode==='note')) openNote(note.id,undefined,row.number); };
       $('note-layer').append(button);
       noteNodes.set(note.id,button);
     }
     const point=onScreen(note.at,state.view.rotation,row.cam);
+    const pixels=notePixels(note.size,row.cam);
+    if (button.textContent!==note.text) button.textContent=note.text;
     button.style.left=point[0]+'px';
     button.style.top=point[1]+'px';
-    button.hidden=point[0]<0 || point[1]<0 || point[0]>renderer.size[0] || point[1]>renderer.size[1];
+    button.style.fontSize=pixels+'px';
+    button.style.color=noteColor(note.color);
+    button.style.maxWidth=Math.min(24*pixels,Math.max(6*pixels,row.cam.x+row.cam.w-point[0]))+'px';
+    button.hidden=noteDraft?.existing?.id===note.id || point[0]>renderer.size[0] || point[1]>renderer.size[1];
     button.tabIndex=state.mode==='mark'||state.mode==='erase' ? -1 : 0;
     button.classList.toggle('is-target',note.id===highlightedNote);
     if (note.id===highlightedNote && !button.hidden && !highlightTimer) {
@@ -291,12 +298,12 @@ function showNotes(cam,state,stackRows) {
         renderer.invalidate();
       },3000);
     }
-    button.setAttribute('aria-label','メモを開く');
   }
   for (const [id,node] of noteNodes) if (!seen.has(id)) {
     node.remove();
     noteNodes.delete(id);
   }
+  if (noteDraft) refreshNoteStyle(rows.find(row=>row.number===noteDraft.page)?.cam);
 }
 
 async function displayPage(focusAt) {
@@ -354,7 +361,7 @@ async function displayPage(focusAt) {
   }
 }
 function goTo(page,restore,focusAt) {
-  if (!book || !source || historyBusy) return;
+  if (!book || !source || historyBusy || noteDraft) return;
   const n=clamp(page,1,book.count);
   if (n===view.page && !restore) { refreshPageControls(); return; }
   clearTimeout(seekTimer);
@@ -390,17 +397,15 @@ function rotatePage() {
 }
 function toggleSettings(open) {
   $('settings').hidden=!open;
-  $('adjust').setAttribute('aria-expanded',String(open));
+  $('track').setAttribute('aria-expanded',String(open));
 }
 function toggleInk(open) {
   $('ink-panel').hidden=!open;
   $('write').setAttribute('aria-expanded',String(open));
-  $('ink-options').setAttribute('aria-expanded',String(open));
 }
 function refreshInk() {
   const pen=inkKind==='pen';
   const {color,width,min,max,step}=inkStyles[inkKind];
-  $('ink-label').textContent=pen ? 'ペン' : 'マーカー';
   $('mark-colors').hidden=pen;
   $('pen-colors').hidden=!pen;
   for (const button of all('[data-ink]')) {
@@ -418,7 +423,7 @@ function refreshInk() {
   $('ink-width-value').textContent=width;
 }
 function hasModal() {
-  return ['dialog','jump-dialog','notes-dialog'].some(id=>$(id).open);
+  return Boolean(noteDraft) || ['dialog','jump-dialog','notes-dialog'].some(id=>$(id).open);
 }
 function railOverlay() {
   return narrowRail.matches && rail.open;
@@ -550,32 +555,25 @@ async function historyAction(reverse) {
   refreshTools();
 }
 
-function showDialog({title,body='',field=null,initial='',ok='閉じる',cancel='閉じる',onAction=null,onDelete=null,onDismiss=null}) {
+function showDialog({title,body='',ok='閉じる',cancel='閉じる',onAction=null,onDismiss=null}) {
   if ($('dialog').open) return false;
   priorFocus=document.activeElement;
   dialogAction=onAction;
-  dialogDeletion=onDelete;
   dialogDismiss=onDismiss;
   $('dialog-title').textContent=title;
   $('dialog-body').textContent=body;
   $('dialog-body').hidden=!body;
-  $('note-field').hidden=!field;
-  $('note-text').value=initial;
-  $('note-text').placeholder='メモを書く';
-  $('note-text').autofocus=Boolean(field);
   $('dialog-ok').textContent=ok;
-  $('dialog-delete').hidden=!onDelete;
   $('dialog-cancel').hidden=!onAction && !onDismiss;
   $('dialog-cancel').textContent=cancel;
   $('dialog').showModal();
-  if (field) $('note-text').focus();
-  else $('dialog-ok').focus();
+  $('dialog-ok').focus();
   return true;
 }
 function closeDialog(result='dismiss') {
   if (!$('dialog').open) return;
   const dismiss=dialogDismiss, focus=priorFocus;
-  dialogAction=dialogDeletion=dialogDismiss=priorFocus=null;
+  dialogAction=dialogDismiss=priorFocus=null;
   $('dialog').close(result);
   if (result==='dismiss') dismiss?.();
   if (focus?.isConnected) focus.focus({preventScroll:true});
@@ -583,10 +581,9 @@ function closeDialog(result='dismiss') {
 $('dialog-form').onsubmit=event=>{
   event.preventDefault();
   if (!dialogAction) closeDialog('done');
-  else dialogAction($('note-text').value);
+  else dialogAction();
 };
 $('dialog-cancel').onclick=()=>closeDialog();
-$('dialog-delete').onclick=()=>dialogDeletion?.();
 $('dialog').addEventListener('cancel',event=>{ event.preventDefault(); closeDialog(); });
 async function askPassword(retry) {
   return new Promise(resolve=>{
@@ -612,26 +609,94 @@ async function askPassword(retry) {
     field.focus();
   });
 }
+function noteCamera(page) {
+  if (renderer.stack) return renderer.stackRows().find(row=>row.number===page)?.cam;
+  return page===view.page ? renderer.cam : null;
+}
+function positionNoteEditor(cam) {
+  const editor=$('note-editor');
+  const stage=$('stage').getBoundingClientRect();
+  const viewport=window.visualViewport;
+  const visibleTop=viewport ? Math.max(0,viewport.offsetTop-stage.top) : 0;
+  const visibleBottom=viewport ? Math.min(stage.height,viewport.offsetTop+viewport.height-stage.top) : stage.height;
+  editor.style.maxHeight=Math.max(40,visibleBottom-visibleTop-8)+'px';
+  const [x,y]=cam ? onScreen(noteDraft.at,view.rotation,cam) : [4,visibleTop+4];
+  editor.style.left=clamp(x,4,Math.max(4,stage.width-editor.offsetWidth-4))+'px';
+  editor.style.top=clamp(y,visibleTop+4,Math.max(visibleTop+4,visibleBottom-editor.offsetHeight-4))+'px';
+}
+function refreshNoteStyle(cam=noteCamera(noteDraft.page)) {
+  const size=cam ? Math.round(notePixels(noteDraft.size,cam)) : Math.round(noteDraft.size*600);
+  // Safari magnifies a focused input if its font is smaller than 16 CSS pixels.
+  $('note-text').style.fontSize=Math.max(16,size)+'px';
+  $('note-text').style.color=$('note-color').value;
+  $('note-size-value').textContent=size;
+  $('note-size').setAttribute('aria-valuetext',size+'ピクセル');
+  positionNoteEditor(cam);
+}
+function setNoteEditing(editing) {
+  for (const node of all('#reader .tools,#reader .reader-foot,#page-rail,#note-layer')) node.inert=editing;
+  $('note-editor').hidden=!editing;
+}
 function openNote(id,at,page=view?.page) {
-  if (!book || loading) return;
-  const existing=id && itemsFor(page)?.find(item=>item.id===id);
-  if (!existing && !at) return;
-  const currentBook=book.id;
-  const allowed=()=>book?.id===currentBook && itemsFor(page)!==null;
-  showDialog({
-    title:existing ? 'メモ' : '新しいメモ',field:'note',initial:existing?.text || '',
-    ok:'保存',cancel:'閉じる',
-    onAction:text=>{
-      const content=text.trim();
-      if (!content) { $('note-text').focus(); return; }
-      closeDialog('done');
-      if (allowed() && content!==existing?.text) {
-        applyEdit(existing||null,{type:'note',id:existing?.id||uid(),at:existing?.at||boundPoint(at),text:content},page);
-      }
-    },
-    onDelete: existing ? ()=>{ closeDialog('done'); if (allowed()) applyEdit(existing,null,page); } : null
+  if (!book || loading || hasModal()) return;
+  const current=itemsFor(page);
+  if (!current) return;
+  const existing=id ? current.find(item=>item.id===id && item.type==='note') : null;
+  if (!existing && (!at || id)) return;
+  const draft={existing,page,at:existing?.at || boundPoint(at),size:noteSize(existing?.size),manualSize:false};
+  noteDraft=draft;
+  clearTimeout(seekTimer);
+  refreshPageControls();
+  $('seek-value').hidden=true;
+  toggleSettings(false);
+  toggleInk(false);
+  $('note-text').value=existing?.text || '';
+  $('note-size').value=draft.size;
+  $('note-color').value=noteColor(existing?.color);
+  $('note-delete').hidden=!existing;
+  setNoteEditing(true);
+  refreshNoteStyle();
+  $('note-text').focus({preventScroll:true});
+  renderer.invalidate();
+  if (!existing) source.noteSizeAt?.(page,draft.at).then(suggested=>{
+    if (noteDraft!==draft || draft.manualSize || suggested===undefined) return;
+    draft.size=suggested;
+    $('note-size').value=suggested;
+    refreshNoteStyle();
   });
 }
+function closeNote() {
+  noteDraft=null;
+  setNoteEditing(false);
+  document.querySelector('[data-mode].mode[aria-pressed="true"]')?.focus({preventScroll:true});
+  renderer.invalidate();
+}
+$('note-editor').onsubmit=event=>{
+  event.preventDefault();
+  if (!noteDraft) return;
+  const text=$('note-text').value.trim();
+  if (!text) { $('note-text').focus(); return; }
+  const {existing,page,at,size}=noteDraft;
+  const color=$('note-color').value;
+  closeNote();
+  if (existing?.text===text && noteSize(existing.size)===size && noteColor(existing.color)===color) return;
+  applyEdit(existing||null,{type:'note',id:existing?.id||uid(),at,text,size,color},page);
+};
+$('note-size').oninput=event=>{
+  noteDraft.manualSize=true;
+  noteDraft.size=noteSize(Number(event.target.value));
+  refreshNoteStyle();
+};
+$('note-color').oninput=()=>refreshNoteStyle();
+$('note-cancel').onclick=closeNote;
+$('note-delete').onclick=()=>{
+  const {existing,page}=noteDraft;
+  closeNote();
+  if (existing) applyEdit(existing,null,page);
+};
+for (const event of ['resize','scroll']) window.visualViewport?.addEventListener(event,()=>{
+  if (noteDraft) refreshNoteStyle();
+});
 
 function notesOverrides(id) {
   const pages=new Map();
@@ -1022,26 +1087,25 @@ $('goto-bookmark').onclick=()=>{
   setMode('track');
   goTo(saved.page,saved,at || bookmarkSpot(saved));
 };
-$('adjust').onclick=()=>{
+$('track').onclick=()=>{
   const open=$('settings').hidden;
   if (open && mode!=='track') setMode('track');
   if (open && !view.tracker.visible) setTracker({visible:true});
   toggleSettings(open);
 };
-$('close-settings').onclick=()=>{ toggleSettings(false); $('adjust').focus(); };
+$('close-settings').onclick=()=>{ toggleSettings(false); $('track').focus(); };
 $('visibility').onclick=()=>{
   const visible=!view.tracker.visible;
   setTracker({visible});
   if (!visible) toggleSettings(false);
 };
 $('reset').onclick=()=>setTracker({...TRACK_DEFAULT,anchor:[...TRACK_DEFAULT.anchor]});
-for (const button of all('[data-mode].mode:not(#write)')) button.onclick=()=>setMode(button.dataset.mode);
+for (const button of all('[data-mode].mode:not(#write,#track)')) button.onclick=()=>setMode(button.dataset.mode);
 $('write').onclick=()=>{
   const open=mode!=='mark' || $('ink-panel').hidden;
   if (mode!=='mark') setMode('mark');
   toggleInk(open);
 };
-$('ink-options').onclick=()=>toggleInk($('ink-panel').hidden);
 $('ink-close').onclick=()=>{ toggleInk(false); $('write').focus(); };
 for (const button of all('[data-ink]')) button.onclick=()=>{
   cancelGesture();
@@ -1069,6 +1133,11 @@ for (const name of ['length','width','angle','opacity','magnification']) {
 $('undo').onclick=()=>historyAction(true);
 $('redo').onclick=()=>historyAction(false);
 document.addEventListener('keydown',event=>{
+  if (noteDraft && event.key==='Escape' && !event.isComposing) {
+    event.preventDefault();
+    closeNote();
+    return;
+  }
   if (!book || hasModal() || event.target.matches('input,textarea,select')) return;
   if (event.key==='Escape') {
     if (!$('ink-panel').hidden) toggleInk(false);

@@ -91,11 +91,14 @@ svg { width:22px; height:22px; flex:none; vertical-align:middle; }
 .stage[data-mode="track"] #scene { cursor:grab; }
 .stage[data-mode="mark"] #scene,.stage[data-mode="erase"] #scene,.stage[data-mode="note"] #scene { cursor:crosshair; }
 .note-layer { pointer-events:none; overflow:hidden; }
-.note-icon { position:absolute; width:44px; height:44px; padding:0; display:grid; place-items:center; border:0; background:transparent; transform:translate(-50%,-50%); pointer-events:auto; touch-action:none; }
-.note-icon span { width:27px; height:27px; display:grid; place-items:center; border-radius:7px; background:#e7f7f2; color:#095b55; border:1px solid #208478; box-shadow:0 1px 3px #122a3328; }
-.note-icon svg { width:17px; height:17px; }
-.note-icon.is-target span { outline:3px solid var(--accent); outline-offset:3px; }
+.note-icon { position:absolute; padding:0 .16em; border:0; border-radius:.15em; background:#ffffffeb; text-align:start; line-height:1.25; white-space:pre-wrap; overflow-wrap:anywhere; pointer-events:auto; touch-action:none; }
+.note-icon.is-target { outline:3px solid var(--accent); outline-offset:3px; }
 .stage[data-mode="mark"] .note-icon,.stage[data-mode="erase"] .note-icon { pointer-events:none; }
+.note-editor { position:absolute; z-index:3; width:min(340px,calc(100% - 8px)); padding:8px; overflow:auto; overscroll-behavior:contain; border:1px solid #9bb8b5; border-radius:10px; background:white; box-shadow:0 4px 18px #19323528; }
+.note-editor textarea { display:block; width:100%; min-height:52px; max-height:120px; padding:6px; border:1px solid #9bb8b5; border-radius:6px; background:white; line-height:1.25; resize:none; user-select:text; -webkit-user-select:text; -webkit-touch-callout:default; }
+.note-format { display:grid; grid-template-columns:auto minmax(0,1fr) minmax(2ch,auto) auto 36px; align-items:center; gap:6px; font-size:.82rem; }
+.note-format input[type="color"] { width:36px; height:32px; padding:2px; border:1px solid #9bb8b5; border-radius:5px; background:white; }
+.note-editor .dialog-actions { justify-content:flex-end; flex-wrap:wrap; margin-top:0; }
 .line-bookmark { position:absolute; z-index:1; pointer-events:none; transform:translate(-50%,-100%); }
 .line-bookmark img { display:block; border:1px solid #76a79e; border-radius:6px; box-shadow:0 1px 4px #17323444; }
 .page-state { position:absolute; inset:0; display:grid; place-items:center; padding:20px; text-align:center; color:var(--muted); pointer-events:none; }
@@ -148,7 +151,6 @@ dialog { width:min(420px,calc(100% - 28px)); padding:20px; border:1px solid var(
 dialog::backdrop { background:#14272d66; }
 dialog h2 { font-size:1.15rem; margin-bottom:12px; }
 dialog p { white-space:pre-line; line-height:1.6; overflow-wrap:anywhere; }
-dialog textarea { display:block; width:100%; padding:10px; border-radius:8px; border:1px solid #9bb8b5; color:var(--ink); resize:vertical; font-size:1rem; }
 .dialog-actions { display:flex; align-items:center; gap:6px; margin-top:13px; }
 .jump-field { display:block; margin-bottom:6px; }
 #page-number { width:100%; min-height:46px; padding:8px 10px; border:1px solid #9bb8b5; border-radius:8px; font-size:1.1rem; color:var(--ink); }

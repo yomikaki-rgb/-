@@ -1,3 +1,5 @@
+import { nearbyTextSize, pageTextGeometry } from './note-style.mjs';
+
 const MiB = 1024 ** 2;
 let pdfModule;
 
@@ -68,8 +70,21 @@ async function openPdf(blob, askPassword) {
     if (readError) throw new Error('端末内のPDFを読み取れませんでした。',{cause:readError});
     throw new Error('PDFを開けませんでした。ファイルを確認してください。',{cause:error});
   }
+  const textPages=new Map();
   return {
     count:backend.numPages,
+    async noteSizeAt(number,at) {
+      let geometry=textPages.get(number);
+      if (!geometry) {
+        geometry=backend.getPage(number).then(async page=>
+          pageTextGeometry(await page.getTextContent(),page.getViewport({scale:1}))
+        ).catch(()=>null);
+        textPages.set(number,geometry);
+        if (textPages.size>6) textPages.delete(textPages.keys().next().value);
+      }
+      const text=await geometry;
+      return text ? nearbyTextSize(text,at) : undefined;
+    },
     async page(number, rotation) {
       const page = await backend.getPage(number);
       const viewport = page.getViewport({scale:1,rotation:(page.rotate+rotation)%360});
