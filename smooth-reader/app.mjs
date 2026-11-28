@@ -21,11 +21,11 @@ const inkStyles = {
   marker:{color:markerColors[0][1],width:13,min:5,max:30,step:1},
   pen:{color:penColors[0][1],width:2.5,min:1,max:9,step:.5}
 };
-let books=[], book=null, source=null, view=null, mode='track', items=[], stroke=null, eraseId=null;
+let books=[], book=null, source=null, view=null, mode='track', items=[], stroke=null, erased=null;
 let previewPage=null;
 let defaults=TRACK_DEFAULT, inkKind='marker';
 let opening=false, importing=false, deleting=false, loading=false, pageToken=0;
-let undo=[], redo=[], alertKind, toastTimer, seekTimer;
+let undo=[], redo=[], historyBusy=false, alertKind, toastTimer, seekTimer;
 let dialogAction=null, dialogDeletion=null, dialogDismiss=null, priorFocus=null;
 const pending=new Map(), failed=new Map();
 let saving=null, activeWrite=null, saveTimer;
@@ -37,7 +37,7 @@ const narrowRail=matchMedia('(max-width:759px), (max-width:1100px) and (orientat
 
 for (const node of all('[data-icon]')) node.insertAdjacentHTML('afterbegin',icon(node.dataset.icon));
 wireSettingsCard($('stage'),$('settings'),$('settings-drag'));
-const renderer=new PageRenderer($('scene'),()=>({view,mode,items,stroke,eraseId,previewPage}),showNotes,(_error,label)=>{
+const renderer=new PageRenderer($('scene'),()=>({view,mode,items,stroke,erased,previewPage}),showNotes,(_error,label)=>{
   if (label==='base') pageMessage('このページを表示できませんでした。');
 });
 const rail=new PageRail($('rail-scroll'),$('rail-pages'),number=>{
@@ -45,24 +45,37 @@ const rail=new PageRail($('rail-scroll'),$('rail-pages'),number=>{
   goTo(number);
 });
 const cancelGesture=wireGestures($('stage'),renderer,{
-  state:()=>({view,mode,items}), canInteract:()=>Boolean(book && !loading && !hasModal() && !railOverlay()),
+  state:()=>({view,mode,items}), canInteract:()=>Boolean(book && !loading && !historyBusy && !hasModal() && !railOverlay()),
   ink:()=>({kind:inkKind,color:inkStyles[inkKind].color,width:inkStyles[inkKind].width}),
   swipeAxis,id:uid,
   continuous:()=>Boolean(renderer.stack),
   targetAt:annotationTarget,
+  eraseTargets,
   stackAnchor:point=>renderer.stack?.anchor(view,renderer.size,point),
   pan:(from,to)=>moveStack(renderer.stack?.anchor(view,renderer.size,from),to,view.zoom),
   zoomAt:moveStack,
   view:setView, settled:()=>{ queuePosition(false,0); renderer.scheduleDetail(); },
-  preview:(next,erasing,page)=>{ stroke=next; eraseId=erasing; previewPage=page; renderer.invalidate(); },
+  preview:(next,erasing,page)=>{ stroke=next; erased=erasing; previewPage=page; renderer.invalidate(); },
   stroke:(value,page)=>applyEdit(null,value,page),
-  erase:(id,page)=>applyEdit(itemsFor(page)?.find(item=>item.id===id),null,page),
+  erase:applyErasure,
   note:(id,at)=>openNote(id,at),
   turn:turnBySwipe
 });
 $('stage').addEventListener('pointerdown',event=>{
   if (event.target===renderer.canvas && !$('ink-panel').hidden) toggleInk(false);
 },{capture:true});
+const reader=$('reader');
+for (const event of ['selectstart','contextmenu','dragstart']) {
+  reader.addEventListener(event,action=>action.preventDefault());
+}
+document.addEventListener('selectionchange',()=>{
+  if (reader.hidden) return;
+  const selection=document.getSelection();
+  if (selection && !selection.isCollapsed &&
+      (reader.contains(selection.anchorNode) || reader.contains(selection.focusNode))) {
+    selection.removeAllRanges();
+  }
+});
 
 function notify(message) {
   clearTimeout(toastTimer);
@@ -163,6 +176,12 @@ function annotationTarget(point,number) {
     (number ? number===page : onPaper(onPage(point,view.rotation,cam))));
   return row && {number:row.number,cam:row.cam,items:row.entry.items};
 }
+function eraseTargets() {
+  if (!renderer.stack) return [{number:view.page,cam:renderer.cam,items}];
+  return renderer.stackRows().filter(({cam,entry})=>
+    entry.base && entry.items && cam.y<renderer.size[1] && cam.y+cam.h>0
+  ).map(({number,cam,entry})=>({number,cam,items:entry.items}));
+}
 function setTracker(changes) {
   const t={...view.tracker,orientation:writingOrientation(view.tracker),...changes};
   setView({...view,tracker:t});
@@ -206,8 +225,8 @@ function refreshTools() {
   $('ink-options').hidden=mode!=='mark';
   $('adjust').hidden=mode!=='track';
   $('visibility').hidden=mode!=='track';
-  $('undo').disabled=!undo.length || loading;
-  $('redo').disabled=!redo.length || loading;
+  $('undo').disabled=!undo.length || loading || historyBusy;
+  $('redo').disabled=!redo.length || loading || historyBusy;
   refreshInk();
   if (!view) return;
   const t=view.tracker;
@@ -335,7 +354,7 @@ async function displayPage(focusAt) {
   }
 }
 function goTo(page,restore,focusAt) {
-  if (!book || !source) return;
+  if (!book || !source || historyBusy) return;
   const n=clamp(page,1,book.count);
   if (n===view.page && !restore) { refreshPageControls(); return; }
   clearTimeout(seekTimer);
@@ -364,7 +383,7 @@ function zoom(next) {
   setView(centerAfter(view,renderer.page,renderer.size,onPage(at,view.rotation,renderer.cam),at,clamp(next,1,8)));
 }
 function rotatePage() {
-  if (!view || !source) return;
+  if (!view || !source || historyBusy) return;
   view={...view,rotation:mod(view.rotation+90,360)};
   queuePosition(true,0);
   displayPage();
@@ -436,9 +455,13 @@ function editPage(before,after,index,page=view.page) {
   if (!current) return;
   const remaining=current.filter(item=>item.id!==id);
   if (after) remaining.splice(index,0,after);
-  if (renderer.stack) renderer.stack.pages.get(page).items=remaining;
+  updatePageItems(page,remaining,before?.type==='note' || after?.type==='note');
+}
+function updatePageItems(page,remaining,noteChanged=false) {
+  const entry=renderer.stack?.pages.get(page);
+  if (entry) entry.items=remaining;
   if (page===view.page) items=remaining;
-  if (before?.type==='note' || after?.type==='note') {
+  if (noteChanged) {
     const present=remaining.some(item=>item.type==='note');
     railNoteScan?.changes?.set(page,present);
     rail.setNotePage(page,present);
@@ -447,21 +470,71 @@ function editPage(before,after,index,page=view.page) {
   renderer.invalidate();
 }
 function applyEdit(before,after,page=view?.page) {
-  if (!book || loading || !(before||after)) return;
+  if (!book || loading || historyBusy || !(before||after)) return;
   const current=itemsFor(page);
   if (!current) return;
   const index=before ? current.findIndex(item=>item.id===before.id) : current.length;
   if (index<0) return;
   editPage(before,after,index,page);
-  undo.push({page,before,after,index});
+  recordUndo({page,before,after,index});
+}
+function recordUndo(action) {
+  undo.push(action);
   if (undo.length>80) undo.shift();
   redo=[];
   refreshTools();
 }
+function applyErasure(byPage) {
+  if (!book || loading || historyBusy) return;
+  const erasures=[];
+  for (const [page,ids] of byPage) {
+    const current=itemsFor(page);
+    if (!current) continue;
+    const removed=[];
+    const remaining=current.filter((item,index)=>{
+      if (item.type!=='stroke' || !ids.has(item.id)) return true;
+      removed.push({item,index});
+      return false;
+    });
+    if (!removed.length) continue;
+    erasures.push({page,removed});
+    updatePageItems(page,remaining);
+  }
+  if (erasures.length) recordUndo({erasures});
+}
+async function applyEraseHistory(action,reverse,id,currentSource) {
+  const stored=await Promise.all(action.erasures.map(({page})=>itemsFor(page) ?? loadMarks(id,page)));
+  if (source!==currentSource) return false;
+  action.erasures.forEach(({page,removed},i)=>{
+    const current=itemsFor(page) ?? stored[i];
+    const ids=new Set(removed.map(entry=>entry.item.id));
+    const next=current.filter(item=>!ids.has(item.id));
+    if (reverse) for (const {item,index} of removed) next.splice(index,0,item);
+    updatePageItems(page,next);
+  });
+  return true;
+}
 async function historyAction(reverse) {
   const from=reverse?undo:redo, to=reverse?redo:undo;
-  if (!book || loading || !from.length) return;
+  if (!book || loading || historyBusy || !from.length) return;
   const action=from.pop(), id=book.id;
+  if (action.erasures) {
+    const currentSource=source;
+    historyBusy=true;
+    refreshTools();
+    try {
+      if (await applyEraseHistory(action,reverse,id,currentSource)) to.push(action);
+    } catch (_error) {
+      if (source===currentSource) {
+        from.push(action);
+        alertUser('書き込みを読み込めませんでした。');
+      }
+    } finally {
+      historyBusy=false;
+      refreshTools();
+    }
+    return;
+  }
   if (view.page!==action.page && !itemsFor(action.page)) {
     view={...newView(view.tracker,action.page,view.rotation),tracker:copy(view.tracker)};
     queuePosition(true,0);
@@ -845,7 +918,7 @@ $('rotate-page').onclick=rotatePage;
 $('prev').onclick=()=>goTo(view.page-1);
 $('next').onclick=()=>goTo(view.page+1);
 $('swipe-direction').onclick=()=>{
-  if (!book) return;
+  if (!book || historyBusy) return;
   const next=swipeAxis()==='vertical' ? 'horizontal' : 'vertical';
   cancelGesture();
   book={...book,swipeAxis:next};

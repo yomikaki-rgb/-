@@ -113,7 +113,7 @@ export class VerticalPages {
         return;
       }
       if (page.status==='fulfilled') entry.page=page.value;
-      if (marks.status==='fulfilled') entry.items=marks.value;
+      if (marks.status==='fulfilled' && entry.items===null) entry.items=marks.value;
       this.changed();
       this.pump();
     }).finally(()=>this.jobs.delete(work));

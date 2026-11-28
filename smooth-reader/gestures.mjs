@@ -13,16 +13,26 @@ export function straightenStroke(points,rotation,cam,pencil=false) {
   const length=distance(first,last);
   if (length<(pencil ? 12 : 16)) return null;
   let travelled=0;
+  let furthest=0;
   const tolerance=pencil ? clamp(length*.24,8,28) : clamp(length*.18,6,24);
+  const vx=(last[0]-first[0])/length, vy=(last[1]-first[1])/length;
   for (let i=1;i<screen.length;i++) {
-    travelled+=distance(screen[i-1],screen[i]);
     if (segmentDistance(screen[i],first,last)>tolerance) return null;
+    if (pencil) {
+      // Fine stylus samples can add up to a long path even within a straight band.
+      const along=(screen[i][0]-first[0])*vx+(screen[i][1]-first[1])*vy;
+      if (furthest-along>Math.max(7,length*.17)) return null;
+      furthest=Math.max(furthest,along);
+    } else {
+      travelled+=distance(screen[i-1],screen[i]);
+    }
   }
-  if (travelled>length*(pencil ? 1.8 : 1.35)) return null;
+  if (!pencil && travelled>length*1.35) return null;
   const dx=Math.abs(last[0]-first[0]), dy=Math.abs(last[1]-first[1]);
   const end=[...last];
-  if (dy<dx*.09) end[1]=first[1];
-  else if (dx<dy*.09) end[0]=first[0];
+  const axisTolerance=pencil ? .12 : .09;
+  if (dy<dx*axisTolerance) end[1]=first[1];
+  else if (dx<dy*axisTolerance) end[0]=first[0];
   return [points[0],boundPoint(onPage(end,rotation,cam))];
 }
 
@@ -92,35 +102,49 @@ export function wireGestures(stage, renderer, ui) {
       const stroke={type:'stroke',ink:kind,id:ui.id(),color,weight,points:raw};
       gesture={...common,type:'mark',stroke,raw,holdAt:point,target};
       ui.preview(stroke,null,target.number);
-    } else if (mode==='erase' && target) {
-      gesture = {...common,type:'erase',target,eraseId:findStroke(point,point,target)};
-      ui.preview(null,gesture.eraseId,target.number);
+    } else if (mode==='erase') {
+      gesture = {...common,type:'erase',erased:new Map()};
+      sweepErase(point,point,gesture);
     } else if (mode==='note' && anchor && onPaper(anchor)) {
       gesture = {...common,type:'note',target};
     } else {
       gesture = {...common,type:'ignore'};
     }
   }
-  function findStroke(start,finish,target) {
+  function sweepErase(start,finish,g) {
+    const targets=ui.eraseTargets ? ui.eraseTargets() : [targetAt(finish)].filter(Boolean);
+    for (const target of targets) {
+      const ids=g.erased.get(target.number) || new Set();
+      findStrokes(start,finish,target,ids);
+      if (ids.size) g.erased.set(target.number,ids);
+    }
+    ui.preview(null,g.erased);
+  }
+  function findStrokes(start,finish,target,ids) {
     const {items,cam}=target;
     const view=current();
     const center = midpoint(start,finish);
     const travel = distance(start,finish)/2;
     for (let i=items.length-1;i>=0;i--) {
       const s = items[i];
-      if (s.type!=='stroke') continue;
+      if (s.type!=='stroke' || ids.has(s.id)) continue;
       const tolerance = s.weight*Math.min(cam.w,cam.h)/2+8;
       let a = onScreen(s.points[0],view.rotation,cam);
-      if (segmentDistance(a,start,finish)<=tolerance) return s.id;
+      if (segmentDistance(a,start,finish)<=tolerance) {
+        ids.add(s.id);
+        continue;
+      }
       for (let j=1;j<s.points.length;j++) {
         const b = onScreen(s.points[j],view.rotation,cam);
         if (segmentDistance(center,a,b)<=tolerance+travel &&
             (segmentDistance(start,a,b)<=tolerance || segmentDistance(finish,a,b)<=tolerance ||
-              segmentDistance(b,start,finish)<=tolerance || crosses(start,finish,a,b))) return s.id;
+              segmentDistance(b,start,finish)<=tolerance || crosses(start,finish,a,b))) {
+          ids.add(s.id);
+          break;
+        }
         a=b;
       }
     }
-    return null;
   }
   function crosses(a,b,c,d) {
     const side = (a,b,p)=>(b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]);
@@ -130,7 +154,10 @@ export function wireGestures(stage, renderer, ui) {
     const points=g.raw.slice(0,g.heldSamples);
     if (points.length>1) points[points.length-1]=g.raw.at(-1);
     const straight=straightenStroke(points,current().rotation,g.target.cam,g.pointer==='pen');
-    if (straight) g.stroke.points=straight;
+    if (straight) {
+      g.stroke.points=straight;
+      g.snapped=true;
+    }
   }
   function extendInk(event,g,view) {
     const samples=event.getCoalescedEvents?.();
@@ -147,6 +174,7 @@ export function wireGestures(stage, renderer, ui) {
       g.heldSamples=g.raw.length;
       g.holdSince=performance.now();
       g.stroke.points=g.raw;
+      g.snapped=false;
       clearTimeout(straightTimer);
       straightTimer=setTimeout(()=>{
         if (gesture!==g || pointers.size!==1 || !renderer.cam) return;
@@ -213,14 +241,24 @@ export function wireGestures(stage, renderer, ui) {
       ui.view({...view,tracker:{...view.tracker,anchor}},false);
     } else if (gesture.type==='mark') {
       extendInk(event,gesture,view);
-    } else if (gesture.type==='erase' && !gesture.eraseId) {
-      gesture.eraseId=findStroke(last,point,gesture.target);
-      ui.preview(null,gesture.eraseId,gesture.target.number);
+    } else if (gesture.type==='erase') {
+      const coalesced=event.getCoalescedEvents?.() || [];
+      let from=last;
+      for (const sample of [...coalesced,event]) {
+        const to=position(sample);
+        sweepErase(from,to,gesture);
+        from=to;
+      }
     }
   }
   function end(event) {
     if (!pointers.has(event.pointerId)) return;
-    if (event.type==='pointerup') move(event);
+    if (event.type==='pointerup') {
+      if (gesture?.type==='mark' && !gesture.snapped && gesture.holdSince!==undefined &&
+          performance.now()-gesture.holdSince>=STRAIGHT_HOLD_MS) correctInk(gesture);
+      // Keep the accepted line when the lift event alone reports a different point.
+      if (!gesture?.snapped) move(event);
+    }
     const g=gesture;
     clearTimeout(straightTimer);
     clearTimeout(g?.intentTimer);
@@ -238,11 +276,8 @@ export function wireGestures(stage, renderer, ui) {
     gesture=null;
     ui.preview(null,null);
     if (!g || event.type!=='pointerup') { ui.settled(); return; }
-    if (g.type==='mark') {
-      if (g.holdSince!==undefined && performance.now()-g.holdSince>=STRAIGHT_HOLD_MS) correctInk(g);
-      ui.stroke(g.stroke,g.target.number);
-    }
-    if (g.type==='erase' && g.eraseId) ui.erase(g.eraseId,g.target.number);
+    if (g.type==='mark') ui.stroke(g.stroke,g.target.number);
+    if (g.type==='erase' && g.erased.size) ui.erase(g.erased);
     if (g.type==='note' && !g.far) ui.note(g.note,g.anchor,g.target.number);
     if (g.type==='pan' && g.pointer!=='mouse' && !ui.continuous?.() && performance.now()-g.time<900) {
       const delta=swipeTurn(g.start,position(event),g.axis,g.edges);

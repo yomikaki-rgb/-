@@ -1,6 +1,6 @@
 const SCOPE = new URL('./',self.location.href);
 const PREFIX = 'yomu-tracker-shell-' + SCOPE.pathname + '-';
-const NAME = PREFIX + 'v9';
+const NAME = PREFIX + 'v11';
 const SHELL = [
   './','./index.html','./style.css','./app.mjs','./geometry.mjs','./source.mjs','./storage.mjs',
   './render.mjs','./gestures.mjs','./icons.mjs','./manifest.webmanifest','./icon-192.png','./icon-512.png',

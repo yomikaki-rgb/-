@@ -186,7 +186,7 @@ export class PageRenderer {
     this.work(page,region,scale,()=>this.epoch===epoch && this.tiles===tile,'detail');
   }
   paintPaper(ctx,cam,state,surfaces=[this.singleBase,this.singleDetail]) {
-    const {view,items,stroke,eraseId} = state;
+    const {view,items,stroke,erased} = state;
     ctx.save();
     ctx.beginPath();
     ctx.rect(cam.x,cam.y,cam.w,cam.h);
@@ -201,7 +201,7 @@ export class PageRenderer {
     ctx.translate(cam.x,cam.y);
     const key = [view.rotation,cam.w,cam.h].join('/');
     for (const item of items) {
-      if (item.type!=='stroke' || item.id===eraseId) continue;
+      if (item.type!=='stroke' || erased?.get(state.pageNumber ?? view.page)?.has(item.id)) continue;
       let cached = this.paths.get(item);
       if (cached?.key !== key) {
         cached = {key,path:strokePath(item.points,view.rotation,cam.w,cam.h)};
@@ -258,9 +258,8 @@ export class PageRenderer {
   }
   paintStack(ctx,state,rows) {
     for (const {cam,entry,number} of rows) {
-      this.paintPaper(ctx,cam,{...state,items:entry.items||[],
+      this.paintPaper(ctx,cam,{...state,pageNumber:number,items:entry.items||[],
         stroke:state.previewPage===number ? state.stroke : null,
-        eraseId:state.previewPage===number ? state.eraseId : null,
       },[entry.base,entry.detail]);
     }
   }
